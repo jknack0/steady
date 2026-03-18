@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "STEADY with ADHD",
+    "slug": "steady-with-adhd",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "steady",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.steady.adhd"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.steady.adhd"
+    },
+    "plugins": ["expo-router"]
+  }
+}

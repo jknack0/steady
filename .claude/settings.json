@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm install:*)",
+      "Bash(npx turbo:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm ls:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Dev\\steady\\apps\\*"
+    ]
+  }
+}
