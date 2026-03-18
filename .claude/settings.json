@@ -45,7 +45,9 @@
       "Bash(cmd.exe /c \"taskkill /PID 52036 /F\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(npx next:*)",
-      "Bash(taskkill //F //IM node.exe)"
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)"
     ],
     "additionalDirectories": [
       "C:\\Dev\\steady\\apps\\*"
