@@ -1,0 +1,42 @@
+FROM node:20-slim AS base
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# ── Install dependencies ──
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json turbo.json ./
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/db/package.json ./packages/db/package.json
+COPY packages/api/package.json ./packages/api/package.json
+# Skip postinstall (expo-router link not needed for API)
+RUN npm ci --ignore-scripts
+
+# ── Build ──
+FROM deps AS build
+WORKDIR /app
+COPY packages/shared/ ./packages/shared/
+COPY packages/db/ ./packages/db/
+COPY packages/api/ ./packages/api/
+# Generate Prisma client
+RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
+# Build packages in order: shared → db → api
+RUN npx turbo run build --filter=@steady/api
+
+# ── Production ──
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=build /app/packages/db/dist ./packages/db/dist
+COPY --from=build /app/packages/db/package.json ./packages/db/package.json
+COPY --from=build /app/packages/db/prisma ./packages/db/prisma
+COPY --from=build /app/packages/db/node_modules ./packages/db/node_modules
+COPY --from=build /app/packages/api/dist ./packages/api/dist
+COPY --from=build /app/packages/api/package.json ./packages/api/package.json
+
+EXPOSE 4000
+CMD ["node", "packages/api/dist/index.js"]

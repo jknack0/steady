@@ -7,27 +7,382 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ── Enums ──────────────────────────────────────────────
+
 enum UserRole {
   CLINICIAN
   PARTICIPANT
   ADMIN
 }
 
-enum ParticipantStatus {
-  ENROLLED
-  ACTIVE
-  COMPLETED
-  WITHDRAWN
+enum Cadence {
+  WEEKLY
+  BIWEEKLY
+  SELF_PACED
 }
 
+enum EnrollmentMethod {
+  INVITE
+  LINK
+  CODE
+}
+
+enum SessionType {
+  ONE_ON_ONE
+  GROUP
+  SELF_PACED
+}
+
+enum ProgramStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum UnlockRule {
+  SEQUENTIAL
+  MANUAL
+  TIME_BASED
+}
+
+enum PartType {
+  TEXT
+  VIDEO
+  STRATEGY_CARDS
+  JOURNAL_PROMPT
+  CHECKLIST
+  RESOURCE_LINK
+  DIVIDER
+  HOMEWORK
+  ASSESSMENT
+  INTAKE_FORM
+  SMART_GOALS
+}
+
+enum EnrollmentStatus {
+  INVITED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  DROPPED
+}
+
+enum ModuleProgressStatus {
+  LOCKED
+  UNLOCKED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PartProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskStatus {
+  TODO
+  DONE
+  ARCHIVED
+}
+
+enum EnergyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskSourceType {
+  MANUAL
+  HOMEWORK
+  CLINICIAN_PUSH
+  SESSION
+}
+
+enum EventType {
+  TIME_BLOCK
+  SESSION
+  EXTERNAL_SYNC
+  CATCH_UP
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum NotificationCategory {
+  MORNING_CHECKIN
+  HOMEWORK
+  SESSION
+  TASK
+  WEEKLY_REVIEW
+}
+
+// ── Users & Auth ───────────────────────────────────────
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  firstName String
-  lastName  String
-  role      UserRole
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  firstName    String
+  lastName     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clinicianProfile      ClinicianProfile?
+  participantProfile    ParticipantProfile?
+  notificationPreferences NotificationPreference[]
 
   @@map("users")
+}
+
+model ClinicianProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  practiceName String?
+  licenseType  String?
+  bio          String?
+  timezone     String  @default("America/New_York")
+
+  programs Program[]
+
+  @@map("clinician_profiles")
+}
+
+model ParticipantProfile {
+  id                   String  @id @default(cuid())
+  userId               String  @unique
+  user                 User    @relation(fields: [userId], references: [id])
+  timezone             String  @default("America/New_York")
+  onboardingCompleted  Boolean @default(false)
+
+  enrollments    Enrollment[]
+  tasks          Task[]
+  calendarEvents CalendarEvent[]
+  journalEntries JournalEntry[]
+
+  @@map("participant_profiles")
+}
+
+// ── Programs & Content ─────────────────────────────────
+
+model Program {
+  id               String           @id @default(cuid())
+  clinicianId      String
+  clinician        ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  title            String
+  description      String?
+  coverImageUrl    String?
+  cadence          Cadence          @default(WEEKLY)
+  enrollmentMethod EnrollmentMethod @default(INVITE)
+  enrollmentCode   String?          @unique
+  sessionType      SessionType      @default(ONE_ON_ONE)
+  followUpCount    Int              @default(0)
+  isTemplate       Boolean          @default(false)
+  templateSourceId String?
+  templateSource   Program?         @relation("ProgramTemplate", fields: [templateSourceId], references: [id])
+  clones           Program[]        @relation("ProgramTemplate")
+  status           ProgramStatus    @default(DRAFT)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  modules     Module[]
+  enrollments Enrollment[]
+
+  @@map("programs")
+}
+
+model Module {
+  id               String     @id @default(cuid())
+  programId        String
+  program          Program    @relation(fields: [programId], references: [id], onDelete: Cascade)
+  title            String
+  subtitle         String?
+  summary          String?
+  estimatedMinutes Int?
+  sortOrder        Int
+  unlockRule       UnlockRule @default(SEQUENTIAL)
+  unlockDelayDays  Int?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  parts           Part[]
+  moduleProgress  ModuleProgress[]
+  currentEnrollments Enrollment[] @relation("CurrentModule")
+  completedSessions  Session[]    @relation("CompletedModule")
+
+  @@map("modules")
+}
+
+model Part {
+  id         String   @id @default(cuid())
+  moduleId   String
+  module     Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type       PartType
+  title      String
+  sortOrder  Int
+  isRequired Boolean  @default(true)
+  content    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  partProgress  PartProgress[]
+  journalEntries JournalEntry[] @relation("PromptPart")
+
+  @@map("parts")
+}
+
+// ── Enrollment & Progress ──────────────────────────────
+
+model Enrollment {
+  id              String           @id @default(cuid())
+  participantId   String
+  participant     ParticipantProfile @relation(fields: [participantId], references: [id])
+  programId       String
+  program         Program          @relation(fields: [programId], references: [id])
+  status          EnrollmentStatus @default(INVITED)
+  currentModuleId String?
+  currentModule   Module?          @relation("CurrentModule", fields: [currentModuleId], references: [id])
+  enrolledAt      DateTime         @default(now())
+  completedAt     DateTime?
+
+  moduleProgress ModuleProgress[]
+  partProgress   PartProgress[]
+  sessions       Session[]
+
+  @@map("enrollments")
+}
+
+model ModuleProgress {
+  id           String               @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment           @relation(fields: [enrollmentId], references: [id])
+  moduleId     String
+  module       Module               @relation(fields: [moduleId], references: [id])
+  status       ModuleProgressStatus @default(LOCKED)
+  unlockedAt   DateTime?
+  completedAt  DateTime?
+  customUnlock Boolean              @default(false)
+
+  @@unique([enrollmentId, moduleId])
+  @@index([enrollmentId])
+  @@map("module_progress")
+}
+
+model PartProgress {
+  id           String             @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment         @relation(fields: [enrollmentId], references: [id])
+  partId       String
+  part         Part               @relation(fields: [partId], references: [id])
+  status       PartProgressStatus @default(NOT_STARTED)
+  completedAt  DateTime?
+  responseData Json?
+
+  @@unique([enrollmentId, partId])
+  @@index([enrollmentId])
+  @@map("part_progress")
+}
+
+// ── Steady System ──────────────────────────────────────
+
+model Task {
+  id               String          @id @default(cuid())
+  participantId    String
+  participant      ParticipantProfile @relation(fields: [participantId], references: [id])
+  title            String
+  description      String?
+  estimatedMinutes Int?
+  dueDate          DateTime?
+  energyLevel      EnergyLevel?
+  category         String?
+  isRecurring      Boolean         @default(false)
+  recurrenceRule   Json?
+  status           TaskStatus      @default(TODO)
+  completedAt      DateTime?
+  sourceType       TaskSourceType?
+  sourceId         String?
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  calendarEvents CalendarEvent[]
+
+  @@index([participantId])
+  @@map("tasks")
+}
+
+model CalendarEvent {
+  id                 String    @id @default(cuid())
+  participantId      String
+  participant        ParticipantProfile @relation(fields: [participantId], references: [id])
+  title              String
+  startTime          DateTime
+  endTime            DateTime
+  taskId             String?
+  task               Task?     @relation(fields: [taskId], references: [id])
+  eventType          EventType
+  color              String?
+  externalCalendarId String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("calendar_events")
+}
+
+model JournalEntry {
+  id                    String              @id @default(cuid())
+  participantId         String
+  participant           ParticipantProfile  @relation(fields: [participantId], references: [id])
+  entryDate             DateTime            @db.Date
+  promptPartId          String?
+  promptPart            Part?               @relation("PromptPart", fields: [promptPartId], references: [id])
+  responses             Json?
+  freeformContent       String?
+  regulationScore       Int?
+  isSharedWithClinician Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@unique([participantId, entryDate])
+  @@map("journal_entries")
+}
+
+// ── Sessions ───────────────────────────────────────────
+
+model Session {
+  id                 String        @id @default(cuid())
+  enrollmentId       String
+  enrollment         Enrollment    @relation(fields: [enrollmentId], references: [id])
+  scheduledAt        DateTime
+  videoCallUrl       String?
+  status             SessionStatus @default(SCHEDULED)
+  clinicianNotes     String?
+  participantSummary String?
+  moduleCompletedId  String?
+  moduleCompleted    Module?       @relation("CompletedModule", fields: [moduleCompletedId], references: [id])
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([scheduledAt])
+  @@map("sessions")
+}
+
+// ── Notifications ──────────────────────────────────────
+
+model NotificationPreference {
+  id             String               @id @default(cuid())
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id])
+  category       NotificationCategory
+  enabled        Boolean              @default(true)
+  preferredTime  String?
+  customSettings Json?
+
+  @@map("notification_preferences")
 }

@@ -1,11 +1,21 @@
-import { View, Text } from "react-native";
-import { APP_NAME } from "@steady/shared";
+import { Redirect } from "expo-router";
+import { View, ActivityIndicator } from "react-native";
+import { useAuth } from "../lib/auth-context";
 
-export default function HomeScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-3xl font-bold text-gray-900">{APP_NAME}</Text>
-      <Text className="mt-2 text-lg text-gray-500">Participant App</Text>
-    </View>
-  );
+export default function Index() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/(app)/programs" />;
+  }
+
+  return <Redirect href="/(auth)/login" />;
 }

@@ -1,0 +1,72 @@
+import { vi } from "vitest";
+
+// Mock Prisma client for unit/integration tests that don't need a real DB
+vi.mock("@steady/db", () => {
+  const mockPrisma = {
+    $queryRaw: vi.fn().mockResolvedValue([{ "?column?": 1 }]),
+    $transaction: vi.fn().mockImplementation(async (fnOrArray: any) => {
+      if (typeof fnOrArray === "function") {
+        return fnOrArray(mockPrisma);
+      }
+      // Array of promises
+      return Promise.all(fnOrArray);
+    }),
+    program: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
+    },
+    module: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      aggregate: vi.fn(),
+    },
+    part: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      aggregate: vi.fn(),
+    },
+    enrollment: {
+      count: vi.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    user: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+    moduleProgress: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+    },
+    partProgress: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+    },
+  };
+
+  return { prisma: mockPrisma, PrismaClient: vi.fn() };
+});

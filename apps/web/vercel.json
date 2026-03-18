@@ -1,0 +1,5 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && npm ci --ignore-scripts && npx prisma generate --schema=packages/db/prisma/schema.prisma",
+  "buildCommand": "cd ../.. && npx turbo run build --filter=@steady/web"
+}

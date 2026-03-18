@@ -12,16 +12,14 @@
     "typecheck": "turbo run typecheck",
     "db:generate": "turbo run db:generate",
     "db:push": "turbo run db:push",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "test": "turbo run test",
+    "postinstall": "node scripts/fix-expo-router-link.js"
   },
   "devDependencies": {
     "prettier": "^3.2.0",
     "turbo": "^2.0.0",
     "typescript": "^5.3.0"
-  },
-  "overrides": {
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
   },
   "engines": {
     "node": ">=18"

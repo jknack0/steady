@@ -1,0 +1,98 @@
+import jwt from "jsonwebtoken";
+import type { AuthUser } from "../middleware/auth";
+
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
+
+/**
+ * Generate a valid auth token for testing.
+ */
+export function createTestToken(overrides: Partial<AuthUser> = {}): string {
+  const user: AuthUser = {
+    userId: "test-user-id",
+    role: "CLINICIAN",
+    clinicianProfileId: "test-clinician-profile-id",
+    ...overrides,
+  };
+  return jwt.sign(user, JWT_SECRET, { expiresIn: "1h" });
+}
+
+/**
+ * Auth header for supertest requests.
+ */
+export function authHeader(overrides: Partial<AuthUser> = {}): [string, string] {
+  return ["Authorization", `Bearer ${createTestToken(overrides)}`];
+}
+
+/**
+ * Auth header for participant supertest requests.
+ */
+export function participantAuthHeader(overrides: Partial<AuthUser> = {}): [string, string] {
+  return authHeader({
+    role: "PARTICIPANT",
+    participantProfileId: "test-participant-profile-id",
+    clinicianProfileId: undefined,
+    ...overrides,
+  });
+}
+
+/**
+ * Create a mock program object.
+ */
+export function mockProgram(overrides: Record<string, any> = {}) {
+  return {
+    id: "program-1",
+    clinicianId: "test-clinician-profile-id",
+    title: "Test Program",
+    description: "A test program",
+    coverImageUrl: null,
+    cadence: "WEEKLY",
+    enrollmentMethod: "INVITE",
+    enrollmentCode: null,
+    sessionType: "ONE_ON_ONE",
+    followUpCount: 0,
+    isTemplate: false,
+    templateSourceId: null,
+    status: "DRAFT",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock module object.
+ */
+export function mockModule(overrides: Record<string, any> = {}) {
+  return {
+    id: "module-1",
+    programId: "program-1",
+    title: "Test Module",
+    subtitle: null,
+    summary: null,
+    estimatedMinutes: null,
+    sortOrder: 0,
+    unlockRule: "SEQUENTIAL",
+    unlockDelayDays: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock part object.
+ */
+export function mockPart(overrides: Record<string, any> = {}) {
+  return {
+    id: "part-1",
+    moduleId: "module-1",
+    type: "TEXT",
+    title: "Test Part",
+    sortOrder: 0,
+    isRequired: true,
+    content: { type: "TEXT", body: "<p>Hello</p>" },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
