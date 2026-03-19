@@ -93,18 +93,24 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
     pendingContentRef.current = content;
   };
 
-  const handleEditorBlur = useCallback(async () => {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const handleEditorBlur = useCallback((e: { relatedTarget: EventTarget | null }) => {
+    // Only save when focus leaves the editor container entirely,
+    // not when moving between inputs within the editor.
+    if (editorRef.current?.contains(e.relatedTarget as Node)) return;
     if (pendingContentRef.current === null) return;
     const content = pendingContentRef.current;
     pendingContentRef.current = null;
     setSaveStatus("saving");
-    try {
-      await onUpdate({ content });
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch {
-      setSaveStatus("error");
-    }
+    onUpdate({ content })
+      .then(() => {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      })
+      .catch(() => {
+        setSaveStatus("error");
+      });
   }, [onUpdate]);
 
   const handleTitleBlur = () => {
@@ -239,7 +245,7 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
 
       {/* Expanded Editor */}
       {expanded && (
-        <div className="border-t px-4 py-4 pl-14" onBlur={handleEditorBlur}>{renderEditor()}</div>
+        <div ref={editorRef} className="border-t px-4 py-4 pl-14" onBlur={handleEditorBlur}>{renderEditor()}</div>
       )}
     </div>
   );

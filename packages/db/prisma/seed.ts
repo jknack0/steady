@@ -756,88 +756,565 @@ async function main() {
     });
   }
 
-  // ── 4b. Create client-named programs and enroll Jo with session-level content ─────────────────
-  const clientNames = ["Client Alpha", "Client Beta", "Client Gamma"];
+  // ── 4b. Jo's client programs — each program is one patient ─────────────────
 
-  const joEnrollments: { programTitle: string; enrollmentId: string }[] = [];
-
-  for (let ci = 0; ci < clientNames.length; ci++) {
-    const clientTitle = clientNames[ci];
-
-    const clientProgram = await prisma.program.create({
+  // Helper to create Jo's modules with parts
+  async function createJoModule(
+    programId: string,
+    sortOrder: number,
+    moduleData: { title: string; subtitle?: string; summary?: string; estimatedMinutes?: number },
+    parts: { type: string; title: string; isRequired?: boolean; content: any }[]
+  ) {
+    const mod = await prisma.module.create({
       data: {
-        clinicianId: admin.clinicianProfile!.id,
-        title: clientTitle,
-        description: `Program for ${clientTitle}`,
-        cadence: "WEEKLY",
-        enrollmentMethod: "INVITE",
-        sessionType: "ONE_ON_ONE",
-        status: "PUBLISHED",
+        programId,
+        sortOrder,
+        title: moduleData.title,
+        subtitle: moduleData.subtitle,
+        summary: moduleData.summary,
+        estimatedMinutes: moduleData.estimatedMinutes,
+        unlockRule: "SEQUENTIAL",
       },
     });
-
-    const joEnrollment = await prisma.enrollment.create({
-      data: {
-        participantId: joParticipant.participantProfile!.id,
-        programId: clientProgram.id,
-        status: "ACTIVE",
-      },
-    });
-
-    // Create one completed session and one upcoming session
-    const pastSession = await prisma.session.create({
-      data: {
-        enrollmentId: joEnrollment.id,
-        scheduledAt: new Date(Date.now() - (3 + ci) * 24 * 60 * 60 * 1000),
-        status: "COMPLETED",
-        clinicianNotes: `Completed check-in for ${clientTitle}`,
-        participantSummary: "Participant completed intake and initial homework.",
-      },
-    });
-
-    const upcomingSession = await prisma.session.create({
-      data: {
-        enrollmentId: joEnrollment.id,
-        scheduledAt: new Date(Date.now() + (7 + ci) * 24 * 60 * 60 * 1000),
-        status: "SCHEDULED",
-      },
-    });
-
-    // Create a few tasks that represent session homework between sessions
-    await prisma.task.createMany({
-      data: [
-        {
-          participantId: joParticipant.participantProfile!.id,
-          title: "Daily Mood Survey",
-          description: "Please complete this short daily mood survey each evening for the next week.",
-          estimatedMinutes: 2,
-          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-          sourceType: "HOMEWORK",
-          sourceId: pastSession.id,
+    for (let i = 0; i < parts.length; i++) {
+      await prisma.part.create({
+        data: {
+          moduleId: mod.id,
+          type: parts[i].type as any,
+          title: parts[i].title,
+          sortOrder: i,
+          isRequired: parts[i].isRequired ?? true,
+          content: parts[i].content,
         },
-        {
-          participantId: joParticipant.participantProfile!.id,
-          title: `Read article: How to manage focus (${clientTitle})`,
-          description: "Read the short article linked in the app and make one note in your journal.",
-          estimatedMinutes: 10,
-          dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
-          sourceType: "CLINICIAN_PUSH",
-          sourceId: pastSession.id,
-        },
-        {
-          participantId: joParticipant.participantProfile!.id,
-          title: `Watch: Short film about attention (${clientTitle})`,
-          description: "Watch the short clip and reflect on how the strategies apply to you.",
-          estimatedMinutes: 20,
-          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-          sourceType: "CLINICIAN_PUSH",
-          sourceId: pastSession.id,
-        },
-      ],
-    });
-
-    joEnrollments.push({ programTitle: clientTitle, enrollmentId: joEnrollment.id });
+      });
+    }
+    return mod;
   }
+
+  // ── Program 1: Sarah M. — College student, focus & academic skills ──────
+  const sarahProgram = await prisma.program.create({
+    data: {
+      clinicianId: joClinician.clinicianProfile!.id,
+      title: "Sarah M.",
+      description: "20-year-old college junior. Diagnosed at 18. Struggling with focus during lectures, procrastination on papers, and test anxiety. On Adderall 20mg XR. Goals: finish semester with 3.0+ GPA and reduce late submissions.",
+      cadence: "WEEKLY",
+      enrollmentMethod: "INVITE",
+      sessionType: "ONE_ON_ONE",
+      status: "PUBLISHED",
+    },
+  });
+
+  await createJoModule(sarahProgram.id, 0, {
+    title: "Week 1: Study Environment & Focus Baseline",
+    subtitle: "Mar 5 – Mar 12",
+    summary: "Establish a distraction-reduced study setup and track current focus patterns.",
+    estimatedMinutes: 25,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "This week we talked about how your current study habits are working (and not working). You mentioned studying in bed with your phone nearby, and that you often lose 45+ minutes to social media before realizing it.\n\nThis week we're going to set up a better study environment and start tracking your focus so we can see patterns.",
+      },
+    },
+    {
+      type: "CHECKLIST",
+      title: "Study Space Setup",
+      content: {
+        type: "CHECKLIST",
+        items: [
+          { text: "Pick a consistent study location outside your bedroom (library, coffee shop, or desk area)", sortOrder: 0 },
+          { text: "Download a phone-blocking app (Forest, Opal, or Screen Time limits)", sortOrder: 1 },
+          { text: "Get noise-canceling headphones or earbuds for study sessions", sortOrder: 2 },
+          { text: "Set up your study spot with charger, water bottle, and supplies so it's always ready", sortOrder: 3 },
+        ],
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Focus Tracking",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Each time you sit down to study, write down: start time, what you're working on, and rate your focus 1-5 when you finish. Do this for every study session this week.", sortOrder: 0 },
+          { type: "ACTION", description: "Try studying in your new location at least 3 times this week. Compare focus ratings to studying in your usual spot.", sortOrder: 1 },
+          { type: "JOURNAL_PROMPT", prompts: ["What time of day did you focus best? What was different about those sessions?"], spaceSizeHint: "medium", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your focus tracking notes — we'll look for patterns together.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "DAILY",
+      },
+    },
+  ]);
+
+  await createJoModule(sarahProgram.id, 1, {
+    title: "Week 2: Breaking Down Assignments",
+    subtitle: "Mar 12 – Mar 19",
+    summary: "Learn to break large assignments into small, timed chunks to reduce overwhelm.",
+    estimatedMinutes: 20,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Your focus tracking showed you concentrate best between 10am-12pm and again around 7-9pm. Afternoons are tough. We're going to use those peak windows for your hardest work.\n\nYou also mentioned that big papers paralyze you — you don't know where to start so you don't start at all. This week we'll practice breaking assignments into tiny steps.",
+      },
+    },
+    {
+      type: "STRATEGY_CARDS",
+      title: "Assignment Breakdown Method",
+      content: {
+        type: "STRATEGY_CARDS",
+        deckName: "Paper Writing Steps",
+        cards: [
+          { title: "Step 1: Brain Dump", body: "Set a timer for 10 minutes. Write down everything you know or think about the topic. No structure, no editing. Just get words on the page." },
+          { title: "Step 2: Find 3 Sources", body: "Don't try to find all your sources at once. Find just 3 that look relevant. Skim the abstracts. Bookmark them. That's it for now." },
+          { title: "Step 3: Outline in Bullets", body: "Turn your brain dump into 3-5 bullet points. Each bullet = one paragraph. Don't write sentences yet." },
+          { title: "Step 4: Write One Section", body: "Pick the easiest bullet point and expand it into a paragraph. Just one. Then take a break." },
+          { title: "Step 5: Ugly First Draft", body: "Fill in the rest of the sections. It will be bad. That's the point. You can't edit a blank page." },
+        ],
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Practice Assignment Breakdown",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Pick your next upcoming assignment. Break it into at least 5 small steps (15 min or less each). Write them in a list you can check off.", sortOrder: 0 },
+          { type: "ACTION", description: "Complete at least 2 of those steps this week during your peak focus windows (10am-12pm or 7-9pm).", sortOrder: 1 },
+          { type: "ACTION", description: "Use phone-blocking app during every study session. Track how many minutes you studied without interruption.", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your broken-down assignment list so we can review how the steps felt.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "EVERY_OTHER_DAY",
+      },
+    },
+  ]);
+
+  await createJoModule(sarahProgram.id, 2, {
+    title: "Week 3: Test Prep & Anxiety Management",
+    subtitle: "Mar 19 – Mar 26",
+    summary: "Build a study schedule for midterms and practice grounding techniques for test anxiety.",
+    estimatedMinutes: 25,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Great progress on breaking down your English paper — you got through the brain dump and outline steps without procrastinating. The phone blocker helped a lot.\n\nMidterms are in 2 weeks and you're already feeling the anxiety. This week we're going to build a realistic study plan and give you tools for the anxiety itself.",
+      },
+    },
+    {
+      type: "CHECKLIST",
+      title: "Midterm Study Plan",
+      content: {
+        type: "CHECKLIST",
+        items: [
+          { text: "List all midterms with dates and what % of your grade each one is", sortOrder: 0 },
+          { text: "For each exam, write down the 3 most important topics to review", sortOrder: 1 },
+          { text: "Block 2-hour study sessions on your calendar for each exam (during peak hours)", sortOrder: 2 },
+          { text: "Gather all materials (notes, slides, practice problems) in one place per class", sortOrder: 3 },
+          { text: "Find a study buddy or study group for at least one subject", sortOrder: 4 },
+        ],
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Test Anxiety Practice",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Practice the 4-7-8 breathing technique (inhale 4 sec, hold 7 sec, exhale 8 sec) twice a day — once in the morning and once before studying. This trains your body to calm down on command.", sortOrder: 0 },
+          { type: "ACTION", description: "Do at least one practice test or set of practice problems under timed conditions. Notice what happens in your body when you feel stuck — that's the anxiety signal to use your breathing.", sortOrder: 1 },
+          { type: "JOURNAL_PROMPT", prompts: ["When you feel test anxiety, what thoughts come up? Write them down exactly as they appear. Then write a more realistic version next to each one."], spaceSizeHint: "large", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your study schedule and your anxiety thought log.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "DAILY",
+      },
+    },
+  ]);
+
+  await createJoModule(sarahProgram.id, 3, {
+    title: "Week 4: Building a Weekly Routine",
+    subtitle: "Mar 26 – Apr 2",
+    summary: "Create a sustainable weekly schedule that balances academics, self-care, and social time.",
+    estimatedMinutes: 20,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Midterms went better than expected — you used the breathing technique before your psych exam and said it really helped. Your study schedule kept you from cramming, which is a huge win.\n\nNow let's build a weekly routine you can sustain for the rest of the semester. The key is not filling every hour — it's protecting your focus windows and building in recovery time.",
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Weekly Routine Design",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Create a weekly template schedule. Block: your peak focus windows for studying, class times, meals, exercise or movement, one social activity, and at least 2 hours of unstructured free time.", sortOrder: 0 },
+          { type: "ACTION", description: "Follow your weekly template for 5 out of 7 days this week. Mark which days you stuck to it and which you didn't.", sortOrder: 1 },
+          { type: "ACTION", description: "Set a daily end-of-study alarm. When it goes off, you're done for the day — no guilt. Rest is part of the plan.", sortOrder: 2 },
+          { type: "JOURNAL_PROMPT", prompts: ["How did it feel having a routine? What parts worked and what felt forced?"], spaceSizeHint: "medium", sortOrder: 3 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your weekly template — we'll adjust it based on how the week went.", sortOrder: 4 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "EVERY_OTHER_DAY",
+      },
+    },
+  ]);
+
+  // ── Program 2: David K. — Working professional, productivity & emotions ──────
+  const davidProgram = await prisma.program.create({
+    data: {
+      clinicianId: joClinician.clinicianProfile!.id,
+      title: "David K.",
+      description: "34-year-old software engineer. Diagnosed 2 years ago. Struggles with emotional reactivity in meetings, task-switching between projects, and chronic lateness. On Vyvanse 40mg. Goals: reduce workplace conflicts and build reliable daily systems.",
+      cadence: "WEEKLY",
+      enrollmentMethod: "INVITE",
+      sessionType: "ONE_ON_ONE",
+      status: "PUBLISHED",
+    },
+  });
+
+  await createJoModule(davidProgram.id, 0, {
+    title: "Week 1: Mapping Triggers & Patterns",
+    subtitle: "Mar 3 – Mar 10",
+    summary: "Identify emotional triggers at work and start building awareness before reactions.",
+    estimatedMinutes: 20,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Today we talked about the incident in last week's sprint review where you snapped at your PM. You recognized afterward that you weren't actually angry about the feedback — you were already frustrated from context-switching all morning and the criticism hit different because of it.\n\nThis week is about noticing the buildup before the eruption. Most emotional blowups at work aren't about the trigger — they're about what happened in the hours before.",
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Trigger Tracking",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "3x per day (morning, after lunch, end of day), rate your stress level 1-10 and write one sentence about what's driving it. Set phone alarms as reminders.", sortOrder: 0 },
+          { type: "ACTION", description: "When you notice your stress is above a 6, take a 5-minute walk before your next meeting or interaction. Don't skip this — it interrupts the buildup.", sortOrder: 1 },
+          { type: "JOURNAL_PROMPT", prompts: ["Describe a moment this week when you felt reactive. What happened in the 2 hours before? Were you already escalated?"], spaceSizeHint: "large", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your stress tracking log — we'll map your daily stress curve.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "DAILY",
+      },
+    },
+  ]);
+
+  await createJoModule(davidProgram.id, 1, {
+    title: "Week 2: The Pause Protocol",
+    subtitle: "Mar 10 – Mar 17",
+    summary: "Practice creating a gap between emotional trigger and response in work situations.",
+    estimatedMinutes: 20,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Your stress tracking showed a clear pattern: mornings start around 3-4 but spike to 7-8 after back-to-back meetings or Slack interruptions. By afternoon you have almost no buffer left.\n\nThis week we're going to practice the Pause Protocol — a simple routine to create space between feeling triggered and responding. The goal isn't to suppress emotions. It's to buy yourself 30 seconds of clarity.",
+      },
+    },
+    {
+      type: "STRATEGY_CARDS",
+      title: "The Pause Protocol",
+      content: {
+        type: "STRATEGY_CARDS",
+        deckName: "Pause Protocol",
+        cards: [
+          { title: "Step 1: Notice", body: "Physical signals come first: jaw clenching, chest tightness, heat in your face, talking faster. These are your early warning system. Learn to catch them." },
+          { title: "Step 2: Buy Time", body: "Use a bridge phrase: 'Let me think about that for a sec.' / 'I want to give that a proper response — can I get back to you in 10 minutes?' This is not avoidance — it's strategy." },
+          { title: "Step 3: Move", body: "Stand up, get water, walk to the bathroom. Physical movement interrupts the emotional spiral. Even shifting your posture in your chair helps." },
+          { title: "Step 4: Reframe", body: "Ask yourself: 'What's the most generous interpretation of what they just said?' ADHD brains jump to threat. Reframing slows that down." },
+        ],
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Practice the Pause",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Use the Pause Protocol at least once per day, even in low-stakes situations (someone cuts you off in a conversation, a frustrating email). Build the muscle on small things.", sortOrder: 0 },
+          { type: "ACTION", description: "Before your most stressful recurring meeting, spend 2 minutes doing box breathing (4 in, 4 hold, 4 out, 4 hold). Pre-regulate before you need to.", sortOrder: 1 },
+          { type: "ACTION", description: "Continue stress tracking 3x/day. Note any times you used the Pause Protocol and what happened.", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring examples of when you used (or wanted to use) the Pause Protocol.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "DAILY",
+      },
+    },
+  ]);
+
+  await createJoModule(davidProgram.id, 2, {
+    title: "Week 3: Deep Work Blocks & Context-Switching",
+    subtitle: "Mar 17 – Mar 24",
+    summary: "Protect focus time and reduce the cognitive cost of switching between projects.",
+    estimatedMinutes: 25,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "You used the Pause Protocol 4 times this week — twice in meetings and twice over Slack. The bridge phrase ('Let me think about that') worked really well for you.\n\nNow let's tackle the other big issue: you're on 3 projects and context-switching is destroying your productivity and draining your emotional battery. Research shows it takes 23 minutes to refocus after an interruption — with ADHD it can be even longer.",
+      },
+    },
+    {
+      type: "CHECKLIST",
+      title: "Deep Work Setup",
+      content: {
+        type: "CHECKLIST",
+        items: [
+          { text: "Block 2 hours of 'deep work' on your calendar each morning (make it a recurring event)", sortOrder: 0 },
+          { text: "Set Slack to Do Not Disturb during deep work blocks", sortOrder: 1 },
+          { text: "Close email tab during deep work — check it only at 11am and 3pm", sortOrder: 2 },
+          { text: "Put a sticky note on your monitor: 'Is this urgent or can it wait until my next check-in?'", sortOrder: 3 },
+          { text: "Tell your team: 'I'm doing focus blocks 9-11am. Ping me after 11 unless it's on fire.'", sortOrder: 4 },
+        ],
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Deep Work Practice",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Do 4 deep work blocks this week (one per workday, skip one day as buffer). Track what you accomplished in each block vs. a normal scattered morning.", sortOrder: 0 },
+          { type: "ACTION", description: "When you must switch projects, use a 'context dump': spend 2 minutes writing where you left off and what to do next before switching. This saves massive re-ramp time.", sortOrder: 1 },
+          { type: "JOURNAL_PROMPT", prompts: ["How did the deep work blocks feel compared to your usual mornings? What tried to pull you out of focus and how did you handle it?"], spaceSizeHint: "medium", sortOrder: 2 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "EVERY_OTHER_DAY",
+      },
+    },
+  ]);
+
+  await createJoModule(davidProgram.id, 3, {
+    title: "Week 4: Morning Routine & Chronic Lateness",
+    subtitle: "Mar 24 – Mar 31",
+    summary: "Build a reliable morning routine and address the time-blindness behind chronic lateness.",
+    estimatedMinutes: 20,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Deep work blocks were a game-changer — you said you got more done in those 2-hour blocks than in full scattered days. Your PM even noticed.\n\nLet's now tackle the lateness. You've been 5-15 minutes late to standup 3 out of 5 days. It's not about not caring — it's time blindness plus 'one more thing' syndrome. Every morning you think you have more time than you do.",
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Morning System",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Set 3 morning alarms: (1) wake up, (2) 'stop getting ready and leave in 10 min', (3) 'leave NOW'. Put alarm (2) in a different room so you have to walk to it.", sortOrder: 0 },
+          { type: "ACTION", description: "Prep the night before: lay out clothes, pack bag, put keys/wallet/badge by the door. Reduce every morning decision you can.", sortOrder: 1 },
+          { type: "ACTION", description: "Track your arrival time to standup every day this week. Write down what time you intended to arrive vs. actual.", sortOrder: 2 },
+          { type: "ACTION", description: "Add a 15-minute buffer to every time estimate this week. If you think something takes 20 minutes, block 35. See how that changes your lateness.", sortOrder: 3 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your arrival tracking log and let me know how the buffer strategy worked.", sortOrder: 4 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "DAILY",
+      },
+    },
+  ]);
+
+  // ── Program 3: Marcus T. — Recently diagnosed, building daily structure ──────
+  const marcusProgram = await prisma.program.create({
+    data: {
+      clinicianId: joClinician.clinicianProfile!.id,
+      title: "Marcus T.",
+      description: "41-year-old freelance graphic designer. Diagnosed 3 months ago after his daughter's diagnosis prompted him to get tested. No medication yet (exploring options). Struggles with inconsistent work output, missed client deadlines, and household overwhelm. Goals: build daily structure and decide on medication.",
+      cadence: "WEEKLY",
+      enrollmentMethod: "INVITE",
+      sessionType: "ONE_ON_ONE",
+      status: "PUBLISHED",
+    },
+  });
+
+  await createJoModule(marcusProgram.id, 0, {
+    title: "Week 1: Understanding Your Diagnosis",
+    subtitle: "Mar 7 – Mar 14",
+    summary: "Process the new diagnosis and start noticing ADHD patterns in daily life.",
+    estimatedMinutes: 30,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Today was your first session after getting your diagnosis. You said it was a mix of relief ('so that's why everything has been so hard') and grief ('I could have known 20 years ago'). Both of those feelings are completely valid and very common in late-diagnosed adults.\n\nThis week isn't about fixing anything. It's about noticing. Now that you have a name for the pattern, you'll start seeing it everywhere — and that's a good thing. Awareness is the first tool.",
+      },
+    },
+    {
+      type: "RESOURCE_LINK",
+      title: "Recommended Reading",
+      content: {
+        type: "RESOURCE_LINK",
+        url: "https://chadd.org/for-adults/overview/",
+        description: "CHADD's overview for adults newly diagnosed with ADHD. Good starting point for understanding what ADHD is and isn't.",
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "ADHD Awareness Week",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "JOURNAL_PROMPT", prompts: [
+            "What's one thing from your past that makes more sense now that you have the ADHD diagnosis?",
+            "What emotion comes up most when you think about the diagnosis? Sit with it for a few minutes and write what surfaces.",
+          ], spaceSizeHint: "large", sortOrder: 0 },
+          { type: "ACTION", description: "This week, notice 3 moments where ADHD shows up in your day. Don't try to fix them — just notice and write them down. Example: 'Sat down to work on the logo project at 9am, looked up and it was 11am and I'd been reorganizing my font library.'", sortOrder: 1 },
+          { type: "ACTION", description: "Read the CHADD article linked above. Take note of anything that surprises you or feels especially relevant.", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your 3 ADHD moments and your journal entries. Also bring any questions about medication — we'll talk through your options.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "EVERY_OTHER_DAY",
+      },
+    },
+  ]);
+
+  await createJoModule(marcusProgram.id, 1, {
+    title: "Week 2: Taming the Home Environment",
+    subtitle: "Mar 14 – Mar 21",
+    summary: "Create simple systems to reduce household overwhelm and visual clutter.",
+    estimatedMinutes: 20,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "You noticed ADHD showing up a lot more than 3 times — you said 'it's like I can't unsee it now.' That's normal and it does settle down.\n\nYou mentioned the house is a huge source of stress. Dishes pile up, laundry never gets folded, mail stacks up for weeks. Your wife is frustrated and you feel ashamed. Let's start with small, concrete systems — not a total house overhaul.",
+      },
+    },
+    {
+      type: "CHECKLIST",
+      title: "Home Systems Starter Kit",
+      content: {
+        type: "CHECKLIST",
+        items: [
+          { text: "Put a bin by the front door for keys, wallet, and mail (everything has a home)", sortOrder: 0 },
+          { text: "Set a daily 10-minute timer for kitchen cleanup — dishes, counters, that's it", sortOrder: 1 },
+          { text: "Pick one laundry day and put it on your calendar as a recurring event", sortOrder: 2 },
+          { text: "Get a small trash can for junk mail right by the door — sort immediately, don't stack", sortOrder: 3 },
+        ],
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "10-Minute Tidy Habit",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Do the 10-minute kitchen timer every day after dinner. Put on a podcast or music to make it tolerable. When the timer goes off, you stop — even if it's not perfect.", sortOrder: 0 },
+          { type: "ACTION", description: "Set up the 'landing pad' bin by your front door. Use it every time you come home this week.", sortOrder: 1 },
+          { type: "ACTION", description: "Pick the ONE household task that causes the most friction with your wife. Do it on a specific day at a specific time this week (e.g., 'trash out Wednesday night after kids' bedtime').", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Let me know how the 10-minute tidy went — did the timer help? Did you stick with it?", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "DAILY",
+      },
+    },
+  ]);
+
+  await createJoModule(marcusProgram.id, 2, {
+    title: "Week 3: Freelance Workflow & Client Deadlines",
+    subtitle: "Mar 21 – Mar 28",
+    summary: "Build a simple project tracking system and address deadline avoidance.",
+    estimatedMinutes: 25,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "The 10-minute tidy is working well — you said it's actually become almost automatic. Your wife noticed and it reduced tension at home.\n\nNow let's talk about work. You have 4 active client projects and no system for tracking them. You said you missed a deadline last week because you 'forgot the project existed' once a newer one came in. That's classic ADHD — out of sight, out of mind. We need to make all your projects visible at all times.",
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Visible Project System",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Get a physical whiteboard or large sticky notes. Write each active project with: client name, next deliverable, and deadline. Put it where you see it from your desk — this is your 'project dashboard.'", sortOrder: 0 },
+          { type: "ACTION", description: "Every Monday morning, spend 15 minutes reviewing your project dashboard. For each project, write the ONE most important next step for this week.", sortOrder: 1 },
+          { type: "ACTION", description: "Set calendar reminders 3 days before each deadline. When the reminder hits, that project becomes priority #1 until it's delivered.", sortOrder: 2 },
+          { type: "ACTION", description: "Send a brief status update to each active client this week (even just 'On track, will have the draft by Thursday'). Proactive communication prevents panic.", sortOrder: 3 },
+          { type: "BRING_TO_SESSION", reminderText: "Take a photo of your project dashboard and bring it. We'll review whether the system is working.", sortOrder: 4 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "EVERY_OTHER_DAY",
+      },
+    },
+  ]);
+
+  await createJoModule(marcusProgram.id, 3, {
+    title: "Week 4: Daily Rhythm & Medication Discussion",
+    subtitle: "Mar 28 – Apr 4",
+    summary: "Establish a simple daily work routine and make an informed decision about medication.",
+    estimatedMinutes: 25,
+  }, [
+    {
+      type: "TEXT",
+      title: "Session Recap",
+      content: {
+        type: "TEXT",
+        body: "Your project dashboard is up and you haven't missed a deadline this week. You said having everything visible made a huge difference — 'I can't ignore it when it's staring at me.'\n\nWe also talked about medication. You have a lot of questions and some hesitation, which is totally normal. I've included some structured thinking below to help you prepare for the conversation with your prescriber. This is your decision — I just want you to go in informed.",
+      },
+    },
+    {
+      type: "HOMEWORK",
+      title: "Daily Rhythm & Medication Prep",
+      content: {
+        type: "HOMEWORK",
+        items: [
+          { type: "ACTION", description: "Create a simple daily work schedule with 3 blocks: morning creative work (your best hours), midday admin/emails/client calls, afternoon lighter tasks. Follow it for 4 out of 5 workdays.", sortOrder: 0 },
+          { type: "ACTION", description: "Continue the Monday project review ritual and daily 10-minute tidy. These are now your anchor habits — protect them.", sortOrder: 1 },
+          { type: "JOURNAL_PROMPT", prompts: [
+            "What are your biggest concerns about medication? What are you hoping it might help with?",
+            "What questions do you want to ask your prescriber? Write at least 3.",
+          ], spaceSizeHint: "large", sortOrder: 2 },
+          { type: "BRING_TO_SESSION", reminderText: "Bring your medication questions and your daily schedule — we'll fine-tune both.", sortOrder: 3 },
+        ],
+        dueTimingType: "BEFORE_NEXT_SESSION",
+        completionRule: "ALL",
+        reminderCadence: "EVERY_OTHER_DAY",
+      },
+    },
+  ]);
+
+  const joPrograms = [sarahProgram, davidProgram, marcusProgram];
 
   // ── 6. Generate dev tokens ────────────────────────────────
   const adminToken = jwt.sign(
@@ -879,13 +1356,13 @@ async function main() {
   console.log(`Modules: ${allModules.length}`);
   console.log(`Enrollment: ${enrollment.id} (ACTIVE)`);
 
-  console.log("\n--- Jo (Participant) ---");
+  console.log("\n--- Jo (Clinician) ---");
   console.log(`Email: jo@jo.com`);
   console.log(`Password: Jo1`);
-  console.log(`User ID: ${joParticipant.id}`);
-  console.log("Jo enrollments:");
-  for (const e of joEnrollments) {
-    console.log(`- ${e.programTitle}: ${e.enrollmentId}`);
+  console.log(`User ID: ${joClinician.id}`);
+  console.log("Jo's client programs:");
+  for (const p of joPrograms) {
+    console.log(`- ${p.title} (${p.id})`);
   }
 }
 

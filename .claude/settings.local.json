@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(npm --version)",
-      "Bash(pacman -Q git)"
+      "Bash(pacman -Q git)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:zwiYKQIpQhhnMhJLYigBARXYBiCjEULH@shortline.proxy.rlwy.net:37864/railway\" npx -w packages/db prisma db seed)"
     ]
   }
 }
