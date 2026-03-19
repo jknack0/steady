@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -86,11 +86,21 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const pendingContentRef = useRef<any>(null);
+  const [localContent, setLocalContent] = useState<any>(part.content);
+  const dirtyRef = useRef(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
+  // Sync from server when part.content changes (e.g. after query refetch)
+  // but only if there are no unsaved local edits
+  useEffect(() => {
+    if (!dirtyRef.current) {
+      setLocalContent(part.content);
+    }
+  }, [part.content]);
+
   const handleContentChange = (content: any) => {
-    pendingContentRef.current = content;
+    dirtyRef.current = true;
+    setLocalContent(content);
   };
 
   const editorRef = useRef<HTMLDivElement>(null);
@@ -99,11 +109,10 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
     // Only save when focus leaves the editor container entirely,
     // not when moving between inputs within the editor.
     if (editorRef.current?.contains(e.relatedTarget as Node)) return;
-    if (pendingContentRef.current === null) return;
-    const content = pendingContentRef.current;
-    pendingContentRef.current = null;
+    if (!dirtyRef.current) return;
+    dirtyRef.current = false;
     setSaveStatus("saving");
-    onUpdate({ content })
+    onUpdate({ content: localContent })
       .then(() => {
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -111,7 +120,7 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
       .catch(() => {
         setSaveStatus("error");
       });
-  }, [onUpdate]);
+  }, [onUpdate, localContent]);
 
   const handleTitleBlur = () => {
     setEditingTitle(false);
@@ -124,7 +133,7 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
   const Icon = typeConfig.icon;
 
   const renderEditor = () => {
-    const content = part.content as any;
+    const content = localContent as any;
     switch (part.type) {
       case "TEXT":
         return <TextPartEditor content={content} onChange={handleContentChange} />;
