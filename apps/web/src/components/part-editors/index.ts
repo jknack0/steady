@@ -6,3 +6,6 @@ export { ChecklistPartEditor } from "./checklist-editor";
 export { ResourceLinkPartEditor } from "./resource-link-editor";
 export { DividerPartEditor } from "./divider-editor";
 export { HomeworkPartEditor } from "./homework-editor";
+export { AssessmentPartEditor } from "./assessment-editor";
+export { IntakeFormPartEditor } from "./intake-form-editor";
+export { SmartGoalsPartEditor } from "./smart-goals-editor";

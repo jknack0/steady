@@ -75,12 +75,11 @@ const DEFAULT_CONTENT: Record<string, any> = {
     reminderCadence: "DAILY",
     items: [],
   },
-  ASSESSMENT: { type: "ASSESSMENT", placeholder: true },
-  INTAKE_FORM: { type: "INTAKE_FORM", placeholder: true },
-  SMART_GOALS: { type: "SMART_GOALS", placeholder: true },
+  ASSESSMENT: { type: "ASSESSMENT", title: "", instructions: "", scoringEnabled: false, questions: [] },
+  INTAKE_FORM: { type: "INTAKE_FORM", title: "", instructions: "", sections: ["General"], fields: [] },
+  SMART_GOALS: { type: "SMART_GOALS", instructions: "", maxGoals: 3, categories: ["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"], goals: [] },
 };
 
-// Part types available for creation (exclude Phase 2 stubs)
 const CREATABLE_TYPES = [
   "TEXT",
   "VIDEO",
@@ -90,6 +89,9 @@ const CREATABLE_TYPES = [
   "RESOURCE_LINK",
   "DIVIDER",
   "HOMEWORK",
+  "ASSESSMENT",
+  "INTAKE_FORM",
+  "SMART_GOALS",
 ];
 
 export default function ModuleEditorPage() {

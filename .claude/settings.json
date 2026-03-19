@@ -47,7 +47,14 @@
       "Bash(npx next:*)",
       "Bash(taskkill //F //IM node.exe)",
       "Bash(docker build:*)",
-      "Bash(docker run:*)"
+      "Bash(docker run:*)",
+      "Bash(find /c/Dev/steady -maxdepth 2 -type f -name *TODO* -o -name *ROADMAP* -o -name *roadmap*)",
+      "Bash(find /c/Dev/steady/packages/api/src -type f -name *.test.ts -o -name *.spec.ts)",
+      "Bash(find /c/Dev/steady/apps -type f -name *.test.ts* -o -name *.spec.ts*)",
+      "Bash(find /c/Dev/steady/packages/shared/src -type f -name *.test.ts -o -name *.spec.ts)",
+      "Bash(wc -l /c/Dev/steady/apps/web/src/components/part-editors/*.tsx)",
+      "Bash(grep -A 10 \"ASSESSMENT\\\\|INTAKE_FORM\\\\|SMART_GOALS\" /c/Dev/steady/apps/web/src/app/\\\\\\(dashboard\\\\\\)/programs/[id]/modules/[moduleId]/page.tsx)",
+      "Bash(grep -A 20 \"const CREATABLE_TYPES\" /c/Dev/steady/apps/web/src/app/\\\\\\(dashboard\\\\\\)/programs/[id]/modules/[moduleId]/page.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Dev\\steady\\apps\\*"

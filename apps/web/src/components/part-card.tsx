@@ -24,6 +24,9 @@ import {
   ResourceLinkPartEditor,
   DividerPartEditor,
   HomeworkPartEditor,
+  AssessmentPartEditor,
+  IntakeFormPartEditor,
+  SmartGoalsPartEditor,
 } from "@/components/part-editors";
 import type { Part } from "@/hooks/use-parts";
 import {
@@ -126,6 +129,12 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
         return <DividerPartEditor content={content} onChange={handleContentChange} />;
       case "HOMEWORK":
         return <HomeworkPartEditor content={content} onChange={handleContentChange} />;
+      case "ASSESSMENT":
+        return <AssessmentPartEditor content={content} onChange={handleContentChange} />;
+      case "INTAKE_FORM":
+        return <IntakeFormPartEditor content={content} onChange={handleContentChange} />;
+      case "SMART_GOALS":
+        return <SmartGoalsPartEditor content={content} onChange={handleContentChange} />;
       default:
         return (
           <div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground">

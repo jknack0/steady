@@ -134,20 +134,68 @@ const HomeworkContentSchema = z.object({
   items: z.array(HomeworkItemSchema),
 });
 
-// Phase 2 stubs
+// ── Assessment Schema ─────────────────────────────────
+
+const AssessmentQuestionSchema = z.object({
+  question: z.string(),
+  type: z.enum(["LIKERT", "MULTIPLE_CHOICE", "FREE_TEXT", "YES_NO"]),
+  options: z.array(z.string()).optional(),
+  likertMin: z.number().int().optional(),
+  likertMax: z.number().int().optional(),
+  likertMinLabel: z.string().optional(),
+  likertMaxLabel: z.string().optional(),
+  required: z.boolean().default(true),
+  sortOrder: z.number().int(),
+});
+
+export const AssessmentQuestionType = AssessmentQuestionSchema.shape.type;
+
 const AssessmentContentSchema = z.object({
   type: z.literal("ASSESSMENT"),
-  placeholder: z.literal(true).default(true),
+  title: z.string().default(""),
+  instructions: z.string().default(""),
+  scoringEnabled: z.boolean().default(false),
+  questions: z.array(AssessmentQuestionSchema).default([]),
+});
+
+// ── Intake Form Schema ────────────────────────────────
+
+const IntakeFieldSchema = z.object({
+  label: z.string(),
+  type: z.enum(["TEXT", "TEXTAREA", "SELECT", "MULTI_SELECT", "DATE", "NUMBER", "CHECKBOX"]),
+  placeholder: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  required: z.boolean().default(true),
+  section: z.string().default("General"),
+  sortOrder: z.number().int(),
 });
 
 const IntakeFormContentSchema = z.object({
   type: z.literal("INTAKE_FORM"),
-  placeholder: z.literal(true).default(true),
+  title: z.string().default(""),
+  instructions: z.string().default(""),
+  sections: z.array(z.string()).default(["General"]),
+  fields: z.array(IntakeFieldSchema).default([]),
+});
+
+// ── SMART Goals Schema ────────────────────────────────
+
+const SmartGoalSchema = z.object({
+  specific: z.string().default(""),
+  measurable: z.string().default(""),
+  achievable: z.string().default(""),
+  relevant: z.string().default(""),
+  timeBound: z.string().default(""),
+  category: z.enum(["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"]).default("OTHER"),
+  sortOrder: z.number().int(),
 });
 
 const SmartGoalsContentSchema = z.object({
   type: z.literal("SMART_GOALS"),
-  placeholder: z.literal(true).default(true),
+  instructions: z.string().default(""),
+  maxGoals: z.number().int().min(1).default(3),
+  categories: z.array(z.string()).default(["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"]),
+  goals: z.array(SmartGoalSchema).default([]),
 });
 
 export const PartContentSchema = z.discriminatedUnion("type", [
