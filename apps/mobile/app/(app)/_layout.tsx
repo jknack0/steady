@@ -9,7 +9,7 @@ export default function AppLayout() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#5B8A8A" }}>
-        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+        <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
           <Ionicons name="pulse" size={32} color="white" />
         </View>
         <Text style={{ fontSize: 24, fontFamily: "PlusJakartaSans_700Bold", color: "white", letterSpacing: -0.3 }}>Steady</Text>

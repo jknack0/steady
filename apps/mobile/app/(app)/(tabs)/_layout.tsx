@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { View, Text } from "react-native";
+import { View, Text, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
@@ -8,7 +8,7 @@ function BrandHeader() {
   return (
     <View className="flex-row items-center">
       <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#5B8A8A", alignItems: "center", justifyContent: "center", marginRight: 8 }}>
-        <Ionicons name="pulse" size={15} color="white" />
+        <Ionicons name="pulse" size={16} color="white" />
       </View>
       <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", letterSpacing: -0.3 }}>Steady</Text>
       <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 6, marginTop: 2 }}>with ADHD</Text>

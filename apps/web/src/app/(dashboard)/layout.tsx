@@ -45,9 +45,7 @@ function Sidebar({ className }: { className?: string }) {
     <div className={cn("flex h-full flex-col border-r bg-background", className)}>
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/programs" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-teal flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-          </div>
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white text-xs font-bold">S</div>
           <span className="text-lg font-bold text-foreground tracking-tight">STEADY</span>
           <span className="text-xs text-muted-foreground">CAS</span>
         </Link>

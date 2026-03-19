@@ -10,7 +10,7 @@ export default function Index() {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#5B8A8A" }}>
         <View style={{ alignItems: "center" }}>
-          <View style={{ width: 80, height: 80, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
             <Ionicons name="pulse" size={40} color="white" />
           </View>
           <Text style={{ fontSize: 30, fontFamily: "PlusJakartaSans_700Bold", color: "white", letterSpacing: -0.5 }}>
