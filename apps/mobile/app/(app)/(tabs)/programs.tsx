@@ -1,8 +1,8 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../lib/api";
-import { useAuth } from "../../lib/auth-context";
+import { api } from "../../../lib/api";
+import { useAuth } from "../../../lib/auth-context";
 
 interface Enrollment {
   id: string;

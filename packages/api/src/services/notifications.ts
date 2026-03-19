@@ -64,6 +64,11 @@ async function sendPushNotification(job: SendNotificationJob): Promise<void> {
 export async function registerNotificationWorkers(): Promise<void> {
   const boss = await getQueue();
 
+  // Create queues before registering workers/schedules (pg-boss v10 requirement)
+  await boss.createQueue("send-notification");
+  await boss.createQueue("schedule-morning-checkins");
+  await boss.createQueue("schedule-weekly-reviews");
+
   await boss.work<SendNotificationJob>("send-notification", async (jobs) => {
     for (const job of jobs) {
       await sendPushNotification(job.data);
