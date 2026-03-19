@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SaveIndicator } from "@/components/save-indicator";
-import { useAutosave } from "@/hooks/use-autosave";
 import {
   TextPartEditor,
   VideoPartEditor,
@@ -87,18 +86,26 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const contentSaveFn = useCallback(
-    async (content: any) => {
-      await onUpdate({ content });
-    },
-    [onUpdate]
-  );
-
-  const { save: saveContent, status: saveStatus } = useAutosave(contentSaveFn);
+  const pendingContentRef = useRef<any>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const handleContentChange = (content: any) => {
-    saveContent(content);
+    pendingContentRef.current = content;
   };
+
+  const handleEditorBlur = useCallback(async () => {
+    if (pendingContentRef.current === null) return;
+    const content = pendingContentRef.current;
+    pendingContentRef.current = null;
+    setSaveStatus("saving");
+    try {
+      await onUpdate({ content });
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch {
+      setSaveStatus("error");
+    }
+  }, [onUpdate]);
 
   const handleTitleBlur = () => {
     setEditingTitle(false);
@@ -232,7 +239,7 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
 
       {/* Expanded Editor */}
       {expanded && (
-        <div className="border-t px-4 py-4 pl-14">{renderEditor()}</div>
+        <div className="border-t px-4 py-4 pl-14" onBlur={handleEditorBlur}>{renderEditor()}</div>
       )}
     </div>
   );

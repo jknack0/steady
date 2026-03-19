@@ -85,26 +85,26 @@ async function main() {
     include: { participantProfile: true },
   });
 
-  // ── 2b. Create participant Jo (jo@jo.com) ─────────────────
+  // ── 2b. Create clinician Jo (jo@jo.com) ─────────────────
   const joPasswordHash = await bcrypt.hash("Jo1", 12);
 
-  const joParticipant = await prisma.user.upsert({
+  const joClinician = await prisma.user.upsert({
     where: { email: "jo@jo.com" },
     update: { passwordHash: joPasswordHash },
     create: {
       email: "jo@jo.com",
       passwordHash: joPasswordHash,
       firstName: "Jo",
-      lastName: "User",
-      role: "PARTICIPANT",
-      participantProfile: {
+      lastName: "Rivera",
+      role: "CLINICIAN",
+      clinicianProfile: {
         create: {
-          timezone: "America/New_York",
-          onboardingCompleted: true,
+          practiceName: "Rivera ADHD Therapy",
+          licenseType: "LCSW",
         },
       },
     },
-    include: { participantProfile: true },
+    include: { clinicianProfile: true },
   });
 
   // ── 3. Create the "Steady with ADHD" program ─────────────
