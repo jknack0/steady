@@ -56,7 +56,9 @@
       "Bash(grep -A 10 \"ASSESSMENT\\\\|INTAKE_FORM\\\\|SMART_GOALS\" /c/Dev/steady/apps/web/src/app/\\\\\\(dashboard\\\\\\)/programs/[id]/modules/[moduleId]/page.tsx)",
       "Bash(grep -A 20 \"const CREATABLE_TYPES\" /c/Dev/steady/apps/web/src/app/\\\\\\(dashboard\\\\\\)/programs/[id]/modules/[moduleId]/page.tsx)",
       "Bash(ls /c/Dev/steady/apps/mobile/app/\\\\\\(app\\\\\\)/)",
-      "Bash(find /c/Dev/steady/packages/shared/src -type f -name *.ts -o -name *.tsx)"
+      "Bash(find /c/Dev/steady/packages/shared/src -type f -name *.ts -o -name *.tsx)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:WgIwuENcKXRPDekyMidlCBGnbooJQVZp@shortline.proxy.rlwy.net:37864/railway\" npx prisma db push --schema=packages/db/prisma/schema.prisma)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:WgIwuENcKXRPDekyMidlCBGnbooJQVZp@shortline.proxy.rlwy.net:37864/railway\" npx prisma db push --schema=packages/db/prisma/schema.prisma --accept-data-loss)"
     ],
     "additionalDirectories": [
       "C:\\Dev\\steady\\apps\\*"
