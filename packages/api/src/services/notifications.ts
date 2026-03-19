@@ -64,8 +64,10 @@ async function sendPushNotification(job: SendNotificationJob): Promise<void> {
 export async function registerNotificationWorkers(): Promise<void> {
   const boss = await getQueue();
 
-  await boss.work("send-notification", async (job) => {
-    await sendPushNotification(job.data as SendNotificationJob);
+  await boss.work<SendNotificationJob>("send-notification", async (jobs) => {
+    for (const job of jobs) {
+      await sendPushNotification(job.data);
+    }
   });
 
   await boss.work("schedule-morning-checkins", async () => {

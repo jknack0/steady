@@ -387,5 +387,6 @@ model NotificationPreference {
   preferredTime  String?
   customSettings Json?
 
+  @@unique([userId, category])
   @@map("notification_preferences")
 }

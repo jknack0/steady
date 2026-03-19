@@ -73,7 +73,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     // Schedule reminder if task has a due date
     if (task.dueDate) {
-      scheduleTaskReminder(req.user!.id, task.id, task.title, task.dueDate).catch(() => {});
+      scheduleTaskReminder(req.user!.userId, task.id, task.title, task.dueDate).catch(() => {});
     }
 
     res.status(201).json({ success: true, data: task });

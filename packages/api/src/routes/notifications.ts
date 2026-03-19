@@ -17,7 +17,7 @@ router.post("/push-token", async (req: Request, res: Response) => {
     }
 
     await prisma.user.update({
-      where: { id: req.user!.id },
+      where: { id: req.user!.userId },
       data: {
         pushToken,
         pushTokenUpdatedAt: new Date(),
@@ -35,7 +35,7 @@ router.post("/push-token", async (req: Request, res: Response) => {
 router.delete("/push-token", async (req: Request, res: Response) => {
   try {
     await prisma.user.update({
-      where: { id: req.user!.id },
+      where: { id: req.user!.userId },
       data: {
         pushToken: null,
         pushTokenUpdatedAt: null,
@@ -53,7 +53,7 @@ router.delete("/push-token", async (req: Request, res: Response) => {
 router.get("/preferences", async (req: Request, res: Response) => {
   try {
     const preferences = await prisma.notificationPreference.findMany({
-      where: { userId: req.user!.id },
+      where: { userId: req.user!.userId },
     });
 
     // Return all categories with defaults for any not yet set
@@ -93,10 +93,13 @@ router.put("/preferences", async (req: Request, res: Response) => {
 
       await prisma.notificationPreference.upsert({
         where: {
-          id: pref.id || "nonexistent",
+          userId_category: {
+            userId: req.user!.userId,
+            category: pref.category,
+          },
         },
         create: {
-          userId: req.user!.id,
+          userId: req.user!.userId,
           category: pref.category,
           enabled: pref.enabled ?? true,
           preferredTime: pref.preferredTime || null,
@@ -110,7 +113,7 @@ router.put("/preferences", async (req: Request, res: Response) => {
 
     // Re-fetch and return
     const updated = await prisma.notificationPreference.findMany({
-      where: { userId: req.user!.id },
+      where: { userId: req.user!.userId },
     });
 
     res.json({ success: true, data: updated });
