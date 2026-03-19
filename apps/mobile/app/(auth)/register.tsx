@@ -56,58 +56,77 @@ export default function RegisterScreen() {
     }
   };
 
+  const inputStyle = {
+    flex: 1,
+    paddingVertical: 14,
+    marginLeft: 12,
+    fontSize: 16,
+    fontFamily: "PlusJakartaSans_400Regular",
+    color: "#2D2D2D",
+  };
+
+  const inputContainerStyle = {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    borderWidth: 1,
+    borderColor: "#D4D0CB",
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: "#F7F5F2" }}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-        className="px-8"
+        style={{ paddingHorizontal: 32 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Brand Header */}
-        <View className="items-center mb-8 mt-8">
-          <View className="w-14 h-14 rounded-2xl bg-indigo-600 items-center justify-center mb-3">
+        <View style={{ alignItems: "center", marginBottom: 32, marginTop: 32 }}>
+          <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: "#5B8A8A", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
             <Ionicons name="pulse" size={28} color="white" />
           </View>
-          <Text className="text-2xl font-bold text-gray-900 tracking-tight">
+          <Text style={{ fontSize: 24, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", letterSpacing: -0.3 }}>
             Create Account
           </Text>
-          <Text className="text-sm text-gray-400 mt-1">
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 4 }}>
             Join STEADY with ADHD
           </Text>
         </View>
 
         {error ? (
-          <View className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-5 flex-row items-center">
-            <Ionicons name="alert-circle" size={18} color="#dc2626" />
-            <Text className="text-red-600 text-sm ml-2 flex-1">{error}</Text>
+          <View style={{ backgroundColor: "#F5E6E6", borderWidth: 1, borderColor: "#E0BABA", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20, flexDirection: "row", alignItems: "center" }}>
+            <Ionicons name="alert-circle" size={18} color="#D4A0A0" />
+            <Text style={{ color: "#C08585", fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", marginLeft: 8, flex: 1 }}>{error}</Text>
           </View>
         ) : null}
 
-        <View className="flex-row gap-3 mb-4">
-          <View className="flex-1">
-            <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">First Name</Text>
-            <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
-              <Ionicons name="person-outline" size={18} color="#9ca3af" />
+        <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>First Name</Text>
+            <View style={inputContainerStyle}>
+              <Ionicons name="person-outline" size={18} color="#8A8A8A" />
               <TextInput
-                className="flex-1 py-3.5 ml-3 text-base text-gray-900"
+                style={inputStyle}
                 placeholder="First"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#D4D0CB"
                 value={firstName}
                 onChangeText={setFirstName}
                 autoComplete="given-name"
               />
             </View>
           </View>
-          <View className="flex-1">
-            <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">Last Name</Text>
-            <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Last Name</Text>
+            <View style={inputContainerStyle}>
               <TextInput
-                className="flex-1 py-3.5 text-base text-gray-900"
+                style={{ ...inputStyle, marginLeft: 0 }}
                 placeholder="Last"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#D4D0CB"
                 value={lastName}
                 onChangeText={setLastName}
                 autoComplete="family-name"
@@ -116,14 +135,14 @@ export default function RegisterScreen() {
           </View>
         </View>
 
-        <View className="mb-4">
-          <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">Email</Text>
-          <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
-            <Ionicons name="mail-outline" size={18} color="#9ca3af" />
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Email</Text>
+          <View style={inputContainerStyle}>
+            <Ionicons name="mail-outline" size={18} color="#8A8A8A" />
             <TextInput
-              className="flex-1 py-3.5 ml-3 text-base text-gray-900"
+              style={inputStyle}
               placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#D4D0CB"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -133,14 +152,14 @@ export default function RegisterScreen() {
           </View>
         </View>
 
-        <View className="mb-4">
-          <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">Password</Text>
-          <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
-            <Ionicons name="lock-closed-outline" size={18} color="#9ca3af" />
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Password</Text>
+          <View style={inputContainerStyle}>
+            <Ionicons name="lock-closed-outline" size={18} color="#8A8A8A" />
             <TextInput
-              className="flex-1 py-3.5 ml-3 text-base text-gray-900"
+              style={inputStyle}
               placeholder="At least 8 characters"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#D4D0CB"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -150,20 +169,20 @@ export default function RegisterScreen() {
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={20}
-                color="#9ca3af"
+                color="#8A8A8A"
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View className="mb-6">
-          <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">Confirm Password</Text>
-          <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
-            <Ionicons name="lock-closed-outline" size={18} color="#9ca3af" />
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Confirm Password</Text>
+          <View style={inputContainerStyle}>
+            <Ionicons name="lock-closed-outline" size={18} color="#8A8A8A" />
             <TextInput
-              className="flex-1 py-3.5 ml-3 text-base text-gray-900"
+              style={inputStyle}
               placeholder="Confirm your password"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#D4D0CB"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
@@ -172,30 +191,33 @@ export default function RegisterScreen() {
         </View>
 
         <TouchableOpacity
-          className={`rounded-xl py-4 items-center ${loading ? "bg-indigo-400" : "bg-indigo-600"}`}
-          onPress={handleRegister}
-          disabled={loading}
-          activeOpacity={0.8}
           style={{
-            shadowColor: "#6366f1",
+            borderRadius: 12,
+            paddingVertical: 16,
+            alignItems: "center",
+            backgroundColor: loading ? "#7BA3A3" : "#5B8A8A",
+            shadowColor: "#5B8A8A",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
+            shadowOpacity: 0.25,
             shadowRadius: 8,
             elevation: 4,
           }}
+          onPress={handleRegister}
+          disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white font-bold text-base">Create Account</Text>
+            <Text style={{ color: "white", fontFamily: "PlusJakartaSans_700Bold", fontSize: 16 }}>Create Account</Text>
           )}
         </TouchableOpacity>
 
-        <View className="flex-row justify-center mt-6 mb-8">
-          <Text className="text-gray-400">Already have an account? </Text>
+        <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 24, marginBottom: 32 }}>
+          <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>Already have an account? </Text>
           <Link href="/(auth)/login" asChild>
             <TouchableOpacity>
-              <Text className="text-indigo-600 font-bold">Sign In</Text>
+              <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_700Bold" }}>Sign In</Text>
             </TouchableOpacity>
           </Link>
         </View>

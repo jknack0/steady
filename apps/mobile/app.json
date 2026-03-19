@@ -1,31 +1,45 @@
 {
   "expo": {
-    "name": "STEADY with ADHD",
+    "name": "Steady with ADHD",
     "slug": "steady-with-adhd",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "steady",
-    "userInterfaceStyle": "automatic",
-        "ios": {
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "backgroundColor": "#5B8A8A",
+      "resizeMode": "contain"
+    },
+    "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.steady.adhd"
+      "bundleIdentifier": "com.steady.adhd",
+      "backgroundColor": "#ffffff"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#5B8A8A"
       },
       "package": "com.steady.adhd"
     },
     "plugins": [
-      ["expo-router", { "root": "./app" }],
+      [
+        "expo-router",
+        {
+          "root": "./app"
+        }
+      ],
       "expo-secure-store",
       [
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#6366f1"
+          "color": "#5B8A8A"
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

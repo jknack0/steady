@@ -42,37 +42,37 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
+      style={{ flex: 1, backgroundColor: "#F7F5F2" }}
     >
-      <View className="flex-1 justify-center px-8">
+      <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 32 }}>
         {/* Brand Header */}
-        <View className="items-center mb-10">
-          <View className="w-16 h-16 rounded-2xl bg-indigo-600 items-center justify-center mb-4">
+        <View style={{ alignItems: "center", marginBottom: 40 }}>
+          <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: "#5B8A8A", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <Ionicons name="pulse" size={32} color="white" />
           </View>
-          <Text className="text-3xl font-bold text-gray-900 tracking-tight">
+          <Text style={{ fontSize: 30, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", letterSpacing: -0.5 }}>
             STEADY
           </Text>
-          <Text className="text-sm text-gray-400 mt-1 tracking-wide">
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginTop: 4, letterSpacing: 1 }}>
             with ADHD
           </Text>
         </View>
 
         {error ? (
-          <View className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-5 flex-row items-center">
-            <Ionicons name="alert-circle" size={18} color="#dc2626" />
-            <Text className="text-red-600 text-sm ml-2 flex-1">{error}</Text>
+          <View style={{ backgroundColor: "#F5E6E6", borderWidth: 1, borderColor: "#E0BABA", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20, flexDirection: "row", alignItems: "center" }}>
+            <Ionicons name="alert-circle" size={18} color="#D4A0A0" />
+            <Text style={{ color: "#C08585", fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", marginLeft: 8, flex: 1 }}>{error}</Text>
           </View>
         ) : null}
 
-        <View className="mb-4">
-          <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">Email</Text>
-          <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
-            <Ionicons name="mail-outline" size={18} color="#9ca3af" />
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Email</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 12, backgroundColor: "#FFFFFF", paddingHorizontal: 16 }}>
+            <Ionicons name="mail-outline" size={18} color="#8A8A8A" />
             <TextInput
-              className="flex-1 py-3.5 ml-3 text-base text-gray-900"
+              style={{ flex: 1, paddingVertical: 14, marginLeft: 12, fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}
               placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#D4D0CB"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -82,14 +82,14 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <View className="mb-6">
-          <Text className="text-sm font-semibold text-gray-600 mb-2 ml-1">Password</Text>
-          <View className="flex-row items-center border border-gray-200 rounded-xl bg-gray-50 px-4">
-            <Ionicons name="lock-closed-outline" size={18} color="#9ca3af" />
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Password</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 12, backgroundColor: "#FFFFFF", paddingHorizontal: 16 }}>
+            <Ionicons name="lock-closed-outline" size={18} color="#8A8A8A" />
             <TextInput
-              className="flex-1 py-3.5 ml-3 text-base text-gray-900"
+              style={{ flex: 1, paddingVertical: 14, marginLeft: 12, fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}
               placeholder="Enter your password"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#D4D0CB"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -99,37 +99,40 @@ export default function LoginScreen() {
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={20}
-                color="#9ca3af"
+                color="#8A8A8A"
               />
             </TouchableOpacity>
           </View>
         </View>
 
         <TouchableOpacity
-          className={`rounded-xl py-4 items-center ${loading ? "bg-indigo-400" : "bg-indigo-600"}`}
-          onPress={handleLogin}
-          disabled={loading}
-          activeOpacity={0.8}
           style={{
-            shadowColor: "#6366f1",
+            borderRadius: 12,
+            paddingVertical: 16,
+            alignItems: "center",
+            backgroundColor: loading ? "#7BA3A3" : "#5B8A8A",
+            shadowColor: "#5B8A8A",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
+            shadowOpacity: 0.25,
             shadowRadius: 8,
             elevation: 4,
           }}
+          onPress={handleLogin}
+          disabled={loading}
+          activeOpacity={0.8}
         >
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white font-bold text-base">Sign In</Text>
+            <Text style={{ color: "white", fontFamily: "PlusJakartaSans_700Bold", fontSize: 16 }}>Sign In</Text>
           )}
         </TouchableOpacity>
 
-        <View className="flex-row justify-center mt-8">
-          <Text className="text-gray-400">New here? </Text>
+        <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 32 }}>
+          <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>New here? </Text>
           <Link href="/(auth)/register" asChild>
             <TouchableOpacity>
-              <Text className="text-indigo-600 font-bold">Create Account</Text>
+              <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_700Bold" }}>Create Account</Text>
             </TouchableOpacity>
           </Link>
         </View>

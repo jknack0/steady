@@ -1,9 +1,10 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth-context";
+import { ModuleCard, type ProgramData } from "../../../lib/program-components";
 
 interface Enrollment {
   id: string;
@@ -18,16 +19,47 @@ interface Enrollment {
   };
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const config = {
-    ACTIVE: { bg: "#ecfdf5", text: "#059669", label: "Active" },
-    INVITED: { bg: "#fef3c7", text: "#d97706", label: "New Invitation" },
-  };
-  const c = config[status as keyof typeof config] || { bg: "#f3f4f6", text: "#6b7280", label: status };
+// ── Greeting Banner (shared across views) ────────────
+
+function GreetingBanner() {
+  const { logout, user } = useAuth();
 
   return (
-    <View style={{ backgroundColor: c.bg }} className="rounded-full px-3 py-1">
-      <Text style={{ color: c.text }} className="text-xs font-semibold">
+    <View style={{ backgroundColor: "#5B8A8A", paddingHorizontal: 20, paddingVertical: 20 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <View>
+          <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#FFFFFF" }}>
+            Hi, {user?.firstName || "there"}
+          </Text>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
+            Welcome to your Steady journey
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={logout}
+          style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={16} color="white" />
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "white", marginLeft: 6 }}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ── Enrollment Card (multi-program list) ─────────────
+
+function StatusBadge({ status }: { status: string }) {
+  const config = {
+    ACTIVE: { bg: "#E8F0E7", text: "#8FAE8B", label: "Active" },
+    INVITED: { bg: "#F5ECD7", text: "#C4A84D", label: "New Invitation" },
+  };
+  const c = config[status as keyof typeof config] || { bg: "#F0EDE8", text: "#5A5A5A", label: status };
+
+  return (
+    <View style={{ backgroundColor: c.bg, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 }}>
+      <Text style={{ color: c.text, fontSize: 12, fontFamily: "PlusJakartaSans_600SemiBold" }}>
         {c.label}
       </Text>
     </View>
@@ -55,21 +87,26 @@ function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-2xl p-5 mb-4"
-      onPress={handlePress}
-      disabled={enrollment.status === "INVITED"}
-      activeOpacity={0.7}
       style={{
+        backgroundColor: "#FFFFFF",
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: "#F0EDE8",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
+        shadowOpacity: 0.04,
         shadowRadius: 12,
         elevation: 3,
       }}
+      onPress={handlePress}
+      disabled={enrollment.status === "INVITED"}
+      activeOpacity={0.7}
     >
-      <View className="flex-row justify-between items-start mb-3">
-        <View className="flex-1 mr-3">
-          <Text className="text-lg font-bold text-gray-900" numberOfLines={2}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+        <View style={{ flex: 1, marginRight: 12 }}>
+          <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }} numberOfLines={2}>
             {enrollment.program.title}
           </Text>
         </View>
@@ -77,22 +114,22 @@ function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
       </View>
 
       {enrollment.program.description ? (
-        <Text className="text-sm text-gray-500 mb-4 leading-5" numberOfLines={2}>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16, lineHeight: 20 }} numberOfLines={2}>
           {enrollment.program.description}
         </Text>
       ) : null}
 
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <Ionicons name="time-outline" size={14} color="#9ca3af" />
-          <Text className="text-xs text-gray-400 ml-1 font-medium">
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Ionicons name="time-outline" size={14} color="#8A8A8A" />
+          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 4 }}>
             {cadenceLabel}
           </Text>
         </View>
 
         {enrollment.status === "INVITED" ? (
           <TouchableOpacity
-            className={`rounded-xl px-5 py-2.5 ${acceptMutation.isPending ? "bg-indigo-400" : "bg-indigo-600"}`}
+            style={{ borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: acceptMutation.isPending ? "#7BA3A3" : "#5B8A8A" }}
             onPress={() => acceptMutation.mutate()}
             disabled={acceptMutation.isPending}
             activeOpacity={0.8}
@@ -100,13 +137,13 @@ function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
             {acceptMutation.isPending ? (
               <ActivityIndicator color="white" size="small" />
             ) : (
-              <Text className="text-white font-semibold text-sm">Accept Invite</Text>
+              <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14 }}>Accept Invite</Text>
             )}
           </TouchableOpacity>
         ) : (
-          <View className="flex-row items-center">
-            <Text className="text-indigo-600 text-sm font-semibold mr-1">Open</Text>
-            <Ionicons name="chevron-forward" size={14} color="#6366f1" />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={{ color: "#5B8A8A", fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", marginRight: 4 }}>Open</Text>
+            <Ionicons name="chevron-forward" size={14} color="#5B8A8A" />
           </View>
         )}
       </View>
@@ -114,9 +151,89 @@ function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
   );
 }
 
-export default function ProgramsScreen() {
-  const { logout, user } = useAuth();
+// ── Single Program Inline View ───────────────────────
 
+function SingleProgramView({ enrollment }: { enrollment: Enrollment }) {
+  const queryClient = useQueryClient();
+
+  // If it's an invitation, show the card instead
+  if (enrollment.status === "INVITED") {
+    return (
+      <ScrollView style={{ flex: 1, backgroundColor: "#F7F5F2" }} contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+        <EnrollmentCard enrollment={enrollment} />
+      </ScrollView>
+    );
+  }
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["program", enrollment.id],
+    queryFn: async () => {
+      const res = await api.getProgram(enrollment.id);
+      if (!res.success) throw new Error(res.error);
+      return res.data as ProgramData;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#5B8A8A" />
+      </View>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#F5E6E6", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+          <Ionicons name="cloud-offline-outline" size={28} color="#D4A0A0" />
+        </View>
+        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 4 }}>Failed to load program</Text>
+        <TouchableOpacity
+          style={{ backgroundColor: "#5B8A8A", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 16 }}
+          onPress={() => refetch()}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold" }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
+      {/* Program header */}
+      <View style={{ backgroundColor: "#FFFFFF", paddingHorizontal: 20, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
+        <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>{data.program.title}</Text>
+        {data.program.description ? (
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginTop: 6, lineHeight: 20 }}>{data.program.description}</Text>
+        ) : null}
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+          <Ionicons name="time-outline" size={14} color="#8A8A8A" />
+          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 4, textTransform: "uppercase" }}>
+            {data.program.cadence}
+          </Text>
+        </View>
+      </View>
+
+      {/* Modules */}
+      <View style={{ padding: 16 }}>
+        {data.modules.map((mod) => (
+          <ModuleCard
+            key={mod.id}
+            mod={mod}
+            enrollmentId={data.enrollmentId}
+            isCurrent={mod.id === data.currentModuleId}
+          />
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ── Main Screen ──────────────────────────────────────
+
+export default function ProgramsScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["enrollments"],
     queryFn: async () => {
@@ -126,60 +243,45 @@ export default function ProgramsScreen() {
     },
   });
 
+  const isSingleProgram = data?.length === 1;
+
   return (
-    <View className="flex-1 bg-gray-50">
-      {/* Greeting Bar */}
-      <View className="bg-white px-5 py-4 flex-row justify-between items-center" style={{
-        borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
-      }}>
-        <View>
-          <Text className="text-base font-bold text-gray-900">
-            Hi, {user?.firstName || "there"}
-          </Text>
-          <Text className="text-xs text-gray-400 mt-0.5">Welcome back</Text>
-        </View>
-        <TouchableOpacity
-          onPress={logout}
-          className="flex-row items-center bg-gray-50 rounded-xl px-3 py-2"
-          activeOpacity={0.7}
-        >
-          <Ionicons name="log-out-outline" size={16} color="#ef4444" />
-          <Text className="text-sm text-red-500 font-medium ml-1.5">Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
+      <GreetingBanner />
 
       {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6366f1" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="large" color="#5B8A8A" />
         </View>
       ) : isError ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="w-16 h-16 rounded-full bg-red-50 items-center justify-center mb-4">
-            <Ionicons name="cloud-offline-outline" size={28} color="#ef4444" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#F5E6E6", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <Ionicons name="cloud-offline-outline" size={28} color="#D4A0A0" />
           </View>
-          <Text className="text-lg font-semibold text-gray-900 mb-1">Connection Error</Text>
-          <Text className="text-gray-400 text-center text-sm mb-5">
+          <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 4 }}>Connection Error</Text>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", textAlign: "center", marginBottom: 20 }}>
             Could not load your programs. Please try again.
           </Text>
           <TouchableOpacity
-            className="bg-indigo-600 rounded-xl px-6 py-3"
+            style={{ backgroundColor: "#5B8A8A", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
             onPress={() => refetch()}
             activeOpacity={0.8}
           >
-            <Text className="text-white font-semibold">Retry</Text>
+            <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold" }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : !data || data.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="w-20 h-20 rounded-full bg-indigo-50 items-center justify-center mb-5">
-            <Ionicons name="library-outline" size={36} color="#6366f1" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+            <Ionicons name="library-outline" size={36} color="#5B8A8A" />
           </View>
-          <Text className="text-xl font-bold text-gray-900 mb-2">No Programs Yet</Text>
-          <Text className="text-gray-400 text-center text-sm leading-5">
+          <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 8 }}>No Programs Yet</Text>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", textAlign: "center", lineHeight: 20 }}>
             Your clinician will invite you to a program. Check back soon!
           </Text>
         </View>
+      ) : isSingleProgram ? (
+        <SingleProgramView enrollment={data[0]} />
       ) : (
         <FlatList
           data={data}
@@ -187,7 +289,7 @@ export default function ProgramsScreen() {
           renderItem={({ item }) => <EnrollmentCard enrollment={item} />}
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#6366f1" />
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#5B8A8A" />
           }
         />
       )}

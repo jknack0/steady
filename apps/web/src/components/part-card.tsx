@@ -57,7 +57,7 @@ const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string;
   STRATEGY_CARDS: { icon: Layers, label: "Strategy Cards", color: "text-amber-600" },
   JOURNAL_PROMPT: { icon: BookOpen, label: "Journal Prompt", color: "text-green-600" },
   CHECKLIST: { icon: CheckSquare, label: "Checklist", color: "text-teal-600" },
-  RESOURCE_LINK: { icon: Link, label: "Resource Link", color: "text-indigo-600" },
+  RESOURCE_LINK: { icon: Link, label: "Resource Link", color: "text-sky-brand" },
   DIVIDER: { icon: Minus, label: "Divider", color: "text-gray-500" },
   HOMEWORK: { icon: ClipboardList, label: "Homework", color: "text-orange-600" },
   ASSESSMENT: { icon: FileQuestion, label: "Assessment", color: "text-red-600" },

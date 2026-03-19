@@ -34,9 +34,9 @@ const REGULATION_LABELS: Record<number, string> = {
 };
 
 function getScoreColor(n: number): { bg: string; text: string; activeBg: string } {
-  if (n <= 3) return { bg: "#fef2f2", text: "#dc2626", activeBg: "#ef4444" };
-  if (n <= 6) return { bg: "#fefce8", text: "#ca8a04", activeBg: "#eab308" };
-  return { bg: "#ecfdf5", text: "#059669", activeBg: "#22c55e" };
+  if (n <= 3) return { bg: "#F5E6E6", text: "#D4A0A0", activeBg: "#C08585" };
+  if (n <= 6) return { bg: "#F5ECD7", text: "#C4A84D", activeBg: "#A89040" };
+  return { bg: "#E8F0E7", text: "#8FAE8B", activeBg: "#729070" };
 }
 
 function formatDate(dateStr: string) {
@@ -127,43 +127,73 @@ export default function JournalScreen() {
     setTimeout(() => saveMutation.mutate(), 100);
   };
 
+  const cardStyle = {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#F0EDE8",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  };
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
       {/* View toggle */}
-      <View className="flex-row px-4 py-3 bg-white items-center" style={{
-        borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
-      }}>
+      <View style={{ flexDirection: "row", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: "#FFFFFF", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
         <TouchableOpacity
-          className={`px-5 py-2 mr-2 rounded-xl ${view === "today" ? "bg-indigo-600" : "bg-gray-100"}`}
+          style={{
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+            marginRight: 8,
+            borderRadius: 12,
+            backgroundColor: view === "today" ? "#5B8A8A" : "#F0EDE8",
+          }}
           onPress={() => setView("today")}
           activeOpacity={0.7}
         >
-          <Text className={`text-sm font-semibold ${view === "today" ? "text-white" : "text-gray-500"}`}>
+          <Text style={{
+            fontSize: 14,
+            fontFamily: "PlusJakartaSans_600SemiBold",
+            color: view === "today" ? "#FFFFFF" : "#5A5A5A",
+          }}>
             Today
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className={`px-5 py-2 rounded-xl ${view === "history" ? "bg-indigo-600" : "bg-gray-100"}`}
+          style={{
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+            borderRadius: 12,
+            backgroundColor: view === "history" ? "#5B8A8A" : "#F0EDE8",
+          }}
           onPress={() => setView("history")}
           activeOpacity={0.7}
         >
-          <Text className={`text-sm font-semibold ${view === "history" ? "text-white" : "text-gray-500"}`}>
+          <Text style={{
+            fontSize: 14,
+            fontFamily: "PlusJakartaSans_600SemiBold",
+            color: view === "history" ? "#FFFFFF" : "#5A5A5A",
+          }}>
             History
           </Text>
         </TouchableOpacity>
 
         {view === "today" && (
-          <View className="flex-1 items-end justify-center">
+          <View style={{ flex: 1, alignItems: "flex-end", justifyContent: "center" }}>
             {saveMutation.isPending ? (
-              <View className="flex-row items-center">
-                <Ionicons name="cloud-upload-outline" size={14} color="#9ca3af" />
-                <Text className="text-xs text-gray-400 ml-1">Saving...</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="cloud-upload-outline" size={14} color="#8A8A8A" />
+                <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginLeft: 4 }}>Saving...</Text>
               </View>
             ) : saveMutation.isSuccess ? (
-              <View className="flex-row items-center">
-                <Ionicons name="checkmark-circle" size={14} color="#22c55e" />
-                <Text className="text-xs text-green-500 ml-1">Saved</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="checkmark-circle" size={14} color="#8FAE8B" />
+                <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8FAE8B", marginLeft: 4 }}>Saved</Text>
               </View>
             ) : null}
           </View>
@@ -171,42 +201,43 @@ export default function JournalScreen() {
       </View>
 
       {view === "today" ? (
-        <ScrollView className="flex-1 px-4 py-4">
+        <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
           {/* Regulation Score */}
-          <View className="bg-white rounded-2xl p-5 mb-4" style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.04,
-            shadowRadius: 8,
-            elevation: 2,
-          }}>
-            <View className="flex-row items-center mb-1">
-              <Ionicons name="pulse-outline" size={18} color="#6366f1" />
-              <Text className="text-base font-bold text-gray-900 ml-2">
+          <View style={cardStyle}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+              <Ionicons name="pulse-outline" size={18} color="#5B8A8A" />
+              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginLeft: 8 }}>
                 How regulated do you feel?
               </Text>
             </View>
-            <Text className="text-sm text-gray-400 mb-4 ml-7">
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginBottom: 16, marginLeft: 26 }}>
               {score ? REGULATION_LABELS[score] : "Tap a number to rate"}
             </Text>
 
-            <View className="flex-row justify-between px-1">
+            <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 }}>
               {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
                 const colors = getScoreColor(n);
                 const isActive = score === n;
                 return (
                   <TouchableOpacity
                     key={n}
-                    className="w-8 h-8 rounded-xl items-center justify-center"
                     style={{
-                      backgroundColor: isActive ? colors.activeBg : "#f3f4f6",
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: isActive ? colors.activeBg : "#F0EDE8",
                     }}
                     onPress={() => handleScoreChange(n)}
                     activeOpacity={0.7}
                   >
                     <Text
-                      className="text-sm font-bold"
-                      style={{ color: isActive ? "#fff" : "#9ca3af" }}
+                      style={{
+                        fontSize: 14,
+                        fontFamily: "PlusJakartaSans_700Bold",
+                        color: isActive ? "#FFFFFF" : "#8A8A8A",
+                      }}
                     >
                       {n}
                     </Text>
@@ -214,28 +245,22 @@ export default function JournalScreen() {
                 );
               })}
             </View>
-            <View className="flex-row justify-between mt-2 px-1">
-              <Text className="text-xs text-red-400 font-medium">Dysregulated</Text>
-              <Text className="text-xs text-green-500 font-medium">Regulated</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8, paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_500Medium", color: "#D4A0A0" }}>Dysregulated</Text>
+              <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_500Medium", color: "#8FAE8B" }}>Regulated</Text>
             </View>
           </View>
 
           {/* Journal content */}
-          <View className="bg-white rounded-2xl p-5 mb-4" style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.04,
-            shadowRadius: 8,
-            elevation: 2,
-          }}>
-            <View className="flex-row items-center mb-3">
-              <Ionicons name="create-outline" size={18} color="#6366f1" />
-              <Text className="text-base font-bold text-gray-900 ml-2">Daily Reflection</Text>
+          <View style={cardStyle}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+              <Ionicons name="create-outline" size={18} color="#5B8A8A" />
+              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginLeft: 8 }}>Daily Reflection</Text>
             </View>
             <TextInput
-              className="text-base text-gray-700 min-h-[180px] leading-6"
+              style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", minHeight: 180, lineHeight: 24 }}
               placeholder={"How was your day? What went well? What was challenging?\n\nTake a moment to reflect..."}
-              placeholderTextColor="#d1d5db"
+              placeholderTextColor="#D4D0CB"
               value={content}
               onChangeText={handleContentChange}
               multiline
@@ -245,14 +270,7 @@ export default function JournalScreen() {
 
           {/* Share toggle */}
           <TouchableOpacity
-            className="bg-white rounded-2xl p-5 mb-8 flex-row items-center"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 8,
-              elevation: 2,
-            }}
+            style={{ ...cardStyle, flexDirection: "row", alignItems: "center", marginBottom: 32 }}
             onPress={() => {
               setShareWithClinician(!shareWithClinician);
               setTimeout(() => saveMutation.mutate(), 100);
@@ -260,81 +278,80 @@ export default function JournalScreen() {
             activeOpacity={0.7}
           >
             <View
-              className={`w-6 h-6 rounded-lg items-center justify-center ${
-                shareWithClinician ? "bg-indigo-600" : "border-2 border-gray-300"
-              }`}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 8,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: shareWithClinician ? "#5B8A8A" : "transparent",
+                borderWidth: shareWithClinician ? 0 : 2,
+                borderColor: shareWithClinician ? undefined : "#D4D0CB",
+              }}
             >
               {shareWithClinician && <Ionicons name="checkmark" size={16} color="white" />}
             </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-base font-medium text-gray-900">Share with clinician</Text>
-              <Text className="text-sm text-gray-400 mt-0.5">Your clinician can view this entry</Text>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D" }}>Share with clinician</Text>
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 2 }}>Your clinician can view this entry</Text>
             </View>
             <Ionicons
               name={shareWithClinician ? "eye" : "eye-off-outline"}
               size={20}
-              color={shareWithClinician ? "#6366f1" : "#d1d5db"}
+              color={shareWithClinician ? "#5B8A8A" : "#D4D0CB"}
             />
           </TouchableOpacity>
         </ScrollView>
       ) : (
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           refreshControl={
-            <RefreshControl refreshing={loadingHistory} onRefresh={refetchHistory} tintColor="#6366f1" />
+            <RefreshControl refreshing={loadingHistory} onRefresh={refetchHistory} tintColor="#5B8A8A" />
           }
         >
           {!history || history.length === 0 ? (
-            <View className="items-center py-20">
-              <View className="w-16 h-16 rounded-full bg-indigo-50 items-center justify-center mb-4">
-                <Ionicons name="book-outline" size={28} color="#6366f1" />
+            <View style={{ alignItems: "center", paddingVertical: 80 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <Ionicons name="book-outline" size={28} color="#5B8A8A" />
               </View>
-              <Text className="text-lg font-semibold text-gray-900 mb-1">No entries yet</Text>
-              <Text className="text-sm text-gray-400">Start writing today</Text>
+              <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 4 }}>No entries yet</Text>
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A" }}>Start writing today</Text>
             </View>
           ) : (
-            <View className="px-4 py-4">
+            <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
               {history.map((entry) => {
                 const scoreColor = entry.regulationScore ? getScoreColor(entry.regulationScore) : null;
                 return (
                   <View
                     key={entry.id}
-                    className="bg-white rounded-2xl p-5 mb-3"
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 8,
-                      elevation: 2,
-                    }}
+                    style={cardStyle}
                   >
-                    <View className="flex-row items-center justify-between mb-2">
-                      <Text className="text-sm font-bold text-gray-900">
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>
                         {formatDate(entry.entryDate)}
                       </Text>
                       {entry.regulationScore && scoreColor && (
                         <View
-                          className="px-2.5 py-1 rounded-lg flex-row items-center"
-                          style={{ backgroundColor: scoreColor.bg }}
+                          style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: "row", alignItems: "center", backgroundColor: scoreColor.bg }}
                         >
                           <Ionicons name="pulse" size={12} color={scoreColor.text} />
-                          <Text className="text-xs font-bold ml-1" style={{ color: scoreColor.text }}>
+                          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_700Bold", marginLeft: 4, color: scoreColor.text }}>
                             {entry.regulationScore}/10
                           </Text>
                         </View>
                       )}
                     </View>
                     {entry.freeformContent ? (
-                      <Text className="text-sm text-gray-500 leading-5" numberOfLines={3}>
+                      <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", lineHeight: 20 }} numberOfLines={3}>
                         {entry.freeformContent}
                       </Text>
                     ) : (
-                      <Text className="text-sm text-gray-300 italic">No content</Text>
+                      <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#D4D0CB", fontStyle: "italic" }}>No content</Text>
                     )}
                     {entry.isSharedWithClinician && (
-                      <View className="flex-row items-center mt-2">
-                        <Ionicons name="eye-outline" size={12} color="#9ca3af" />
-                        <Text className="text-xs text-gray-400 ml-1">Shared with clinician</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+                        <Ionicons name="eye-outline" size={12} color="#8A8A8A" />
+                        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginLeft: 4 }}>Shared with clinician</Text>
                       </View>
                     )}
                   </View>

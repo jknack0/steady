@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput } from "react-native";
 import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 
 // ── TEXT ──────────────────────────────────────────────
 export function TextRenderer({ content }: { content: { body: string; sections?: string[] } }) {
@@ -11,8 +12,8 @@ export function TextRenderer({ content }: { content: { body: string; sections?: 
     .trim();
 
   return (
-    <View className="px-4 py-3">
-      <Text className="text-base text-gray-800 leading-6">{plainText}</Text>
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", lineHeight: 24 }}>{plainText}</Text>
     </View>
   );
 }
@@ -24,17 +25,17 @@ export function VideoRenderer({
   content: { url: string; provider: string; transcriptUrl?: string };
 }) {
   return (
-    <View className="px-4 py-3">
-      <View className="bg-gray-900 rounded-xl h-48 items-center justify-center mb-3">
-        <Text className="text-white text-lg font-medium mb-2">Video</Text>
-        <Text className="text-gray-400 text-xs">{content.provider}</Text>
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      <View style={{ backgroundColor: "#2D2D2D", borderRadius: 12, height: 192, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+        <Ionicons name="play-circle-outline" size={48} color="rgba(255,255,255,0.6)" />
+        <Text style={{ color: "#8A8A8A", fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", marginTop: 8 }}>{content.provider}</Text>
       </View>
       {content.url ? (
         <TouchableOpacity
-          className="bg-indigo-600 rounded-lg py-3 items-center"
+          style={{ backgroundColor: "#5B8A8A", borderRadius: 10, paddingVertical: 12, alignItems: "center" }}
           onPress={() => Linking.openURL(content.url)}
         >
-          <Text className="text-white font-medium">Open Video</Text>
+          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold" }}>Open Video</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -52,8 +53,8 @@ export function StrategyCardsRenderer({
 
   if (cards.length === 0) {
     return (
-      <View className="px-4 py-6 items-center">
-        <Text className="text-gray-400">No cards in this deck</Text>
+      <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
+        <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No cards in this deck</Text>
       </View>
     );
   }
@@ -61,34 +62,34 @@ export function StrategyCardsRenderer({
   const card = cards[currentIndex];
 
   return (
-    <View className="px-4 py-3">
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {content.deckName ? (
-        <Text className="text-sm text-gray-500 mb-3">{content.deckName}</Text>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5A5A5A", marginBottom: 12 }}>{content.deckName}</Text>
       ) : null}
-      <View className="bg-indigo-50 rounded-xl p-6 min-h-[200px]">
+      <View style={{ backgroundColor: "#E3EDED", borderRadius: 12, padding: 24, minHeight: 200 }}>
         {card.emoji ? (
-          <Text className="text-3xl mb-2">{card.emoji}</Text>
+          <Text style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</Text>
         ) : null}
-        <Text className="text-lg font-semibold text-gray-900 mb-2">{card.title}</Text>
-        <Text className="text-base text-gray-700">{card.body}</Text>
+        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 8 }}>{card.title}</Text>
+        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A" }}>{card.body}</Text>
       </View>
-      <View className="flex-row justify-between items-center mt-3">
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
         <TouchableOpacity
           onPress={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
           disabled={currentIndex === 0}
-          className={currentIndex === 0 ? "opacity-30" : ""}
+          style={{ opacity: currentIndex === 0 ? 0.3 : 1 }}
         >
-          <Text className="text-indigo-600 font-medium">Previous</Text>
+          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold" }}>Previous</Text>
         </TouchableOpacity>
-        <Text className="text-sm text-gray-400">
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A" }}>
           {currentIndex + 1} / {cards.length}
         </Text>
         <TouchableOpacity
           onPress={() => setCurrentIndex(Math.min(cards.length - 1, currentIndex + 1))}
           disabled={currentIndex === cards.length - 1}
-          className={currentIndex === cards.length - 1 ? "opacity-30" : ""}
+          style={{ opacity: currentIndex === cards.length - 1 ? 0.3 : 1 }}
         >
-          <Text className="text-indigo-600 font-medium">Next</Text>
+          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold" }}>Next</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -108,19 +109,19 @@ export function JournalPromptRenderer({
   const lineCount = content.spaceSizeHint === "large" ? 8 : content.spaceSizeHint === "small" ? 3 : 5;
 
   return (
-    <View className="px-4 py-3">
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {(content.prompts || []).map((prompt, index) => (
-        <View key={index} className="mb-4">
-          <Text className="text-base font-medium text-gray-900 mb-2">{prompt}</Text>
+        <View key={index} style={{ marginBottom: 16 }}>
+          <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 8 }}>{prompt}</Text>
           <TextInput
-            className="border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-800"
+            style={{ borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", backgroundColor: "#FFFFFF", minHeight: lineCount * 24 }}
             multiline
             numberOfLines={lineCount}
             textAlignVertical="top"
             placeholder="Write your thoughts..."
+            placeholderTextColor="#D4D0CB"
             value={responses[index] || ""}
             onChangeText={(text) => onResponseChange(index, text)}
-            style={{ minHeight: lineCount * 24 }}
           />
         </View>
       ))}
@@ -141,22 +142,36 @@ export function ChecklistRenderer({
   const items = [...(content.items || [])].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
-    <View className="px-4 py-3">
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {items.map((item, index) => (
         <TouchableOpacity
           key={index}
-          className="flex-row items-center py-3 border-b border-gray-100"
+          style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}
           onPress={() => onToggle(index)}
         >
           <View
-            className={`w-6 h-6 rounded border-2 mr-3 items-center justify-center ${
-              checked[index] ? "bg-indigo-600 border-indigo-600" : "border-gray-300"
-            }`}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              borderWidth: 2,
+              marginRight: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: checked[index] ? "#5B8A8A" : "transparent",
+              borderColor: checked[index] ? "#5B8A8A" : "#D4D0CB",
+            }}
           >
-            {checked[index] ? <Text className="text-white text-xs font-bold">+</Text> : null}
+            {checked[index] ? <Ionicons name="checkmark" size={14} color="white" /> : null}
           </View>
           <Text
-            className={`flex-1 text-base ${checked[index] ? "text-gray-400 line-through" : "text-gray-800"}`}
+            style={{
+              flex: 1,
+              fontSize: 16,
+              fontFamily: "PlusJakartaSans_400Regular",
+              color: checked[index] ? "#8A8A8A" : "#2D2D2D",
+              textDecorationLine: checked[index] ? "line-through" : "none",
+            }}
           >
             {item.text}
           </Text>
@@ -173,24 +188,25 @@ export function ResourceLinkRenderer({
   content: { url: string; description?: string };
 }) {
   return (
-    <View className="px-4 py-3">
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {content.description ? (
-        <Text className="text-base text-gray-700 mb-3">{content.description}</Text>
+        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 12 }}>{content.description}</Text>
       ) : null}
       {content.url ? (
         <TouchableOpacity
-          className="bg-indigo-50 rounded-lg p-4 flex-row items-center"
+          style={{ backgroundColor: "#E3EDED", borderRadius: 10, padding: 16, flexDirection: "row", alignItems: "center" }}
           onPress={() => Linking.openURL(content.url)}
         >
-          <View className="flex-1">
-            <Text className="text-indigo-600 font-medium" numberOfLines={1}>
+          <Ionicons name="link-outline" size={16} color="#5B8A8A" />
+          <View style={{ flex: 1, marginLeft: 8 }}>
+            <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_500Medium" }} numberOfLines={1}>
               {content.url}
             </Text>
           </View>
-          <Text className="text-indigo-600 ml-2">Open</Text>
+          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold", marginLeft: 8 }}>Open</Text>
         </TouchableOpacity>
       ) : (
-        <Text className="text-gray-400">No link provided</Text>
+        <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No link provided</Text>
       )}
     </View>
   );
@@ -199,12 +215,12 @@ export function ResourceLinkRenderer({
 // ── DIVIDER ──────────────────────────────────────────
 export function DividerRenderer({ content }: { content: { label: string } }) {
   return (
-    <View className="px-4 py-6 flex-row items-center">
-      <View className="flex-1 h-px bg-gray-200" />
+    <View style={{ paddingHorizontal: 16, paddingVertical: 24, flexDirection: "row", alignItems: "center" }}>
+      <View style={{ flex: 1, height: 1, backgroundColor: "#D4D0CB" }} />
       {content.label ? (
         <>
-          <Text className="mx-3 text-sm text-gray-400 font-medium">{content.label}</Text>
-          <View className="flex-1 h-px bg-gray-200" />
+          <Text style={{ marginHorizontal: 12, fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A" }}>{content.label}</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: "#D4D0CB" }} />
         </>
       ) : null}
     </View>
@@ -218,21 +234,21 @@ export function HomeworkRenderer({
   content: { items: Array<{ type: string; description?: string; prompts?: string[]; reminderText?: string; content?: string; options?: Array<{ label: string }> }> };
 }) {
   return (
-    <View className="px-4 py-3">
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {(content.items || []).map((item, index) => (
-        <View key={index} className="mb-4 bg-amber-50 rounded-lg p-4">
-          <Text className="text-xs text-amber-600 font-medium uppercase mb-1">{item.type.replace(/_/g, " ")}</Text>
+        <View key={index} style={{ marginBottom: 16, backgroundColor: "#F5ECD7", borderRadius: 10, padding: 16 }}>
+          <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_600SemiBold", color: "#C4A84D", textTransform: "uppercase", marginBottom: 4 }}>{item.type.replace(/_/g, " ")}</Text>
           {item.description ? (
-            <Text className="text-base text-gray-800">{item.description}</Text>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{item.description}</Text>
           ) : null}
           {item.prompts?.map((p, i) => (
-            <Text key={i} className="text-base text-gray-800 mt-1">{p}</Text>
+            <Text key={i} style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginTop: 4 }}>{p}</Text>
           ))}
           {item.reminderText ? (
-            <Text className="text-base text-gray-800">{item.reminderText}</Text>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{item.reminderText}</Text>
           ) : null}
           {item.content ? (
-            <Text className="text-base text-gray-800">{item.content}</Text>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{item.content}</Text>
           ) : null}
         </View>
       ))}

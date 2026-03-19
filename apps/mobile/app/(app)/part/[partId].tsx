@@ -93,8 +93,8 @@ export default function PartScreen() {
 
   if (isLoading || !part) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#6366f1" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF" }}>
+        <ActivityIndicator size="large" color="#5B8A8A" />
       </View>
     );
   }
@@ -104,21 +104,21 @@ export default function PartScreen() {
   return (
     <>
       <Stack.Screen options={{ title: part.title || partTypeLabel(part.type) }} />
-      <View className="flex-1 bg-white">
-        <ScrollView className="flex-1">
+      <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+        <ScrollView style={{ flex: 1 }}>
           {/* Part header */}
-          <View className="px-4 pt-4 pb-2">
-            <Text className="text-xl font-bold text-gray-900">{part.title}</Text>
-            <View className="flex-row items-center mt-1">
-              <Text className="text-xs text-gray-400 uppercase mr-2">
+          <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+            <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>{part.title}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", textTransform: "uppercase", marginRight: 8 }}>
                 {partTypeLabel(part.type)}
               </Text>
               {part.isRequired ? (
-                <Text className="text-xs text-amber-600 font-medium">Required</Text>
+                <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#D4A0A0" }}>Required</Text>
               ) : null}
               {isCompleted ? (
-                <View className="bg-green-100 rounded-full px-2 py-0.5 ml-2">
-                  <Text className="text-xs text-green-700 font-medium">Completed</Text>
+                <View style={{ backgroundColor: "#E8F0E7", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2, marginLeft: 8 }}>
+                  <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#729070" }}>Completed</Text>
                 </View>
               ) : null}
             </View>
@@ -130,18 +130,21 @@ export default function PartScreen() {
 
         {/* Bottom action bar */}
         {!isCompleted && part.type !== "DIVIDER" ? (
-          <View className="px-4 py-4 border-t border-gray-100 bg-white">
+          <View style={{ paddingHorizontal: 16, paddingVertical: 16, borderTopWidth: 1, borderTopColor: "#F0EDE8", backgroundColor: "#FFFFFF" }}>
             <TouchableOpacity
-              className={`rounded-lg py-3.5 items-center ${
-                markCompleteMutation.isPending ? "bg-indigo-400" : "bg-indigo-600"
-              }`}
+              style={{
+                borderRadius: 10,
+                paddingVertical: 14,
+                alignItems: "center",
+                backgroundColor: markCompleteMutation.isPending ? "#7BA3A3" : "#5B8A8A",
+              }}
               onPress={() => markCompleteMutation.mutate()}
               disabled={markCompleteMutation.isPending}
             >
               {markCompleteMutation.isPending ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-white font-semibold text-base">Mark as Complete</Text>
+                <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16 }}>Mark as Complete</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -196,8 +199,8 @@ function renderContent(
       return <HomeworkRenderer content={content} />;
     default:
       return (
-        <View className="px-4 py-6 items-center">
-          <Text className="text-gray-400">Content type "{part.type}" is coming soon</Text>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
+          <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>Content type "{part.type}" is coming soon</Text>
         </View>
       );
   }

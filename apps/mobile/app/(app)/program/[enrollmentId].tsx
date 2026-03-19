@@ -1,171 +1,9 @@
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useLocalSearchParams, router, Stack } from "expo-router";
+import { useLocalSearchParams, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
-
-interface Part {
-  id: string;
-  type: string;
-  title: string;
-  isRequired: boolean;
-  content: any;
-  sortOrder: number;
-  progressStatus: string;
-  completedAt: string | null;
-}
-
-interface Module {
-  id: string;
-  title: string;
-  sortOrder: number;
-  status: "LOCKED" | "UNLOCKED" | "COMPLETED";
-  unlockedAt: string | null;
-  completedAt: string | null;
-  parts: Part[];
-}
-
-interface ProgramData {
-  enrollmentId: string;
-  status: string;
-  currentModuleId: string | null;
-  program: {
-    id: string;
-    title: string;
-    description: string | null;
-    cadence: string;
-  };
-  modules: Module[];
-}
-
-function ModuleStatusIcon({ status }: { status: string }) {
-  if (status === "COMPLETED") {
-    return (
-      <View className="w-8 h-8 rounded-full bg-green-100 items-center justify-center">
-        <Text className="text-green-600 font-bold text-sm">+</Text>
-      </View>
-    );
-  }
-  if (status === "UNLOCKED") {
-    return (
-      <View className="w-8 h-8 rounded-full bg-indigo-100 items-center justify-center">
-        <Text className="text-indigo-600 font-bold text-sm">*</Text>
-      </View>
-    );
-  }
-  return (
-    <View className="w-8 h-8 rounded-full bg-gray-200 items-center justify-center">
-      <Text className="text-gray-400 font-bold text-sm">L</Text>
-    </View>
-  );
-}
-
-function PartRow({
-  part,
-  enrollmentId,
-  moduleStatus,
-}: {
-  part: Part;
-  enrollmentId: string;
-  moduleStatus: string;
-}) {
-  const isAccessible = moduleStatus !== "LOCKED";
-  const isCompleted = part.progressStatus === "COMPLETED";
-
-  return (
-    <TouchableOpacity
-      className={`flex-row items-center py-3 px-4 border-b border-gray-50 ${!isAccessible ? "opacity-40" : ""}`}
-      onPress={() => {
-        if (isAccessible) {
-          router.push({
-            pathname: "/(app)/part/[partId]",
-            params: { partId: part.id, enrollmentId },
-          });
-        }
-      }}
-      disabled={!isAccessible}
-    >
-      <View
-        className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
-          isCompleted ? "bg-green-500 border-green-500" : "border-gray-300"
-        }`}
-      >
-        {isCompleted ? <Text className="text-white text-xs">+</Text> : null}
-      </View>
-      <View className="flex-1">
-        <Text className={`text-sm ${isCompleted ? "text-gray-400 line-through" : "text-gray-900"}`}>
-          {part.title || partTypeLabel(part.type)}
-        </Text>
-      </View>
-      {part.isRequired ? (
-        <Text className="text-xs text-gray-400">Required</Text>
-      ) : null}
-    </TouchableOpacity>
-  );
-}
-
-function partTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    TEXT: "Reading",
-    VIDEO: "Video",
-    STRATEGY_CARDS: "Strategy Cards",
-    JOURNAL_PROMPT: "Journal",
-    CHECKLIST: "Checklist",
-    RESOURCE_LINK: "Resource",
-    DIVIDER: "Section Break",
-  };
-  return labels[type] || type;
-}
-
-function ModuleCard({
-  mod,
-  enrollmentId,
-  isCurrent,
-}: {
-  mod: Module;
-  enrollmentId: string;
-  isCurrent: boolean;
-}) {
-  const completedCount = mod.parts.filter((p) => p.progressStatus === "COMPLETED").length;
-  const totalParts = mod.parts.length;
-
-  return (
-    <View
-      className={`bg-white rounded-xl mb-4 overflow-hidden border ${
-        isCurrent ? "border-indigo-300" : "border-gray-100"
-      }`}
-    >
-      <View className="flex-row items-center p-4">
-        <ModuleStatusIcon status={mod.status} />
-        <View className="flex-1 ml-3">
-          <Text className="text-base font-semibold text-gray-900">{mod.title}</Text>
-          <Text className="text-xs text-gray-400 mt-0.5">
-            {mod.status === "LOCKED"
-              ? "Locked"
-              : `${completedCount}/${totalParts} completed`}
-          </Text>
-        </View>
-        {isCurrent ? (
-          <View className="bg-indigo-50 rounded-full px-2.5 py-0.5">
-            <Text className="text-xs text-indigo-600 font-medium">Current</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {mod.status !== "LOCKED" ? (
-        <View className="border-t border-gray-50">
-          {mod.parts.map((part) => (
-            <PartRow
-              key={part.id}
-              part={part}
-              enrollmentId={enrollmentId}
-              moduleStatus={mod.status}
-            />
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-}
+import { ModuleCard, type ProgramData } from "../../../lib/program-components";
 
 export default function ProgramScreen() {
   const { enrollmentId } = useLocalSearchParams<{ enrollmentId: string }>();
@@ -182,18 +20,25 @@ export default function ProgramScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
-        <ActivityIndicator size="large" color="#6366f1" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F7F5F2" }}>
+        <ActivityIndicator size="large" color="#5B8A8A" />
       </View>
     );
   }
 
   if (isError || !data) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50 px-8">
-        <Text className="text-gray-500 mb-4">Failed to load program</Text>
-        <TouchableOpacity className="bg-indigo-600 rounded-lg px-6 py-2" onPress={() => refetch()}>
-          <Text className="text-white font-medium">Retry</Text>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F7F5F2", paddingHorizontal: 32 }}>
+        <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#F5E6E6", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+          <Ionicons name="cloud-offline-outline" size={28} color="#D4A0A0" />
+        </View>
+        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 4 }}>Failed to load program</Text>
+        <TouchableOpacity
+          style={{ backgroundColor: "#5B8A8A", borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12, marginTop: 16 }}
+          onPress={() => refetch()}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold" }}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -202,18 +47,23 @@ export default function ProgramScreen() {
   return (
     <>
       <Stack.Screen options={{ title: data.program.title }} />
-      <ScrollView className="flex-1 bg-gray-50">
+      <ScrollView style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
         {/* Program header */}
-        <View className="bg-white px-4 py-5 border-b border-gray-100">
-          <Text className="text-xl font-bold text-gray-900">{data.program.title}</Text>
+        <View style={{ backgroundColor: "#FFFFFF", paddingHorizontal: 20, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
+          <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>{data.program.title}</Text>
           {data.program.description ? (
-            <Text className="text-sm text-gray-500 mt-1">{data.program.description}</Text>
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginTop: 6, lineHeight: 20 }}>{data.program.description}</Text>
           ) : null}
-          <Text className="text-xs text-gray-400 uppercase mt-2">{data.program.cadence}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+            <Ionicons name="time-outline" size={14} color="#8A8A8A" />
+            <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 4, textTransform: "uppercase" }}>
+              {data.program.cadence}
+            </Text>
+          </View>
         </View>
 
         {/* Modules */}
-        <View className="p-4">
+        <View style={{ padding: 16 }}>
           {data.modules.map((mod) => (
             <ModuleCard
               key={mod.id}

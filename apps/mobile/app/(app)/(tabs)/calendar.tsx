@@ -26,10 +26,10 @@ interface CalendarEvent {
 }
 
 const EVENT_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  TIME_BLOCK: { bg: "#eef2ff", border: "#6366f1", text: "#4f46e5", icon: "time-outline" },
-  SESSION: { bg: "#fef9c3", border: "#f59e0b", text: "#b45309", icon: "people-outline" },
-  CATCH_UP: { bg: "#ecfdf5", border: "#10b981", text: "#059669", icon: "chatbubbles-outline" },
-  EXTERNAL_SYNC: { bg: "#f3e8ff", border: "#8b5cf6", text: "#7c3aed", icon: "sync-outline" },
+  TIME_BLOCK: { bg: "#E3EDED", border: "#5B8A8A", text: "#4A7272", icon: "time-outline" },
+  SESSION: { bg: "#F5ECD7", border: "#C4A84D", text: "#9A8340", icon: "people-outline" },
+  CATCH_UP: { bg: "#E8F0E7", border: "#8FAE8B", text: "#729070", icon: "chatbubbles-outline" },
+  EXTERNAL_SYNC: { bg: "#E1EBF1", border: "#89B4C8", text: "#6A97AD", icon: "sync-outline" },
 };
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6am to 9pm
@@ -121,56 +121,61 @@ export default function CalendarScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
       {/* Week navigation */}
-      <View className="bg-white px-4 pt-2 pb-3" style={{
-        borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
-      }}>
-        <View className="flex-row items-center justify-between mb-3">
+      <View style={{ backgroundColor: "#FFFFFF", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <TouchableOpacity
             onPress={() => navigateWeek(-1)}
-            className="w-8 h-8 items-center justify-center rounded-lg bg-gray-50"
+            style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: "#F0EDE8" }}
           >
-            <Ionicons name="chevron-back" size={18} color="#6366f1" />
+            <Ionicons name="chevron-back" size={18} color="#5B8A8A" />
           </TouchableOpacity>
-          <Text className="text-base font-bold text-gray-900">
+          <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>
             {selectedDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </Text>
           <TouchableOpacity
             onPress={() => navigateWeek(1)}
-            className="w-8 h-8 items-center justify-center rounded-lg bg-gray-50"
+            style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: "#F0EDE8" }}
           >
-            <Ionicons name="chevron-forward" size={18} color="#6366f1" />
+            <Ionicons name="chevron-forward" size={18} color="#5B8A8A" />
           </TouchableOpacity>
         </View>
 
         {/* Day pills */}
-        <View className="flex-row justify-between">
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           {weekDays.map((d) => {
             const selected = isSelected(d);
             const today = isToday(d);
             return (
               <TouchableOpacity
                 key={d.toISOString()}
-                className={`items-center py-2 px-2.5 rounded-2xl ${
-                  selected ? "bg-indigo-600" : ""
-                }`}
-                style={today && !selected ? { backgroundColor: "#eef2ff" } : undefined}
+                style={{
+                  alignItems: "center",
+                  paddingVertical: 8,
+                  paddingHorizontal: 10,
+                  borderRadius: 16,
+                  backgroundColor: selected ? "#5B8A8A" : today ? "#E3EDED" : "transparent",
+                }}
                 onPress={() => setSelectedDate(d)}
                 activeOpacity={0.7}
               >
                 <Text
-                  className={`text-xs mb-1 font-medium ${
-                    selected ? "text-indigo-200" : "text-gray-400"
-                  }`}
+                  style={{
+                    fontSize: 12,
+                    fontFamily: "PlusJakartaSans_500Medium",
+                    marginBottom: 4,
+                    color: selected ? "rgba(255,255,255,0.7)" : "#8A8A8A",
+                  }}
                 >
                   {d.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2)}
                 </Text>
                 <Text
-                  className={`text-base font-bold ${
-                    selected ? "text-white" : today ? "text-indigo-600" : "text-gray-800"
-                  }`}
+                  style={{
+                    fontSize: 16,
+                    fontFamily: "PlusJakartaSans_700Bold",
+                    color: selected ? "#FFFFFF" : today ? "#5B8A8A" : "#2D2D2D",
+                  }}
                 >
                   {d.getDate()}
                 </Text>
@@ -182,21 +187,21 @@ export default function CalendarScreen() {
 
       {/* Day view */}
       <ScrollView
-        className="flex-1"
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#6366f1" />}
+        style={{ flex: 1 }}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#5B8A8A" />}
       >
-        <View className="px-4 py-4">
-          <Text className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">
+        <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
+          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A8A8A", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
             {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           </Text>
 
           {todayEvents.length === 0 ? (
-            <View className="items-center py-16">
-              <View className="w-16 h-16 rounded-full bg-indigo-50 items-center justify-center mb-4">
-                <Ionicons name="calendar-outline" size={28} color="#6366f1" />
+            <View style={{ alignItems: "center", paddingVertical: 64 }}>
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+                <Ionicons name="calendar-outline" size={28} color="#5B8A8A" />
               </View>
-              <Text className="text-lg font-semibold text-gray-900 mb-1">No events today</Text>
-              <Text className="text-sm text-gray-400">Tap + to schedule a time block</Text>
+              <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 4 }}>No events today</Text>
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A" }}>Tap + to schedule a time block</Text>
             </View>
           ) : (
             <View>
@@ -208,8 +213,10 @@ export default function CalendarScreen() {
                 return (
                   <TouchableOpacity
                     key={event.id}
-                    className="rounded-2xl overflow-hidden mb-3"
                     style={{
+                      borderRadius: 16,
+                      overflow: "hidden",
+                      marginBottom: 12,
                       backgroundColor: config.bg,
                       borderLeftWidth: 4,
                       borderLeftColor: config.border,
@@ -222,25 +229,25 @@ export default function CalendarScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <View className="px-4 py-3.5">
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-base font-semibold" style={{ color: config.text }}>
+                    <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_600SemiBold", color: config.text }}>
                           {event.title}
                         </Text>
                         <Ionicons name={config.icon as any} size={16} color={config.text} />
                       </View>
-                      <View className="flex-row items-center mt-1.5">
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}>
                         <Ionicons name="time-outline" size={13} color={config.text} />
-                        <Text className="text-sm ml-1.5" style={{ color: config.text, opacity: 0.8 }}>
+                        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", marginLeft: 6, color: config.text, opacity: 0.8 }}>
                           {start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                           {" - "}
                           {end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                         </Text>
                       </View>
                       {event.task && (
-                        <View className="flex-row items-center mt-2">
+                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
                           <Ionicons name="link-outline" size={13} color={config.text} />
-                          <Text className="text-xs ml-1.5 font-medium" style={{ color: config.text, opacity: 0.7 }}>
+                          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", marginLeft: 6, color: config.text, opacity: 0.7 }}>
                             {event.task.title}
                           </Text>
                         </View>
@@ -256,16 +263,24 @@ export default function CalendarScreen() {
 
       {/* FAB */}
       <TouchableOpacity
-        className="absolute bottom-6 right-6 w-14 h-14 rounded-2xl bg-indigo-600 items-center justify-center"
-        onPress={() => setShowAdd(true)}
-        activeOpacity={0.8}
         style={{
-          shadowColor: "#6366f1",
+          position: "absolute",
+          bottom: 24,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 18,
+          backgroundColor: "#5B8A8A",
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#5B8A8A",
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.35,
+          shadowOpacity: 0.3,
           shadowRadius: 8,
           elevation: 6,
         }}
+        onPress={() => setShowAdd(true)}
+        activeOpacity={0.8}
       >
         <Ionicons name="add" size={28} color="white" />
       </TouchableOpacity>
@@ -274,47 +289,60 @@ export default function CalendarScreen() {
       <Modal visible={showAdd} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1 justify-end"
+          style={{ flex: 1, justifyContent: "flex-end" }}
         >
           <TouchableOpacity
-            className="flex-1 bg-black/30"
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }}
             onPress={() => setShowAdd(false)}
             activeOpacity={1}
           />
-          <View className="bg-white rounded-t-3xl px-5 pb-8 pt-5" style={{
+          <View style={{
+            backgroundColor: "#FFFFFF",
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 20,
+            paddingBottom: 32,
+            paddingTop: 20,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.1,
+            shadowOpacity: 0.08,
             shadowRadius: 16,
             elevation: 10,
           }}>
             {/* Handle bar */}
-            <View className="w-10 h-1 rounded-full bg-gray-200 self-center mb-5" />
+            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#D4D0CB", alignSelf: "center", marginBottom: 20 }} />
 
-            <Text className="text-xl font-bold text-gray-900 mb-5">New Time Block</Text>
+            <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 20 }}>New Time Block</Text>
 
             <TextInput
-              className="border border-gray-200 rounded-xl px-4 py-3 text-base mb-4 bg-gray-50"
+              style={{ borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginBottom: 16, backgroundColor: "#F7F5F2" }}
               placeholder="What are you working on?"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#D4D0CB"
               value={title}
               onChangeText={setTitle}
               autoFocus
             />
 
-            <Text className="text-sm font-semibold text-gray-600 mb-2">Start Time</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
-              <View className="flex-row gap-2">
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Start Time</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: "row", gap: 8 }}>
                 {HOURS.map((h) => (
                   <TouchableOpacity
                     key={h}
-                    className={`px-3.5 py-2 rounded-xl ${
-                      startHour === h ? "bg-indigo-600" : "bg-gray-100"
-                    }`}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 12,
+                      backgroundColor: startHour === h ? "#5B8A8A" : "#F0EDE8",
+                    }}
                     onPress={() => setStartHour(h)}
                     activeOpacity={0.7}
                   >
-                    <Text className={`text-sm font-medium ${startHour === h ? "text-white" : "text-gray-500"}`}>
+                    <Text style={{
+                      fontSize: 14,
+                      fontFamily: "PlusJakartaSans_500Medium",
+                      color: startHour === h ? "#FFFFFF" : "#5A5A5A",
+                    }}>
                       {formatHour(h)}
                     </Text>
                   </TouchableOpacity>
@@ -322,18 +350,26 @@ export default function CalendarScreen() {
               </View>
             </ScrollView>
 
-            <Text className="text-sm font-semibold text-gray-600 mb-2">Duration</Text>
-            <View className="flex-row gap-2 mb-6">
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Duration</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 24 }}>
               {[30, 60, 90, 120].map((d) => (
                 <TouchableOpacity
                   key={d}
-                  className={`flex-1 py-2.5 rounded-xl items-center ${
-                    durationMinutes === d ? "bg-indigo-600" : "bg-gray-100"
-                  }`}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    backgroundColor: durationMinutes === d ? "#5B8A8A" : "#F0EDE8",
+                  }}
                   onPress={() => setDurationMinutes(d)}
                   activeOpacity={0.7}
                 >
-                  <Text className={`text-sm font-semibold ${durationMinutes === d ? "text-white" : "text-gray-500"}`}>
+                  <Text style={{
+                    fontSize: 14,
+                    fontFamily: "PlusJakartaSans_600SemiBold",
+                    color: durationMinutes === d ? "#FFFFFF" : "#5A5A5A",
+                  }}>
                     {d < 60 ? `${d}m` : `${d / 60}h`}
                   </Text>
                 </TouchableOpacity>
@@ -341,21 +377,24 @@ export default function CalendarScreen() {
             </View>
 
             <TouchableOpacity
-              className="bg-indigo-600 rounded-xl py-4 items-center"
+              style={{
+                backgroundColor: "#5B8A8A",
+                borderRadius: 12,
+                paddingVertical: 16,
+                alignItems: "center",
+                shadowColor: "#5B8A8A",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                elevation: 4,
+              }}
               onPress={() => {
                 if (!title.trim()) return;
                 createMutation.mutate();
               }}
               activeOpacity={0.8}
-              style={{
-                shadowColor: "#6366f1",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
             >
-              <Text className="text-white font-bold text-base">Add Event</Text>
+              <Text style={{ color: "white", fontFamily: "PlusJakartaSans_700Bold", fontSize: 16 }}>Add Event</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
