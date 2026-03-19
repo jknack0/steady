@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
+import { queueNotification } from "../services/notifications";
 
 const router = Router();
 
@@ -99,6 +100,19 @@ router.post("/", async (req: Request, res: Response) => {
         task: { select: { id: true, title: true, status: true } },
       },
     });
+
+    // Schedule a reminder 10 minutes before the event
+    const reminderTime = new Date(start.getTime() - 10 * 60 * 1000);
+    if (reminderTime > new Date()) {
+      queueNotification(
+        req.user!.userId,
+        "Coming up ⏰",
+        `"${event.title}" starts in 10 minutes`,
+        "TASK",
+        { type: "calendar_reminder", eventId: event.id },
+        { startAfter: reminderTime }
+      ).catch((err) => console.error("Failed to queue calendar reminder:", err));
+    }
 
     res.status(201).json({ success: true, data: event });
   } catch (err) {
