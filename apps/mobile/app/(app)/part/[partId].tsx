@@ -12,6 +12,9 @@ import {
   ResourceLinkRenderer,
   DividerRenderer,
   HomeworkRenderer,
+  AssessmentRenderer,
+  IntakeFormRenderer,
+  SmartGoalsRenderer,
 } from "../../../components/part-renderers";
 
 interface PartData {
@@ -36,6 +39,9 @@ export default function PartScreen() {
   // Local state for interactive parts
   const [journalResponses, setJournalResponses] = useState<Record<number, string>>({});
   const [checklistState, setChecklistState] = useState<Record<number, boolean>>({});
+  const [assessmentResponses, setAssessmentResponses] = useState<Record<number, any>>({});
+  const [intakeResponses, setIntakeResponses] = useState<Record<string, any>>({});
+  const [smartGoalResponses, setSmartGoalResponses] = useState<Record<string, any>>({});
 
   // Fetch program data to find the specific part
   const { data: programData, isLoading } = useQuery({
@@ -88,8 +94,17 @@ export default function PartScreen() {
     if (part.type === "CHECKLIST" && Object.keys(checklistState).length > 0) {
       return { checklistState };
     }
+    if (part.type === "ASSESSMENT" && Object.keys(assessmentResponses).length > 0) {
+      return { assessmentResponses };
+    }
+    if (part.type === "INTAKE_FORM" && Object.keys(intakeResponses).length > 0) {
+      return { intakeResponses };
+    }
+    if (part.type === "SMART_GOALS" && Object.keys(smartGoalResponses).length > 0) {
+      return { smartGoalResponses };
+    }
     return undefined;
-  }, [part, journalResponses, checklistState]);
+  }, [part, journalResponses, checklistState, assessmentResponses, intakeResponses, smartGoalResponses]);
 
   if (isLoading || !part) {
     return (
@@ -125,7 +140,14 @@ export default function PartScreen() {
           </View>
 
           {/* Content renderer */}
-          {renderContent(part, journalResponses, setJournalResponses, checklistState, setChecklistState)}
+          {renderContent(
+            part,
+            journalResponses, setJournalResponses,
+            checklistState, setChecklistState,
+            assessmentResponses, setAssessmentResponses,
+            intakeResponses, setIntakeResponses,
+            smartGoalResponses, setSmartGoalResponses,
+          )}
         </ScrollView>
 
         {/* Bottom action bar */}
@@ -159,7 +181,13 @@ function renderContent(
   journalResponses: Record<number, string>,
   setJournalResponses: (r: Record<number, string>) => void,
   checklistState: Record<number, boolean>,
-  setChecklistState: (r: Record<number, boolean>) => void
+  setChecklistState: (r: Record<number, boolean>) => void,
+  assessmentResponses: Record<number, any>,
+  setAssessmentResponses: (r: Record<number, any>) => void,
+  intakeResponses: Record<string, any>,
+  setIntakeResponses: (r: Record<string, any>) => void,
+  smartGoalResponses: Record<string, any>,
+  setSmartGoalResponses: (r: Record<string, any>) => void,
 ) {
   const content = part.content;
   if (!content) return null;
@@ -197,10 +225,40 @@ function renderContent(
       return <DividerRenderer content={content} />;
     case "HOMEWORK":
       return <HomeworkRenderer content={content} />;
+    case "ASSESSMENT":
+      return (
+        <AssessmentRenderer
+          content={content}
+          responses={assessmentResponses}
+          onResponseChange={(index, value) =>
+            setAssessmentResponses({ ...assessmentResponses, [index]: value })
+          }
+        />
+      );
+    case "INTAKE_FORM":
+      return (
+        <IntakeFormRenderer
+          content={content}
+          responses={intakeResponses}
+          onResponseChange={(key, value) =>
+            setIntakeResponses({ ...intakeResponses, [key]: value })
+          }
+        />
+      );
+    case "SMART_GOALS":
+      return (
+        <SmartGoalsRenderer
+          content={content}
+          responses={smartGoalResponses}
+          onResponseChange={(key, value) =>
+            setSmartGoalResponses({ ...smartGoalResponses, [key]: value })
+          }
+        />
+      );
     default:
       return (
         <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
-          <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>Content type "{part.type}" is coming soon</Text>
+          <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>Content type "{part.type}" is not supported</Text>
         </View>
       );
   }

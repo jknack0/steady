@@ -255,3 +255,600 @@ export function HomeworkRenderer({
     </View>
   );
 }
+
+// ── ASSESSMENT ──────────────────────────────────────
+interface AssessmentQuestion {
+  question: string;
+  type: "LIKERT" | "MULTIPLE_CHOICE" | "FREE_TEXT" | "YES_NO";
+  options?: string[];
+  likertMin?: number;
+  likertMax?: number;
+  likertMinLabel?: string;
+  likertMaxLabel?: string;
+  required: boolean;
+  sortOrder: number;
+}
+
+interface AssessmentContent {
+  title?: string;
+  instructions?: string;
+  scoringEnabled?: boolean;
+  questions: AssessmentQuestion[];
+}
+
+export function AssessmentRenderer({
+  content,
+  responses,
+  onResponseChange,
+}: {
+  content: AssessmentContent;
+  responses: Record<number, any>;
+  onResponseChange: (index: number, value: any) => void;
+}) {
+  const questions = [...(content.questions || [])].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      {content.title ? (
+        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>{content.title}</Text>
+      ) : null}
+      {content.instructions ? (
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16 }}>{content.instructions}</Text>
+      ) : null}
+
+      {questions.map((q, index) => (
+        <View key={index} style={{ marginBottom: 24 }}>
+          <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 8 }}>
+            {q.question}
+            {q.required ? <Text style={{ color: "#D4A0A0" }}> *</Text> : null}
+          </Text>
+
+          {q.type === "LIKERT" && (
+            <LikertScale
+              min={q.likertMin ?? 1}
+              max={q.likertMax ?? 5}
+              minLabel={q.likertMinLabel ?? "Strongly Disagree"}
+              maxLabel={q.likertMaxLabel ?? "Strongly Agree"}
+              value={responses[index]}
+              onChange={(val) => onResponseChange(index, val)}
+            />
+          )}
+
+          {q.type === "MULTIPLE_CHOICE" && (
+            <View>
+              {(q.options || []).map((option, oi) => {
+                const selected = responses[index] === option;
+                return (
+                  <TouchableOpacity
+                    key={oi}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderWidth: 1,
+                      borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                      backgroundColor: selected ? "#E3EDED" : "#FFFFFF",
+                      borderRadius: 10,
+                      marginBottom: 8,
+                    }}
+                    onPress={() => onResponseChange(index, option)}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 10,
+                        borderWidth: 2,
+                        borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 10,
+                      }}
+                    >
+                      {selected ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#5B8A8A" }} /> : null}
+                    </View>
+                    <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{option}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {q.type === "YES_NO" && (
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {["Yes", "No"].map((option) => {
+                const selected = responses[index] === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                      backgroundColor: selected ? "#5B8A8A" : "#FFFFFF",
+                      alignItems: "center",
+                    }}
+                    onPress={() => onResponseChange(index, option)}
+                  >
+                    <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_600SemiBold", color: selected ? "white" : "#2D2D2D" }}>{option}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {q.type === "FREE_TEXT" && (
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: "#D4D0CB",
+                borderRadius: 10,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                fontSize: 16,
+                fontFamily: "PlusJakartaSans_400Regular",
+                color: "#2D2D2D",
+                backgroundColor: "#FFFFFF",
+                minHeight: 96,
+              }}
+              multiline
+              textAlignVertical="top"
+              placeholder="Your answer..."
+              placeholderTextColor="#D4D0CB"
+              value={responses[index] || ""}
+              onChangeText={(text) => onResponseChange(index, text)}
+            />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function LikertScale({
+  min,
+  max,
+  minLabel,
+  maxLabel,
+  value,
+  onChange,
+}: {
+  min: number;
+  max: number;
+  minLabel: string;
+  maxLabel: string;
+  value: number | undefined;
+  onChange: (val: number) => void;
+}) {
+  const points = [];
+  for (let i = min; i <= max; i++) {
+    points.push(i);
+  }
+
+  return (
+    <View>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+        {points.map((point) => {
+          const selected = value === point;
+          return (
+            <TouchableOpacity
+              key={point}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                borderWidth: 2,
+                borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                backgroundColor: selected ? "#5B8A8A" : "#FFFFFF",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={() => onChange(point)}
+            >
+              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_600SemiBold", color: selected ? "white" : "#5A5A5A" }}>{point}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+        <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", maxWidth: "40%" }}>{minLabel}</Text>
+        <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", maxWidth: "40%", textAlign: "right" }}>{maxLabel}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ── INTAKE FORM ─────────────────────────────────────
+interface IntakeField {
+  label: string;
+  type: "TEXT" | "TEXTAREA" | "SELECT" | "MULTI_SELECT" | "DATE" | "NUMBER" | "CHECKBOX";
+  placeholder?: string;
+  options?: string[];
+  required: boolean;
+  section: string;
+  sortOrder: number;
+}
+
+interface IntakeFormContent {
+  title?: string;
+  instructions?: string;
+  sections?: string[];
+  fields: IntakeField[];
+}
+
+export function IntakeFormRenderer({
+  content,
+  responses,
+  onResponseChange,
+}: {
+  content: IntakeFormContent;
+  responses: Record<string, any>;
+  onResponseChange: (fieldKey: string, value: any) => void;
+}) {
+  const sections = content.sections || ["General"];
+  const fields = [...(content.fields || [])].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      {content.title ? (
+        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>{content.title}</Text>
+      ) : null}
+      {content.instructions ? (
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16 }}>{content.instructions}</Text>
+      ) : null}
+
+      {sections.map((section) => {
+        const sectionFields = fields.filter((f) => f.section === section);
+        if (sectionFields.length === 0) return null;
+
+        return (
+          <View key={section} style={{ marginBottom: 20 }}>
+            {sections.length > 1 ? (
+              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#5B8A8A", marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
+                {section}
+              </Text>
+            ) : null}
+
+            {sectionFields.map((field, fi) => {
+              const key = `${field.section}_${field.sortOrder}`;
+              return (
+                <View key={fi} style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>
+                    {field.label}
+                    {field.required ? <Text style={{ color: "#D4A0A0" }}> *</Text> : null}
+                  </Text>
+
+                  {(field.type === "TEXT" || field.type === "DATE") && (
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#D4D0CB",
+                        borderRadius: 10,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        fontSize: 16,
+                        fontFamily: "PlusJakartaSans_400Regular",
+                        color: "#2D2D2D",
+                        backgroundColor: "#FFFFFF",
+                      }}
+                      placeholder={field.placeholder || (field.type === "DATE" ? "YYYY-MM-DD" : "")}
+                      placeholderTextColor="#D4D0CB"
+                      value={responses[key] || ""}
+                      onChangeText={(text) => onResponseChange(key, text)}
+                    />
+                  )}
+
+                  {field.type === "NUMBER" && (
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#D4D0CB",
+                        borderRadius: 10,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        fontSize: 16,
+                        fontFamily: "PlusJakartaSans_400Regular",
+                        color: "#2D2D2D",
+                        backgroundColor: "#FFFFFF",
+                      }}
+                      placeholder={field.placeholder || ""}
+                      placeholderTextColor="#D4D0CB"
+                      value={responses[key]?.toString() || ""}
+                      onChangeText={(text) => onResponseChange(key, text)}
+                      keyboardType="numeric"
+                    />
+                  )}
+
+                  {field.type === "TEXTAREA" && (
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#D4D0CB",
+                        borderRadius: 10,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                        fontSize: 16,
+                        fontFamily: "PlusJakartaSans_400Regular",
+                        color: "#2D2D2D",
+                        backgroundColor: "#FFFFFF",
+                        minHeight: 96,
+                      }}
+                      multiline
+                      textAlignVertical="top"
+                      placeholder={field.placeholder || ""}
+                      placeholderTextColor="#D4D0CB"
+                      value={responses[key] || ""}
+                      onChangeText={(text) => onResponseChange(key, text)}
+                    />
+                  )}
+
+                  {field.type === "SELECT" && (
+                    <View>
+                      {(field.options || []).map((option, oi) => {
+                        const selected = responses[key] === option;
+                        return (
+                          <TouchableOpacity
+                            key={oi}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              borderWidth: 1,
+                              borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                              backgroundColor: selected ? "#E3EDED" : "#FFFFFF",
+                              borderRadius: 10,
+                              marginBottom: 6,
+                            }}
+                            onPress={() => onResponseChange(key, option)}
+                          >
+                            <View
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: 10,
+                                borderWidth: 2,
+                                borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: 10,
+                              }}
+                            >
+                              {selected ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#5B8A8A" }} /> : null}
+                            </View>
+                            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{option}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {field.type === "MULTI_SELECT" && (
+                    <View>
+                      {(field.options || []).map((option, oi) => {
+                        const currentSelections: string[] = responses[key] || [];
+                        const selected = currentSelections.includes(option);
+                        return (
+                          <TouchableOpacity
+                            key={oi}
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              borderWidth: 1,
+                              borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                              backgroundColor: selected ? "#E3EDED" : "#FFFFFF",
+                              borderRadius: 10,
+                              marginBottom: 6,
+                            }}
+                            onPress={() => {
+                              const updated = selected
+                                ? currentSelections.filter((s) => s !== option)
+                                : [...currentSelections, option];
+                              onResponseChange(key, updated);
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: 4,
+                                borderWidth: 2,
+                                borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                                backgroundColor: selected ? "#5B8A8A" : "transparent",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: 10,
+                              }}
+                            >
+                              {selected ? <Ionicons name="checkmark" size={12} color="white" /> : null}
+                            </View>
+                            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{option}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {field.type === "CHECKBOX" && (
+                    <TouchableOpacity
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                      onPress={() => onResponseChange(key, !responses[key])}
+                    >
+                      <View
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 6,
+                          borderWidth: 2,
+                          borderColor: responses[key] ? "#5B8A8A" : "#D4D0CB",
+                          backgroundColor: responses[key] ? "#5B8A8A" : "transparent",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginRight: 10,
+                        }}
+                      >
+                        {responses[key] ? <Ionicons name="checkmark" size={14} color="white" /> : null}
+                      </View>
+                      <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>Yes</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ── SMART GOALS ─────────────────────────────────────
+interface SmartGoal {
+  specific: string;
+  measurable: string;
+  achievable: string;
+  relevant: string;
+  timeBound: string;
+  category: string;
+  sortOrder: number;
+}
+
+interface SmartGoalsContent {
+  instructions?: string;
+  maxGoals?: number;
+  categories?: string[];
+  goals?: SmartGoal[];
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  DAILY_ROUTINE: "Daily Routine",
+  WORK: "Work / School",
+  RELATIONSHIPS: "Relationships",
+  HEALTH: "Health",
+  SELF_CARE: "Self-Care",
+  OTHER: "Other",
+};
+
+const SMART_FIELDS = [
+  { key: "specific", label: "Specific", placeholder: "What exactly do you want to accomplish?" },
+  { key: "measurable", label: "Measurable", placeholder: "How will you know when it's achieved?" },
+  { key: "achievable", label: "Achievable", placeholder: "Is this realistic given your resources?" },
+  { key: "relevant", label: "Relevant", placeholder: "Why does this matter to you right now?" },
+  { key: "timeBound", label: "Time-Bound", placeholder: "By when will you accomplish this?" },
+] as const;
+
+export function SmartGoalsRenderer({
+  content,
+  responses,
+  onResponseChange,
+}: {
+  content: SmartGoalsContent;
+  responses: Record<string, any>;
+  onResponseChange: (key: string, value: any) => void;
+}) {
+  const maxGoals = content.maxGoals || 3;
+  const categories = content.categories || Object.keys(CATEGORY_LABELS);
+
+  // Determine how many goals are currently being edited
+  const goalCount = Math.max(
+    1,
+    Math.min(
+      maxGoals,
+      responses._goalCount || (content.goals?.length || 1)
+    )
+  );
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      {content.instructions ? (
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16 }}>{content.instructions}</Text>
+      ) : null}
+
+      {Array.from({ length: goalCount }).map((_, gi) => {
+        const prefix = `goal_${gi}`;
+        const prefilledGoal = content.goals?.[gi];
+
+        return (
+          <View key={gi} style={{ marginBottom: 24, backgroundColor: "#F7F5F2", borderRadius: 12, padding: 16 }}>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 12 }}>
+              Goal {gi + 1}
+            </Text>
+
+            {/* Category selector */}
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8, marginLeft: 4 }}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {categories.map((cat) => {
+                  const selected = (responses[`${prefix}_category`] || prefilledGoal?.category || "OTHER") === cat;
+                  return (
+                    <TouchableOpacity
+                      key={cat}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        backgroundColor: selected ? "#5B8A8A" : "#FFFFFF",
+                        borderWidth: 1,
+                        borderColor: selected ? "#5B8A8A" : "#D4D0CB",
+                      }}
+                      onPress={() => onResponseChange(`${prefix}_category`, cat)}
+                    >
+                      <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_500Medium", color: selected ? "white" : "#5A5A5A" }}>
+                        {CATEGORY_LABELS[cat] || cat}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* SMART fields */}
+            {SMART_FIELDS.map((field) => (
+              <View key={field.key} style={{ marginBottom: 12 }}>
+                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A", marginBottom: 6, marginLeft: 4 }}>
+                  {field.label}
+                </Text>
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#D4D0CB",
+                    borderRadius: 10,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    fontSize: 16,
+                    fontFamily: "PlusJakartaSans_400Regular",
+                    color: "#2D2D2D",
+                    backgroundColor: "#FFFFFF",
+                    minHeight: 60,
+                  }}
+                  multiline
+                  textAlignVertical="top"
+                  placeholder={field.placeholder}
+                  placeholderTextColor="#D4D0CB"
+                  value={responses[`${prefix}_${field.key}`] || prefilledGoal?.[field.key] || ""}
+                  onChangeText={(text) => onResponseChange(`${prefix}_${field.key}`, text)}
+                />
+              </View>
+            ))}
+          </View>
+        );
+      })}
+
+      {/* Add goal button */}
+      {goalCount < maxGoals ? (
+        <TouchableOpacity
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 10, borderStyle: "dashed" }}
+          onPress={() => onResponseChange("_goalCount", goalCount + 1)}
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#5B8A8A" />
+          <Text style={{ marginLeft: 8, fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A" }}>Add Another Goal</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
