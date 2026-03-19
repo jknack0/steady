@@ -10,8 +10,10 @@ import {
   Platform,
   Alert,
   RefreshControl,
+  ScrollView,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
 
@@ -27,6 +29,39 @@ interface Task {
   completedAt: string | null;
 }
 
+function getNextHour(): Date {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  return d;
+}
+
+function formatTime(date: Date): string {
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function formatDateShort(date: Date): string {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+const DURATION_OPTIONS = [
+  { label: "15m", value: 15 },
+  { label: "30m", value: 30 },
+  { label: "45m", value: 45 },
+  { label: "1h", value: 60 },
+  { label: "1.5h", value: 90 },
+  { label: "2h", value: 120 },
+];
+
 const ENERGY_CONFIG: Record<string, { bg: string; text: string; icon: string; selectedBorder: string }> = {
   LOW: { bg: "#E8F0E7", text: "#8FAE8B", icon: "leaf-outline", selectedBorder: "#8FAE8B" },
   MEDIUM: { bg: "#F5ECD7", text: "#C4A84D", icon: "flash-outline", selectedBorder: "#C4A84D" },
@@ -37,6 +72,7 @@ const CATEGORIES = ["Work", "Health", "Home", "Personal", "Study"];
 const ENERGY_LEVELS = ["LOW", "MEDIUM", "HIGH"];
 
 export default function TasksScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<"ALL" | "TODO" | "DONE">("TODO");
@@ -45,6 +81,9 @@ export default function TasksScreen() {
   const [energyLevel, setEnergyLevel] = useState<string | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [schedulingTask, setSchedulingTask] = useState<Task | null>(null);
+  const [scheduleDate, setScheduleDate] = useState<Date>(getNextHour());
+  const [scheduleDuration, setScheduleDuration] = useState(60);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["tasks", filter],
@@ -103,6 +142,38 @@ export default function TasksScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       setEditingTask(null);
+    },
+  });
+
+  const scheduleMutation = useMutation({
+    mutationFn: async () => {
+      if (!schedulingTask) return;
+      const startTime = scheduleDate.toISOString();
+      const endTime = new Date(scheduleDate.getTime() + scheduleDuration * 60 * 1000).toISOString();
+      const res = await api.createCalendarEvent({
+        title: schedulingTask.title,
+        startTime,
+        endTime,
+        eventType: "TIME_BLOCK",
+        taskId: schedulingTask.id,
+      });
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    onSuccess: () => {
+      const scheduledDateISO = scheduleDate.toISOString();
+      // Mark the task as done now that it's scheduled
+      if (schedulingTask) {
+        api.updateTask(schedulingTask.id, { status: "DONE" }).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      setSchedulingTask(null);
+      router.push({ pathname: "/(app)/(tabs)/calendar", params: { date: scheduledDateISO } });
+    },
+    onError: (err: Error) => {
+      Alert.alert("Error", err.message || "Failed to schedule task");
     },
   });
 
@@ -165,27 +236,7 @@ export default function TasksScreen() {
         onLongPress={() => handleDelete(item)}
         activeOpacity={0.7}
       >
-        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-          <TouchableOpacity
-            style={{ marginTop: 2, marginRight: 12 }}
-            onPress={() => toggleMutation.mutate({ id: item.id, currentStatus: item.status })}
-          >
-            <View
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: 8,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: isDone ? "#5B8A8A" : "transparent",
-                borderWidth: isDone ? 0 : 2,
-                borderColor: isDone ? undefined : "#D4D0CB",
-              }}
-            >
-              {isDone && <Ionicons name="checkmark" size={16} color="white" />}
-            </View>
-          </TouchableOpacity>
-
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View style={{ flex: 1 }}>
             <Text
               style={{
@@ -236,6 +287,29 @@ export default function TasksScreen() {
               )}
             </View>
           </View>
+
+          {!isDone && (
+            <TouchableOpacity
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: "#E3EDED",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: 12,
+              }}
+              onPress={(e) => {
+                e.stopPropagation();
+                setSchedulingTask(item);
+                setScheduleDate(getNextHour());
+                setScheduleDuration(item.estimatedMinutes || 60);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#5B8A8A" />
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -326,6 +400,157 @@ export default function TasksScreen() {
       >
         <Ionicons name="add" size={28} color="white" />
       </TouchableOpacity>
+
+      {/* Schedule Modal */}
+      <Modal visible={!!schedulingTask} transparent animationType="slide">
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)", justifyContent: "flex-end" }}
+          onPress={() => setSchedulingTask(null)}
+          activeOpacity={1}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 20,
+              paddingBottom: 40,
+              paddingTop: 20,
+            }}>
+              {/* Handle bar */}
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#D4D0CB", alignSelf: "center", marginBottom: 20 }} />
+
+              <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>
+                Schedule Task
+              </Text>
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginBottom: 20 }} numberOfLines={1}>
+                {schedulingTask?.title}
+              </Text>
+
+              {/* Date selector */}
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Day</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {Array.from({ length: 7 }).map((_, i) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + i);
+                    d.setHours(scheduleDate.getHours(), scheduleDate.getMinutes(), 0, 0);
+                    const isSelected = d.toDateString() === scheduleDate.toDateString();
+                    const dayName = i === 0 ? "Today" : i === 1 ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short" });
+                    const dayNum = d.getDate();
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        style={{
+                          width: 64,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                          backgroundColor: isSelected ? "#5B8A8A" : "#F0EDE8",
+                          alignItems: "center",
+                        }}
+                        onPress={() => {
+                          const newDate = new Date(scheduleDate);
+                          newDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
+                          setScheduleDate(newDate);
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_500Medium", color: isSelected ? "rgba(255,255,255,0.7)" : "#8A8A8A" }}>{dayName}</Text>
+                        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: isSelected ? "#FFFFFF" : "#2D2D2D", marginTop: 2 }}>{dayNum}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Time selector */}
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Time</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", gap: 6 }}>
+                  {Array.from({ length: 28 }).map((_, i) => {
+                    const hour = 6 + Math.floor(i / 2);
+                    const minute = (i % 2) * 30;
+                    if (hour > 21) return null;
+                    const t = new Date(scheduleDate);
+                    t.setHours(hour, minute, 0, 0);
+                    const isToday = scheduleDate.toDateString() === new Date().toDateString();
+                    const now = new Date();
+                    const isPast = isToday && (hour < now.getHours() || (hour === now.getHours() && minute < now.getMinutes()));
+                    const isSelected = scheduleDate.getHours() === hour && scheduleDate.getMinutes() === minute;
+                    if (isPast) return null;
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        style={{
+                          paddingHorizontal: 14,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                          backgroundColor: isSelected ? "#5B8A8A" : "#F0EDE8",
+                        }}
+                        onPress={() => {
+                          const newDate = new Date(scheduleDate);
+                          newDate.setHours(hour, minute, 0, 0);
+                          setScheduleDate(newDate);
+                        }}
+                      >
+                        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: isSelected ? "#FFFFFF" : "#5A5A5A" }}>
+                          {formatTime(t)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Duration selector */}
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Duration</Text>
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 24 }}>
+                {DURATION_OPTIONS.map((opt) => {
+                  const isSelected = scheduleDuration === opt.value;
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                        backgroundColor: isSelected ? "#5B8A8A" : "#F0EDE8",
+                        alignItems: "center",
+                      }}
+                      onPress={() => setScheduleDuration(opt.value)}
+                    >
+                      <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: isSelected ? "#FFFFFF" : "#5A5A5A" }}>{opt.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Summary */}
+              <View style={{ backgroundColor: "#F7F5F2", borderRadius: 12, padding: 14, marginBottom: 20, flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="calendar" size={18} color="#5B8A8A" />
+                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginLeft: 10 }}>
+                  {formatDateShort(scheduleDate)} at {formatTime(scheduleDate)} · {scheduleDuration}min
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#5B8A8A",
+                  borderRadius: 12,
+                  paddingVertical: 16,
+                  alignItems: "center",
+                }}
+                onPress={() => scheduleMutation.mutate()}
+                disabled={scheduleMutation.isPending}
+                activeOpacity={0.8}
+              >
+                <Text style={{ color: "white", fontFamily: "PlusJakartaSans_700Bold", fontSize: 16 }}>
+                  {scheduleMutation.isPending ? "Scheduling..." : "Schedule on Calendar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Add/Edit Modal */}
       <Modal visible={showAdd || !!editingTask} transparent animationType="slide">

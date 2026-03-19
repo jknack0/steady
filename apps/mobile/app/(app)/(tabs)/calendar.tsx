@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Alert,
   RefreshControl,
 } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
@@ -51,7 +52,14 @@ function formatHour(h: number) {
 
 export default function CalendarScreen() {
   const queryClient = useQueryClient();
+  const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  useEffect(() => {
+    if (dateParam) {
+      setSelectedDate(new Date(dateParam));
+    }
+  }, [dateParam]);
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState("");
   const [startHour, setStartHour] = useState(9);

@@ -50,7 +50,11 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 px-4">
         <div className="text-center flex flex-col items-center">
-          <div className="w-14 h-14 mb-4 rounded-2xl bg-primary flex items-center justify-center text-white text-2xl font-bold">S</div>
+          <div className="w-14 h-14 mb-4 rounded-2xl bg-primary flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12h4l3-9 4 18 3-9h4" />
+            </svg>
+          </div>
           <h1 className="text-3xl font-bold tracking-tight">STEADY</h1>
           <p className="text-sm text-muted-foreground mt-1">Create your clinician account</p>
         </div>

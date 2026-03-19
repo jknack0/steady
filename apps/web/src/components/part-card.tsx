@@ -52,17 +52,17 @@ import {
 } from "lucide-react";
 
 const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-  TEXT: { icon: FileText, label: "Text", color: "text-blue-600" },
-  VIDEO: { icon: Video, label: "Video", color: "text-purple-600" },
-  STRATEGY_CARDS: { icon: Layers, label: "Strategy Cards", color: "text-amber-600" },
-  JOURNAL_PROMPT: { icon: BookOpen, label: "Journal Prompt", color: "text-green-600" },
-  CHECKLIST: { icon: CheckSquare, label: "Checklist", color: "text-teal-600" },
+  TEXT: { icon: FileText, label: "Text", color: "text-blue-400" },
+  VIDEO: { icon: Video, label: "Video", color: "text-purple-400" },
+  STRATEGY_CARDS: { icon: Layers, label: "Strategy Cards", color: "text-amber-400" },
+  JOURNAL_PROMPT: { icon: BookOpen, label: "Journal Prompt", color: "text-green-400" },
+  CHECKLIST: { icon: CheckSquare, label: "Checklist", color: "text-teal" },
   RESOURCE_LINK: { icon: Link, label: "Resource Link", color: "text-sky-brand" },
-  DIVIDER: { icon: Minus, label: "Divider", color: "text-gray-500" },
-  HOMEWORK: { icon: ClipboardList, label: "Homework", color: "text-orange-600" },
-  ASSESSMENT: { icon: FileQuestion, label: "Assessment", color: "text-red-600" },
-  INTAKE_FORM: { icon: FormInput, label: "Intake Form", color: "text-pink-600" },
-  SMART_GOALS: { icon: Target, label: "SMART Goals", color: "text-emerald-600" },
+  DIVIDER: { icon: Minus, label: "Divider", color: "text-warm-200" },
+  HOMEWORK: { icon: ClipboardList, label: "Homework", color: "text-orange-400" },
+  ASSESSMENT: { icon: FileQuestion, label: "Assessment", color: "text-rose" },
+  INTAKE_FORM: { icon: FormInput, label: "Intake Form", color: "text-pink-400" },
+  SMART_GOALS: { icon: Target, label: "SMART Goals", color: "text-sage" },
 };
 
 interface PartCardProps {
@@ -185,12 +185,12 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
 
         <SaveIndicator status={saveStatus} />
 
-        <Badge variant={part.isRequired ? "default" : "secondary"} className="text-xs shrink-0">
-          {part.isRequired ? "Required" : "Optional"}
-        </Badge>
-
         <Badge variant="outline" className="text-xs shrink-0">
           {typeConfig.label}
+        </Badge>
+
+        <Badge variant={part.isRequired ? "default" : "secondary"} className="text-xs shrink-0">
+          {part.isRequired ? "Required" : "Optional"}
         </Badge>
 
         {/* Dropdown menu */}

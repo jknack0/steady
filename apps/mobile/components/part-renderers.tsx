@@ -2,18 +2,278 @@ import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput } from "re
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
+// ── Rich Text Parser ─────────────────────────────────
+// Converts HTML from Tiptap editor into React Native Text elements
+// with proper bold, italic, headings, lists, and links.
+
+interface TextSegment {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  link?: string;
+}
+
+interface RichBlock {
+  type: "paragraph" | "heading" | "list-item" | "bullet-list" | "ordered-list" | "blockquote" | "hr";
+  level?: number; // for headings
+  segments: TextSegment[];
+  children?: RichBlock[];
+  index?: number; // for ordered lists
+}
+
+function parseHTML(html: string): RichBlock[] {
+  const blocks: RichBlock[] = [];
+
+  // Normalize: replace <br> with newlines, clean up whitespace
+  let cleaned = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/\r\n/g, "\n");
+
+  // Split into block-level elements
+  // Match: <p>, <h1>-<h6>, <ul>, <ol>, <blockquote>, <li>, <hr>
+  const blockRegex = /<(p|h[1-6]|ul|ol|blockquote|li|hr)(?: [^>]*)?\s*\/?>([\s\S]*?)<\/\1>|<hr\s*\/?>/gi;
+
+  let match;
+  let lastIndex = 0;
+
+  // If no block tags found, treat entire content as paragraphs split by double newlines
+  if (!/<(p|h[1-6]|ul|ol|blockquote|li|hr)/i.test(cleaned)) {
+    // Plain text or markdown-ish content
+    const paragraphs = cleaned.split(/\n\n+/);
+    for (const para of paragraphs) {
+      const trimmed = para.trim();
+      if (trimmed) {
+        blocks.push({ type: "paragraph", segments: parseInline(trimmed) });
+      }
+    }
+    return blocks;
+  }
+
+  // Process list containers: extract <li> items from <ul>/<ol>
+  cleaned = cleaned.replace(/<(ul|ol)(?: [^>]*)?\s*>([\s\S]*?)<\/\1>/gi, (_, tag, inner) => {
+    const listType = tag.toLowerCase() === "ul" ? "bullet-list" : "ordered-list";
+    const liRegex = /<li(?: [^>]*)?\s*>([\s\S]*?)<\/li>/gi;
+    let liMatch;
+    let liIndex = 1;
+    let replacement = "";
+    while ((liMatch = liRegex.exec(inner)) !== null) {
+      // Use a custom marker so we can identify list items
+      replacement += `<__${listType}_item__ data-index="${liIndex}">${liMatch[1]}</__${listType}_item__>`;
+      liIndex++;
+    }
+    return replacement;
+  });
+
+  // Now parse all blocks
+  const generalBlockRegex = /<(p|h[1-6]|blockquote|__[a-z-]+_item__)(?: [^>]*?)?\s*>([\s\S]*?)<\/\1>|<hr\s*\/?>/gi;
+
+  while ((match = generalBlockRegex.exec(cleaned)) !== null) {
+    if (match[0].match(/^<hr/i)) {
+      blocks.push({ type: "hr", segments: [] });
+      continue;
+    }
+
+    const tag = match[1].toLowerCase();
+    const inner = match[2];
+
+    if (tag.match(/^h[1-6]$/)) {
+      const level = parseInt(tag[1]);
+      blocks.push({ type: "heading", level, segments: parseInline(inner) });
+    } else if (tag === "blockquote") {
+      blocks.push({ type: "blockquote", segments: parseInline(inner.replace(/<\/?p[^>]*>/gi, "")) });
+    } else if (tag.includes("bullet-list_item")) {
+      blocks.push({ type: "list-item", segments: parseInline(inner.replace(/<\/?p[^>]*>/gi, "")) });
+    } else if (tag.includes("ordered-list_item")) {
+      const idxMatch = match[0].match(/data-index="(\d+)"/);
+      blocks.push({ type: "list-item", index: idxMatch ? parseInt(idxMatch[1]) : undefined, segments: parseInline(inner.replace(/<\/?p[^>]*>/gi, "")) });
+    } else {
+      // paragraph
+      blocks.push({ type: "paragraph", segments: parseInline(inner) });
+    }
+  }
+
+  // If we didn't extract any blocks, fall back to plain text
+  if (blocks.length === 0) {
+    const stripped = cleaned.replace(/<[^>]*>/g, "").trim();
+    if (stripped) {
+      blocks.push({ type: "paragraph", segments: parseInline(stripped) });
+    }
+  }
+
+  return blocks;
+}
+
+function parseInline(html: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+
+  // Handle nested inline tags: <strong>, <b>, <em>, <i>, <a>
+  // We'll use a simple recursive approach
+  let remaining = html;
+
+  // Process inline tags iteratively
+  const inlineRegex = /<(strong|b|em|i|a)(?: [^>]*)?\s*>([\s\S]*?)<\/\1>/i;
+
+  while (remaining.length > 0) {
+    const match = inlineRegex.exec(remaining);
+
+    if (!match) {
+      // No more inline tags — push remaining as plain text
+      const text = decodeEntities(remaining.replace(/<[^>]*>/g, ""));
+      if (text) segments.push({ text });
+      break;
+    }
+
+    // Push text before the match
+    const before = remaining.slice(0, match.index);
+    const beforeText = decodeEntities(before.replace(/<[^>]*>/g, ""));
+    if (beforeText) segments.push({ text: beforeText });
+
+    const tag = match[1].toLowerCase();
+    const inner = match[2];
+
+    // Extract href for links
+    let href: string | undefined;
+    if (tag === "a") {
+      const hrefMatch = match[0].match(/href="([^"]*?)"/i);
+      href = hrefMatch ? hrefMatch[1] : undefined;
+    }
+
+    // Recursively parse inner content for nested tags
+    const innerSegments = parseInline(inner);
+
+    for (const seg of innerSegments) {
+      segments.push({
+        ...seg,
+        bold: seg.bold || tag === "strong" || tag === "b",
+        italic: seg.italic || tag === "em" || tag === "i",
+        link: seg.link || href,
+      });
+    }
+
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+
+  // Handle markdown-style bold (**text**) and italic (*text*) in segments
+  const processed: TextSegment[] = [];
+  for (const seg of segments) {
+    if (seg.bold || seg.italic || seg.link) {
+      processed.push(seg);
+      continue;
+    }
+    // Parse markdown bold/italic in plain text
+    const mdParsed = parseMarkdownInline(seg.text);
+    processed.push(...mdParsed);
+  }
+
+  return processed;
+}
+
+function parseMarkdownInline(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  // Match **bold** and *italic* (but not ** inside a word)
+  const mdRegex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  let lastIdx = 0;
+  let match;
+
+  while ((match = mdRegex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      segments.push({ text: text.slice(lastIdx, match.index) });
+    }
+    if (match[1]) {
+      // Bold
+      segments.push({ text: match[1], bold: true });
+    } else if (match[2]) {
+      // Italic
+      segments.push({ text: match[2], italic: true });
+    }
+    lastIdx = match.index + match[0].length;
+  }
+
+  if (lastIdx < text.length) {
+    segments.push({ text: text.slice(lastIdx) });
+  }
+
+  return segments.length > 0 ? segments : [{ text }];
+}
+
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
+function RichTextBlock({ block }: { block: RichBlock }) {
+  if (block.type === "hr") {
+    return <View style={{ height: 1, backgroundColor: "#D4D0CB", marginVertical: 12 }} />;
+  }
+
+  const isHeading = block.type === "heading";
+  const isListItem = block.type === "list-item";
+  const isBlockquote = block.type === "blockquote";
+
+  const fontSize = isHeading
+    ? block.level === 1 ? 22 : block.level === 2 ? 18 : 16
+    : 16;
+
+  const fontFamily = isHeading
+    ? "PlusJakartaSans_700Bold"
+    : "PlusJakartaSans_400Regular";
+
+  const marginBottom = isHeading ? 8 : isListItem ? 4 : 10;
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        marginBottom,
+        ...(isBlockquote ? { borderLeftWidth: 3, borderLeftColor: "#5B8A8A", paddingLeft: 12 } : {}),
+      }}
+    >
+      {isListItem && (
+        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginRight: 8, minWidth: 16 }}>
+          {block.index ? `${block.index}.` : "•"}
+        </Text>
+      )}
+      <Text style={{ flex: 1, fontSize, fontFamily, color: "#2D2D2D", lineHeight: fontSize * 1.5 }}>
+        {block.segments.map((seg, i) => (
+          <Text
+            key={i}
+            style={{
+              fontFamily: seg.bold && seg.italic
+                ? "PlusJakartaSans_700Bold"
+                : seg.bold
+                ? "PlusJakartaSans_700Bold"
+                : seg.italic
+                ? "PlusJakartaSans_400Regular"
+                : fontFamily,
+              fontStyle: seg.italic ? "italic" : "normal",
+              color: seg.link ? "#5B8A8A" : undefined,
+              textDecorationLine: seg.link ? "underline" : "none",
+            }}
+            onPress={seg.link ? () => Linking.openURL(seg.link!) : undefined}
+          >
+            {seg.text}
+          </Text>
+        ))}
+      </Text>
+    </View>
+  );
+}
+
 // ── TEXT ──────────────────────────────────────────────
 export function TextRenderer({ content }: { content: { body: string; sections?: string[] } }) {
-  // Strip basic HTML tags for display
-  const plainText = content.body
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<[^>]*>/g, "")
-    .trim();
+  const blocks = parseHTML(content.body || "");
 
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", lineHeight: 24 }}>{plainText}</Text>
+      {blocks.map((block, i) => (
+        <RichTextBlock key={i} block={block} />
+      ))}
     </View>
   );
 }

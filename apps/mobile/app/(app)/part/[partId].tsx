@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { useLocalSearchParams, router, Stack } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import {
@@ -35,6 +36,7 @@ export default function PartScreen() {
     enrollmentId: string;
   }>();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   // Local state for interactive parts
   const [journalResponses, setJournalResponses] = useState<Record<number, string>>({});
@@ -120,7 +122,13 @@ export default function PartScreen() {
     <>
       <Stack.Screen options={{ title: part.title || partTypeLabel(part.type) }} />
       <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-        <ScrollView style={{ flex: 1 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={{ paddingBottom: 24 }}
+        >
           {/* Part header */}
           <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
             <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>{part.title}</Text>
@@ -152,7 +160,7 @@ export default function PartScreen() {
 
         {/* Bottom action bar */}
         {!isCompleted && part.type !== "DIVIDER" ? (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 16, borderTopWidth: 1, borderTopColor: "#F0EDE8", backgroundColor: "#FFFFFF" }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 + insets.bottom, borderTopWidth: 1, borderTopColor: "#F0EDE8", backgroundColor: "#FFFFFF" }}>
             <TouchableOpacity
               style={{
                 borderRadius: 10,

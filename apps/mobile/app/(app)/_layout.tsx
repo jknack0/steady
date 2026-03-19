@@ -43,11 +43,11 @@ export default function AppLayout() {
       />
       <Stack.Screen
         name="program/[enrollmentId]"
-        options={{ title: "Program" }}
+        options={{ title: "Program", headerBackTitle: "Back" }}
       />
       <Stack.Screen
         name="part/[partId]"
-        options={{ title: "Content" }}
+        options={{ title: "Content", headerBackTitle: "Back" }}
       />
     </Stack>
   );
