@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
 async function main() {
   // ── 0. Clean up old data ──────────────────────────────────
   // Delete old users that may exist with wrong roles from previous seeds
-  for (const email of ["admin@admin.com", "test@test.com", "clinician@steady.dev"]) {
+  for (const email of ["admin@admin.com", "test@test.com", "clinician@steady.dev", "jo@jo.com"]) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       // Delete in dependency order
@@ -73,6 +73,28 @@ async function main() {
       email: "test@test.com",
       passwordHash: testPasswordHash,
       firstName: "Test",
+      lastName: "User",
+      role: "PARTICIPANT",
+      participantProfile: {
+        create: {
+          timezone: "America/New_York",
+          onboardingCompleted: true,
+        },
+      },
+    },
+    include: { participantProfile: true },
+  });
+
+  // ── 2b. Create participant Jo (jo@jo.com) ─────────────────
+  const joPasswordHash = await bcrypt.hash("Jo1", 12);
+
+  const joParticipant = await prisma.user.upsert({
+    where: { email: "jo@jo.com" },
+    update: { passwordHash: joPasswordHash },
+    create: {
+      email: "jo@jo.com",
+      passwordHash: joPasswordHash,
+      firstName: "Jo",
       lastName: "User",
       role: "PARTICIPANT",
       participantProfile: {
@@ -734,6 +756,89 @@ async function main() {
     });
   }
 
+  // ── 4b. Create client-named programs and enroll Jo with session-level content ─────────────────
+  const clientNames = ["Client Alpha", "Client Beta", "Client Gamma"];
+
+  const joEnrollments: { programTitle: string; enrollmentId: string }[] = [];
+
+  for (let ci = 0; ci < clientNames.length; ci++) {
+    const clientTitle = clientNames[ci];
+
+    const clientProgram = await prisma.program.create({
+      data: {
+        clinicianId: admin.clinicianProfile!.id,
+        title: clientTitle,
+        description: `Program for ${clientTitle}`,
+        cadence: "WEEKLY",
+        enrollmentMethod: "INVITE",
+        sessionType: "ONE_ON_ONE",
+        status: "PUBLISHED",
+      },
+    });
+
+    const joEnrollment = await prisma.enrollment.create({
+      data: {
+        participantId: joParticipant.participantProfile!.id,
+        programId: clientProgram.id,
+        status: "ACTIVE",
+      },
+    });
+
+    // Create one completed session and one upcoming session
+    const pastSession = await prisma.session.create({
+      data: {
+        enrollmentId: joEnrollment.id,
+        scheduledAt: new Date(Date.now() - (3 + ci) * 24 * 60 * 60 * 1000),
+        status: "COMPLETED",
+        clinicianNotes: `Completed check-in for ${clientTitle}`,
+        participantSummary: "Participant completed intake and initial homework.",
+      },
+    });
+
+    const upcomingSession = await prisma.session.create({
+      data: {
+        enrollmentId: joEnrollment.id,
+        scheduledAt: new Date(Date.now() + (7 + ci) * 24 * 60 * 60 * 1000),
+        status: "SCHEDULED",
+      },
+    });
+
+    // Create a few tasks that represent session homework between sessions
+    await prisma.task.createMany({
+      data: [
+        {
+          participantId: joParticipant.participantProfile!.id,
+          title: "Daily Mood Survey",
+          description: "Please complete this short daily mood survey each evening for the next week.",
+          estimatedMinutes: 2,
+          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+          sourceType: "HOMEWORK",
+          sourceId: pastSession.id,
+        },
+        {
+          participantId: joParticipant.participantProfile!.id,
+          title: `Read article: How to manage focus (${clientTitle})`,
+          description: "Read the short article linked in the app and make one note in your journal.",
+          estimatedMinutes: 10,
+          dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+          sourceType: "CLINICIAN_PUSH",
+          sourceId: pastSession.id,
+        },
+        {
+          participantId: joParticipant.participantProfile!.id,
+          title: `Watch: Short film about attention (${clientTitle})`,
+          description: "Watch the short clip and reflect on how the strategies apply to you.",
+          estimatedMinutes: 20,
+          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+          sourceType: "CLINICIAN_PUSH",
+          sourceId: pastSession.id,
+        },
+      ],
+    });
+
+    joEnrollments.push({ programTitle: clientTitle, enrollmentId: joEnrollment.id });
+  }
+
   // ── 6. Generate dev tokens ────────────────────────────────
   const adminToken = jwt.sign(
     {
@@ -773,6 +878,15 @@ async function main() {
   console.log(`Program: ${program.title} (${program.id})`);
   console.log(`Modules: ${allModules.length}`);
   console.log(`Enrollment: ${enrollment.id} (ACTIVE)`);
+
+  console.log("\n--- Jo (Participant) ---");
+  console.log(`Email: jo@jo.com`);
+  console.log(`Password: Jo1`);
+  console.log(`User ID: ${joParticipant.id}`);
+  console.log("Jo enrollments:");
+  for (const e of joEnrollments) {
+    console.log(`- ${e.programTitle}: ${e.enrollmentId}`);
+  }
 }
 
 main()
