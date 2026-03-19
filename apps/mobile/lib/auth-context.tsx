@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api } from "./api";
+import { registerForPushNotifications, unregisterPushNotifications } from "./notifications";
 
 interface User {
   id: string;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api.me();
       if (res.success && res.data) {
         setUser(res.data);
+        registerForPushNotifications().catch(() => {});
       } else {
         await api.clearTokens();
       }
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (res.success && res.data) {
       await api.setTokens(res.data.accessToken, res.data.refreshToken);
       setUser(res.data.user);
+      registerForPushNotifications().catch(() => {});
       return { success: true };
     }
     return { success: false, error: res.error || "Login failed" };
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.success && res.data) {
         await api.setTokens(res.data.accessToken, res.data.refreshToken);
         setUser(res.data.user);
+        registerForPushNotifications().catch(() => {});
         return { success: true };
       }
       return { success: false, error: res.error || "Registration failed" };
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    await unregisterPushNotifications().catch(() => {});
     await api.clearTokens();
     setUser(null);
   }, []);

@@ -122,4 +122,106 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ enrollmentId, responseData }),
     }),
+
+  // Notifications
+  registerPushToken: (pushToken: string) =>
+    apiFetch("/api/notifications/push-token", {
+      method: "POST",
+      body: JSON.stringify({ pushToken }),
+    }),
+
+  removePushToken: () =>
+    apiFetch("/api/notifications/push-token", { method: "DELETE" }),
+
+  getNotificationPreferences: () =>
+    apiFetch("/api/notifications/preferences"),
+
+  updateNotificationPreferences: (preferences: Array<{ category: string; enabled: boolean; preferredTime?: string }>) =>
+    apiFetch("/api/notifications/preferences", {
+      method: "PUT",
+      body: JSON.stringify({ preferences }),
+    }),
+
+  // Tasks
+  getTasks: (params?: { status?: string; category?: string; cursor?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    if (params?.category) qs.set("category", params.category);
+    if (params?.cursor) qs.set("cursor", params.cursor);
+    const query = qs.toString();
+    return apiFetch(`/api/participant/tasks${query ? `?${query}` : ""}`);
+  },
+
+  createTask: (data: {
+    title: string;
+    description?: string;
+    estimatedMinutes?: number;
+    dueDate?: string;
+    energyLevel?: string;
+    category?: string;
+  }) =>
+    apiFetch("/api/participant/tasks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateTask: (id: string, data: any) =>
+    apiFetch(`/api/participant/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteTask: (id: string) =>
+    apiFetch(`/api/participant/tasks/${id}`, { method: "DELETE" }),
+
+  // Calendar
+  getCalendarEvents: (start: string, end: string) =>
+    apiFetch(`/api/participant/calendar?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`),
+
+  createCalendarEvent: (data: {
+    title: string;
+    startTime: string;
+    endTime: string;
+    eventType?: string;
+    color?: string;
+    taskId?: string;
+  }) =>
+    apiFetch("/api/participant/calendar", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateCalendarEvent: (id: string, data: any) =>
+    apiFetch(`/api/participant/calendar/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteCalendarEvent: (id: string) =>
+    apiFetch(`/api/participant/calendar/${id}`, { method: "DELETE" }),
+
+  // Journal
+  getJournalEntries: (params?: { start?: string; end?: string; cursor?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.start) qs.set("start", params.start);
+    if (params?.end) qs.set("end", params.end);
+    if (params?.cursor) qs.set("cursor", params.cursor);
+    const query = qs.toString();
+    return apiFetch(`/api/participant/journal${query ? `?${query}` : ""}`);
+  },
+
+  getJournalEntry: (date: string) =>
+    apiFetch(`/api/participant/journal/${date}`),
+
+  saveJournalEntry: (data: {
+    entryDate: string;
+    freeformContent?: string;
+    responses?: any;
+    regulationScore?: number;
+    isSharedWithClinician?: boolean;
+  }) =>
+    apiFetch("/api/participant/journal", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };

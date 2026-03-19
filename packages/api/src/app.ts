@@ -9,6 +9,10 @@ import moduleRoutes from "./routes/modules";
 import partRoutes from "./routes/parts";
 import enrollmentRoutes from "./routes/enrollments";
 import participantRoutes from "./routes/participant";
+import taskRoutes from "./routes/tasks";
+import calendarRoutes from "./routes/calendar";
+import journalRoutes from "./routes/journal";
+import notificationRoutes from "./routes/notifications";
 
 const app = express();
 
@@ -38,6 +42,10 @@ app.use("/api/programs/:programId/modules", moduleRoutes);
 app.use("/api/programs/:programId/modules/:moduleId/parts", partRoutes);
 app.use("/api/programs/:programId/enrollments", enrollmentRoutes);
 app.use("/api/participant", participantRoutes);
+app.use("/api/participant/tasks", taskRoutes);
+app.use("/api/participant/calendar", calendarRoutes);
+app.use("/api/participant/journal", journalRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Error handler
 app.use(errorHandler);

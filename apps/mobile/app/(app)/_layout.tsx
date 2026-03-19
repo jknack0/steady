@@ -21,8 +21,8 @@ export default function AppLayout() {
   return (
     <Stack>
       <Stack.Screen
-        name="programs"
-        options={{ title: "My Programs", headerTitleStyle: { fontWeight: "bold" } }}
+        name="(tabs)"
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="program/[enrollmentId]"
