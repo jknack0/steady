@@ -37,6 +37,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  Eye,
   Loader2,
   Plus,
 } from "lucide-react";
@@ -259,6 +260,14 @@ export default function ModuleEditorPage() {
             </h1>
           )}
           <SaveIndicator status={moduleSaveStatus} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/programs/${programId}/preview`)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
         </div>
 
         {editingSubtitle ? (
@@ -417,6 +426,7 @@ export default function ModuleEditorPage() {
                     onUpdate={(data) => handlePartUpdate(part.id, data)}
                     onDelete={() => handlePartDelete(part.id)}
                     onDuplicate={() => handlePartDuplicate(part.id)}
+                    onPreview={() => router.push(`/programs/${programId}/preview`)}
                   />
                 ))}
               </div>

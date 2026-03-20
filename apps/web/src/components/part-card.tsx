@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  Eye,
   GripVertical,
   MoreVertical,
   Pencil,
@@ -72,9 +73,10 @@ interface PartCardProps {
   onUpdate: (data: { title?: string; isRequired?: boolean; content?: any }) => Promise<unknown>;
   onDelete: () => void;
   onDuplicate: () => void;
+  onPreview?: () => void;
 }
 
-export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProps) {
+export function PartCard({ part, onUpdate, onDelete, onDuplicate, onPreview }: PartCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState(part.title);
@@ -226,6 +228,12 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
             <MoreVertical className="h-4 w-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {onPreview && (
+              <DropdownMenuItem onClick={onPreview}>
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => {
                 setTitleValue(part.title);

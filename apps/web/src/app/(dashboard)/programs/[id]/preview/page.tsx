@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CheckCircle2,
   Lock,
@@ -375,7 +376,7 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
   return <p className="text-sm text-[#5A5A5A]">{getPartPreview(part)}</p>;
 }
 
-function PhoneModuleCard({ module, index }: { module: PreviewModule; index: number }) {
+function PhoneModuleCard({ module, index, onOpenPart }: { module: PreviewModule; index: number; onOpenPart: (part: PreviewPart) => void }) {
   const [expanded, setExpanded] = useState(index === 0);
   const isCurrent = index === 0;
   const isLocked = index > 1;
@@ -441,7 +442,7 @@ function PhoneModuleCard({ module, index }: { module: PreviewModule; index: numb
       {expanded && !isLocked && (
         <div className="border-t border-[#F0EDE8]">
           {module.parts.map((part) => (
-            <PartPreviewRow key={part.id} part={part} />
+            <PartPreviewRow key={part.id} part={part} onOpen={() => onOpenPart(part)} />
           ))}
         </div>
       )}
@@ -449,8 +450,7 @@ function PhoneModuleCard({ module, index }: { module: PreviewModule; index: numb
   );
 }
 
-function PartPreviewRow({ part }: { part: PreviewPart }) {
-  const [expanded, setExpanded] = useState(false);
+function PartPreviewRow({ part, onOpen }: { part: PreviewPart; onOpen: () => void }) {
   const Icon = PART_ICONS[part.type] || FileText;
 
   if (part.type === "DIVIDER") {
@@ -464,8 +464,8 @@ function PartPreviewRow({ part }: { part: PreviewPart }) {
   return (
     <div className="border-b border-[#F0EDE8] last:border-b-0">
       <button
-        className="flex w-full items-center gap-3 px-4 py-3"
-        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-[#F7F5F2]/50 transition-colors"
+        onClick={onOpen}
       >
         {/* Checkbox placeholder */}
         <div className="h-5 w-5 shrink-0 rounded-md border-2 border-[#D4D0CB]" />
@@ -474,9 +474,7 @@ function PartPreviewRow({ part }: { part: PreviewPart }) {
 
         <div className="flex-1 text-left">
           <p className="text-sm font-medium text-[#2D2D2D]">{part.title}</p>
-          {!expanded && (
-            <p className="text-xs text-[#8A8A8A] truncate mt-0.5">{getPartPreview(part)}</p>
-          )}
+          <p className="text-xs text-[#8A8A8A] truncate mt-0.5">{getPartPreview(part)}</p>
         </div>
 
         {part.isRequired && (
@@ -485,19 +483,47 @@ function PartPreviewRow({ part }: { part: PreviewPart }) {
           </span>
         )}
 
-        {expanded ? <ChevronDown className="h-3 w-3 text-[#8A8A8A]" /> : <ChevronRight className="h-3 w-3 text-[#8A8A8A]" />}
+        <ChevronRight className="h-3 w-3 text-[#8A8A8A]" />
       </button>
+    </div>
+  );
+}
 
-      {expanded && (
-        <div className="px-4 pb-4 pl-16">
-          <div className="mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A8A8A]">
-              {PART_LABELS[part.type] || part.type}
-            </span>
-          </div>
-          <PartContentPreview part={part} />
+function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => void }) {
+  return (
+    <div className="flex flex-col h-full">
+      {/* Nav bar */}
+      <div className="flex items-center gap-2 bg-white px-4 py-3 border-b border-[#F0EDE8]">
+        <button onClick={onBack} className="flex items-center gap-1 text-[#5B8A8A]">
+          <ChevronLeft className="h-4 w-4" />
+          <span className="text-sm font-semibold">Back</span>
+        </button>
+      </div>
+
+      {/* Part header */}
+      <div className="bg-white px-4 pt-3 pb-4">
+        <h3 className="text-lg font-bold text-[#2D2D2D]">{part.title}</h3>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A8A8A]">
+            {PART_LABELS[part.type] || part.type}
+          </span>
+          {part.isRequired && (
+            <span className="text-[10px] font-medium text-[#D4A0A0]">Required</span>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Full part content */}
+      <div className="flex-1 overflow-y-auto bg-white">
+        <PartContentPreview part={part} />
+      </div>
+
+      {/* Mark complete button */}
+      <div className="bg-white border-t border-[#F0EDE8] px-4 py-3">
+        <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
+          <span className="text-sm font-semibold text-white">Mark as Complete</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -506,6 +532,7 @@ export default function ProgramPreviewPage() {
   const params = useParams();
   const router = useRouter();
   const programId = params.id as string;
+  const [activePart, setActivePart] = useState<PreviewPart | null>(null);
 
   const { data: program, isLoading } = useQuery<PreviewProgram>({
     queryKey: ["programs", programId, "preview"],
@@ -547,9 +574,9 @@ export default function ProgramPreviewPage() {
 
       {/* Phone frame */}
       <div className="flex justify-center">
-        <div className="w-[375px] rounded-[2.5rem] border-[8px] border-[#2D2D2D] bg-[#F7F5F2] shadow-2xl overflow-hidden">
+        <div className="w-[375px] h-[740px] rounded-[2.5rem] border-[8px] border-[#2D2D2D] bg-[#F7F5F2] shadow-2xl overflow-hidden flex flex-col">
           {/* Status bar */}
-          <div className="flex items-center justify-between bg-white px-6 py-2">
+          <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
             <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
             <div className="flex items-center gap-1">
               <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]">
@@ -558,33 +585,41 @@ export default function ProgramPreviewPage() {
             </div>
           </div>
 
-          {/* App header */}
-          <div className="bg-white px-5 pb-4 pt-2">
-            <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>
-              {program.title}
-            </h2>
-            {program.description && (
-              <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>
-            )}
-            <div className="flex items-center gap-1 mt-2">
-              <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-[11px] text-[#8A8A8A]">
-                {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
-              </span>
-            </div>
-          </div>
+          {activePart ? (
+            /* ── Part Detail Screen ── */
+            <PartDetailView part={activePart} onBack={() => setActivePart(null)} />
+          ) : (
+            /* ── Program / Module List Screen ── */
+            <>
+              {/* App header */}
+              <div className="bg-white px-5 pb-4 pt-2 shrink-0">
+                <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>
+                  {program.title}
+                </h2>
+                {program.description && (
+                  <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>
+                )}
+                <div className="flex items-center gap-1 mt-2">
+                  <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-[11px] text-[#8A8A8A]">
+                    {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
+                  </span>
+                </div>
+              </div>
 
-          {/* Modules list */}
-          <div className="px-4 py-4 max-h-[600px] overflow-y-auto">
-            {program.modules.map((module, i) => (
-              <PhoneModuleCard key={module.id} module={module} index={i} />
-            ))}
-          </div>
+              {/* Modules list */}
+              <div className="px-4 py-4 flex-1 overflow-y-auto">
+                {program.modules.map((module, i) => (
+                  <PhoneModuleCard key={module.id} module={module} index={i} onOpenPart={setActivePart} />
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Home indicator */}
-          <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2]">
+          <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2] shrink-0">
             <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
           </div>
         </div>
