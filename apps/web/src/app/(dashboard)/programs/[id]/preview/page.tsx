@@ -482,9 +482,9 @@ function PartPreviewRow({ part, onOpen }: { part: PreviewPart; onOpen: () => voi
 
 function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => void }) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Nav bar */}
-      <div className="flex items-center gap-2 bg-white px-4 py-3 border-b border-[#F0EDE8]">
+      <div className="flex items-center gap-2 bg-white px-4 py-3 border-b border-[#F0EDE8] shrink-0">
         <button onClick={onBack} className="flex items-center gap-1 text-[#5B8A8A]">
           <ChevronLeft className="h-4 w-4" />
           <span className="text-sm font-semibold">Back</span>
@@ -492,7 +492,7 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
       </div>
 
       {/* Part header */}
-      <div className="bg-white px-4 pt-3 pb-4">
+      <div className="bg-white px-4 pt-3 pb-4 shrink-0">
         <h3 className="text-lg font-bold text-[#2D2D2D]">{part.title}</h3>
         <div className="flex items-center gap-2 mt-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A8A8A]">
@@ -505,7 +505,7 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
       </div>
 
       {/* Full part content */}
-      <div className="flex-1 overflow-y-auto bg-white px-4 py-3">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-white px-4 py-3">
         <PartContentPreview part={part} />
       </div>
 
