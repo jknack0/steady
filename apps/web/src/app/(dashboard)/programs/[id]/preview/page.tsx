@@ -510,7 +510,7 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
       </div>
 
       {/* Mark complete button */}
-      <div className="bg-white border-t border-[#F0EDE8] px-4 pt-3 pb-6 shrink-0">
+      <div className="bg-white border-t border-[#F0EDE8] px-4 py-3 shrink-0">
         <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
           <span className="text-sm font-semibold text-white">Mark as Complete</span>
         </div>
@@ -563,7 +563,7 @@ export default function ProgramPreviewPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push(`/programs/${programId}`)}
+          onClick={() => router.back()}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Editor
@@ -572,53 +572,59 @@ export default function ProgramPreviewPage() {
 
       {/* Phone frame — scales to fit viewport */}
       <div className="flex-1 flex justify-center items-start min-h-0">
-        <div className="w-[375px] h-full max-h-[780px] rounded-[2.5rem] border-[8px] border-[#2D2D2D] bg-[#F7F5F2] shadow-2xl overflow-hidden flex flex-col">
-          {/* Status bar */}
-          <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
-            <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
-            <div className="flex items-center gap-1">
-              <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]">
-                <div className="h-full w-3/4 rounded-sm bg-[#2D2D2D]" />
-              </div>
-            </div>
-          </div>
+        <div className="relative w-[375px] h-[740px]">
+          {/* Border frame (visual only, no overflow clipping) */}
+          <div className="absolute inset-0 rounded-[2.5rem] border-[8px] border-[#2D2D2D] shadow-2xl pointer-events-none z-10" />
 
-          {activePart ? (
-            /* ── Part Detail Screen ── */
-            <PartDetailView part={activePart} onBack={() => setActivePart(null)} />
-          ) : (
-            /* ── Program / Module List Screen ── */
-            <>
-              {/* App header */}
-              <div className="bg-white px-5 pb-4 pt-2 shrink-0">
-                <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>
-                  {program.title}
-                </h2>
-                {program.description && (
-                  <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>
-                )}
-                <div className="flex items-center gap-1 mt-2">
-                  <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-[11px] text-[#8A8A8A]">
-                    {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
-                  </span>
+          {/* Inner content area — clips to match the inner radius */}
+          <div className="absolute inset-[8px] rounded-[calc(2.5rem-8px)] overflow-hidden bg-[#F7F5F2] flex flex-col">
+            {/* Status bar */}
+            <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
+              <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
+              <div className="flex items-center gap-1">
+                <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]">
+                  <div className="h-full w-3/4 rounded-sm bg-[#2D2D2D]" />
                 </div>
               </div>
+            </div>
 
-              {/* Modules list */}
-              <div className="px-4 py-4 flex-1 overflow-y-auto">
-                {program.modules.map((module, i) => (
-                  <PhoneModuleCard key={module.id} module={module} index={i} onOpenPart={setActivePart} />
-                ))}
-              </div>
-            </>
-          )}
+            {activePart ? (
+              /* ── Part Detail Screen ── */
+              <PartDetailView part={activePart} onBack={() => setActivePart(null)} />
+            ) : (
+              /* ── Program / Module List Screen ── */
+              <>
+                {/* App header */}
+                <div className="bg-white px-5 pb-4 pt-2 shrink-0">
+                  <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>
+                    {program.title}
+                  </h2>
+                  {program.description && (
+                    <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>
+                  )}
+                  <div className="flex items-center gap-1 mt-2">
+                    <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-[11px] text-[#8A8A8A]">
+                      {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
+                    </span>
+                  </div>
+                </div>
 
-          {/* Home indicator */}
-          <div className="flex justify-center pb-6 pt-1 bg-[#F7F5F2] shrink-0">
-            <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
+                {/* Modules list */}
+                <div className="px-4 py-4 flex-1 overflow-y-auto">
+                  {program.modules.map((module, i) => (
+                    <PhoneModuleCard key={module.id} module={module} index={i} onOpenPart={setActivePart} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Home indicator */}
+            <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2] shrink-0">
+              <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
+            </div>
           </div>
         </div>
       </div>
