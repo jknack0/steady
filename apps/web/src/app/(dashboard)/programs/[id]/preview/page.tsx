@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -141,16 +141,7 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
     if (!html) return <p className="text-sm text-[#8A8A8A] italic">No content yet</p>;
     return (
       <div
-        className="prose prose-sm max-w-none
-          prose-headings:font-bold prose-headings:text-[#2D2D2D] prose-headings:mt-3 prose-headings:mb-1
-          prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
-          prose-p:text-[#2D2D2D] prose-p:text-sm prose-p:leading-relaxed prose-p:my-1
-          prose-strong:text-[#2D2D2D]
-          prose-a:text-[#5B8A8A] prose-a:underline
-          prose-blockquote:border-l-[3px] prose-blockquote:border-[#5B8A8A] prose-blockquote:pl-3 prose-blockquote:text-sm
-          prose-li:text-[#2D2D2D] prose-li:text-sm
-          prose-hr:border-[#D4D0CB]
-          prose-ul:my-1 prose-ol:my-1"
+        className="steady-styled-content text-sm"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
@@ -514,12 +505,12 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
       </div>
 
       {/* Full part content */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-white px-4 py-3">
         <PartContentPreview part={part} />
       </div>
 
       {/* Mark complete button */}
-      <div className="bg-white border-t border-[#F0EDE8] px-4 py-3">
+      <div className="bg-white border-t border-[#F0EDE8] px-4 pt-3 pb-6 shrink-0">
         <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
           <span className="text-sm font-semibold text-white">Mark as Complete</span>
         </div>
@@ -531,6 +522,7 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
 export default function ProgramPreviewPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const programId = params.id as string;
   const [activePart, setActivePart] = useState<PreviewPart | null>(null);
 
@@ -538,6 +530,20 @@ export default function ProgramPreviewPage() {
     queryKey: ["programs", programId, "preview"],
     queryFn: () => api.get(`/api/programs/${programId}/preview`),
   });
+
+  // Auto-open a specific part if partId is in the URL
+  const partIdParam = searchParams.get("partId");
+  useEffect(() => {
+    if (partIdParam && program && !activePart) {
+      for (const mod of program.modules) {
+        const found = mod.parts.find((p) => p.id === partIdParam);
+        if (found) {
+          setActivePart(found);
+          break;
+        }
+      }
+    }
+  }, [partIdParam, program, activePart]);
 
   if (isLoading) {
     return (
@@ -552,29 +558,21 @@ export default function ProgramPreviewPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4"
-        onClick={() => router.push(`/programs/${programId}`)}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Editor
-      </Button>
-
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Program Preview</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            This is how participants will see "{program.title}" on their mobile app
-          </p>
-        </div>
+    <div className="mx-auto max-w-4xl h-[calc(100vh-4rem)] flex flex-col">
+      <div className="mb-3 shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push(`/programs/${programId}`)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Editor
+        </Button>
       </div>
 
-      {/* Phone frame */}
-      <div className="flex justify-center">
-        <div className="w-[375px] h-[740px] rounded-[2.5rem] border-[8px] border-[#2D2D2D] bg-[#F7F5F2] shadow-2xl overflow-hidden flex flex-col">
+      {/* Phone frame — scales to fit viewport */}
+      <div className="flex-1 flex justify-center items-start min-h-0">
+        <div className="w-[375px] h-full max-h-[780px] rounded-[2.5rem] border-[8px] border-[#2D2D2D] bg-[#F7F5F2] shadow-2xl overflow-hidden flex flex-col">
           {/* Status bar */}
           <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
             <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
@@ -619,7 +617,7 @@ export default function ProgramPreviewPage() {
           )}
 
           {/* Home indicator */}
-          <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2] shrink-0">
+          <div className="flex justify-center pb-6 pt-1 bg-[#F7F5F2] shrink-0">
             <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
           </div>
         </div>

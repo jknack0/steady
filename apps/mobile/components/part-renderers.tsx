@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { theme } from "@steady/shared";
 
 // ── Rich Text Parser ─────────────────────────────────
 // Converts HTML from Tiptap editor into React Native Text elements
@@ -1183,22 +1184,137 @@ export function SmartGoalsRenderer({
 
 // ── STYLED CONTENT ──────────────────────────────────
 
-export function StyledContentRenderer({ content }: { content: { styledHtml: string } }) {
-  const blocks = parseHTML(content.styledHtml || "");
+/**
+ * Resolve CSS var(--steady-*) references to actual hex values for React Native.
+ */
+const CSS_VAR_MAP: Record<string, string> = {
+  "--steady-teal": theme.teal,
+  "--steady-teal-light": theme.tealLight,
+  "--steady-teal-dark": theme.tealDark,
+  "--steady-teal-bg": theme.tealBg,
+  "--steady-sky": theme.sky,
+  "--steady-sky-light": theme.skyLight,
+  "--steady-sage": theme.sage,
+  "--steady-sage-light": theme.sageLight,
+  "--steady-sage-dark": theme.sageDark,
+  "--steady-sage-bg": theme.sageBg,
+  "--steady-rose": theme.rose,
+  "--steady-rose-light": theme.roseLight,
+  "--steady-rose-bg": theme.roseBg,
+  "--steady-cream": theme.cream,
+  "--steady-cream-light": theme.creamLight,
+  "--steady-cream-dark": theme.creamDark,
+  "--steady-warm-50": theme.warm50,
+  "--steady-warm-100": theme.warm100,
+  "--steady-warm-200": theme.warm200,
+  "--steady-warm-300": theme.warm300,
+  "--steady-warm-400": theme.warm400,
+  "--steady-warm-500": theme.warm500,
+};
 
-  if (blocks.length === 0) {
+function resolveCssVars(html: string): string {
+  return html.replace(/var\(([^)]+)\)/g, (_, varName) => {
+    const trimmed = varName.trim();
+    return CSS_VAR_MAP[trimmed] || trimmed;
+  });
+}
+
+interface StyledBlock {
+  type: "callout" | "rich";
+  bgColor?: string;
+  borderColor?: string;
+  html: string;
+}
+
+/**
+ * Extract styled <div> blocks (callout boxes, step boxes) from the AI HTML output,
+ * then render them as themed native views. Everything else goes through the regular parser.
+ */
+function parseStyledBlocks(html: string): StyledBlock[] {
+  const resolved = resolveCssVars(html);
+  const blocks: StyledBlock[] = [];
+
+  // Match top-level <div style="...">...</div> blocks and non-div content
+  const divRegex = /<div\s+style="([^"]*)">([\s\S]*?)<\/div>/gi;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = divRegex.exec(resolved)) !== null) {
+    // Capture any content before this div
+    if (match.index > lastIndex) {
+      const before = resolved.slice(lastIndex, match.index).trim();
+      if (before) blocks.push({ type: "rich", html: before });
+    }
+
+    const style = match[1];
+    const inner = match[2];
+
+    // Extract background and border-left color
+    const bgMatch = style.match(/background:\s*([^;]+)/);
+    const borderMatch = style.match(/border-left:\s*\d+px\s+solid\s+([^;]+)/);
+
+    blocks.push({
+      type: "callout",
+      bgColor: bgMatch ? bgMatch[1].trim() : undefined,
+      borderColor: borderMatch ? borderMatch[1].trim() : undefined,
+      html: inner,
+    });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining content after last div
+  if (lastIndex < resolved.length) {
+    const remaining = resolved.slice(lastIndex).trim();
+    if (remaining) blocks.push({ type: "rich", html: remaining });
+  }
+
+  // If no divs found, treat whole thing as rich text
+  if (blocks.length === 0 && resolved.trim()) {
+    blocks.push({ type: "rich", html: resolved });
+  }
+
+  return blocks;
+}
+
+export function StyledContentRenderer({ content }: { content: { styledHtml: string } }) {
+  const styledBlocks = parseStyledBlocks(content.styledHtml || "");
+
+  if (styledBlocks.length === 0) {
     return (
       <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
-        <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No styled content yet</Text>
+        <Text style={{ color: theme.warm300, fontFamily: "PlusJakartaSans_400Regular" }}>No styled content yet</Text>
       </View>
     );
   }
 
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      {blocks.map((block, i) => (
-        <RichTextBlock key={i} block={block} />
-      ))}
+      {styledBlocks.map((block, i) => {
+        if (block.type === "callout") {
+          return (
+            <View
+              key={i}
+              style={{
+                backgroundColor: block.bgColor || theme.tealBg,
+                borderLeftWidth: block.borderColor ? 3 : 0,
+                borderLeftColor: block.borderColor || theme.teal,
+                borderRadius: 8,
+                padding: 12,
+                marginVertical: 6,
+              }}
+            >
+              {parseHTML(block.html).map((richBlock, j) => (
+                <RichTextBlock key={j} block={richBlock} />
+              ))}
+            </View>
+          );
+        }
+        // Regular rich text
+        return parseHTML(block.html).map((richBlock, j) => (
+          <RichTextBlock key={`${i}-${j}`} block={richBlock} />
+        ));
+      })}
     </View>
   );
 }

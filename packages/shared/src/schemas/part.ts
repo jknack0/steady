@@ -205,7 +205,6 @@ const StyledContentSchema = z.object({
   type: z.literal("STYLED_CONTENT"),
   rawContent: z.string().default(""),
   styledHtml: z.string().default(""),
-  styleContext: z.enum(["general", "exercise", "nutrition", "mental_health", "education"]).default("general"),
 });
 
 export const PartContentSchema = z.discriminatedUnion("type", [

@@ -79,7 +79,7 @@ const DEFAULT_CONTENT: Record<string, any> = {
   ASSESSMENT: { type: "ASSESSMENT", title: "", instructions: "", scoringEnabled: false, questions: [] },
   INTAKE_FORM: { type: "INTAKE_FORM", title: "", instructions: "", sections: ["General"], fields: [] },
   SMART_GOALS: { type: "SMART_GOALS", instructions: "", maxGoals: 3, categories: ["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"], goals: [] },
-  STYLED_CONTENT: { type: "STYLED_CONTENT", rawContent: "", styledHtml: "", styleContext: "general" },
+  STYLED_CONTENT: { type: "STYLED_CONTENT", rawContent: "", styledHtml: "" },
 };
 
 const CREATABLE_TYPES = [
@@ -426,7 +426,7 @@ export default function ModuleEditorPage() {
                     onUpdate={(data) => handlePartUpdate(part.id, data)}
                     onDelete={() => handlePartDelete(part.id)}
                     onDuplicate={() => handlePartDuplicate(part.id)}
-                    onPreview={() => router.push(`/programs/${programId}/preview`)}
+                    onPreview={() => router.push(`/programs/${programId}/preview?partId=${part.id}`)}
                   />
                 ))}
               </div>

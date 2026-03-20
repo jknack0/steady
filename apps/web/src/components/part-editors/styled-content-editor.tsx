@@ -9,18 +9,9 @@ interface StyledContentEditorProps {
     type: "STYLED_CONTENT";
     rawContent: string;
     styledHtml: string;
-    styleContext: string;
   };
   onChange: (content: StyledContentEditorProps["content"]) => void;
 }
-
-const STYLE_CONTEXT_OPTIONS = [
-  { value: "general", label: "General" },
-  { value: "exercise", label: "Exercise / Physical Therapy" },
-  { value: "nutrition", label: "Nutrition" },
-  { value: "mental_health", label: "Mental Health" },
-  { value: "education", label: "Education" },
-];
 
 export function StyledContentPartEditor({ content, onChange }: StyledContentEditorProps) {
   const [showPreview, setShowPreview] = useState(false);
@@ -32,7 +23,6 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
     try {
       const result = await styleContent.mutateAsync({
         rawContent: content.rawContent,
-        styleContext: content.styleContext,
       });
       onChange({ ...content, styledHtml: result.styledHtml });
     } catch {
@@ -44,22 +34,6 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
 
   return (
     <div className="space-y-3">
-      {/* Context selector */}
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-muted-foreground">Content type:</label>
-        <select
-          value={content.styleContext || "general"}
-          onChange={(e) => onChange({ ...content, styleContext: e.target.value })}
-          className="rounded-md border bg-background px-2 py-1 text-sm"
-        >
-          {STYLE_CONTEXT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {/* Raw content input */}
       <div>
         <label className="mb-1 block text-sm font-medium">Content</label>
@@ -130,15 +104,11 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
             Preview (as rendered on mobile)
           </div>
           <div
-            className="prose prose-sm max-w-none p-4
-              prose-headings:font-bold prose-headings:text-[#2D2D2D]
-              prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
-              prose-p:text-[#2D2D2D] prose-p:leading-relaxed
-              prose-strong:text-[#2D2D2D]
-              prose-a:text-[#5B8A8A] prose-a:underline
-              prose-blockquote:border-l-[3px] prose-blockquote:border-[#5B8A8A] prose-blockquote:pl-3
-              prose-li:text-[#2D2D2D]
-              prose-hr:border-[#D4D0CB]"
+            className="steady-styled-content prose prose-sm max-w-none p-4"
+            style={{
+              "--steady-text": "var(--steady-warm-500)",
+              "--steady-text-secondary": "var(--steady-warm-400)",
+            } as React.CSSProperties}
             dangerouslySetInnerHTML={{ __html: content.styledHtml }}
           />
         </div>

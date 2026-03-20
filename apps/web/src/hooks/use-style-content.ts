@@ -5,7 +5,6 @@ import { api } from "@/lib/api-client";
 
 interface StyleContentInput {
   rawContent: string;
-  styleContext?: string;
 }
 
 interface StyleContentResult {
