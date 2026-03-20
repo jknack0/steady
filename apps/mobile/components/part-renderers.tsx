@@ -286,16 +286,19 @@ export function VideoRenderer({
 }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      <View style={{ backgroundColor: "#2D2D2D", borderRadius: 12, height: 192, alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-        <Ionicons name="play-circle-outline" size={48} color="rgba(255,255,255,0.6)" />
-        <Text style={{ color: "#8A8A8A", fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", marginTop: 8 }}>{content.provider}</Text>
+      <View style={{ backgroundColor: "#2D2D2D", borderRadius: 16, height: 200, alignItems: "center", justifyContent: "center", marginBottom: 12, overflow: "hidden" }}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: "#5B8A8A", alignItems: "center", justifyContent: "center" }}>
+          <Ionicons name="play" size={24} color="white" style={{ marginLeft: 3 }} />
+        </View>
+        <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontFamily: "PlusJakartaSans_500Medium", marginTop: 10, textTransform: "uppercase", letterSpacing: 1 }}>{content.provider}</Text>
       </View>
       {content.url ? (
         <TouchableOpacity
-          style={{ backgroundColor: "#5B8A8A", borderRadius: 10, paddingVertical: 12, alignItems: "center" }}
+          style={{ backgroundColor: "#5B8A8A", borderRadius: 12, paddingVertical: 14, alignItems: "center", flexDirection: "row", justifyContent: "center" }}
           onPress={() => Linking.openURL(content.url)}
         >
-          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold" }}>Open Video</Text>
+          <Ionicons name="play-circle-outline" size={18} color="white" />
+          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 15, marginLeft: 8 }}>Watch Video</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -324,32 +327,36 @@ export function StrategyCardsRenderer({
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {content.deckName ? (
-        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5A5A5A", marginBottom: 12 }}>{content.deckName}</Text>
+        <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>{content.deckName}</Text>
       ) : null}
-      <View style={{ backgroundColor: "#E3EDED", borderRadius: 12, padding: 24, minHeight: 200 }}>
+      <View style={{ backgroundColor: "#E3EDED", borderRadius: 16, padding: 24, minHeight: 200 }}>
         {card.emoji ? (
-          <Text style={{ fontSize: 30, marginBottom: 8 }}>{card.emoji}</Text>
+          <Text style={{ fontSize: 36, marginBottom: 12 }}>{card.emoji}</Text>
         ) : null}
-        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 8 }}>{card.title}</Text>
-        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A" }}>{card.body}</Text>
+        <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 8 }}>{card.title}</Text>
+        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", lineHeight: 24 }}>{card.body}</Text>
       </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
         <TouchableOpacity
           onPress={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
           disabled={currentIndex === 0}
-          style={{ opacity: currentIndex === 0 ? 0.3 : 1 }}
+          style={{ opacity: currentIndex === 0 ? 0.3 : 1, flexDirection: "row", alignItems: "center" }}
         >
-          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold" }}>Previous</Text>
+          <Ionicons name="chevron-back" size={16} color="#5B8A8A" />
+          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold", marginLeft: 4 }}>Previous</Text>
         </TouchableOpacity>
-        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A" }}>
-          {currentIndex + 1} / {cards.length}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {cards.map((_, i) => (
+            <View key={i} style={{ width: i === currentIndex ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === currentIndex ? "#5B8A8A" : "#D4D0CB" }} />
+          ))}
+        </View>
         <TouchableOpacity
           onPress={() => setCurrentIndex(Math.min(cards.length - 1, currentIndex + 1))}
           disabled={currentIndex === cards.length - 1}
-          style={{ opacity: currentIndex === cards.length - 1 ? 0.3 : 1 }}
+          style={{ opacity: currentIndex === cards.length - 1 ? 0.3 : 1, flexDirection: "row", alignItems: "center" }}
         >
-          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold" }}>Next</Text>
+          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold", marginRight: 4 }}>Next</Text>
+          <Ionicons name="chevron-forward" size={16} color="#5B8A8A" />
         </TouchableOpacity>
       </View>
     </View>
@@ -401,19 +408,30 @@ export function ChecklistRenderer({
 }) {
   const items = [...(content.items || [])].sort((a, b) => a.sortOrder - b.sortOrder);
 
+  const completedCount = Object.values(checked).filter(Boolean).length;
+
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      {/* Progress summary */}
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+        <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: "#F0EDE8" }}>
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: completedCount === items.length ? "#8FAE8B" : "#5B8A8A", width: items.length > 0 ? `${(completedCount / items.length) * 100}%` : "0%" }} />
+        </View>
+        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 10 }}>{completedCount}/{items.length}</Text>
+      </View>
+
       {items.map((item, index) => (
         <TouchableOpacity
           key={index}
-          style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}
+          style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: index < items.length - 1 ? 1 : 0, borderBottomColor: "#F0EDE8" }}
           onPress={() => onToggle(index)}
+          activeOpacity={0.7}
         >
           <View
             style={{
               width: 24,
               height: 24,
-              borderRadius: 6,
+              borderRadius: 7,
               borderWidth: 2,
               marginRight: 12,
               alignItems: "center",
@@ -428,13 +446,14 @@ export function ChecklistRenderer({
             style={{
               flex: 1,
               fontSize: 16,
-              fontFamily: "PlusJakartaSans_400Regular",
+              fontFamily: checked[index] ? "PlusJakartaSans_400Regular" : "PlusJakartaSans_500Medium",
               color: checked[index] ? "#8A8A8A" : "#2D2D2D",
               textDecorationLine: checked[index] ? "line-through" : "none",
             }}
           >
             {item.text}
           </Text>
+          {checked[index] ? <Ionicons name="checkmark-circle" size={18} color="#8FAE8B" style={{ marginLeft: 8 }} /> : null}
         </TouchableOpacity>
       ))}
     </View>
@@ -449,21 +468,25 @@ export function ResourceLinkRenderer({
 }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      {content.description ? (
-        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 12 }}>{content.description}</Text>
-      ) : null}
       {content.url ? (
         <TouchableOpacity
-          style={{ backgroundColor: "#E3EDED", borderRadius: 10, padding: 16, flexDirection: "row", alignItems: "center" }}
+          style={{ backgroundColor: "#F7F5F2", borderRadius: 12, padding: 16, flexDirection: "row", alignItems: "center" }}
           onPress={() => Linking.openURL(content.url)}
         >
-          <Ionicons name="link-outline" size={16} color="#5B8A8A" />
-          <View style={{ flex: 1, marginLeft: 8 }}>
-            <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_500Medium" }} numberOfLines={1}>
+          <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="link-outline" size={18} color="#5B8A8A" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            {content.description ? (
+              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 2 }} numberOfLines={2}>{content.description}</Text>
+            ) : null}
+            <Text style={{ fontSize: 13, color: "#5B8A8A", fontFamily: "PlusJakartaSans_400Regular" }} numberOfLines={1}>
               {content.url}
             </Text>
           </View>
-          <Text style={{ color: "#5B8A8A", fontFamily: "PlusJakartaSans_600SemiBold", marginLeft: 8 }}>Open</Text>
+          <View style={{ backgroundColor: "#5B8A8A", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, marginLeft: 8 }}>
+            <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 13 }}>Open</Text>
+          </View>
         </TouchableOpacity>
       ) : (
         <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No link provided</Text>
@@ -491,24 +514,62 @@ export function DividerRenderer({ content }: { content: { label: string } }) {
 export function HomeworkRenderer({
   content,
 }: {
-  content: { items: Array<{ type: string; description?: string; prompts?: string[]; reminderText?: string; content?: string; options?: Array<{ label: string }> }> };
+  content: { items: Array<{ type: string; description?: string; subSteps?: string[]; prompts?: string[]; reminderText?: string; content?: string; resourceTitle?: string; resourceType?: string; resourceUrl?: string; options?: Array<{ label: string; detail?: string }> }> };
 }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {(content.items || []).map((item, index) => (
-        <View key={index} style={{ marginBottom: 16, backgroundColor: "#F5ECD7", borderRadius: 10, padding: 16 }}>
-          <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_600SemiBold", color: "#C4A84D", textTransform: "uppercase", marginBottom: 4 }}>{item.type.replace(/_/g, " ")}</Text>
+        <View key={index} style={{ marginBottom: 16, backgroundColor: "#F5ECD7", borderRadius: 12, padding: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+            <View style={{ backgroundColor: "#E8DCC2", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.type.replace(/_/g, " ")}</Text>
+            </View>
+          </View>
           {item.description ? (
-            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{item.description}</Text>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D" }}>{item.description}</Text>
+          ) : null}
+          {item.resourceTitle ? (
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <Ionicons name={item.resourceType === "video" ? "videocam-outline" : item.resourceType === "link" ? "link-outline" : "document-text-outline"} size={14} color="#5B8A8A" />
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A", marginLeft: 6 }}>{item.resourceTitle}</Text>
+            </View>
+          ) : null}
+          {item.subSteps && item.subSteps.length > 0 ? (
+            <View style={{ marginTop: 8, marginLeft: 4 }}>
+              {item.subSteps.map((step, si) => (
+                <View key={si} style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 4 }}>
+                  <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#E8DCC2", alignItems: "center", justifyContent: "center", marginRight: 8, marginTop: 1 }}>
+                    <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A" }}>{si + 1}</Text>
+                  </View>
+                  <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", flex: 1 }}>{step}</Text>
+                </View>
+              ))}
+            </View>
           ) : null}
           {item.prompts?.map((p, i) => (
             <Text key={i} style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginTop: 4 }}>{p}</Text>
           ))}
           {item.reminderText ? (
-            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{item.reminderText}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <Ionicons name="alert-circle-outline" size={14} color="#D4A0A0" />
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5A5A5A", marginLeft: 6 }}>{item.reminderText}</Text>
+            </View>
           ) : null}
           {item.content ? (
-            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D" }}>{item.content}</Text>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginTop: 4 }}>{item.content}</Text>
+          ) : null}
+          {item.options && item.options.length > 0 ? (
+            <View style={{ marginTop: 8 }}>
+              {item.options.map((opt, oi) => (
+                <View key={oi} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: "#E8DCC2", backgroundColor: "#FAF6ED", borderRadius: 8, marginBottom: 6 }}>
+                  <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: "#D4D0CB", marginRight: 10 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D" }}>{opt.label}</Text>
+                    {opt.detail ? <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 1 }}>{opt.detail}</Text> : null}
+                  </View>
+                </View>
+              ))}
+            </View>
           ) : null}
         </View>
       ))}
@@ -553,12 +614,15 @@ export function AssessmentRenderer({
         <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>{content.title}</Text>
       ) : null}
       {content.instructions ? (
-        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16 }}>{content.instructions}</Text>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16, lineHeight: 20 }}>{content.instructions}</Text>
       ) : null}
 
       {questions.map((q, index) => (
-        <View key={index} style={{ marginBottom: 24 }}>
-          <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 8 }}>
+        <View key={index} style={{ marginBottom: 16, backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, borderWidth: 1, borderColor: "#F0EDE8" }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginBottom: 4 }}>
+            Question {index + 1}{questions.length > 1 ? ` of ${questions.length}` : ""}
+          </Text>
+          <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 12 }}>
             {q.question}
             {q.required ? <Text style={{ color: "#D4A0A0" }}> *</Text> : null}
           </Text>
@@ -757,7 +821,7 @@ export function IntakeFormRenderer({
         <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>{content.title}</Text>
       ) : null}
       {content.instructions ? (
-        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16 }}>{content.instructions}</Text>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16, lineHeight: 20 }}>{content.instructions}</Text>
       ) : null}
 
       {sections.map((section) => {
@@ -767,9 +831,13 @@ export function IntakeFormRenderer({
         return (
           <View key={section} style={{ marginBottom: 20 }}>
             {sections.length > 1 ? (
-              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#5B8A8A", marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
-                {section}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(91,138,138,0.3)" }} />
+                <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A", textTransform: "uppercase", letterSpacing: 1, marginHorizontal: 12 }}>
+                  {section}
+                </Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(91,138,138,0.3)" }} />
+              </View>
             ) : null}
 
             {sectionFields.map((field, fi) => {
@@ -1109,6 +1177,28 @@ export function SmartGoalsRenderer({
           <Text style={{ marginLeft: 8, fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A" }}>Add Another Goal</Text>
         </TouchableOpacity>
       ) : null}
+    </View>
+  );
+}
+
+// ── STYLED CONTENT ──────────────────────────────────
+
+export function StyledContentRenderer({ content }: { content: { styledHtml: string } }) {
+  const blocks = parseHTML(content.styledHtml || "");
+
+  if (blocks.length === 0) {
+    return (
+      <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
+        <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No styled content yet</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      {blocks.map((block, i) => (
+        <RichTextBlock key={i} block={block} />
+      ))}
     </View>
   );
 }

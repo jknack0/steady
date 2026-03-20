@@ -1,0 +1,594 @@
+"use client";
+
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  Lock,
+  Play,
+  Loader2,
+  FileText,
+  Video,
+  Layers,
+  BookOpen,
+  CheckSquare,
+  Link as LinkIcon,
+  Minus,
+  ClipboardList,
+  FileQuestion,
+  FormInput,
+  Target,
+  Sparkles,
+} from "lucide-react";
+
+interface PreviewPart {
+  id: string;
+  type: string;
+  title: string;
+  isRequired: boolean;
+  content: any;
+  sortOrder: number;
+}
+
+interface PreviewModule {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  summary: string | null;
+  estimatedMinutes: number | null;
+  sortOrder: number;
+  parts: PreviewPart[];
+}
+
+interface PreviewProgram {
+  id: string;
+  title: string;
+  description: string | null;
+  cadence: string;
+  modules: PreviewModule[];
+}
+
+const PART_ICONS: Record<string, React.ElementType> = {
+  TEXT: FileText,
+  VIDEO: Video,
+  STRATEGY_CARDS: Layers,
+  JOURNAL_PROMPT: BookOpen,
+  CHECKLIST: CheckSquare,
+  RESOURCE_LINK: LinkIcon,
+  DIVIDER: Minus,
+  HOMEWORK: ClipboardList,
+  ASSESSMENT: FileQuestion,
+  INTAKE_FORM: FormInput,
+  SMART_GOALS: Target,
+  STYLED_CONTENT: Sparkles,
+};
+
+const PART_LABELS: Record<string, string> = {
+  TEXT: "Reading",
+  VIDEO: "Video",
+  STRATEGY_CARDS: "Strategy Cards",
+  JOURNAL_PROMPT: "Journal",
+  CHECKLIST: "Checklist",
+  RESOURCE_LINK: "Resource",
+  DIVIDER: "Section Break",
+  HOMEWORK: "Homework",
+  ASSESSMENT: "Assessment",
+  INTAKE_FORM: "Intake Form",
+  SMART_GOALS: "SMART Goals",
+  STYLED_CONTENT: "Content",
+};
+
+// Simple HTML-to-text for preview summaries
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+function getPartPreview(part: PreviewPart): string {
+  const c = part.content;
+  switch (part.type) {
+    case "TEXT":
+      return stripHtml(c.body || "").slice(0, 120) || "No content yet";
+    case "STYLED_CONTENT":
+      return stripHtml(c.styledHtml || c.rawContent || "").slice(0, 120) || "No content yet";
+    case "VIDEO":
+      return c.url || "No video URL set";
+    case "STRATEGY_CARDS":
+      return `${c.cards?.length || 0} cards${c.deckName ? ` — ${c.deckName}` : ""}`;
+    case "JOURNAL_PROMPT":
+      return c.prompts?.filter((p: string) => p).join(", ").slice(0, 100) || "No prompts set";
+    case "CHECKLIST":
+      return `${c.items?.length || 0} items`;
+    case "RESOURCE_LINK":
+      return c.description || c.url || "No link set";
+    case "DIVIDER":
+      return c.label || "—";
+    case "HOMEWORK":
+      return `${c.items?.length || 0} homework items`;
+    case "ASSESSMENT":
+      return `${c.questions?.length || 0} questions`;
+    case "INTAKE_FORM":
+      return `${c.fields?.length || 0} fields`;
+    case "SMART_GOALS":
+      return `Up to ${c.maxGoals || 3} goals`;
+    default:
+      return "";
+  }
+}
+
+function PartContentPreview({ part }: { part: PreviewPart }) {
+  const c = part.content;
+
+  if (part.type === "DIVIDER") {
+    return (
+      <div className="flex items-center gap-3 py-2">
+        <div className="h-px flex-1 bg-[#D4D0CB]" />
+        {c.label && <span className="text-xs text-[#8A8A8A]">{c.label}</span>}
+        <div className="h-px flex-1 bg-[#D4D0CB]" />
+      </div>
+    );
+  }
+
+  if (part.type === "TEXT" || part.type === "STYLED_CONTENT") {
+    const html = part.type === "STYLED_CONTENT" ? c.styledHtml : c.body;
+    if (!html) return <p className="text-sm text-[#8A8A8A] italic">No content yet</p>;
+    return (
+      <div
+        className="prose prose-sm max-w-none
+          prose-headings:font-bold prose-headings:text-[#2D2D2D] prose-headings:mt-3 prose-headings:mb-1
+          prose-h1:text-lg prose-h2:text-base prose-h3:text-sm
+          prose-p:text-[#2D2D2D] prose-p:text-sm prose-p:leading-relaxed prose-p:my-1
+          prose-strong:text-[#2D2D2D]
+          prose-a:text-[#5B8A8A] prose-a:underline
+          prose-blockquote:border-l-[3px] prose-blockquote:border-[#5B8A8A] prose-blockquote:pl-3 prose-blockquote:text-sm
+          prose-li:text-[#2D2D2D] prose-li:text-sm
+          prose-hr:border-[#D4D0CB]
+          prose-ul:my-1 prose-ol:my-1"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
+  if (part.type === "VIDEO") {
+    return (
+      <div className="flex items-center justify-center rounded-lg bg-[#2D2D2D] py-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#5B8A8A]">
+          <Play className="h-5 w-5 text-white ml-0.5" fill="white" />
+        </div>
+      </div>
+    );
+  }
+
+  if (part.type === "STRATEGY_CARDS" && c.cards?.length > 0) {
+    return (
+      <div className="space-y-2">
+        {c.cards.map((card: any, i: number) => (
+          <div key={i} className="rounded-lg bg-[#E3EDED] p-3">
+            <div className="flex items-center gap-2 mb-1">
+              {card.emoji && <span>{card.emoji}</span>}
+              <span className="font-semibold text-sm text-[#2D2D2D]">{card.title}</span>
+            </div>
+            <p className="text-xs text-[#5A5A5A]">{card.body}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (part.type === "JOURNAL_PROMPT") {
+    return (
+      <div className="space-y-2">
+        {(c.prompts || []).filter((p: string) => p).map((prompt: string, i: number) => (
+          <div key={i}>
+            <p className="text-sm text-[#2D2D2D] mb-1">{prompt}</p>
+            <div className="rounded-lg border border-[#D4D0CB] bg-white p-3 min-h-[60px]">
+              <span className="text-xs text-[#D4D0CB]">Participant writes here...</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (part.type === "CHECKLIST") {
+    return (
+      <div className="space-y-1">
+        {(c.items || []).map((item: any, i: number) => (
+          <div key={i} className="flex items-center gap-2 py-1">
+            <div className="h-5 w-5 rounded border-2 border-[#D4D0CB] shrink-0" />
+            <span className="text-sm text-[#2D2D2D]">{item.text || "..."}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (part.type === "HOMEWORK") {
+    return (
+      <div className="space-y-2">
+        {(c.items || []).map((item: any, i: number) => (
+          <div key={i} className="rounded-lg bg-[#F5ECD7] p-3">
+            <span className="text-[10px] font-semibold uppercase text-[#8A8A8A] tracking-wider">{item.type?.replace(/_/g, " ")}</span>
+            <p className="text-sm text-[#2D2D2D] mt-1">{item.description || item.reminderText || item.content || item.resourceTitle || "..."}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (part.type === "ASSESSMENT") {
+    return (
+      <div className="space-y-3">
+        {c.title && <p className="text-sm font-bold text-[#2D2D2D]">{c.title}</p>}
+        {c.instructions && <p className="text-xs text-[#5A5A5A] leading-relaxed">{c.instructions}</p>}
+        {(c.questions || []).map((q: any, i: number) => (
+          <div key={i} className="rounded-lg border border-[#F0EDE8] bg-white p-3">
+            <p className="text-sm font-medium text-[#2D2D2D] mb-2">{i + 1}. {q.question}</p>
+            {q.type === "LIKERT" && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-[#8A8A8A]">{q.likertMinLabel || q.likertMin || 1}</span>
+                {Array.from({ length: (q.likertMax || 5) - (q.likertMin || 1) + 1 }).map((_, j) => (
+                  <div key={j} className="h-7 w-7 rounded-full border-2 border-[#D4D0CB] flex items-center justify-center">
+                    <span className="text-[10px] text-[#8A8A8A]">{(q.likertMin || 1) + j}</span>
+                  </div>
+                ))}
+                <span className="text-[10px] text-[#8A8A8A]">{q.likertMaxLabel || q.likertMax || 5}</span>
+              </div>
+            )}
+            {q.type === "MULTIPLE_CHOICE" && (
+              <div className="space-y-1.5">
+                {(q.options || []).map((opt: string, j: number) => (
+                  <div key={j} className="flex items-center gap-2 rounded-lg border border-[#D4D0CB] px-3 py-2">
+                    <div className="h-4 w-4 rounded-full border-2 border-[#D4D0CB] shrink-0" />
+                    <span className="text-xs text-[#2D2D2D]">{opt}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {q.type === "YES_NO" && (
+              <div className="flex gap-2">
+                {["Yes", "No"].map((opt) => (
+                  <div key={opt} className="flex items-center gap-2 rounded-lg border border-[#D4D0CB] px-4 py-2">
+                    <div className="h-4 w-4 rounded-full border-2 border-[#D4D0CB]" />
+                    <span className="text-xs text-[#2D2D2D]">{opt}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {q.type === "FREE_TEXT" && (
+              <div className="rounded-lg border border-[#D4D0CB] bg-white px-3 py-2 min-h-[48px]">
+                <span className="text-xs text-[#D4D0CB]">Type your answer...</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (part.type === "RESOURCE_LINK") {
+    return (
+      <div className="rounded-lg bg-[#F7F5F2] p-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E3EDED]">
+          <LinkIcon className="h-4 w-4 text-[#5B8A8A]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          {c.description && <p className="text-sm font-medium text-[#2D2D2D] truncate">{c.description}</p>}
+          <p className="text-xs text-[#5B8A8A] truncate">{c.url || "No URL set"}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (part.type === "INTAKE_FORM") {
+    const sections = c.sections || ["General"];
+    const fields = c.fields || [];
+    return (
+      <div className="space-y-3">
+        {c.title && <p className="text-sm font-bold text-[#2D2D2D]">{c.title}</p>}
+        {c.instructions && <p className="text-xs text-[#5A5A5A] leading-relaxed">{c.instructions}</p>}
+        {sections.map((section: string, si: number) => {
+          const sectionFields = fields.filter((f: any) => (f.section || "General") === section);
+          if (sectionFields.length === 0) return null;
+          return (
+            <div key={si}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-px flex-1 bg-[#5B8A8A]/30" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#5B8A8A]">{section}</span>
+                <div className="h-px flex-1 bg-[#5B8A8A]/30" />
+              </div>
+              <div className="space-y-2">
+                {sectionFields.map((field: any, fi: number) => (
+                  <div key={fi}>
+                    <label className="text-xs font-medium text-[#5A5A5A] mb-1 block">
+                      {field.label}
+                      {field.required && <span className="text-[#D4A0A0] ml-0.5">*</span>}
+                    </label>
+                    {(field.type === "TEXT" || field.type === "NUMBER" || field.type === "DATE") && (
+                      <div className="rounded-lg border border-[#D4D0CB] bg-white px-3 py-2">
+                        <span className="text-xs text-[#D4D0CB]">{field.placeholder || field.type.toLowerCase()}</span>
+                      </div>
+                    )}
+                    {field.type === "TEXTAREA" && (
+                      <div className="rounded-lg border border-[#D4D0CB] bg-white px-3 py-2 min-h-[60px]">
+                        <span className="text-xs text-[#D4D0CB]">{field.placeholder || "Type here..."}</span>
+                      </div>
+                    )}
+                    {(field.type === "SELECT" || field.type === "MULTI_SELECT") && (
+                      <div className="space-y-1">
+                        {(field.options || []).map((opt: string, oi: number) => (
+                          <div key={oi} className="flex items-center gap-2 rounded-lg border border-[#D4D0CB] px-3 py-2">
+                            <div className={`h-4 w-4 shrink-0 border-2 border-[#D4D0CB] ${field.type === "SELECT" ? "rounded-full" : "rounded"}`} />
+                            <span className="text-xs text-[#2D2D2D]">{opt}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {field.type === "CHECKBOX" && (
+                      <div className="flex items-center gap-2">
+                        <div className="h-5 w-5 rounded border-2 border-[#D4D0CB]" />
+                        <span className="text-xs text-[#2D2D2D]">Yes</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (part.type === "SMART_GOALS") {
+    const maxGoals = c.maxGoals || 3;
+    return (
+      <div className="space-y-3">
+        {c.instructions && <p className="text-xs text-[#5A5A5A] leading-relaxed">{c.instructions}</p>}
+        <div className="rounded-xl bg-[#F7F5F2] p-3">
+          <p className="text-sm font-bold text-[#2D2D2D] mb-2">Goal 1</p>
+          {["Specific", "Measurable", "Achievable", "Relevant", "Time-Bound"].map((label) => (
+            <div key={label} className="mb-2">
+              <span className="text-xs font-semibold text-[#5B8A8A]">{label}</span>
+              <div className="rounded-lg border border-[#D4D0CB] bg-white px-3 py-2 mt-1">
+                <span className="text-xs text-[#D4D0CB]">Enter {label.toLowerCase()}...</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {maxGoals > 1 && (
+          <div className="flex items-center justify-center rounded-lg border border-dashed border-[#D4D0CB] py-3">
+            <span className="text-xs font-semibold text-[#5B8A8A]">+ Add Another Goal (up to {maxGoals})</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback: just show text summary
+  return <p className="text-sm text-[#5A5A5A]">{getPartPreview(part)}</p>;
+}
+
+function PhoneModuleCard({ module, index }: { module: PreviewModule; index: number }) {
+  const [expanded, setExpanded] = useState(index === 0);
+  const isCurrent = index === 0;
+  const isLocked = index > 1;
+  const isCompleted = false; // Preview mode — nothing completed
+
+  const totalParts = module.parts.length;
+  const requiredParts = module.parts.filter((p) => p.isRequired).length;
+
+  return (
+    <div
+      className={`rounded-2xl bg-white shadow-sm mb-3 overflow-hidden ${
+        isCurrent ? "border-[1.5px] border-[#89B4C8]" : "border border-[#F0EDE8]"
+      } ${isLocked ? "opacity-40" : ""}`}
+    >
+      {/* Module header */}
+      <button
+        className="flex w-full items-center gap-3 p-4"
+        onClick={() => !isLocked && setExpanded(!expanded)}
+        disabled={isLocked}
+      >
+        {/* Status icon */}
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+            isCompleted
+              ? "bg-[#E8F0E7]"
+              : isCurrent
+              ? "bg-[#E3EDED]"
+              : "bg-[#F0EDE8]"
+          }`}
+        >
+          {isCompleted ? (
+            <CheckCircle2 className="h-4 w-4 text-[#8FAE8B]" />
+          ) : isLocked ? (
+            <Lock className="h-4 w-4 text-[#8A8A8A]" />
+          ) : (
+            <Play className="h-4 w-4 text-[#5B8A8A] ml-0.5" />
+          )}
+        </div>
+
+        {/* Title + progress */}
+        <div className="flex-1 text-left">
+          <p className="text-sm font-bold text-[#2D2D2D]">{module.title}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <div className="h-1.5 w-24 rounded-full bg-[#F0EDE8]">
+              <div className="h-full rounded-full bg-[#5B8A8A]" style={{ width: "0%" }} />
+            </div>
+            <span className="text-[11px] text-[#8A8A8A]">0/{totalParts}</span>
+          </div>
+        </div>
+
+        {isCurrent && (
+          <Badge className="bg-[#E3EDED] text-[#5B8A8A] text-[11px] font-semibold border-0 hover:bg-[#E3EDED]">
+            Current
+          </Badge>
+        )}
+
+        {!isLocked && (
+          expanded ? <ChevronDown className="h-4 w-4 text-[#8A8A8A]" /> : <ChevronRight className="h-4 w-4 text-[#8A8A8A]" />
+        )}
+      </button>
+
+      {/* Expanded parts */}
+      {expanded && !isLocked && (
+        <div className="border-t border-[#F0EDE8]">
+          {module.parts.map((part) => (
+            <PartPreviewRow key={part.id} part={part} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PartPreviewRow({ part }: { part: PreviewPart }) {
+  const [expanded, setExpanded] = useState(false);
+  const Icon = PART_ICONS[part.type] || FileText;
+
+  if (part.type === "DIVIDER") {
+    return (
+      <div className="px-4 py-2">
+        <PartContentPreview part={part} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-b border-[#F0EDE8] last:border-b-0">
+      <button
+        className="flex w-full items-center gap-3 px-4 py-3"
+        onClick={() => setExpanded(!expanded)}
+      >
+        {/* Checkbox placeholder */}
+        <div className="h-5 w-5 shrink-0 rounded-md border-2 border-[#D4D0CB]" />
+
+        <Icon className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
+
+        <div className="flex-1 text-left">
+          <p className="text-sm font-medium text-[#2D2D2D]">{part.title}</p>
+          {!expanded && (
+            <p className="text-xs text-[#8A8A8A] truncate mt-0.5">{getPartPreview(part)}</p>
+          )}
+        </div>
+
+        {part.isRequired && (
+          <span className="rounded bg-[#F5E6E6] px-1.5 py-0.5 text-[10px] font-medium text-[#D4A0A0]">
+            Required
+          </span>
+        )}
+
+        {expanded ? <ChevronDown className="h-3 w-3 text-[#8A8A8A]" /> : <ChevronRight className="h-3 w-3 text-[#8A8A8A]" />}
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-4 pl-16">
+          <div className="mb-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A8A8A]">
+              {PART_LABELS[part.type] || part.type}
+            </span>
+          </div>
+          <PartContentPreview part={part} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ProgramPreviewPage() {
+  const params = useParams();
+  const router = useRouter();
+  const programId = params.id as string;
+
+  const { data: program, isLoading } = useQuery<PreviewProgram>({
+    queryKey: ["programs", programId, "preview"],
+    queryFn: () => api.get(`/api/programs/${programId}/preview`),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!program) {
+    return <div className="text-center py-12 text-muted-foreground">Program not found</div>;
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mb-4"
+        onClick={() => router.push(`/programs/${programId}`)}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to Editor
+      </Button>
+
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Program Preview</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            This is how participants will see "{program.title}" on their mobile app
+          </p>
+        </div>
+      </div>
+
+      {/* Phone frame */}
+      <div className="flex justify-center">
+        <div className="w-[375px] rounded-[2.5rem] border-[8px] border-[#2D2D2D] bg-[#F7F5F2] shadow-2xl overflow-hidden">
+          {/* Status bar */}
+          <div className="flex items-center justify-between bg-white px-6 py-2">
+            <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
+            <div className="flex items-center gap-1">
+              <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]">
+                <div className="h-full w-3/4 rounded-sm bg-[#2D2D2D]" />
+              </div>
+            </div>
+          </div>
+
+          {/* App header */}
+          <div className="bg-white px-5 pb-4 pt-2">
+            <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>
+              {program.title}
+            </h2>
+            {program.description && (
+              <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>
+            )}
+            <div className="flex items-center gap-1 mt-2">
+              <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-[11px] text-[#8A8A8A]">
+                {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
+              </span>
+            </div>
+          </div>
+
+          {/* Modules list */}
+          <div className="px-4 py-4 max-h-[600px] overflow-y-auto">
+            {program.modules.map((module, i) => (
+              <PhoneModuleCard key={module.id} module={module} index={i} />
+            ))}
+          </div>
+
+          {/* Home indicator */}
+          <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2]">
+            <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

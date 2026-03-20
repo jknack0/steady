@@ -78,6 +78,7 @@ const DEFAULT_CONTENT: Record<string, any> = {
   ASSESSMENT: { type: "ASSESSMENT", title: "", instructions: "", scoringEnabled: false, questions: [] },
   INTAKE_FORM: { type: "INTAKE_FORM", title: "", instructions: "", sections: ["General"], fields: [] },
   SMART_GOALS: { type: "SMART_GOALS", instructions: "", maxGoals: 3, categories: ["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"], goals: [] },
+  STYLED_CONTENT: { type: "STYLED_CONTENT", rawContent: "", styledHtml: "", styleContext: "general" },
 };
 
 const CREATABLE_TYPES = [
@@ -92,6 +93,7 @@ const CREATABLE_TYPES = [
   "ASSESSMENT",
   "INTAKE_FORM",
   "SMART_GOALS",
+  "STYLED_CONTENT",
 ];
 
 export default function ModuleEditorPage() {

@@ -29,6 +29,7 @@ import {
   Loader2,
   Plus,
   Trash2,
+  Eye,
 } from "lucide-react";
 import {
   DndContext,
@@ -279,16 +280,26 @@ export default function ProgramEditorPage() {
               {program.title}
             </h1>
           )}
-          <Badge
-            variant="outline"
-            className={
-              program.status === "PUBLISHED"
-                ? "bg-green-100 text-green-800 border-green-200"
-                : "bg-yellow-100 text-yellow-800 border-yellow-200"
-            }
-          >
-            {program.status.toLowerCase()}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/programs/${programId}/preview`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview
+            </Button>
+            <Badge
+              variant="outline"
+              className={
+                program.status === "PUBLISHED"
+                  ? "bg-green-100 text-green-800 border-green-200"
+                  : "bg-yellow-100 text-yellow-800 border-yellow-200"
+              }
+            >
+              {program.status.toLowerCase()}
+            </Badge>
+          </div>
         </div>
 
         {editingDesc ? (

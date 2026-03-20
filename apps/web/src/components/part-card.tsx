@@ -26,6 +26,7 @@ import {
   AssessmentPartEditor,
   IntakeFormPartEditor,
   SmartGoalsPartEditor,
+  StyledContentPartEditor,
 } from "@/components/part-editors";
 import type { Part } from "@/hooks/use-parts";
 import {
@@ -48,6 +49,7 @@ import {
   FileQuestion,
   FormInput,
   Target,
+  Sparkles,
 } from "lucide-react";
 
 const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string; color: string }> = {
@@ -62,6 +64,7 @@ const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string;
   ASSESSMENT: { icon: FileQuestion, label: "Assessment", color: "text-rose" },
   INTAKE_FORM: { icon: FormInput, label: "Intake Form", color: "text-pink-400" },
   SMART_GOALS: { icon: Target, label: "SMART Goals", color: "text-sage" },
+  STYLED_CONTENT: { icon: Sparkles, label: "Styled Content", color: "text-violet-400" },
 };
 
 interface PartCardProps {
@@ -157,6 +160,8 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate }: PartCardProp
         return <IntakeFormPartEditor content={content} onChange={handleContentChange} />;
       case "SMART_GOALS":
         return <SmartGoalsPartEditor content={content} onChange={handleContentChange} />;
+      case "STYLED_CONTENT":
+        return <StyledContentPartEditor content={content} onChange={handleContentChange} />;
       default:
         return (
           <div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground">

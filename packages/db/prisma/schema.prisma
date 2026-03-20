@@ -57,6 +57,7 @@ enum PartType {
   ASSESSMENT
   INTAKE_FORM
   SMART_GOALS
+  STYLED_CONTENT
 }
 
 enum EnrollmentStatus {

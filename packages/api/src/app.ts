@@ -13,6 +13,7 @@ import taskRoutes from "./routes/tasks";
 import calendarRoutes from "./routes/calendar";
 import journalRoutes from "./routes/journal";
 import notificationRoutes from "./routes/notifications";
+import aiRoutes from "./routes/ai";
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use("/api/participant/tasks", taskRoutes);
 app.use("/api/participant/calendar", calendarRoutes);
 app.use("/api/participant/journal", journalRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Error handler
 app.use(errorHandler);

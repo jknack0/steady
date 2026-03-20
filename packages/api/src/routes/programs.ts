@@ -111,6 +111,38 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/programs/:id/preview — Get full program with all modules and parts for preview
+router.get("/:id/preview", async (req: Request, res: Response) => {
+  try {
+    const program = await prisma.program.findFirst({
+      where: {
+        id: req.params.id,
+        clinicianId: req.user!.clinicianProfileId!,
+      },
+      include: {
+        modules: {
+          orderBy: { sortOrder: "asc" },
+          include: {
+            parts: {
+              orderBy: { sortOrder: "asc" },
+            },
+          },
+        },
+      },
+    });
+
+    if (!program) {
+      res.status(404).json({ success: false, error: "Program not found" });
+      return;
+    }
+
+    res.json({ success: true, data: program });
+  } catch (err) {
+    console.error("Get program preview error:", err);
+    res.status(500).json({ success: false, error: "Failed to get program preview" });
+  }
+});
+
 // PUT /api/programs/:id — Update program settings
 router.put("/:id", validate(UpdateProgramSchema), async (req: Request, res: Response) => {
   try {

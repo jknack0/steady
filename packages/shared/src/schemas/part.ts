@@ -14,6 +14,7 @@ export const PartTypeEnum = z.enum([
   "ASSESSMENT",
   "INTAKE_FORM",
   "SMART_GOALS",
+  "STYLED_CONTENT",
 ]);
 
 // ── Homework Item Schemas ──────────────────────────────
@@ -198,6 +199,15 @@ const SmartGoalsContentSchema = z.object({
   goals: z.array(SmartGoalSchema).default([]),
 });
 
+// ── Styled Content Schema ────────────────────────────
+
+const StyledContentSchema = z.object({
+  type: z.literal("STYLED_CONTENT"),
+  rawContent: z.string().default(""),
+  styledHtml: z.string().default(""),
+  styleContext: z.enum(["general", "exercise", "nutrition", "mental_health", "education"]).default("general"),
+});
+
 export const PartContentSchema = z.discriminatedUnion("type", [
   TextContentSchema,
   VideoContentSchema,
@@ -210,6 +220,7 @@ export const PartContentSchema = z.discriminatedUnion("type", [
   AssessmentContentSchema,
   IntakeFormContentSchema,
   SmartGoalsContentSchema,
+  StyledContentSchema,
 ]);
 
 // ── Part CRUD Schemas ──────────────────────────────────
