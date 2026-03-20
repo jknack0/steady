@@ -1,0 +1,341 @@
+Summary,Issue Type,Priority,Labels,Description
+"Participants Page (Clinician Dashboard)",Story,High,"clinician-dashboard,phase-1","Build the clinician-facing participant management page at /participants.
+
+Current state: Stubbed page with 'Coming in a future sprint' text.
+
+Acceptance Criteria:
+- Table view with columns: Name, Program, Current Module, Homework Status (badge: Complete/Partial/Not Started), Last Active, Status Indicator
+- Status indicator: green dot (on-track: homework >=80%, active in 48h), amber (behind: homework <80% or inactive 3+ days), red (needs attention: inactive 7+ days)
+- Search/filter by program
+- Click row navigates to participant detail page
+
+Participant Detail sub-page (/participants/[id]):
+- Left column (2/3): current enrollment info, module progress timeline, homework detail for current module, session history
+- Right column (1/3): quick actions (Unlock Next Module, Push a Task, Schedule Session), SMART goals, recent shared journal entries
+- Enrollment management: pause, drop, reset module progress
+
+API work needed:
+- GET /api/clinician/participants — list all participants across clinician's programs with aggregated status
+- GET /api/clinician/participants/:id — detailed view with enrollment, progress, journal, homework data
+
+Dependencies: Enrollment system (done), Module progress tracking (done)"
+"Session Management",Story,High,"sessions,phase-1","Full session scheduling, completion, and session-gated module unlock flow.
+
+Current state: Session model exists in Prisma schema. Sessions page is stubbed. No API routes for sessions.
+
+API:
+- POST /api/sessions — create session (clinician). Auto-creates CalendarEvent for participant with eventType=SESSION
+- GET /api/sessions — list sessions for clinician (filterable by date range, enrollmentId)
+- PUT /api/sessions/:id — update (reschedule, change video link)
+- PUT /api/sessions/:id/complete — mark completed with clinicianNotes, modulesCompleted array, tasks to push. Triggers checkAndUnlockNextModule()
+- GET /api/sessions/upcoming (participant) — next scheduled session
+- GET /api/sessions/history (participant) — past sessions
+
+Web (CAS):
+- Sessions page: calendar/list view of all scheduled sessions across participants
+- On participant detail page, Sessions tab: schedule session dialog (date/time picker, video URL), list of past sessions
+- Complete Session dialog: clinician notes, share toggle, module completed dropdown, tasks to assign
+- Prepare for Session full-screen view: Steady Work Review, homework status, quick stats, last session notes, intended outcomes
+
+Mobile:
+- Sessions appear on participant calendar
+- Session card: time, clinician name, video call link, pre-session checklist
+- Join Call button
+
+Dependencies: Calendar (done), Enrollments (done), Module progress (done)"
+"TIME_BASED Module Unlock Logic",Story,Medium,"modules,phase-1","Implement the TIME_BASED and MANUAL unlock rules for modules.
+
+Current state: SEQUENTIAL unlock works. TIME_BASED and MANUAL are defined in enum but not implemented. Logic in packages/api/src/routes/participant.ts lines 272-304.
+
+Acceptance Criteria:
+- When a module has unlockRule: TIME_BASED and unlockDelayDays: N, module auto-unlocks N days after previous module completed
+- Background job (or check on enrollment fetch) evaluates unlock eligibility
+- MANUAL unlock: clinician-only endpoint PUT /api/enrollments/:id/modules/:moduleId/unlock
+- Add Quick Unlock button on participant module timeline in CAS
+
+Dependencies: Module progress (done)"
+"Analytics / Insights Dashboard",Story,Medium,"analytics,phase-2","Stats aggregation service + clinician analytics + participant insights screen.
+
+Current state: No stats service or endpoints. Only basic enrollment counting.
+
+API — Stats service (packages/api/src/services/stats.ts):
+- getTaskCompletionRate(participantId, dateRange)
+- getTimeEstimationAccuracy(participantId, dateRange)
+- getJournalingConsistency(participantId, dateRange)
+- getHomeworkCompletionRate(enrollmentId)
+- getRegulationTrend(participantId, dateRange) — array of { date, score }
+- getSystemCheckinAdherence(participantId, dateRange)
+- GET /api/stats/participant (participant) — own stats, default last 4 weeks
+- GET /api/stats/participant/:participantId (clinician)
+
+CAS — Patterns tab on participant detail:
+- Task completion bar chart (weekly)
+- Regulation trend line chart
+- Journaling consistency calendar heatmap
+- Homework completion per-module progress bars
+- Highlight concerning trends
+
+Mobile — Insights screen:
+- Accessible from home screen card
+- Same charts using react-native-chart-kit or victory-native
+- Earth tone palette
+
+Dependencies: Tasks (done), Journal (done), Module progress (done)"
+"Participant Onboarding Flow",Story,Medium,"mobile,onboarding,phase-1","Guided onboarding for new participants after accepting enrollment invitation.
+
+Current state: ParticipantProfile.onboardingCompleted field exists but is unused. No onboarding screens.
+
+Acceptance Criteria:
+- After first login / accepting invite, participant sees onboarding flow
+- Steps: profile setup (name, timezone), notification preferences (morning check-in time, reminder preferences), calendar sync prompt, Steady System intro
+- Mark onboardingCompleted = true when done
+- Skip option available
+- Gate main app behind onboarding (redirect if not completed)
+
+Dependencies: Auth (done), Notification preferences (done)"
+"Steady Work Review System",Story,Medium,"sessions,phase-2","Pre-session review questionnaire where participants reflect on homework and identify barriers.
+
+Current state: Not implemented. No DB model, no API, no UI.
+
+DB:
+- New SteadyWorkReview model: (id, enrollmentId, moduleId, responses JSON, barriers String[], submittedAt)
+
+API:
+- POST /api/enrollments/:id/reviews — submit review
+- GET /api/enrollments/:id/reviews — list reviews
+
+CAS:
+- Program settings: toggle Enable Steady Work Review, editable review questions (defaults: What did you complete?, What worked well?, What didn't work?, How much time spent?)
+- Barrier diagnostic checklist: editable defaults (Wasn't written down, Wasn't scheduled, Activation stalled, Time estimation failed, The future didn't feel real, Steps were unclear, Prospective memory broke down, Depended on someone else, Forgot)
+- Visible in session prep view
+
+Mobile:
+- Notification 24h before session: Time to complete your Steady Work Review
+- Review screen: questions with text inputs, barrier multi-select checklist, submit
+- Accessible from session card on calendar
+
+Dependencies: Sessions (ticket #2), Enrollments (done)"
+"Per-Participant Homework Customization",Story,Medium,"customization,phase-2","Allow clinicians to customize homework per participant — hide items, add items, add resources, add notes.
+
+Current state: Not implemented.
+
+DB:
+- New EnrollmentOverride model: (id, enrollmentId, moduleId, partId?, overrideType ENUM [HIDE_HOMEWORK_ITEM, ADD_HOMEWORK_ITEM, ADD_RESOURCE, CLINICIAN_NOTE], overrideData JSON, createdAt)
+
+API:
+- CRUD for overrides: POST/GET/DELETE /api/enrollments/:id/overrides
+- Module/part delivery endpoint merges overrides before returning to participant (filter hidden items, insert added items, append resources, attach notes)
+
+CAS — Customize tab on participant detail:
+- Shows current module homework with toggle switches to include/exclude items
+- Add item button (same picker as homework builder)
+- Add Resource button (title, URL, description)
+- Clinician note attachment
+
+Dependencies: Homework builder (done), Enrollments (done)"
+"Google Calendar Sync",Story,Low,"calendar,integrations,phase-2","Two-way sync between participant's Google Calendar and Steady calendar.
+
+Current state: CalendarEvent model has externalCalendarId field. No sync logic.
+
+DB:
+- New CalendarSync model: (id, userId, provider ENUM [GOOGLE, APPLE, OUTLOOK], externalCalendarId, syncEnabled, lastSyncAt)
+
+API:
+- Google OAuth2 flow, store refresh tokens encrypted
+- Pull: fetch events from Google Calendar for next 30 days, create/update CalendarEvents with eventType=EXTERNAL_SYNC
+- Push: app-created events pushed to Google Calendar
+- Sync: on-demand + every 15 min via background job
+- Conflict resolution: external calendar = source of truth for external events, app for app events
+
+Mobile:
+- Settings > Calendar Sync: Connect Calendar button, OAuth flow
+- External events in distinct color (light gray) with Google icon
+- Apple/Outlook: Coming soon labels
+
+Dependencies: Calendar (done)"
+"File Storage / S3 Uploads",Story,Medium,"infrastructure,phase-1","Pre-signed S3 URL flow for file uploads (handouts, images, attachments).
+
+Current state: coverImageUrl and resourceUrl fields exist but no upload infrastructure. Per CLAUDE.md: API never touches file bytes.
+
+Acceptance Criteria:
+- S3 bucket with encryption at rest, HTTPS-only, no public URLs (HIPAA)
+- POST /api/uploads/presign — returns pre-signed upload URL + final URL. Params: { fileName, fileType, context }
+- GET /api/uploads/presign-download — returns pre-signed download URL
+- CAS: file upload component that uploads directly to S3 via pre-signed URL, stores S3 key
+- Use in: program cover images, homework resource handouts (PDFs), future attachments
+
+Dependencies: None"
+"PDF Generation",Story,Low,"reporting,phase-2","Generate downloadable PDFs for program summaries and progress reports.
+
+Current state: Not implemented.
+
+Acceptance Criteria:
+- Program summary PDF: title, all modules, all parts (text content, homework listed)
+- Participant progress report PDF: enrollment status, module completion, homework status, assessment scores, regulation trend
+- GET /api/programs/:id/export/pdf (clinician)
+- GET /api/enrollments/:id/report/pdf (clinician)
+- Use @react-pdf/renderer or puppeteer
+- Generate as background job if >200ms, return download URL
+
+Dependencies: Programs (done), Analytics (ticket #4)"
+"HIPAA Audit Logging",Story,High,"compliance,infrastructure,phase-1","Log all data mutations with userId, timestamp, resource type, and action for HIPAA compliance.
+
+Current state: Not implemented. CLAUDE.md mentions Prisma middleware approach.
+
+Acceptance Criteria:
+- Prisma middleware that intercepts all create/update/delete operations
+- Log to AuditLog table: (id, userId, action ENUM [CREATE, UPDATE, DELETE], resourceType, resourceId, metadata JSON, timestamp)
+- Never log PII at INFO level — only IDs and operation names
+- GET /api/admin/audit-logs — admin-only, filterable by userId, resourceType, action, date range, cursor-based pagination
+- Retention policy: configurable, default 7 years
+
+Dependencies: Auth (done)"
+"Push Notifications (Full Integration)",Story,Medium,"notifications,phase-1","Wire up existing notification infrastructure with session/homework lifecycle scheduling.
+
+Current state: Expo push sending works. pg-boss queue exists. Morning check-in and weekly review workers defined. Not fully integrated.
+
+Acceptance Criteria:
+- Session reminders: 3 notifications per session (24h, 1h, 10min before) — auto-scheduled on session creation
+- Homework reminders: based on reminderCadence, only sent if homework not completed
+- Morning check-in: daily at participant preferred time, rotating warm copy
+- Weekly review: weekly at preferred day/time
+- Notification preferences respected (category toggles, preferred times)
+- Cancel reminders when homework completed or session cancelled
+- Smart escalation: after 3+ dismissals in 7 days, switch to diagnostic prompt copy
+
+Dependencies: Sessions (ticket #2), Notification preferences (done), Queue (done)"
+"Accountability Partners",Story,Low,"social,phase-2","Participants can invite an accountability partner who receives weekly aggregate summaries.
+
+Current state: Not implemented.
+
+DB:
+- AccountabilityPartner model: (id, participantId, partnerName, partnerEmail, inviteCode UNIQUE, inviteStatus ENUM [PENDING, ACCEPTED, REVOKED], createdAt)
+- PartnerWeeklySummary model: (id, partnerId, weekStartDate, tasksCompleted, totalTasks, journalEntries, nextSessionDate?, sentAt)
+
+API:
+- POST /api/partners/invite — generate invite, send email
+- GET /api/partners — list partners
+- DELETE /api/partners/:id — revoke
+- GET /api/partners/summary/:inviteCode — public (no auth), aggregate only. NEVER task/journal content or clinical data
+- Background job: weekly summary generation + email every Sunday
+
+Mobile:
+- Settings > Accountability Partners: invite form, partner list, remove button
+- Privacy note: partner sees weekly summary only, never details
+
+Dependencies: Tasks (done), Journal (done)"
+"Gamification & Animations",Story,Low,"mobile,ux,phase-3","Completion animations, streaks with milestones, and module celebration overlays.
+
+Current state: Basic task completion with optimistic UI. No animations or streak badges.
+
+Acceptance Criteria:
+- Task check-off: spring scale animation on checkbox, haptic feedback (expo-haptics), task row fades after 1s
+- Streak badges on home screen: journaling, app check-in, homework. Forgive 1 gap day per 7-day window logic
+- Milestone popups at 7, 14, 21, 30 days: celebratory bottom sheet
+- Module completion: full-screen overlay with confetti (react-native-confetti-cannon), module title, clinician message or default
+
+Dependencies: Stats service (ticket #4)"
+"Voice Capture",Story,Low,"mobile,phase-3","Voice-to-text for quick task capture and journal entries.
+
+Current state: Not implemented.
+
+Acceptance Criteria:
+- Long-press FAB activates voice recording, transcribes, populates task title input
+- Journal screen: mic button next to TextInput, voice-to-text into entry
+- Visual indicator while recording (pulsing red dot)
+- Use expo-speech-recognition or react-native-voice
+
+Dependencies: None"
+"Maintenance Phase & Unsteadiness Detector",Story,Medium,"post-program,phase-3","Post-program features: follow-up scheduling, maintenance journal prompts, automated engagement monitoring.
+
+Current state: Not implemented.
+
+CAS — Program Settings:
+- Maintenance Phase section: toggle, follow-up session count, follow-up timing, content access toggle, maintenance journal prompts with cadence
+
+API:
+- On enrollment COMPLETED: schedule follow-up sessions, begin maintenance prompts, start monitoring
+- Unsteadiness detector (daily background job): check last N days for task completion, journal entries, app opens. If all three inactive for N consecutive days, send re-steady notification linking to maintenance plan
+
+Mobile:
+- Module 7 homework: maintenance plan creation (how will I know I'm unsteady, what will I do, who's my partner)
+- Post-completion: Steady System stays functional, program content accessible, home screen shows Maintenance mode
+- Follow-up sessions appear on calendar
+
+Dependencies: Sessions (ticket #2), Analytics (ticket #4), Notifications (ticket #12)"
+"Multi-Clinician Practice Support",Story,Low,"multi-tenant,phase-3","Support for group practices with shared templates, practice-wide dashboard, and bulk actions.
+
+Current state: Not implemented.
+
+DB:
+- Practice model: (id, name, ownerId)
+- PracticeMembership: (id, practiceId, clinicianId, role ENUM [OWNER, CLINICIAN], joinedAt)
+- Program.practiceId nullable FK
+
+API:
+- Practice CRUD, invite clinicians, list members
+- Practice-scoped programs visible to all members as clonable templates
+- Practice owner dashboard: aggregate stats across all clinicians
+
+CAS — Bulk Actions:
+- Participant list: multi-select checkboxes
+- Floating action bar: Unlock Next Module, Send Nudge, Push Task for all selected
+- Confirmation dialog
+
+Dependencies: Programs (done), Participants page (ticket #1)"
+"Content Versioning",Story,Low,"content,phase-3","Track part content history and allow rollback. Handle published program edits.
+
+Current state: Not implemented.
+
+DB:
+- ContentVersion: (id, partId, versionNumber, content JSON, createdAt, createdBy)
+
+API:
+- Auto-save current content as new version before any Part update
+- GET /api/parts/:id/versions — version history
+- POST /api/parts/:id/versions/:versionId/restore — restore old version (creates new version)
+- Push to active participants flow: banner warning when editing published program, button to push changes
+
+Dependencies: Parts (done)"
+"Offline Support (Mobile)",Story,Low,"mobile,infrastructure,phase-3","AsyncStorage persistence for React Query cache + offline mutation queue.
+
+Current state: TanStack Query used but no persistence or offline support.
+
+Acceptance Criteria:
+- React Query cache persisted to AsyncStorage
+- Stale times: 5min for tasks/journal, 1hr for program content
+- Optimistic mutations for task operations (create, complete) — queued offline, synced on reconnect
+- Offline mutation queue in AsyncStorage with retry logic
+- Offline indicator in app header
+
+Dependencies: None"
+"Template Marketplace",Story,Low,"marketplace,phase-4","Clinicians can publish programs as templates for others to purchase/clone.
+
+Current state: Clone endpoint exists. isTemplate field exists on Program.
+
+Acceptance Criteria:
+- Program additions: isPublished, price, previewImages
+- GET /api/marketplace — public listing
+- POST /api/marketplace/:programId/purchase — clone + Stripe payment
+- Admin approval queue
+- CAS: Marketplace tab, browse/search/filter, purchase flow
+
+Dependencies: Stripe integration, Admin panel"
+"Self-Guided Tier",Story,Low,"marketplace,phase-4","Participants can purchase and complete programs without a clinician.
+
+Acceptance Criteria:
+- Program settings: selfGuidedEnabled, selfGuidedPrice
+- Self-enrollment: participant purchases directly, no invite needed
+- Module unlock: time-based (cadence) or part completion only — no session gate
+- Remove session-dependent UI in self-guided mode
+- Steady System fully available
+
+Dependencies: Marketplace (ticket #20), TIME_BASED unlock (ticket #3)"
+"AI-Powered Features",Story,Low,"ai,phase-4","Claude API integration for smart prompts, content review, and weekly summaries.
+
+Acceptance Criteria:
+- Smart journal prompts: low regulation score triggers personalized prompt based on recent patterns/barriers via Claude API
+- Content quality assistant: Review my content button in CAS, Claude suggests ADHD-friendly formatting and tone improvements
+- Weekly insight summary: natural-language summary of participant week for clinician session prep
+
+Dependencies: Analytics (ticket #4), Journal (done), Anthropic API"
