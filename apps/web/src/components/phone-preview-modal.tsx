@@ -6,9 +6,11 @@ import { api } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
-  DialogContent,
+  DialogPortal,
+  DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   ChevronDown,
   ChevronLeft,
@@ -529,18 +531,20 @@ export function PhonePreviewModal({ programId, partId, open, onOpenChange }: Pho
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="bg-transparent border-0 shadow-none p-0 max-w-none w-auto [&>button]:hidden"
-      >
-        <DialogTitle className="sr-only">Program Preview</DialogTitle>
-        <div className="flex items-center justify-center h-[90vh]">
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onPointerDownOutside={() => onOpenChange(false)}
+        >
+          <DialogTitle className="sr-only">Program Preview</DialogTitle>
           {isLoading || !program ? (
             <Loader2 className="h-8 w-8 animate-spin text-white" />
           ) : (
             <ScaledPhone program={program} partId={partId} />
           )}
-        </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 }

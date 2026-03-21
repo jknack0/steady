@@ -266,6 +266,7 @@ export default function ModuleEditorPage() {
           <Button
             variant="outline"
             size="sm"
+            className="ml-auto"
             onClick={() => { setPreviewPartId(null); setPreviewOpen(true); }}
           >
             <Eye className="mr-2 h-4 w-4" />
