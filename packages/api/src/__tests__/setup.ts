@@ -42,6 +42,7 @@ vi.mock("@steady/db", () => {
       create: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -57,6 +58,7 @@ vi.mock("@steady/db", () => {
       findFirst: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
+      deleteMany: vi.fn(),
     },
     partProgress: {
       create: vi.fn(),
@@ -65,8 +67,10 @@ vi.mock("@steady/db", () => {
       findFirst: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
+      deleteMany: vi.fn(),
     },
     task: {
+      create: vi.fn(),
       findMany: vi.fn(),
       count: vi.fn(),
       groupBy: vi.fn(),
@@ -80,13 +84,32 @@ vi.mock("@steady/db", () => {
       count: vi.fn(),
     },
     session: {
+      create: vi.fn(),
       findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
       count: vi.fn(),
     },
     participantProfile: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
+    },
+    notificationPreference: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+    auditLog: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      groupBy: vi.fn(),
     },
   };
 
-  return { prisma: mockPrisma, PrismaClient: vi.fn() };
+  return {
+    prisma: mockPrisma,
+    PrismaClient: vi.fn(),
+    runWithAuditUser: vi.fn().mockImplementation((_userId: any, fn: any) => fn()),
+    getAuditUserId: vi.fn().mockReturnValue(null),
+  };
 });

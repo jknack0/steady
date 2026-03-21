@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { runWithAuditUser } from "@steady/db";
 
 export interface AuthUser {
   userId: string;
@@ -29,7 +30,8 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as AuthUser;
     req.user = payload;
-    next();
+    // Attach userId to audit context for HIPAA audit trail
+    runWithAuditUser(payload.userId, () => next());
   } catch {
     res.status(401).json({ success: false, error: "Invalid or expired token" });
   }

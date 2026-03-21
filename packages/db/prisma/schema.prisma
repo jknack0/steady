@@ -391,3 +391,27 @@ model NotificationPreference {
   @@unique([userId, category])
   @@map("notification_preferences")
 }
+
+// ── Audit Trail (HIPAA) ───────────────────────────────
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  userId       String?
+  action       AuditAction
+  resourceType String
+  resourceId   String
+  metadata     Json?
+  timestamp    DateTime    @default(now())
+
+  @@index([userId])
+  @@index([resourceType])
+  @@index([action])
+  @@index([timestamp])
+  @@map("audit_logs")
+}

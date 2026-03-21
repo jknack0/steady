@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
+import { cancelHomeworkReminders } from "../services/notifications";
 
 const router = Router();
 
@@ -237,6 +238,11 @@ router.post("/progress/part/:partId", async (req: Request, res: Response) => {
         responseData: responseData || null,
       },
     });
+
+    // Cancel homework reminders if this is a HOMEWORK part
+    if (part.type === "HOMEWORK") {
+      cancelHomeworkReminders(enrollmentId, req.params.partId).catch(() => {});
+    }
 
     // Check if all required parts in the module are completed
     const moduleParts = await prisma.part.findMany({

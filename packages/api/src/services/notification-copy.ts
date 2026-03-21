@@ -57,3 +57,40 @@ export function getTaskCopy(taskTitle: string) {
 export function getWeeklyReviewCopy() {
   return pickRandom(WEEKLY_REVIEW_MESSAGES);
 }
+
+// ── Smart Escalation: Diagnostic Prompts ────────────
+// Used after 3+ dismissals in 7 days — switches from
+// cheerful reminders to empathetic, diagnostic prompts.
+
+const DIAGNOSTIC_PROMPTS: Record<string, Array<{ title: string; body: string }>> = {
+  MORNING_CHECKIN: [
+    { title: "We noticed you've been quiet 💛", body: "No pressure — but if something feels off, your journal is a safe place to name it." },
+    { title: "Just checking in", body: "It's okay if today is hard. Even noting that can help. Open when you're ready." },
+  ],
+  HOMEWORK: [
+    { title: "Homework feeling heavy?", body: "If the assignments feel like too much, that's worth mentioning to your clinician." },
+    { title: "No rush, but we're here", body: "If homework has been hard to get to, your clinician can help adjust the plan." },
+  ],
+  SESSION: [
+    { title: "Your session is coming up", body: "If you're not sure about attending, it can still help to show up — even for 5 minutes." },
+  ],
+  TASK: [
+    { title: "Tasks piling up?", body: "If your task list feels unmanageable, try picking just one small thing today." },
+    { title: "One step at a time", body: "You don't have to do everything. What's one task that would feel good to finish?" },
+  ],
+  WEEKLY_REVIEW: [
+    { title: "Your week, your pace", body: "Even a tough week has data in it. Take a glance when you're ready." },
+  ],
+};
+
+export function getDiagnosticPromptCopy(category: string): { title: string; body: string } {
+  const prompts = DIAGNOSTIC_PROMPTS[category];
+  if (prompts && prompts.length > 0) {
+    return pickRandom(prompts);
+  }
+  // Fallback
+  return {
+    title: "We're here for you 💛",
+    body: "Take things at your own pace. Open the app whenever you're ready.",
+  };
+}

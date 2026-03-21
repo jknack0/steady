@@ -2,10 +2,38 @@
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { useParticipantStats } from "@/hooks/use-participant-stats";
-import { cn } from "@/lib/utils";
-import { Loader2, ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import Link from "next/link";
+import {
+  useClinicianParticipant,
+  usePushTask,
+  useUnlockModule,
+  useManageEnrollment,
+  type ParticipantDetail,
+} from "@/hooks/use-clinician-participants";
+import { useParticipantStats } from "@/hooks/use-participant-stats";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  Loader2,
+  ArrowLeft,
+  CheckCircle2,
+  Circle,
+  Lock,
+  Unlock,
+  Send,
+  Calendar,
+  Pause,
+  Play,
+  XCircle,
+  RotateCcw,
+  TrendingUp,
+  TrendingDown,
+  BookOpen,
+  ClipboardList,
+  Target,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -18,46 +46,631 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-type Tab = "patterns" | "overview";
+type Tab = "overview" | "patterns";
 
 export default function ParticipantDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [tab, setTab] = useState<Tab>("patterns");
+  const [tab, setTab] = useState<Tab>("overview");
+  const { data, isLoading, isError } = useClinicianParticipant(id);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-lg border border-dashed py-12 text-center">
+        <p className="text-muted-foreground">Failed to load participant data.</p>
+      </div>
+    );
+  }
+
+  const participant = data.participant;
+  const name = `${participant.firstName} ${participant.lastName}`.trim();
 
   return (
     <div>
-      <div className="mb-6">
-        <Link
-          href="/participants"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-2"
-        >
-          <ArrowLeft className="h-3 w-3" /> Back to Participants
-        </Link>
-        <h1 className="text-2xl font-bold">Participant Insights</h1>
+      <Link
+        href="/participants"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-3"
+      >
+        <ArrowLeft className="h-3 w-3" /> Back to Participants
+      </Link>
+
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">{name}</h1>
+          <p className="text-sm text-muted-foreground">{participant.email}</p>
+        </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
-        {(["patterns", "overview"] as const).map((t) => (
+        {(["overview", "patterns"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px",
+              "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px capitalize",
               tab === t
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
-            {t === "patterns" ? "Patterns" : "Overview"}
+            {t}
           </button>
         ))}
       </div>
 
-      {tab === "patterns" ? (
-        <PatternsTab participantId={id} />
+      {tab === "overview" ? (
+        <OverviewTab data={data} participantId={id} />
       ) : (
-        <div className="text-muted-foreground">Overview coming soon.</div>
+        <PatternsTab participantId={id} />
+      )}
+    </div>
+  );
+}
+
+// ── Overview Tab ─────────────────────────────────────────
+
+function OverviewTab({
+  data,
+  participantId,
+}: {
+  data: ParticipantDetail;
+  participantId: string;
+}) {
+  const enrollment = data.enrollments[0];
+  if (!enrollment) {
+    return <p className="text-muted-foreground">No active enrollment found.</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left Column (2/3) */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Enrollment Info */}
+        <EnrollmentCard enrollment={enrollment} />
+
+        {/* Module Progress Timeline */}
+        <ModuleTimeline
+          moduleProgress={enrollment.moduleProgress}
+          currentModuleId={enrollment.currentModuleId}
+        />
+
+        {/* Homework Detail */}
+        <HomeworkDetail
+          homeworkProgress={enrollment.homeworkProgress}
+          currentModuleId={enrollment.currentModuleId}
+        />
+
+        {/* Session History */}
+        <SessionHistory sessions={enrollment.sessions} />
+      </div>
+
+      {/* Right Column (1/3) */}
+      <div className="space-y-6">
+        {/* Quick Actions */}
+        <QuickActions
+          participantId={participantId}
+          enrollment={enrollment}
+        />
+
+        {/* Enrollment Management */}
+        <EnrollmentManagement
+          participantId={participantId}
+          enrollment={enrollment}
+        />
+
+        {/* SMART Goals */}
+        <SmartGoals goals={data.smartGoals} />
+
+        {/* Shared Journal Entries */}
+        <SharedJournal entries={data.journalEntries} />
+      </div>
+    </div>
+  );
+}
+
+// ── Left Column Components ───────────────────────────────
+
+function EnrollmentCard({
+  enrollment,
+}: {
+  enrollment: ParticipantDetail["enrollments"][0];
+}) {
+  const STATUS_COLORS: Record<string, string> = {
+    ACTIVE: "bg-green-100 text-green-800",
+    PAUSED: "bg-yellow-100 text-yellow-800",
+    INVITED: "bg-blue-100 text-blue-800",
+    COMPLETED: "bg-gray-100 text-gray-800",
+    DROPPED: "bg-red-100 text-red-800",
+  };
+
+  return (
+    <div className="rounded-lg border p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold">{enrollment.program.title}</h3>
+        <Badge variant="outline" className={cn(STATUS_COLORS[enrollment.status])}>
+          {enrollment.status.toLowerCase()}
+        </Badge>
+      </div>
+      {enrollment.program.description && (
+        <p className="text-sm text-muted-foreground mb-3">
+          {enrollment.program.description}
+        </p>
+      )}
+      <div className="flex gap-4 text-xs text-muted-foreground">
+        <span>Cadence: {enrollment.program.cadence.toLowerCase()}</span>
+        <span>
+          Enrolled: {new Date(enrollment.enrolledAt).toLocaleDateString()}
+        </span>
+        {enrollment.completedAt && (
+          <span>
+            Completed: {new Date(enrollment.completedAt).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModuleTimeline({
+  moduleProgress,
+  currentModuleId,
+}: {
+  moduleProgress: ParticipantDetail["enrollments"][0]["moduleProgress"];
+  currentModuleId: string | null;
+}) {
+  const sorted = [...moduleProgress].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-4 flex items-center gap-2">
+        <ClipboardList className="h-4 w-4" /> Module Progress
+      </h3>
+      <div className="space-y-3">
+        {sorted.map((mp) => {
+          const isCurrent = mp.moduleId === currentModuleId;
+          const Icon =
+            mp.status === "COMPLETED"
+              ? CheckCircle2
+              : mp.status === "LOCKED"
+                ? Lock
+                : Circle;
+          const iconColor =
+            mp.status === "COMPLETED"
+              ? "text-green-600"
+              : mp.status === "LOCKED"
+                ? "text-muted-foreground"
+                : "text-primary";
+
+          return (
+            <div
+              key={mp.moduleId}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-lg border",
+                isCurrent && "border-primary bg-primary/5"
+              )}
+            >
+              <Icon className={cn("h-5 w-5 flex-shrink-0", iconColor)} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {mp.moduleTitle}
+                  {isCurrent && (
+                    <span className="ml-2 text-xs text-primary font-normal">
+                      Current
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-3 text-xs text-muted-foreground">
+                  {mp.estimatedMinutes && (
+                    <span>{mp.estimatedMinutes} min</span>
+                  )}
+                  {mp.completedAt && (
+                    <span>
+                      Completed{" "}
+                      {new Date(mp.completedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                  {mp.unlockedAt && !mp.completedAt && (
+                    <span>
+                      Unlocked{" "}
+                      {new Date(mp.unlockedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs",
+                  mp.status === "COMPLETED" && "bg-green-50 text-green-700",
+                  mp.status === "LOCKED" && "bg-gray-50 text-gray-500",
+                  (mp.status === "UNLOCKED" || mp.status === "IN_PROGRESS") &&
+                    "bg-blue-50 text-blue-700"
+                )}
+              >
+                {mp.status.replace("_", " ").toLowerCase()}
+              </Badge>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function HomeworkDetail({
+  homeworkProgress,
+  currentModuleId,
+}: {
+  homeworkProgress: ParticipantDetail["enrollments"][0]["homeworkProgress"];
+  currentModuleId: string | null;
+}) {
+  const currentModuleHomework = currentModuleId
+    ? homeworkProgress.filter((h) => h.moduleId === currentModuleId)
+    : homeworkProgress;
+
+  if (currentModuleHomework.length === 0) {
+    return (
+      <div className="rounded-lg border p-5">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <BookOpen className="h-4 w-4" /> Homework
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          No homework assignments for the current module.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-4 flex items-center gap-2">
+        <BookOpen className="h-4 w-4" /> Homework (Current Module)
+      </h3>
+      <div className="space-y-2">
+        {currentModuleHomework.map((hw) => (
+          <div
+            key={hw.partId}
+            className="flex items-center gap-3 p-2 rounded"
+          >
+            {hw.status === "COMPLETED" ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+            ) : (
+              <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            )}
+            <span className="text-sm flex-1">{hw.partTitle}</span>
+            {hw.completedAt && (
+              <span className="text-xs text-muted-foreground">
+                {new Date(hw.completedAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SessionHistory({
+  sessions,
+}: {
+  sessions: ParticipantDetail["enrollments"][0]["sessions"];
+}) {
+  const STATUS_COLORS: Record<string, string> = {
+    SCHEDULED: "bg-blue-100 text-blue-800",
+    COMPLETED: "bg-green-100 text-green-800",
+    CANCELLED: "bg-gray-100 text-gray-600",
+    NO_SHOW: "bg-red-100 text-red-800",
+  };
+
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-4 flex items-center gap-2">
+        <Calendar className="h-4 w-4" /> Session History
+      </h3>
+      {sessions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No sessions yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {sessions.map((s) => (
+            <div
+              key={s.id}
+              className="flex items-center justify-between p-2 rounded border"
+            >
+              <div>
+                <p className="text-sm font-medium">
+                  {new Date(s.scheduledAt).toLocaleDateString("en-US", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </p>
+                {s.clinicianNotes && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                    {s.clinicianNotes}
+                  </p>
+                )}
+              </div>
+              <Badge
+                variant="outline"
+                className={cn("text-xs", STATUS_COLORS[s.status])}
+              >
+                {s.status.toLowerCase().replace("_", " ")}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Right Column Components ──────────────────────────────
+
+function QuickActions({
+  participantId,
+  enrollment,
+}: {
+  participantId: string;
+  enrollment: ParticipantDetail["enrollments"][0];
+}) {
+  const [taskTitle, setTaskTitle] = useState("");
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const pushTask = usePushTask(participantId);
+  const unlockModule = useUnlockModule(participantId);
+
+  // Find next locked module
+  const nextLocked = [...enrollment.moduleProgress]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .find((mp) => mp.status === "LOCKED");
+
+  const handlePushTask = async () => {
+    if (!taskTitle.trim()) return;
+    await pushTask.mutateAsync({ title: taskTitle.trim() });
+    setTaskTitle("");
+    setShowTaskForm(false);
+  };
+
+  const handleUnlock = async () => {
+    if (!nextLocked) return;
+    await unlockModule.mutateAsync({
+      enrollmentId: enrollment.id,
+      moduleId: nextLocked.moduleId,
+    });
+  };
+
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-3">Quick Actions</h3>
+      <div className="space-y-2">
+        {/* Unlock Next Module */}
+        {nextLocked && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={handleUnlock}
+            disabled={unlockModule.isPending}
+          >
+            <Unlock className="h-4 w-4 mr-2" />
+            {unlockModule.isPending ? "Unlocking..." : `Unlock: ${nextLocked.moduleTitle}`}
+          </Button>
+        )}
+
+        {/* Push a Task */}
+        {!showTaskForm ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => setShowTaskForm(true)}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Push a Task
+          </Button>
+        ) : (
+          <div className="space-y-2 p-3 border rounded-lg">
+            <Input
+              placeholder="Task title..."
+              value={taskTitle}
+              onChange={(e) => setTaskTitle(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handlePushTask()}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handlePushTask}
+                disabled={pushTask.isPending || !taskTitle.trim()}
+              >
+                {pushTask.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Send className="h-3 w-3 mr-1" />
+                )}
+                Send
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowTaskForm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Schedule Session — placeholder */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start"
+          disabled
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Schedule Session
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function EnrollmentManagement({
+  participantId,
+  enrollment,
+}: {
+  participantId: string;
+  enrollment: ParticipantDetail["enrollments"][0];
+}) {
+  const manage = useManageEnrollment(participantId);
+
+  const handleAction = (action: "pause" | "resume" | "drop" | "reset-progress") => {
+    const confirmMessages: Record<string, string> = {
+      pause: "Pause this enrollment?",
+      resume: "Resume this enrollment?",
+      drop: "Drop this participant from the program? This cannot be undone easily.",
+      "reset-progress":
+        "Reset all module progress? This will clear all part completions and restart from Module 1.",
+    };
+    if (confirm(confirmMessages[action])) {
+      manage.mutate({ enrollmentId: enrollment.id, action });
+    }
+  };
+
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-3">Enrollment</h3>
+      <div className="space-y-2">
+        {enrollment.status === "ACTIVE" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => handleAction("pause")}
+            disabled={manage.isPending}
+          >
+            <Pause className="h-4 w-4 mr-2" />
+            Pause Enrollment
+          </Button>
+        )}
+        {enrollment.status === "PAUSED" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => handleAction("resume")}
+            disabled={manage.isPending}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Resume Enrollment
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-amber-700 hover:text-amber-800"
+          onClick={() => handleAction("reset-progress")}
+          disabled={manage.isPending}
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Reset Module Progress
+        </Button>
+        {enrollment.status !== "DROPPED" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start text-destructive hover:text-destructive"
+            onClick={() => handleAction("drop")}
+            disabled={manage.isPending}
+          >
+            <XCircle className="h-4 w-4 mr-2" />
+            Drop from Program
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SmartGoals({
+  goals,
+}: {
+  goals: ParticipantDetail["smartGoals"];
+}) {
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-3 flex items-center gap-2">
+        <Target className="h-4 w-4" /> SMART Goals
+      </h3>
+      {goals.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No SMART goals submitted yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {goals.map((g, i) => (
+            <div key={i} className="text-sm">
+              <p className="font-medium text-xs text-muted-foreground mb-1">
+                {g.partTitle}
+              </p>
+              <pre className="text-xs bg-muted/50 p-2 rounded overflow-auto max-h-32">
+                {typeof g.goals === "string"
+                  ? g.goals
+                  : JSON.stringify(g.goals, null, 2)}
+              </pre>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SharedJournal({
+  entries,
+}: {
+  entries: ParticipantDetail["journalEntries"];
+}) {
+  return (
+    <div className="rounded-lg border p-5">
+      <h3 className="font-semibold mb-3 flex items-center gap-2">
+        <BookOpen className="h-4 w-4" /> Shared Journal
+      </h3>
+      {entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No shared journal entries.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {entries.slice(0, 5).map((entry) => (
+            <div key={entry.id} className="border-b pb-2 last:border-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium">
+                  {new Date(entry.entryDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+                {entry.regulationScore && (
+                  <Badge variant="outline" className="text-xs">
+                    Score: {entry.regulationScore}/10
+                  </Badge>
+                )}
+              </div>
+              {entry.freeformContent && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {entry.freeformContent}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -91,7 +704,6 @@ function PatternsTab({ participantId }: { participantId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Concerning trends alert */}
       {hasConcerns && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
           <h3 className="text-sm font-semibold text-rose-800 mb-1 flex items-center gap-2">
@@ -99,24 +711,35 @@ function PatternsTab({ participantId }: { participantId: string }) {
           </h3>
           <ul className="text-sm text-rose-700 space-y-1">
             {stats.taskCompletion.rate < 0.4 && (
-              <li>Task completion rate is low ({Math.round(stats.taskCompletion.rate * 100)}%)</li>
+              <li>
+                Task completion rate is low (
+                {Math.round(stats.taskCompletion.rate * 100)}%)
+              </li>
             )}
             {stats.journaling.rate < 0.3 && (
-              <li>Journaling consistency is below 30% ({Math.round(stats.journaling.rate * 100)}%)</li>
+              <li>
+                Journaling consistency below 30% (
+                {Math.round(stats.journaling.rate * 100)}%)
+              </li>
             )}
-            {stats.regulationTrend.average !== null && stats.regulationTrend.average < 4 && (
-              <li>Average regulation score is {stats.regulationTrend.average}/10</li>
-            )}
+            {stats.regulationTrend.average !== null &&
+              stats.regulationTrend.average < 4 && (
+                <li>
+                  Average regulation score is{" "}
+                  {stats.regulationTrend.average}/10
+                </li>
+              )}
           </ul>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Task Completion Bar Chart (Weekly) */}
+        {/* Task Completion */}
         <div className="rounded-lg border p-5">
           <h3 className="text-sm font-semibold mb-1">Task Completion</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            {stats.taskCompletion.completed}/{stats.taskCompletion.total} tasks completed ({Math.round(stats.taskCompletion.rate * 100)}%)
+            {stats.taskCompletion.completed}/{stats.taskCompletion.total} tasks (
+            {Math.round(stats.taskCompletion.rate * 100)}%)
           </p>
           {stats.taskCompletion.weeklyBreakdown.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
@@ -132,23 +755,17 @@ function PatternsTab({ participantId }: { participantId: string }) {
                   stroke="#8A8A8A"
                 />
                 <YAxis fontSize={12} stroke="#8A8A8A" />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  formatter={(value, name) => [
-                    value,
-                    name === "completed" ? "Completed" : "Total",
-                  ]}
-                />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="total" fill="#E3EDED" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="completed" fill="#5B8A8A" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart message="No task data yet" />
+            <EmptyChart />
           )}
         </div>
 
-        {/* Regulation Trend Line Chart */}
+        {/* Regulation Trend */}
         <div className="rounded-lg border p-5">
           <h3 className="text-sm font-semibold mb-1">Regulation Trend</h3>
           <p className="text-xs text-muted-foreground mb-4">
@@ -170,47 +787,49 @@ function PatternsTab({ participantId }: { participantId: string }) {
                   stroke="#8A8A8A"
                 />
                 <YAxis domain={[1, 10]} fontSize={12} stroke="#8A8A8A" />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  formatter={(value) => [value, "Score"]}
-                />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Line
                   type="monotone"
                   dataKey="score"
                   stroke="#5B8A8A"
                   strokeWidth={2}
                   dot={{ fill: "#5B8A8A", r: 3 }}
-                  activeDot={{ r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart message="No regulation data yet" />
+            <EmptyChart />
           )}
         </div>
 
-        {/* Journaling Consistency Calendar Heatmap */}
+        {/* Journaling Consistency */}
         <div className="rounded-lg border p-5">
           <h3 className="text-sm font-semibold mb-1">Journaling Consistency</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            {stats.journaling.journaledDays}/{stats.journaling.totalDays} days ({Math.round(stats.journaling.rate * 100)}%)
-            {stats.journaling.streak > 0 && ` · ${stats.journaling.streak}-day streak`}
+            {stats.journaling.journaledDays}/{stats.journaling.totalDays} days (
+            {Math.round(stats.journaling.rate * 100)}%)
+            {stats.journaling.streak > 0 &&
+              ` · ${stats.journaling.streak}-day streak`}
           </p>
           <CalendarHeatmap calendar={stats.journaling.calendar} />
         </div>
 
-        {/* Homework Completion Per-Module */}
+        {/* Homework Completion */}
         <div className="rounded-lg border p-5">
           <h3 className="text-sm font-semibold mb-1">Homework Completion</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            {stats.homeworkCompletion.overall.completedParts}/{stats.homeworkCompletion.overall.totalParts} items ({Math.round(stats.homeworkCompletion.overall.rate * 100)}%)
+            {stats.homeworkCompletion.overall.completedParts}/
+            {stats.homeworkCompletion.overall.totalParts} items (
+            {Math.round(stats.homeworkCompletion.overall.rate * 100)}%)
           </p>
           {stats.homeworkCompletion.modules.length > 0 ? (
             <div className="space-y-3">
               {stats.homeworkCompletion.modules.map((mod) => (
                 <div key={mod.moduleId}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium truncate mr-2">{mod.moduleTitle}</span>
+                    <span className="font-medium truncate mr-2">
+                      {mod.moduleTitle}
+                    </span>
                     <span className="text-muted-foreground whitespace-nowrap">
                       {mod.completedParts}/{mod.totalParts}
                     </span>
@@ -225,12 +844,12 @@ function PatternsTab({ participantId }: { participantId: string }) {
               ))}
             </div>
           ) : (
-            <EmptyChart message="No homework assignments yet" />
+            <EmptyChart />
           )}
         </div>
       </div>
 
-      {/* Summary cards row */}
+      {/* Summary row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
           label="Time Estimation"
@@ -240,41 +859,33 @@ function PatternsTab({ participantId }: { participantId: string }) {
               : "N/A"
           }
           detail={`${stats.timeEstimation.sampleSize} tasks measured`}
-          trend={stats.timeEstimation.averageAccuracy}
-          threshold={0.7}
         />
         <SummaryCard
           label="System Check-in"
           value={`${Math.round(stats.systemCheckin.rate * 100)}%`}
           detail={`${stats.systemCheckin.totalCompleted}/${stats.systemCheckin.totalExpected} days`}
-          trend={stats.systemCheckin.rate}
-          threshold={0.5}
         />
         <SummaryCard
           label="Task Rate"
           value={`${Math.round(stats.taskCompletion.rate * 100)}%`}
           detail={`${stats.taskCompletion.completed} completed`}
-          trend={stats.taskCompletion.rate}
-          threshold={0.5}
         />
         <SummaryCard
           label="Journal Rate"
           value={`${Math.round(stats.journaling.rate * 100)}%`}
           detail={`${stats.journaling.streak}-day streak`}
-          trend={stats.journaling.rate}
-          threshold={0.4}
         />
       </div>
     </div>
   );
 }
 
-// ── Sub-components ───────────────────────────────────────
+// ── Shared Sub-components ────────────────────────────────
 
-function EmptyChart({ message }: { message: string }) {
+function EmptyChart() {
   return (
     <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
-      {message}
+      No data yet
     </div>
   );
 }
@@ -283,29 +894,14 @@ function SummaryCard({
   label,
   value,
   detail,
-  trend,
-  threshold,
 }: {
   label: string;
   value: string;
   detail: string;
-  trend: number;
-  threshold: number;
 }) {
-  const TrendIcon = trend >= threshold ? TrendingUp : trend > 0 ? Minus : TrendingDown;
-  const trendColor =
-    trend >= threshold
-      ? "text-green-600"
-      : trend > 0
-        ? "text-yellow-600"
-        : "text-rose-600";
-
   return (
     <div className="rounded-lg border p-4">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <TrendIcon className={cn("h-3 w-3", trendColor)} />
-      </div>
+      <span className="text-xs text-muted-foreground">{label}</span>
       <p className="text-xl font-bold">{value}</p>
       <p className="text-xs text-muted-foreground">{detail}</p>
     </div>
@@ -315,28 +911,33 @@ function SummaryCard({
 function CalendarHeatmap({
   calendar,
 }: {
-  calendar: Array<{ date: string; hasEntry: boolean; regulationScore: number | null }>;
+  calendar: Array<{
+    date: string;
+    hasEntry: boolean;
+    regulationScore: number | null;
+  }>;
 }) {
   if (calendar.length === 0) {
-    return <EmptyChart message="No journal entries yet" />;
+    return <EmptyChart />;
   }
 
-  // Build a 4-week grid
   const entryMap = new Map(calendar.map((c) => [c.date, c]));
-  const weeks: Array<Array<{ date: string; entry: (typeof calendar)[0] | null }>> = [];
+  const weeks: Array<
+    Array<{ date: string; entry: (typeof calendar)[0] | null }>
+  > = [];
 
-  // Start 28 days ago
   const start = new Date();
   start.setDate(start.getDate() - 27);
-
-  let currentWeek: Array<{ date: string; entry: (typeof calendar)[0] | null }> = [];
+  let currentWeek: Array<{
+    date: string;
+    entry: (typeof calendar)[0] | null;
+  }> = [];
 
   for (let i = 0; i < 28; i++) {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
     const dateStr = d.toISOString().split("T")[0];
     currentWeek.push({ date: dateStr, entry: entryMap.get(dateStr) || null });
-
     if (currentWeek.length === 7) {
       weeks.push(currentWeek);
       currentWeek = [];
@@ -348,15 +949,16 @@ function CalendarHeatmap({
 
   return (
     <div>
-      {/* Day labels */}
-      <div className="flex gap-1 mb-1 ml-0">
+      <div className="flex gap-1 mb-1">
         {dayLabels.map((d, i) => (
-          <div key={i} className="w-8 text-center text-[10px] text-muted-foreground">
+          <div
+            key={i}
+            className="w-8 text-center text-[10px] text-muted-foreground"
+          >
             {d}
           </div>
         ))}
       </div>
-      {/* Weeks */}
       <div className="space-y-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="flex gap-1">

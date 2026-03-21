@@ -35,10 +35,17 @@ router.get(
       const { participantId } = req.params;
       const { start, end } = req.query;
 
-      // Verify participant exists
-      const participant = await prisma.participantProfile.findUnique({
+      // Look up by participantProfile ID or User ID
+      let participant = await prisma.participantProfile.findUnique({
         where: { id: participantId },
       });
+
+      if (!participant) {
+        // Try looking up by userId (enrollment list returns user IDs)
+        participant = await prisma.participantProfile.findUnique({
+          where: { userId: participantId },
+        });
+      }
 
       if (!participant) {
         res.status(404).json({ success: false, error: "Participant not found" });
@@ -46,7 +53,7 @@ router.get(
       }
 
       const stats = await getParticipantStats(
-        participantId,
+        participant.id,
         start as string | undefined,
         end as string | undefined
       );

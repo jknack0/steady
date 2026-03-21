@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate } from "../middleware/auth";
+import { recordDismissal } from "../services/notifications";
 
 const router = Router();
 
@@ -120,6 +121,25 @@ router.put("/preferences", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Update notification preferences error:", err);
     res.status(500).json({ success: false, error: "Failed to update preferences" });
+  }
+});
+
+// POST /api/notifications/dismiss — Record a notification dismissal (for smart escalation)
+router.post("/dismiss", async (req: Request, res: Response) => {
+  try {
+    const { category } = req.body;
+
+    const validCategories = ["MORNING_CHECKIN", "HOMEWORK", "SESSION", "TASK", "WEEKLY_REVIEW"];
+    if (!category || !validCategories.includes(category)) {
+      res.status(400).json({ success: false, error: "Valid category is required" });
+      return;
+    }
+
+    await recordDismissal(req.user!.userId, category);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Record dismissal error:", err);
+    res.status(500).json({ success: false, error: "Failed to record dismissal" });
   }
 });
 

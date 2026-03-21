@@ -15,6 +15,9 @@ import journalRoutes from "./routes/journal";
 import notificationRoutes from "./routes/notifications";
 import aiRoutes from "./routes/ai";
 import statsRoutes from "./routes/stats";
+import clinicianRoutes from "./routes/clinician";
+import sessionRoutes from "./routes/sessions";
+import adminRoutes from "./routes/admin";
 
 const app = express();
 
@@ -50,6 +53,9 @@ app.use("/api/participant/journal", journalRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/clinician", clinicianRoutes);
+app.use("/api/sessions", sessionRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Error handler
 app.use(errorHandler);
