@@ -224,4 +224,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // Stats
+  getMyStats: (params?: { start?: string; end?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.start) qs.set("start", params.start);
+    if (params?.end) qs.set("end", params.end);
+    const query = qs.toString();
+    return apiFetch(`/api/stats/participant${query ? `?${query}` : ""}`);
+  },
 };

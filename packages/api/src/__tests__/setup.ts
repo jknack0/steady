@@ -66,6 +66,26 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
     },
+    task: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      groupBy: vi.fn(),
+    },
+    journalEntry: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
+    calendarEvent: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
+    session: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+    },
+    participantProfile: {
+      findUnique: vi.fn(),
+    },
   };
 
   return { prisma: mockPrisma, PrismaClient: vi.fn() };

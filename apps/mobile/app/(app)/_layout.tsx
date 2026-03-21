@@ -49,6 +49,10 @@ export default function AppLayout() {
         name="part/[partId]"
         options={{ title: "Content", headerBackTitle: "Back" }}
       />
+      <Stack.Screen
+        name="insights"
+        options={{ title: "My Insights", headerBackTitle: "Back" }}
+      />
     </Stack>
   );
 }

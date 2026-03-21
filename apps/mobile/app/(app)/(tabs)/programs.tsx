@@ -44,6 +44,30 @@ function GreetingBanner() {
           <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "white", marginLeft: 6 }}>Sign Out</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Insights Card */}
+      <TouchableOpacity
+        onPress={() => router.push("/(app)/insights")}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "rgba(255,255,255,0.15)",
+          borderRadius: 14,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          marginTop: 16,
+        }}
+        activeOpacity={0.7}
+      >
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+          <Ionicons name="analytics-outline" size={20} color="white" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#FFFFFF" }}>My Insights</Text>
+          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "rgba(255,255,255,0.7)" }}>View your progress patterns</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+      </TouchableOpacity>
     </View>
   );
 }
