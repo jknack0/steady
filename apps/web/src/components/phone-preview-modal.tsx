@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -28,6 +30,8 @@ import {
   Target,
   Sparkles,
 } from "lucide-react";
+
+// ── Types ──────────────────────────────────────────
 
 interface PreviewPart {
   id: string;
@@ -56,37 +60,22 @@ interface PreviewProgram {
   modules: PreviewModule[];
 }
 
+// ── Constants ──────────────────────────────────────
+
 const PART_ICONS: Record<string, React.ElementType> = {
-  TEXT: FileText,
-  VIDEO: Video,
-  STRATEGY_CARDS: Layers,
-  JOURNAL_PROMPT: BookOpen,
-  CHECKLIST: CheckSquare,
-  RESOURCE_LINK: LinkIcon,
-  DIVIDER: Minus,
-  HOMEWORK: ClipboardList,
-  ASSESSMENT: FileQuestion,
-  INTAKE_FORM: FormInput,
-  SMART_GOALS: Target,
-  STYLED_CONTENT: Sparkles,
+  TEXT: FileText, VIDEO: Video, STRATEGY_CARDS: Layers, JOURNAL_PROMPT: BookOpen,
+  CHECKLIST: CheckSquare, RESOURCE_LINK: LinkIcon, DIVIDER: Minus, HOMEWORK: ClipboardList,
+  ASSESSMENT: FileQuestion, INTAKE_FORM: FormInput, SMART_GOALS: Target, STYLED_CONTENT: Sparkles,
 };
 
 const PART_LABELS: Record<string, string> = {
-  TEXT: "Reading",
-  VIDEO: "Video",
-  STRATEGY_CARDS: "Strategy Cards",
-  JOURNAL_PROMPT: "Journal",
-  CHECKLIST: "Checklist",
-  RESOURCE_LINK: "Resource",
-  DIVIDER: "Section Break",
-  HOMEWORK: "Homework",
-  ASSESSMENT: "Assessment",
-  INTAKE_FORM: "Intake Form",
-  SMART_GOALS: "SMART Goals",
-  STYLED_CONTENT: "Content",
+  TEXT: "Reading", VIDEO: "Video", STRATEGY_CARDS: "Strategy Cards", JOURNAL_PROMPT: "Journal",
+  CHECKLIST: "Checklist", RESOURCE_LINK: "Resource", DIVIDER: "Section Break", HOMEWORK: "Homework",
+  ASSESSMENT: "Assessment", INTAKE_FORM: "Intake Form", SMART_GOALS: "SMART Goals", STYLED_CONTENT: "Content",
 };
 
-// Simple HTML-to-text for preview summaries
+// ── Helpers ────────────────────────────────────────
+
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 }
@@ -94,34 +83,23 @@ function stripHtml(html: string): string {
 function getPartPreview(part: PreviewPart): string {
   const c = part.content;
   switch (part.type) {
-    case "TEXT":
-      return stripHtml(c.body || "").slice(0, 120) || "No content yet";
-    case "STYLED_CONTENT":
-      return stripHtml(c.styledHtml || c.rawContent || "").slice(0, 120) || "No content yet";
-    case "VIDEO":
-      return c.url || "No video URL set";
-    case "STRATEGY_CARDS":
-      return `${c.cards?.length || 0} cards${c.deckName ? ` — ${c.deckName}` : ""}`;
-    case "JOURNAL_PROMPT":
-      return c.prompts?.filter((p: string) => p).join(", ").slice(0, 100) || "No prompts set";
-    case "CHECKLIST":
-      return `${c.items?.length || 0} items`;
-    case "RESOURCE_LINK":
-      return c.description || c.url || "No link set";
-    case "DIVIDER":
-      return c.label || "—";
-    case "HOMEWORK":
-      return `${c.items?.length || 0} homework items`;
-    case "ASSESSMENT":
-      return `${c.questions?.length || 0} questions`;
-    case "INTAKE_FORM":
-      return `${c.fields?.length || 0} fields`;
-    case "SMART_GOALS":
-      return `Up to ${c.maxGoals || 3} goals`;
-    default:
-      return "";
+    case "TEXT": return stripHtml(c.body || "").slice(0, 120) || "No content yet";
+    case "STYLED_CONTENT": return stripHtml(c.styledHtml || c.rawContent || "").slice(0, 120) || "No content yet";
+    case "VIDEO": return c.url || "No video URL set";
+    case "STRATEGY_CARDS": return `${c.cards?.length || 0} cards${c.deckName ? ` — ${c.deckName}` : ""}`;
+    case "JOURNAL_PROMPT": return c.prompts?.filter((p: string) => p).join(", ").slice(0, 100) || "No prompts set";
+    case "CHECKLIST": return `${c.items?.length || 0} items`;
+    case "RESOURCE_LINK": return c.description || c.url || "No link set";
+    case "DIVIDER": return c.label || "—";
+    case "HOMEWORK": return `${c.items?.length || 0} homework items`;
+    case "ASSESSMENT": return `${c.questions?.length || 0} questions`;
+    case "INTAKE_FORM": return `${c.fields?.length || 0} fields`;
+    case "SMART_GOALS": return `Up to ${c.maxGoals || 3} goals`;
+    default: return "";
   }
 }
+
+// ── Part Content Renderers ─────────────────────────
 
 function PartContentPreview({ part }: { part: PreviewPart }) {
   const c = part.content;
@@ -139,12 +117,7 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
   if (part.type === "TEXT" || part.type === "STYLED_CONTENT") {
     const html = part.type === "STYLED_CONTENT" ? c.styledHtml : c.body;
     if (!html) return <p className="text-sm text-[#8A8A8A] italic">No content yet</p>;
-    return (
-      <div
-        className="steady-styled-content text-sm"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    );
+    return <div className="steady-styled-content text-sm" dangerouslySetInnerHTML={{ __html: html }} />;
   }
 
   if (part.type === "VIDEO") {
@@ -299,8 +272,7 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
                 {sectionFields.map((field: any, fi: number) => (
                   <div key={fi}>
                     <label className="text-xs font-medium text-[#5A5A5A] mb-1 block">
-                      {field.label}
-                      {field.required && <span className="text-[#D4A0A0] ml-0.5">*</span>}
+                      {field.label}{field.required && <span className="text-[#D4A0A0] ml-0.5">*</span>}
                     </label>
                     {(field.type === "TEXT" || field.type === "NUMBER" || field.type === "DATE") && (
                       <div className="rounded-lg border border-[#D4D0CB] bg-white px-3 py-2">
@@ -363,73 +335,33 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
     );
   }
 
-  // Fallback: just show text summary
   return <p className="text-sm text-[#5A5A5A]">{getPartPreview(part)}</p>;
 }
+
+// ── Phone Screen Components ────────────────────────
 
 function PhoneModuleCard({ module, index, onOpenPart }: { module: PreviewModule; index: number; onOpenPart: (part: PreviewPart) => void }) {
   const [expanded, setExpanded] = useState(index === 0);
   const isCurrent = index === 0;
   const isLocked = index > 1;
-  const isCompleted = false; // Preview mode — nothing completed
-
   const totalParts = module.parts.length;
-  const requiredParts = module.parts.filter((p) => p.isRequired).length;
 
   return (
-    <div
-      className={`rounded-2xl bg-white shadow-sm mb-3 overflow-hidden ${
-        isCurrent ? "border-[1.5px] border-[#89B4C8]" : "border border-[#F0EDE8]"
-      } ${isLocked ? "opacity-40" : ""}`}
-    >
-      {/* Module header */}
-      <button
-        className="flex w-full items-center gap-3 p-4"
-        onClick={() => !isLocked && setExpanded(!expanded)}
-        disabled={isLocked}
-      >
-        {/* Status icon */}
-        <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-            isCompleted
-              ? "bg-[#E8F0E7]"
-              : isCurrent
-              ? "bg-[#E3EDED]"
-              : "bg-[#F0EDE8]"
-          }`}
-        >
-          {isCompleted ? (
-            <CheckCircle2 className="h-4 w-4 text-[#8FAE8B]" />
-          ) : isLocked ? (
-            <Lock className="h-4 w-4 text-[#8A8A8A]" />
-          ) : (
-            <Play className="h-4 w-4 text-[#5B8A8A] ml-0.5" />
-          )}
+    <div className={`rounded-2xl bg-white shadow-sm mb-3 overflow-hidden ${isCurrent ? "border-[1.5px] border-[#89B4C8]" : "border border-[#F0EDE8]"} ${isLocked ? "opacity-40" : ""}`}>
+      <button className="flex w-full items-center gap-3 p-4" onClick={() => !isLocked && setExpanded(!expanded)} disabled={isLocked}>
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${isCurrent ? "bg-[#E3EDED]" : "bg-[#F0EDE8]"}`}>
+          {isLocked ? <Lock className="h-4 w-4 text-[#8A8A8A]" /> : <Play className="h-4 w-4 text-[#5B8A8A] ml-0.5" />}
         </div>
-
-        {/* Title + progress */}
         <div className="flex-1 text-left">
           <p className="text-sm font-bold text-[#2D2D2D]">{module.title}</p>
           <div className="mt-1 flex items-center gap-2">
-            <div className="h-1.5 w-24 rounded-full bg-[#F0EDE8]">
-              <div className="h-full rounded-full bg-[#5B8A8A]" style={{ width: "0%" }} />
-            </div>
+            <div className="h-1.5 w-24 rounded-full bg-[#F0EDE8]"><div className="h-full rounded-full bg-[#5B8A8A]" style={{ width: "0%" }} /></div>
             <span className="text-[11px] text-[#8A8A8A]">0/{totalParts}</span>
           </div>
         </div>
-
-        {isCurrent && (
-          <Badge className="bg-[#E3EDED] text-[#5B8A8A] text-[11px] font-semibold border-0 hover:bg-[#E3EDED]">
-            Current
-          </Badge>
-        )}
-
-        {!isLocked && (
-          expanded ? <ChevronDown className="h-4 w-4 text-[#8A8A8A]" /> : <ChevronRight className="h-4 w-4 text-[#8A8A8A]" />
-        )}
+        {isCurrent && <Badge className="bg-[#E3EDED] text-[#5B8A8A] text-[11px] font-semibold border-0 hover:bg-[#E3EDED]">Current</Badge>}
+        {!isLocked && (expanded ? <ChevronDown className="h-4 w-4 text-[#8A8A8A]" /> : <ChevronRight className="h-4 w-4 text-[#8A8A8A]" />)}
       </button>
-
-      {/* Expanded parts */}
       {expanded && !isLocked && (
         <div className="border-t border-[#F0EDE8]">
           {module.parts.map((part) => (
@@ -443,37 +375,18 @@ function PhoneModuleCard({ module, index, onOpenPart }: { module: PreviewModule;
 
 function PartPreviewRow({ part, onOpen }: { part: PreviewPart; onOpen: () => void }) {
   const Icon = PART_ICONS[part.type] || FileText;
-
-  if (part.type === "DIVIDER") {
-    return (
-      <div className="px-4 py-2">
-        <PartContentPreview part={part} />
-      </div>
-    );
-  }
+  if (part.type === "DIVIDER") return <div className="px-4 py-2"><PartContentPreview part={part} /></div>;
 
   return (
     <div className="border-b border-[#F0EDE8] last:border-b-0">
-      <button
-        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-[#F7F5F2]/50 transition-colors"
-        onClick={onOpen}
-      >
-        {/* Checkbox placeholder */}
+      <button className="flex w-full items-center gap-3 px-4 py-3 hover:bg-[#F7F5F2]/50 transition-colors" onClick={onOpen}>
         <div className="h-5 w-5 shrink-0 rounded-md border-2 border-[#D4D0CB]" />
-
         <Icon className="h-4 w-4 shrink-0 text-[#8A8A8A]" />
-
         <div className="flex-1 text-left">
           <p className="text-sm font-medium text-[#2D2D2D]">{part.title}</p>
           <p className="text-xs text-[#8A8A8A] truncate mt-0.5">{getPartPreview(part)}</p>
         </div>
-
-        {part.isRequired && (
-          <span className="rounded bg-[#F5E6E6] px-1.5 py-0.5 text-[10px] font-medium text-[#D4A0A0]">
-            Required
-          </span>
-        )}
-
+        {part.isRequired && <span className="rounded bg-[#F5E6E6] px-1.5 py-0.5 text-[10px] font-medium text-[#D4A0A0]">Required</span>}
         <ChevronRight className="h-3 w-3 text-[#8A8A8A]" />
       </button>
     </div>
@@ -483,33 +396,22 @@ function PartPreviewRow({ part, onOpen }: { part: PreviewPart; onOpen: () => voi
 function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => void }) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Nav bar */}
       <div className="flex items-center gap-2 bg-white px-4 py-3 border-b border-[#F0EDE8] shrink-0">
         <button onClick={onBack} className="flex items-center gap-1 text-[#5B8A8A]">
           <ChevronLeft className="h-4 w-4" />
           <span className="text-sm font-semibold">Back</span>
         </button>
       </div>
-
-      {/* Part header */}
       <div className="bg-white px-4 pt-3 pb-4 shrink-0">
         <h3 className="text-lg font-bold text-[#2D2D2D]">{part.title}</h3>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A8A8A]">
-            {PART_LABELS[part.type] || part.type}
-          </span>
-          {part.isRequired && (
-            <span className="text-[10px] font-medium text-[#D4A0A0]">Required</span>
-          )}
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#8A8A8A]">{PART_LABELS[part.type] || part.type}</span>
+          {part.isRequired && <span className="text-[10px] font-medium text-[#D4A0A0]">Required</span>}
         </div>
       </div>
-
-      {/* Full part content */}
       <div className="flex-1 min-h-0 overflow-y-auto bg-white px-4 py-3">
         <PartContentPreview part={part} />
       </div>
-
-      {/* Mark complete button */}
       <div className="bg-white border-t border-[#F0EDE8] px-4 py-3 shrink-0">
         <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
           <span className="text-sm font-semibold text-white">Mark as Complete</span>
@@ -519,115 +421,126 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
   );
 }
 
-export default function ProgramPreviewPage() {
-  const params = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const programId = params.id as string;
+// ── Phone Frame ────────────────────────────────────
+
+const PHONE_W = 375;
+const PHONE_H = 740;
+const PHONE_ASPECT = PHONE_W / PHONE_H; // ~0.507
+
+function PhoneFrame({ program, initialPartId }: { program: PreviewProgram; initialPartId?: string | null }) {
   const [activePart, setActivePart] = useState<PreviewPart | null>(null);
 
-  const { data: program, isLoading } = useQuery<PreviewProgram>({
-    queryKey: ["programs", programId, "preview"],
-    queryFn: () => api.get(`/api/programs/${programId}/preview`),
-  });
-
-  // Auto-open a specific part if partId is in the URL
-  const partIdParam = searchParams.get("partId");
   useEffect(() => {
-    if (partIdParam && program && !activePart) {
+    if (initialPartId && program) {
       for (const mod of program.modules) {
-        const found = mod.parts.find((p) => p.id === partIdParam);
-        if (found) {
-          setActivePart(found);
-          break;
-        }
+        const found = mod.parts.find((p) => p.id === initialPartId);
+        if (found) { setActivePart(found); break; }
       }
     }
-  }, [partIdParam, program, activePart]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!program) {
-    return <div className="text-center py-12 text-muted-foreground">Program not found</div>;
-  }
+  }, [initialPartId, program]);
 
   return (
-    <div className="mx-auto max-w-4xl h-[calc(100vh-4rem)] flex flex-col">
-      <div className="mb-3 shrink-0">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Editor
-        </Button>
-      </div>
+    <div className="relative" style={{ width: PHONE_W, height: PHONE_H }}>
+      {/* Border frame */}
+      <div className="absolute inset-0 rounded-[2.5rem] border-[8px] border-[#2D2D2D] shadow-2xl pointer-events-none z-10" />
+      {/* Inner content */}
+      <div className="absolute inset-[8px] rounded-[calc(2.5rem-8px)] overflow-hidden bg-[#F7F5F2] flex flex-col">
+        {/* Status bar */}
+        <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
+          <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
+          <div className="flex items-center gap-1">
+            <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]"><div className="h-full w-3/4 rounded-sm bg-[#2D2D2D]" /></div>
+          </div>
+        </div>
 
-      {/* Phone frame — scales to fit viewport */}
-      <div className="flex-1 flex justify-center items-start min-h-0">
-        <div className="relative w-[375px] h-[740px]">
-          {/* Border frame (visual only, no overflow clipping) */}
-          <div className="absolute inset-0 rounded-[2.5rem] border-[8px] border-[#2D2D2D] shadow-2xl pointer-events-none z-10" />
-
-          {/* Inner content area — clips to match the inner radius */}
-          <div className="absolute inset-[8px] rounded-[calc(2.5rem-8px)] overflow-hidden bg-[#F7F5F2] flex flex-col">
-            {/* Status bar */}
-            <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
-              <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
-              <div className="flex items-center gap-1">
-                <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]">
-                  <div className="h-full w-3/4 rounded-sm bg-[#2D2D2D]" />
-                </div>
+        {activePart ? (
+          <PartDetailView part={activePart} onBack={() => setActivePart(null)} />
+        ) : (
+          <>
+            <div className="bg-white px-5 pb-4 pt-2 shrink-0">
+              <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>{program.title}</h2>
+              {program.description && <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>}
+              <div className="flex items-center gap-1 mt-2">
+                <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-[11px] text-[#8A8A8A]">
+                  {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
+                </span>
               </div>
             </div>
-
-            {activePart ? (
-              /* ── Part Detail Screen ── */
-              <PartDetailView part={activePart} onBack={() => setActivePart(null)} />
-            ) : (
-              /* ── Program / Module List Screen ── */
-              <>
-                {/* App header */}
-                <div className="bg-white px-5 pb-4 pt-2 shrink-0">
-                  <h2 className="text-lg font-bold text-[#2D2D2D]" style={{ fontFamily: "system-ui" }}>
-                    {program.title}
-                  </h2>
-                  {program.description && (
-                    <p className="text-xs text-[#5A5A5A] mt-1 leading-relaxed">{program.description}</p>
-                  )}
-                  <div className="flex items-center gap-1 mt-2">
-                    <svg className="h-3 w-3 text-[#8A8A8A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-[11px] text-[#8A8A8A]">
-                      {program.cadence === "WEEKLY" ? "Weekly sessions" : program.cadence === "BIWEEKLY" ? "Biweekly sessions" : "Self-paced"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Modules list */}
-                <div className="px-4 py-4 flex-1 overflow-y-auto">
-                  {program.modules.map((module, i) => (
-                    <PhoneModuleCard key={module.id} module={module} index={i} onOpenPart={setActivePart} />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Home indicator */}
-            <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2] shrink-0">
-              <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
+            <div className="px-4 py-4 flex-1 overflow-y-auto">
+              {program.modules.map((module, i) => (
+                <PhoneModuleCard key={module.id} module={module} index={i} onOpenPart={setActivePart} />
+              ))}
             </div>
-          </div>
+          </>
+        )}
+
+        <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2] shrink-0">
+          <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Modal Component ────────────────────────────────
+
+interface PhonePreviewModalProps {
+  programId: string;
+  partId?: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function ScaledPhone({ program, partId }: { program: PreviewProgram; partId?: string | null }) {
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const update = () => {
+      const vh = window.innerHeight * 0.88;
+      const vw = window.innerWidth * 0.9;
+      const scaleH = vh / PHONE_H;
+      const scaleW = vw / PHONE_W;
+      const s = Math.min(1, scaleH, scaleW);
+      node.style.transform = `scale(${s})`;
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: PHONE_W, height: PHONE_H, transformOrigin: "center center" }}
+    >
+      <PhoneFrame program={program} initialPartId={partId} />
+    </div>
+  );
+}
+
+export function PhonePreviewModal({ programId, partId, open, onOpenChange }: PhonePreviewModalProps) {
+  const { data: program, isLoading } = useQuery<PreviewProgram>({
+    queryKey: ["programs", programId, "preview"],
+    queryFn: () => api.get(`/api/programs/${programId}/preview`),
+    enabled: open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="bg-transparent border-0 shadow-none p-0 max-w-none w-auto [&>button]:hidden"
+      >
+        <DialogTitle className="sr-only">Program Preview</DialogTitle>
+        <div className="flex items-center justify-center h-[90vh]">
+          {isLoading || !program ? (
+            <Loader2 className="h-8 w-8 animate-spin text-white" />
+          ) : (
+            <ScaledPhone program={program} partId={partId} />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

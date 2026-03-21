@@ -57,6 +57,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import type { Module } from "@/hooks/use-programs";
+import { PhonePreviewModal } from "@/components/phone-preview-modal";
 
 // Default content for each part type
 const DEFAULT_CONTENT: Record<string, any> = {
@@ -121,6 +122,8 @@ export default function ModuleEditorPage() {
   });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewPartId, setPreviewPartId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [editingSubtitle, setEditingSubtitle] = useState(false);
@@ -263,7 +266,7 @@ export default function ModuleEditorPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/programs/${programId}/preview`)}
+            onClick={() => { setPreviewPartId(null); setPreviewOpen(true); }}
           >
             <Eye className="mr-2 h-4 w-4" />
             Preview
@@ -426,7 +429,7 @@ export default function ModuleEditorPage() {
                     onUpdate={(data) => handlePartUpdate(part.id, data)}
                     onDelete={() => handlePartDelete(part.id)}
                     onDuplicate={() => handlePartDuplicate(part.id)}
-                    onPreview={() => router.push(`/programs/${programId}/preview?partId=${part.id}`)}
+                    onPreview={() => { setPreviewPartId(part.id); setPreviewOpen(true); }}
                   />
                 ))}
               </div>
@@ -459,6 +462,13 @@ export default function ModuleEditorPage() {
           </div>
         )}
       </div>
+
+      <PhonePreviewModal
+        programId={programId}
+        partId={previewPartId}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </div>
   );
 }

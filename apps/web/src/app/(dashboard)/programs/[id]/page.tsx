@@ -50,6 +50,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Module } from "@/hooks/use-programs";
 import { EnrollmentSection } from "@/components/enrollment-section";
+import { PhonePreviewModal } from "@/components/phone-preview-modal";
 import Link from "next/link";
 
 function SortableModuleCard({
@@ -180,6 +181,7 @@ export default function ProgramEditorPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addingModule, setAddingModule] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
@@ -284,7 +286,7 @@ export default function ProgramEditorPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/programs/${programId}/preview`)}
+              onClick={() => setPreviewOpen(true)}
             >
               <Eye className="mr-2 h-4 w-4" />
               Preview
@@ -499,6 +501,12 @@ export default function ProgramEditorPage() {
 
       {/* Enrollments */}
       <EnrollmentSection programId={programId} programStatus={program.status} />
+
+      <PhonePreviewModal
+        programId={programId}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </div>
   );
 }
