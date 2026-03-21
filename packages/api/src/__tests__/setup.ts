@@ -104,6 +104,18 @@ vi.mock("@steady/db", () => {
       findUnique: vi.fn(),
       upsert: vi.fn(),
     },
+    practice: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    practiceMembership: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      delete: vi.fn(),
+    },
     auditLog: {
       findMany: vi.fn(),
       count: vi.fn(),

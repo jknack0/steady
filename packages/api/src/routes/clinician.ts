@@ -573,4 +573,137 @@ router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, re
   }
 });
 
+// ── Bulk Actions ────────────────────────────────────────
+
+// POST /api/clinician/participants/bulk — Bulk action on multiple participants
+router.post("/participants/bulk", async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+    const { action, participantIds, data: actionData } = req.body;
+
+    if (!action || !Array.isArray(participantIds) || participantIds.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "action and participantIds[] are required",
+      });
+      return;
+    }
+
+    const results: Array<{ participantId: string; success: boolean; error?: string }> = [];
+
+    for (const pid of participantIds) {
+      try {
+        // Resolve participant profile
+        let profileId = pid;
+        const profileByUser = await prisma.participantProfile.findUnique({
+          where: { userId: pid },
+        });
+        if (profileByUser) profileId = profileByUser.id;
+
+        if (action === "push-task") {
+          const title = actionData?.title;
+          if (!title?.trim()) {
+            results.push({ participantId: pid, success: false, error: "Title required" });
+            continue;
+          }
+          await prisma.task.create({
+            data: {
+              participantId: profileId,
+              title: title.trim(),
+              description: actionData?.description || null,
+              sourceType: "CLINICIAN_PUSH",
+            },
+          });
+          results.push({ participantId: pid, success: true });
+
+        } else if (action === "unlock-next-module") {
+          // Find active enrollment and next locked module
+          const enrollment = await prisma.enrollment.findFirst({
+            where: { participantId: profileId, status: "ACTIVE" },
+            include: {
+              moduleProgress: {
+                include: { module: { select: { id: true, sortOrder: true } } },
+              },
+              program: {
+                include: {
+                  modules: { orderBy: { sortOrder: "asc" }, select: { id: true, sortOrder: true } },
+                },
+              },
+            },
+          });
+
+          if (!enrollment) {
+            results.push({ participantId: pid, success: false, error: "No active enrollment" });
+            continue;
+          }
+
+          const progressMap = new Map(
+            enrollment.moduleProgress.map((mp) => [mp.module.id, mp.status])
+          );
+          const nextLocked = enrollment.program.modules.find(
+            (m) => !progressMap.has(m.id) || progressMap.get(m.id) === "LOCKED"
+          );
+
+          if (!nextLocked) {
+            results.push({ participantId: pid, success: false, error: "No locked modules" });
+            continue;
+          }
+
+          await prisma.moduleProgress.upsert({
+            where: {
+              enrollmentId_moduleId: { enrollmentId: enrollment.id, moduleId: nextLocked.id },
+            },
+            create: {
+              enrollmentId: enrollment.id,
+              moduleId: nextLocked.id,
+              status: "UNLOCKED",
+              unlockedAt: new Date(),
+              customUnlock: true,
+            },
+            update: {
+              status: "UNLOCKED",
+              unlockedAt: new Date(),
+              customUnlock: true,
+            },
+          });
+
+          await prisma.enrollment.update({
+            where: { id: enrollment.id },
+            data: { currentModuleId: nextLocked.id },
+          });
+
+          results.push({ participantId: pid, success: true });
+
+        } else if (action === "send-nudge") {
+          // Create a gentle nudge task
+          await prisma.task.create({
+            data: {
+              participantId: profileId,
+              title: actionData?.message || "Your clinician sent you a nudge — check in when you can!",
+              sourceType: "CLINICIAN_PUSH",
+            },
+          });
+          results.push({ participantId: pid, success: true });
+
+        } else {
+          results.push({ participantId: pid, success: false, error: "Unknown action" });
+        }
+      } catch (err) {
+        results.push({ participantId: pid, success: false, error: "Failed" });
+      }
+    }
+
+    const succeeded = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
+
+    res.json({
+      success: true,
+      data: { succeeded, failed, results },
+    });
+  } catch (err) {
+    console.error("Bulk action error:", err);
+    res.status(500).json({ success: false, error: "Failed to perform bulk action" });
+  }
+});
+
 export default router;

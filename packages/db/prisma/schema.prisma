@@ -122,6 +122,41 @@ enum NotificationCategory {
   WEEKLY_REVIEW
 }
 
+// ── Practices ─────────────────────────────────────────
+
+enum PracticeRole {
+  OWNER
+  CLINICIAN
+}
+
+model Practice {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships PracticeMembership[]
+  programs    Program[]            @relation("PracticePrograms")
+
+  @@map("practices")
+}
+
+model PracticeMembership {
+  id           String       @id @default(cuid())
+  practiceId   String
+  practice     Practice     @relation(fields: [practiceId], references: [id])
+  clinicianId  String
+  clinician    ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  role         PracticeRole @default(CLINICIAN)
+  joinedAt     DateTime     @default(now())
+
+  @@unique([practiceId, clinicianId])
+  @@index([practiceId])
+  @@index([clinicianId])
+  @@map("practice_memberships")
+}
+
 // ── Users & Auth ───────────────────────────────────────
 
 model User {
@@ -153,7 +188,8 @@ model ClinicianProfile {
   bio          String?
   timezone     String  @default("America/New_York")
 
-  programs Program[]
+  programs    Program[]
+  memberships PracticeMembership[]
 
   @@map("clinician_profiles")
 }
@@ -179,6 +215,8 @@ model Program {
   id               String           @id @default(cuid())
   clinicianId      String
   clinician        ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  practiceId       String?
+  practice         Practice?        @relation("PracticePrograms", fields: [practiceId], references: [id])
   title            String
   description      String?
   coverImageUrl    String?
@@ -198,6 +236,7 @@ model Program {
   modules     Module[]
   enrollments Enrollment[]
 
+  @@index([practiceId])
   @@map("programs")
 }
 

@@ -137,6 +137,20 @@ export function useUnlockModule(participantId: string) {
   });
 }
 
+export function useBulkAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      action: "push-task" | "unlock-next-module" | "send-nudge";
+      participantIds: string[];
+      data?: Record<string, any>;
+    }) => api.post<any>("/api/clinician/participants/bulk", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
+    },
+  });
+}
+
 export function useManageEnrollment(participantId: string) {
   const queryClient = useQueryClient();
   return useMutation({

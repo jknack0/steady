@@ -18,6 +18,7 @@ import statsRoutes from "./routes/stats";
 import clinicianRoutes from "./routes/clinician";
 import sessionRoutes from "./routes/sessions";
 import adminRoutes from "./routes/admin";
+import practiceRoutes from "./routes/practice";
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/clinician", clinicianRoutes);
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/practices", practiceRoutes);
 
 // Error handler
 app.use(errorHandler);
