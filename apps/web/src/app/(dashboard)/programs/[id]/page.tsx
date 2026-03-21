@@ -261,7 +261,7 @@ export default function ProgramEditorPage() {
 
       {/* Program Header */}
       <div className="mb-6">
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-3 mb-2">
           {editingTitle ? (
             <Input
               value={titleValue}
@@ -282,26 +282,25 @@ export default function ProgramEditorPage() {
               {program.title}
             </h1>
           )}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPreviewOpen(true)}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </Button>
-            <Badge
-              variant="outline"
-              className={
-                program.status === "PUBLISHED"
-                  ? "bg-green-100 text-green-800 border-green-200"
-                  : "bg-yellow-100 text-yellow-800 border-yellow-200"
+          <Badge
+            variant="outline"
+            className={
+              program.status === "PUBLISHED"
+                ? "bg-green-100 text-green-800 border-green-200"
+                : "bg-yellow-100 text-yellow-800 border-yellow-200"
               }
             >
               {program.status.toLowerCase()}
             </Badge>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setPreviewOpen(true)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
         </div>
 
         {editingDesc ? (

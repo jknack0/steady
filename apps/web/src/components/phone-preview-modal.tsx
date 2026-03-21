@@ -535,7 +535,10 @@ export function PhonePreviewModal({ programId, partId, open, onOpenChange }: Pho
         <DialogOverlay />
         <DialogPrimitive.Content
           className="fixed inset-0 z-50 flex items-center justify-center"
-          onPointerDownOutside={() => onOpenChange(false)}
+          onClick={(e) => {
+            // Close when clicking the backdrop (not the phone itself)
+            if (e.target === e.currentTarget) onOpenChange(false);
+          }}
         >
           <DialogTitle className="sr-only">Program Preview</DialogTitle>
           {isLoading || !program ? (
