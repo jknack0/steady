@@ -6,11 +6,9 @@ import { api } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
+  DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   ChevronDown,
   ChevronLeft,
@@ -529,25 +527,26 @@ export function PhonePreviewModal({ programId, partId, open, onOpenChange }: Pho
     enabled: open,
   });
 
+  // Force cleanup pointer-events on body when dialog closes
+  useEffect(() => {
+    if (!open) {
+      document.body.style.pointerEvents = "";
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPortal>
-        <DialogOverlay />
-        <DialogPrimitive.Content
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          onClick={(e) => {
-            // Close when clicking the backdrop (not the phone itself)
-            if (e.target === e.currentTarget) onOpenChange(false);
-          }}
-        >
-          <DialogTitle className="sr-only">Program Preview</DialogTitle>
-          {isLoading || !program ? (
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
-          ) : (
-            <ScaledPhone program={program} partId={partId} />
-          )}
-        </DialogPrimitive.Content>
-      </DialogPortal>
+      <DialogContent
+        className="bg-transparent border-0 shadow-none p-0 flex items-center justify-center max-w-none w-screen h-screen [&>button]:hidden"
+        onInteractOutside={() => onOpenChange(false)}
+      >
+        <DialogTitle className="sr-only">Program Preview</DialogTitle>
+        {isLoading || !program ? (
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        ) : (
+          <ScaledPhone program={program} partId={partId} />
+        )}
+      </DialogContent>
     </Dialog>
   );
 }
