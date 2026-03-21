@@ -21,6 +21,73 @@ interface Enrollment {
 
 // ── Greeting Banner (shared across views) ────────────
 
+function UpcomingSessionCard() {
+  const { data } = useQuery({
+    queryKey: ["upcoming-session"],
+    queryFn: async () => {
+      const res = await api.getUpcomingSession();
+      if (!res.success) return null;
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+
+  if (!data) return null;
+
+  const date = new Date(data.scheduledAt);
+  const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const dateStr = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+  return (
+    <View style={{
+      backgroundColor: "#FFFFFF",
+      borderRadius: 16,
+      padding: 16,
+      margin: 16,
+      marginBottom: 0,
+      borderWidth: 1,
+      borderColor: "#F0EDE8",
+    }}>
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+          <Ionicons name="videocam-outline" size={18} color="#5B8A8A" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D" }}>
+            Upcoming Session
+          </Text>
+          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A" }}>
+            {dateStr} at {timeStr}
+          </Text>
+        </View>
+      </View>
+      {data.clinicianName && (
+        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 8 }}>
+          with {data.clinicianName}
+        </Text>
+      )}
+      {data.videoCallUrl && (
+        <TouchableOpacity
+          onPress={() => {
+            // Linking.openURL would be used here in a real app
+          }}
+          style={{
+            backgroundColor: "#5B8A8A",
+            borderRadius: 10,
+            paddingVertical: 10,
+            alignItems: "center",
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14 }}>
+            Join Call
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 function GreetingBanner() {
   const { logout, user } = useAuth();
 
@@ -272,6 +339,7 @@ export default function ProgramsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
       <GreetingBanner />
+      <UpcomingSessionCard />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

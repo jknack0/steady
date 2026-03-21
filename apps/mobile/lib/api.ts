@@ -225,6 +225,22 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // Sessions
+  getUpcomingSession: () => apiFetch("/api/sessions/upcoming"),
+
+  getSessionHistory: (params?: { cursor?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.cursor) qs.set("cursor", params.cursor);
+    const query = qs.toString();
+    return apiFetch(`/api/sessions/history${query ? `?${query}` : ""}`);
+  },
+
+  dismissNotification: (category: string) =>
+    apiFetch("/api/notifications/dismiss", {
+      method: "POST",
+      body: JSON.stringify({ category }),
+    }),
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

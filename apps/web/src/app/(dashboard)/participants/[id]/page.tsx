@@ -11,6 +11,7 @@ import {
   type ParticipantDetail,
 } from "@/hooks/use-clinician-participants";
 import { useParticipantStats } from "@/hooks/use-participant-stats";
+import { useCreateSession } from "@/hooks/use-sessions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -423,13 +424,29 @@ function QuickActions({
 }) {
   const [taskTitle, setTaskTitle] = useState("");
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [sessionDate, setSessionDate] = useState("");
+  const [sessionUrl, setSessionUrl] = useState("");
   const pushTask = usePushTask(participantId);
   const unlockModule = useUnlockModule(participantId);
+  const createSession = useCreateSession();
 
   // Find next locked module
   const nextLocked = [...enrollment.moduleProgress]
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .find((mp) => mp.status === "LOCKED");
+
+  const handleScheduleSession = async () => {
+    if (!sessionDate) return;
+    await createSession.mutateAsync({
+      enrollmentId: enrollment.id,
+      scheduledAt: new Date(sessionDate).toISOString(),
+      videoCallUrl: sessionUrl || undefined,
+    });
+    setSessionDate("");
+    setSessionUrl("");
+    setShowSessionForm(false);
+  };
 
   const handlePushTask = async () => {
     if (!taskTitle.trim()) return;
@@ -508,16 +525,53 @@ function QuickActions({
           </div>
         )}
 
-        {/* Schedule Session — placeholder */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start"
-          disabled
-        >
-          <Calendar className="h-4 w-4 mr-2" />
-          Schedule Session
-        </Button>
+        {/* Schedule Session */}
+        {!showSessionForm ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => setShowSessionForm(true)}
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedule Session
+          </Button>
+        ) : (
+          <div className="space-y-2 p-3 border rounded-lg">
+            <Input
+              type="datetime-local"
+              value={sessionDate}
+              onChange={(e) => setSessionDate(e.target.value)}
+              autoFocus
+            />
+            <Input
+              placeholder="Video call URL (optional)"
+              value={sessionUrl}
+              onChange={(e) => setSessionUrl(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleScheduleSession}
+                disabled={createSession.isPending || !sessionDate}
+              >
+                {createSession.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Calendar className="h-3 w-3 mr-1" />
+                )}
+                Schedule
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowSessionForm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

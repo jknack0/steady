@@ -80,12 +80,14 @@ vi.mock("@steady/db", () => {
       count: vi.fn(),
     },
     calendarEvent: {
+      create: vi.fn(),
       findMany: vi.fn(),
       count: vi.fn(),
     },
     session: {
       create: vi.fn(),
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
       count: vi.fn(),
@@ -93,6 +95,9 @@ vi.mock("@steady/db", () => {
     participantProfile: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+    },
+    clinicianProfile: {
+      findUnique: vi.fn(),
     },
     notificationPreference: {
       findMany: vi.fn(),

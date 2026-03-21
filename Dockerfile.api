@@ -18,8 +18,10 @@ WORKDIR /app
 COPY packages/shared/ ./packages/shared/
 COPY packages/db/ ./packages/db/
 COPY packages/api/ ./packages/api/
-# Generate Prisma client
+# Generate Prisma client and push schema to database
 RUN npx prisma generate --schema=packages/db/prisma/schema.prisma
+ARG DATABASE_URL
+RUN if [ -n "$DATABASE_URL" ]; then npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --accept-data-loss; fi
 # Build packages in order: shared → db → api
 RUN npx turbo run build --filter=@steady/api
 
