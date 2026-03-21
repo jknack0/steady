@@ -4,11 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronLeft,
@@ -527,26 +523,36 @@ export function PhonePreviewModal({ programId, partId, open, onOpenChange }: Pho
     enabled: open,
   });
 
-  // Force cleanup pointer-events on body when dialog closes
+  // Close on Escape
   useEffect(() => {
-    if (!open) {
-      document.body.style.pointerEvents = "";
-    }
-  }, [open]);
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onOpenChange]);
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="bg-transparent border-0 shadow-none p-0 flex items-center justify-center max-w-none w-screen h-screen [&>button]:hidden"
-        onInteractOutside={() => onOpenChange(false)}
-      >
-        <DialogTitle className="sr-only">Program Preview</DialogTitle>
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onOpenChange(false);
+      }}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/80" />
+      {/* Content */}
+      <div className="relative z-10">
         {isLoading || !program ? (
           <Loader2 className="h-8 w-8 animate-spin text-white" />
         ) : (
           <ScaledPhone program={program} partId={partId} />
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>,
+    document.body
   );
 }
