@@ -536,16 +536,14 @@ export function PhonePreviewModal({ programId, partId, open, onOpenChange }: Pho
   if (!open) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onOpenChange(false);
-      }}
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/80" />
-      {/* Content */}
-      <div className="relative z-10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop — click to close */}
+      <div
+        className="absolute inset-0 bg-black/80 cursor-pointer"
+        onClick={() => onOpenChange(false)}
+      />
+      {/* Content — cursor:default over the phone */}
+      <div className="relative z-10 cursor-default">
         {isLoading || !program ? (
           <Loader2 className="h-8 w-8 animate-spin text-white" />
         ) : (
