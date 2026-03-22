@@ -18,7 +18,10 @@ import {
   StickyNote,
   Eye,
   EyeOff,
+  Repeat,
+  Music,
 } from "lucide-react";
+import { FileUpload } from "@/components/file-upload";
 import {
   DndContext,
   closestCenter,
@@ -49,8 +52,11 @@ interface HomeworkItem {
   dueDateOffsetDays?: number | null;
   // RESOURCE_REVIEW
   resourceTitle?: string;
-  resourceType?: "handout" | "video" | "link";
+  resourceType?: "handout" | "video" | "link" | "audio";
   resourceUrl?: string;
+  resourceKey?: string; // S3 key for uploaded files
+  audioDurationSecs?: number; // Duration in seconds for audio files
+  audioDescription?: string; // Clinician instructions for audio
   // JOURNAL_PROMPT
   prompts?: string[];
   spaceSizeHint?: "small" | "medium" | "large";
@@ -68,6 +74,9 @@ interface HomeworkContent {
   completionMinimum: number | null;
   reminderCadence: "DAILY" | "EVERY_OTHER_DAY" | "MID_WEEK";
   items: HomeworkItem[];
+  recurrence: "NONE" | "DAILY" | "WEEKLY" | "CUSTOM";
+  recurrenceDays: number[];
+  recurrenceEndDate: string | null;
 }
 
 interface HomeworkEditorProps {
@@ -207,6 +216,176 @@ function HomeworkSettings({
           <option value="MID_WEEK">Mid-week only</option>
         </select>
       </div>
+
+      <Separator />
+
+      {/* Recurrence */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Repeat className="h-4 w-4 text-primary" />
+          <Label className="text-xs text-muted-foreground">Repeat This Homework</Label>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={(content.recurrence || "NONE") !== "NONE"}
+            onChange={(e) =>
+              onChange({
+                ...content,
+                recurrence: e.target.checked ? "DAILY" : "NONE",
+                recurrenceDays: [],
+                recurrenceEndDate: null,
+              })
+            }
+            className="accent-primary"
+          />
+          Enable recurring homework
+        </label>
+
+        {(content.recurrence || "NONE") !== "NONE" && (
+          <div className="ml-6 space-y-3">
+            {/* Recurrence frequency */}
+            <div className="space-y-1.5">
+              {([
+                ["DAILY", "Every day"],
+                ["WEEKLY", "Weekly (pick a day)"],
+                ["CUSTOM", "Custom days"],
+              ] as const).map(([value, label]) => (
+                <label key={value} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="recurrence"
+                    value={value}
+                    checked={content.recurrence === value}
+                    onChange={() =>
+                      onChange({
+                        ...content,
+                        recurrence: value,
+                        recurrenceDays: value === "DAILY" ? [] : content.recurrenceDays,
+                      })
+                    }
+                    className="accent-primary"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            {/* Day picker for WEEKLY */}
+            {content.recurrence === "WEEKLY" && (
+              <div className="space-y-1">
+                <Label className="text-xs">Repeat on</Label>
+                <div className="flex gap-1">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                    (day, i) => (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() =>
+                          onChange({ ...content, recurrenceDays: [i] })
+                        }
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                          content.recurrenceDays?.includes(i)
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Day picker for CUSTOM (multi-select) */}
+            {content.recurrence === "CUSTOM" && (
+              <div className="space-y-1">
+                <Label className="text-xs">Repeat on (select multiple)</Label>
+                <div className="flex gap-1">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                    (day, i) => {
+                      const selected = content.recurrenceDays?.includes(i);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => {
+                            const days = selected
+                              ? (content.recurrenceDays || []).filter(
+                                  (d) => d !== i
+                                )
+                              : [...(content.recurrenceDays || []), i].sort();
+                            onChange({ ...content, recurrenceDays: days });
+                          }}
+                          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                            selected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* End date */}
+            <div className="space-y-1">
+              <Label className="text-xs">Repeat until</Label>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="recurrenceEnd"
+                    checked={!content.recurrenceEndDate}
+                    onChange={() =>
+                      onChange({ ...content, recurrenceEndDate: null })
+                    }
+                    className="accent-primary"
+                  />
+                  Ongoing
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="recurrenceEnd"
+                    checked={!!content.recurrenceEndDate}
+                    onChange={() =>
+                      onChange({
+                        ...content,
+                        recurrenceEndDate:
+                          new Date(Date.now() + 30 * 86400000)
+                            .toISOString()
+                            .split("T")[0],
+                      })
+                    }
+                    className="accent-primary"
+                  />
+                  Until date
+                </label>
+              </div>
+              {content.recurrenceEndDate && (
+                <Input
+                  type="date"
+                  value={content.recurrenceEndDate}
+                  onChange={(e) =>
+                    onChange({
+                      ...content,
+                      recurrenceEndDate: e.target.value || null,
+                    })
+                  }
+                  className="w-48"
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -304,6 +483,20 @@ function ActionItemEditor({
   );
 }
 
+function formatDuration(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function parseDuration(str: string): number | undefined {
+  const parts = str.split(":").map(Number);
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    return parts[0] * 60 + parts[1];
+  }
+  return undefined;
+}
+
 function ResourceReviewEditor({
   item,
   onUpdate,
@@ -311,6 +504,8 @@ function ResourceReviewEditor({
   item: HomeworkItem;
   onUpdate: (item: HomeworkItem) => void;
 }) {
+  const isAudio = item.resourceType === "audio";
+
   return (
     <div className="space-y-3">
       <div>
@@ -318,7 +513,7 @@ function ResourceReviewEditor({
         <Input
           value={item.resourceTitle || ""}
           onChange={(e) => onUpdate({ ...item, resourceTitle: e.target.value })}
-          placeholder="Title of the resource"
+          placeholder={isAudio ? "e.g., Session 3 Imaginal Exposure Recording" : "Title of the resource"}
           className="mt-1"
         />
       </div>
@@ -326,25 +521,79 @@ function ResourceReviewEditor({
         <Label className="text-xs">Resource Type</Label>
         <select
           value={item.resourceType || "link"}
-          onChange={(e) =>
-            onUpdate({ ...item, resourceType: e.target.value as "handout" | "video" | "link" })
-          }
+          onChange={(e) => {
+            const newType = e.target.value as HomeworkItem["resourceType"];
+            const updates: Partial<HomeworkItem> = { resourceType: newType };
+            if (newType === "audio") {
+              updates.resourceUrl = "";
+            } else {
+              updates.resourceKey = undefined;
+              updates.audioDurationSecs = undefined;
+              updates.audioDescription = undefined;
+            }
+            onUpdate({ ...item, ...updates });
+          }}
           className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
         >
           <option value="handout">Handout</option>
           <option value="video">Video</option>
           <option value="link">Link</option>
+          <option value="audio">Audio</option>
         </select>
       </div>
-      <div>
-        <Label className="text-xs">URL</Label>
-        <Input
-          value={item.resourceUrl || ""}
-          onChange={(e) => onUpdate({ ...item, resourceUrl: e.target.value })}
-          placeholder="https://..."
-          className="mt-1"
-        />
-      </div>
+
+      {isAudio ? (
+        <>
+          <div>
+            <Label className="text-xs">Audio File</Label>
+            <FileUpload
+              context="audio"
+              value={item.resourceKey || null}
+              onChange={(key, publicUrl) => {
+                if (key) {
+                  onUpdate({ ...item, resourceKey: key, resourceUrl: publicUrl || "" });
+                } else {
+                  onUpdate({ ...item, resourceKey: undefined, resourceUrl: "" });
+                }
+              }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Accepts .mp3, .m4a, .wav, .aac, .ogg (max 500 MB)
+            </p>
+          </div>
+          <div>
+            <Label className="text-xs">Duration (MM:SS)</Label>
+            <Input
+              value={item.audioDurationSecs ? formatDuration(item.audioDurationSecs) : ""}
+              onChange={(e) => {
+                const secs = parseDuration(e.target.value);
+                onUpdate({ ...item, audioDurationSecs: secs });
+              }}
+              placeholder="45:00"
+              className="mt-1 w-32"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Listening Instructions (optional)</Label>
+            <textarea
+              value={item.audioDescription || ""}
+              onChange={(e) => onUpdate({ ...item, audioDescription: e.target.value || undefined })}
+              placeholder="e.g., Listen to this recording once daily. Find a quiet place and allow 45 minutes."
+              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+            />
+          </div>
+        </>
+      ) : (
+        <div>
+          <Label className="text-xs">URL</Label>
+          <Input
+            value={item.resourceUrl || ""}
+            onChange={(e) => onUpdate({ ...item, resourceUrl: e.target.value })}
+            placeholder="https://..."
+            className="mt-1"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -601,10 +850,20 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
         </>
       )}
       {item.type === "RESOURCE_REVIEW" && (
-        <p className="text-sm text-gray-800">
-          {item.resourceTitle || "Untitled"}{" "}
-          <span className="text-xs text-gray-500">({item.resourceType})</span>
-        </p>
+        <div>
+          <p className="text-sm text-gray-800">
+            {item.resourceTitle || "Untitled"}{" "}
+            <span className="text-xs text-gray-500">({item.resourceType})</span>
+          </p>
+          {item.resourceType === "audio" && item.audioDurationSecs ? (
+            <p className="text-xs text-gray-500 mt-0.5">
+              Duration: {formatDuration(item.audioDurationSecs)}
+            </p>
+          ) : null}
+          {item.resourceType === "audio" && item.audioDescription ? (
+            <p className="text-xs text-gray-500 mt-0.5 italic">{item.audioDescription}</p>
+          ) : null}
+        </div>
       )}
       {item.type === "JOURNAL_PROMPT" && (
         <div className="space-y-1">

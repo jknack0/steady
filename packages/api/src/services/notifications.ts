@@ -9,6 +9,10 @@ import {
   getWeeklyReviewCopy,
   getDiagnosticPromptCopy,
 } from "./notification-copy";
+import {
+  generateAllPendingInstances,
+  markMissedInstances,
+} from "./homework-instances";
 
 const expo = new Expo();
 
@@ -135,6 +139,8 @@ export async function registerNotificationWorkers(): Promise<void> {
   await boss.createQueue("schedule-morning-checkins");
   await boss.createQueue("schedule-weekly-reviews");
   await boss.createQueue("schedule-homework-reminders");
+  await boss.createQueue("generate-homework-instances");
+  await boss.createQueue("schedule-tracker-reminders");
 
   await boss.work<SendNotificationJob>("send-notification", async (jobs) => {
     for (const job of jobs) {
@@ -154,10 +160,21 @@ export async function registerNotificationWorkers(): Promise<void> {
     await scheduleHomeworkRemindersForAll();
   });
 
+  await boss.work("generate-homework-instances", async () => {
+    await generateAllPendingInstances();
+    await markMissedInstances();
+  });
+
+  await boss.work("schedule-tracker-reminders", async () => {
+    await scheduleTrackerRemindersForAll();
+  });
+
   // Schedule recurring jobs
   await boss.schedule("schedule-morning-checkins", "0 5 * * *"); // 5am UTC daily
   await boss.schedule("schedule-weekly-reviews", "0 14 * * 0");  // 2pm UTC Sundays
   await boss.schedule("schedule-homework-reminders", "0 6 * * *"); // 6am UTC daily
+  await boss.schedule("generate-homework-instances", "0 3 * * *"); // 3am UTC daily (before reminders)
+  await boss.schedule("schedule-tracker-reminders", "0 17 * * *"); // 5pm UTC daily
 
   console.log("Notification workers registered");
 }
@@ -450,6 +467,105 @@ async function scheduleWeeklyReviews(): Promise<void> {
       singletonKey: `weekly-review-${user.id}-${weekKey()}`,
       ...(startAfter ? { startAfter } : {}),
     });
+  }
+}
+
+// ── Daily Tracker Reminders ──────────────────────────
+
+async function scheduleTrackerRemindersForAll(): Promise<void> {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const dateKey = today.toISOString().split("T")[0];
+
+  // Find all active trackers with their program enrollments
+  const trackers = await prisma.dailyTracker.findMany({
+    where: { isActive: true },
+    include: {
+      program: {
+        include: {
+          enrollments: {
+            where: { status: "ACTIVE" },
+            include: {
+              participant: {
+                include: {
+                  user: { select: { id: true, pushToken: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+      enrollment: {
+        include: {
+          participant: {
+            include: {
+              user: { select: { id: true, pushToken: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  for (const tracker of trackers) {
+    // Collect users who should get this tracker
+    const users: Array<{ id: string; pushToken: string | null; timezone: string }> = [];
+
+    if (tracker.program) {
+      for (const enrollment of tracker.program.enrollments) {
+        const user = enrollment.participant.user;
+        if (user.pushToken) {
+          users.push({
+            id: user.id,
+            pushToken: user.pushToken,
+            timezone: enrollment.participant.timezone,
+          });
+        }
+      }
+    } else if (tracker.enrollment) {
+      const user = tracker.enrollment.participant.user;
+      if (user.pushToken) {
+        users.push({
+          id: user.id,
+          pushToken: user.pushToken,
+          timezone: tracker.enrollment.participant.timezone,
+        });
+      }
+    }
+
+    // Check which users have already submitted today
+    const submissions = await prisma.dailyTrackerEntry.findMany({
+      where: {
+        trackerId: tracker.id,
+        userId: { in: users.map((u) => u.id) },
+        date: today,
+      },
+      select: { userId: true },
+    });
+    const submittedUserIds = new Set(submissions.map((s) => s.userId));
+
+    for (const user of users) {
+      if (submittedUserIds.has(user.id)) continue;
+
+      // Parse reminder time and schedule with timezone
+      const [hours, minutes] = tracker.reminderTime.split(":").map(Number);
+      const sendAt = getNextTimeInTimezone(hours, minutes, user.timezone);
+
+      await queueNotification(
+        user.id,
+        tracker.name,
+        "Time for your daily check-in",
+        "HOMEWORK", // Reuse HOMEWORK category for tracker reminders
+        {
+          type: "tracker_reminder",
+          trackerId: tracker.id,
+        },
+        {
+          startAfter: sendAt,
+          singletonKey: `tracker-${tracker.id}-${user.id}-${dateKey}`,
+        }
+      );
+    }
   }
 }
 

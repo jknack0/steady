@@ -3,11 +3,11 @@
 import { useRef, useState } from "react";
 import { useUpload } from "@/hooks/use-upload";
 import { Button } from "@/components/ui/button";
-import { Upload, X, FileText, Image, Loader2, CheckCircle } from "lucide-react";
+import { Upload, X, FileText, Image, Loader2, CheckCircle, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FileUploadProps {
-  context: "program-cover" | "handout" | "attachment";
+  context: "program-cover" | "handout" | "attachment" | "audio";
   accept?: string;
   value?: string | null;
   onChange: (key: string | null, publicUrl: string | null) => void;
@@ -19,10 +19,15 @@ const ACCEPT_MAP: Record<string, string> = {
   "program-cover": "image/png,image/jpeg,image/webp",
   handout: "application/pdf,image/png,image/jpeg",
   attachment: "application/pdf,image/png,image/jpeg,image/webp",
+  audio: "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/ogg,.mp3,.m4a,.wav,.aac,.ogg",
 };
 
 function isImage(url: string): boolean {
   return /\.(png|jpe?g|webp)(\?|$)/i.test(url);
+}
+
+function isAudio(url: string): boolean {
+  return /\.(mp3|m4a|wav|aac|ogg)(\?|$)/i.test(url);
 }
 
 export function FileUpload({
@@ -79,6 +84,8 @@ export function FileUpload({
               alt="Uploaded file"
               className="h-12 w-12 rounded object-cover"
             />
+          ) : isAudio(value) ? (
+            <Music className="h-8 w-8 text-muted-foreground" />
           ) : (
             <FileText className="h-8 w-8 text-muted-foreground" />
           )}
@@ -138,6 +145,8 @@ export function FileUpload({
           <>
             {context === "program-cover" ? (
               <Image className="h-8 w-8 text-muted-foreground mb-2" />
+            ) : context === "audio" ? (
+              <Music className="h-8 w-8 text-muted-foreground mb-2" />
             ) : (
               <Upload className="h-8 w-8 text-muted-foreground mb-2" />
             )}

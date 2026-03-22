@@ -8,6 +8,7 @@ export interface Program {
   id: string;
   title: string;
   description: string | null;
+  coverImageUrl: string | null;
   cadence: string;
   enrollmentMethod: string;
   sessionType: string;

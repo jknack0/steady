@@ -1,9 +1,10 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
-import { CreateEnrollmentSchema, UpdateEnrollmentSchema } from "@steady/shared";
+import { CreateEnrollmentSchema, UpdateEnrollmentSchema, type HomeworkContent } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
+import { getStreakData, cancelFutureInstances } from "../services/homework-instances";
 
 const router = Router({ mergeParams: true });
 
@@ -169,6 +170,101 @@ router.put("/:id", validate(UpdateEnrollmentSchema), async (req: Request, res: R
   } catch (err) {
     console.error("Update enrollment error:", err);
     res.status(500).json({ success: false, error: "Failed to update enrollment" });
+  }
+});
+
+// GET /api/programs/:programId/enrollments/:id/homework-compliance — Compliance data
+router.get("/:id/homework-compliance", async (req: Request, res: Response) => {
+  try {
+    const program = await verifyProgramOwnership(req.params.programId, req.user!.clinicianProfileId!);
+    if (!program) {
+      res.status(404).json({ success: false, error: "Program not found" });
+      return;
+    }
+
+    const enrollment = await prisma.enrollment.findFirst({
+      where: { id: req.params.id, programId: req.params.programId },
+    });
+
+    if (!enrollment) {
+      res.status(404).json({ success: false, error: "Enrollment not found" });
+      return;
+    }
+
+    // Find all recurring homework parts in this program
+    const parts = await prisma.part.findMany({
+      where: {
+        type: "HOMEWORK",
+        module: { programId: req.params.programId },
+      },
+      select: { id: true, title: true, content: true },
+    });
+
+    const recurringParts = parts.filter((p) => {
+      const content = p.content as unknown as HomeworkContent;
+      return content?.recurrence && content.recurrence !== "NONE";
+    });
+
+    const compliance = await Promise.all(
+      recurringParts.map(async (part) => {
+        const content = part.content as unknown as HomeworkContent;
+        const streak = await getStreakData(part.id, enrollment.id);
+        return {
+          partId: part.id,
+          partTitle: part.title,
+          recurrence: content.recurrence,
+          recurrenceDays: content.recurrenceDays,
+          ...streak,
+        };
+      })
+    );
+
+    res.json({ success: true, data: compliance });
+  } catch (err) {
+    console.error("Get homework compliance error:", err);
+    res.status(500).json({ success: false, error: "Failed to get compliance data" });
+  }
+});
+
+// POST /api/programs/:programId/enrollments/:enrollmentId/parts/:partId/stop-recurrence
+router.post("/:enrollmentId/parts/:partId/stop-recurrence", async (req: Request, res: Response) => {
+  try {
+    const program = await verifyProgramOwnership(req.params.programId, req.user!.clinicianProfileId!);
+    if (!program) {
+      res.status(404).json({ success: false, error: "Program not found" });
+      return;
+    }
+
+    const part = await prisma.part.findFirst({
+      where: {
+        id: req.params.partId,
+        type: "HOMEWORK",
+        module: { programId: req.params.programId },
+      },
+    });
+
+    if (!part) {
+      res.status(404).json({ success: false, error: "Homework part not found" });
+      return;
+    }
+
+    // Update recurrenceEndDate in the part content
+    const content = part.content as Record<string, unknown>;
+    const today = new Date().toISOString().split("T")[0];
+    content.recurrenceEndDate = today;
+
+    await prisma.part.update({
+      where: { id: part.id },
+      data: { content: content as any },
+    });
+
+    // Cancel future instances for this enrollment (or all if no enrollmentId)
+    await cancelFutureInstances(part.id, req.params.enrollmentId);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Stop recurrence error:", err);
+    res.status(500).json({ success: false, error: "Failed to stop recurrence" });
   }
 });
 

@@ -6,18 +6,20 @@ const router = Router();
 
 router.use(authenticate);
 
-const VALID_CONTEXTS = ["program-cover", "handout", "attachment"] as const;
+const VALID_CONTEXTS = ["program-cover", "handout", "attachment", "audio"] as const;
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   "program-cover": ["image/png", "image/jpeg", "image/webp"],
   handout: ["application/pdf", "image/png", "image/jpeg"],
   attachment: ["application/pdf", "image/png", "image/jpeg", "image/webp"],
+  audio: ["audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/aac", "audio/ogg"],
 };
 
 const MAX_FILE_SIZE: Record<string, number> = {
   "program-cover": 5 * 1024 * 1024, // 5 MB
   handout: 20 * 1024 * 1024, // 20 MB
   attachment: 20 * 1024 * 1024, // 20 MB
+  audio: 500 * 1024 * 1024, // 500 MB — full session recordings can be 45-90 minutes
 };
 
 // POST /api/uploads/presign — Get a pre-signed URL for uploading

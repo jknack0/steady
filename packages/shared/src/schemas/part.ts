@@ -31,9 +31,11 @@ const HomeworkActionSchema = z.object({
 const HomeworkResourceReviewSchema = z.object({
   type: z.literal("RESOURCE_REVIEW"),
   resourceTitle: z.string().min(1),
-  resourceType: z.enum(["handout", "video", "link"]),
-  resourceUrl: z.string().url(),
+  resourceType: z.enum(["handout", "video", "link", "audio"]),
+  resourceUrl: z.string().url().or(z.literal("")), // Empty string allowed for audio (file-only resources)
   resourceKey: z.string().optional(), // S3 key for uploaded files — use presign-download to get URL
+  audioDurationSecs: z.number().int().min(0).optional(), // Duration in seconds for audio files
+  audioDescription: z.string().optional(), // Clinician instructions (e.g., "Listen daily, find a quiet place")
   sortOrder: z.number().int(),
 });
 
@@ -120,11 +122,21 @@ const ResourceLinkContentSchema = z.object({
   url: z.string(),
   fileKey: z.string().optional(), // S3 key for uploaded files — use presign-download to get URL
   description: z.string().optional(),
+  resourceType: z.enum(["file", "link", "audio"]).optional(), // Distinguish audio resources in module parts
+  audioDurationSecs: z.number().int().min(0).optional(), // Duration in seconds for audio files
 });
 
 const DividerContentSchema = z.object({
   type: z.literal("DIVIDER"),
   label: z.string(),
+});
+
+export const RecurrenceTypeEnum = z.enum(["NONE", "DAILY", "WEEKLY", "CUSTOM"]);
+
+export const HomeworkInstanceStatusEnum = z.enum(["PENDING", "COMPLETED", "SKIPPED", "MISSED"]);
+
+export const CompleteHomeworkInstanceSchema = z.object({
+  response: z.any().nullable().optional(),
 });
 
 const HomeworkContentSchema = z.object({
@@ -135,6 +147,9 @@ const HomeworkContentSchema = z.object({
   completionMinimum: z.number().int().nullable().default(null),
   reminderCadence: z.enum(["DAILY", "EVERY_OTHER_DAY", "MID_WEEK"]),
   items: z.array(HomeworkItemSchema),
+  recurrence: RecurrenceTypeEnum.default("NONE"),
+  recurrenceDays: z.array(z.number().int().min(0).max(6)).default([]),
+  recurrenceEndDate: z.string().nullable().default(null),
 });
 
 // ── Assessment Schema ─────────────────────────────────
@@ -245,6 +260,9 @@ export const ReorderPartsSchema = z.object({
 
 export type PartContent = z.infer<typeof PartContentSchema>;
 export type HomeworkItem = z.infer<typeof HomeworkItemSchema>;
+export type HomeworkContent = z.infer<typeof HomeworkContentSchema>;
+export type RecurrenceType = z.infer<typeof RecurrenceTypeEnum>;
+export type HomeworkInstanceStatus = z.infer<typeof HomeworkInstanceStatusEnum>;
 export type CreatePartInput = z.input<typeof CreatePartSchema>;
 export type UpdatePartInput = z.input<typeof UpdatePartSchema>;
 export type ReorderPartsInput = z.infer<typeof ReorderPartsSchema>;

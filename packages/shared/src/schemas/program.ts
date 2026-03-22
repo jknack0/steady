@@ -16,6 +16,7 @@ export const CreateProgramSchema = z.object({
 export const UpdateProgramSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
+  coverImageUrl: z.string().nullable().optional(),
   cadence: CadenceEnum.optional(),
   enrollmentMethod: EnrollmentMethodEnum.optional(),
   sessionType: SessionTypeEnum.optional(),

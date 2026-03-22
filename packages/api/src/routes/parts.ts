@@ -1,8 +1,9 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
-import { CreatePartSchema, UpdatePartSchema, ReorderPartsSchema } from "@steady/shared";
+import { CreatePartSchema, UpdatePartSchema, ReorderPartsSchema, type HomeworkContent } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
+import { regenerateInstancesForPart } from "../services/homework-instances";
 
 const router = Router({ mergeParams: true });
 
@@ -154,6 +155,14 @@ router.put("/:id", validate(UpdatePartSchema), async (req: Request, res: Respons
       where: { id: req.params.id },
       data: req.body,
     });
+
+    // If homework recurrence changed, regenerate instances
+    if (part.type === "HOMEWORK" && req.body.content) {
+      const content = req.body.content as HomeworkContent;
+      regenerateInstancesForPart(part.id, content).catch((err) => {
+        console.error("Failed to regenerate homework instances:", err);
+      });
+    }
 
     res.json({ success: true, data: part });
   } catch (err) {

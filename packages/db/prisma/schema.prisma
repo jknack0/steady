@@ -122,6 +122,29 @@ enum NotificationCategory {
   WEEKLY_REVIEW
 }
 
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+
+enum TrackerFieldType {
+  SCALE
+  NUMBER
+  YES_NO
+  MULTI_CHECK
+  FREE_TEXT
+  TIME
+}
+
+enum HomeworkInstanceStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+  MISSED
+}
+
 // ── Practices ─────────────────────────────────────────
 
 enum PracticeRole {
@@ -233,8 +256,9 @@ model Program {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  modules     Module[]
-  enrollments Enrollment[]
+  modules       Module[]
+  enrollments   Enrollment[]
+  dailyTrackers DailyTracker[]
 
   @@index([practiceId])
   @@map("programs")
@@ -274,8 +298,9 @@ model Part {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  partProgress  PartProgress[]
-  journalEntries JournalEntry[] @relation("PromptPart")
+  partProgress      PartProgress[]
+  journalEntries    JournalEntry[] @relation("PromptPart")
+  homeworkInstances HomeworkInstance[]
 
   @@map("parts")
 }
@@ -294,9 +319,11 @@ model Enrollment {
   enrolledAt      DateTime         @default(now())
   completedAt     DateTime?
 
-  moduleProgress ModuleProgress[]
-  partProgress   PartProgress[]
-  sessions       Session[]
+  moduleProgress    ModuleProgress[]
+  partProgress      PartProgress[]
+  sessions          Session[]
+  homeworkInstances HomeworkInstance[]
+  dailyTrackers     DailyTracker[]
 
   @@map("enrollments")
 }
@@ -429,6 +456,82 @@ model NotificationPreference {
 
   @@unique([userId, category])
   @@map("notification_preferences")
+}
+
+// ── Homework Instances (Recurring) ────────────────────
+
+model HomeworkInstance {
+  id           String                 @id @default(cuid())
+  partId       String
+  part         Part                   @relation(fields: [partId], references: [id], onDelete: Cascade)
+  enrollmentId String
+  enrollment   Enrollment             @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  dueDate      DateTime               @db.Date
+  status       HomeworkInstanceStatus  @default(PENDING)
+  completedAt  DateTime?
+  response     Json?
+  createdAt    DateTime               @default(now())
+
+  @@unique([partId, enrollmentId, dueDate])
+  @@index([enrollmentId])
+  @@index([partId])
+  @@index([dueDate])
+  @@map("homework_instances")
+}
+
+// ── Daily Trackers ────────────────────────────────────
+
+model DailyTracker {
+  id           String       @id @default(cuid())
+  programId    String?
+  program      Program?     @relation(fields: [programId], references: [id], onDelete: Cascade)
+  enrollmentId String?
+  enrollment   Enrollment?  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  createdById  String
+  name         String
+  description  String?
+  reminderTime String       @default("20:00")
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  fields  DailyTrackerField[]
+  entries DailyTrackerEntry[]
+
+  @@index([programId])
+  @@index([enrollmentId])
+  @@map("daily_trackers")
+}
+
+model DailyTrackerField {
+  id         String           @id @default(cuid())
+  trackerId  String
+  tracker    DailyTracker     @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  label      String
+  fieldType  TrackerFieldType
+  options    Json?
+  sortOrder  Int
+  isRequired Boolean          @default(true)
+
+  @@index([trackerId])
+  @@map("daily_tracker_fields")
+}
+
+model DailyTrackerEntry {
+  id          String       @id @default(cuid())
+  trackerId   String
+  tracker     DailyTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  userId      String
+  date        DateTime     @db.Date
+  responses   Json
+  completedAt DateTime
+  createdAt   DateTime     @default(now())
+
+  @@unique([trackerId, userId, date])
+  @@index([trackerId])
+  @@index([userId])
+  @@index([date])
+  @@map("daily_tracker_entries")
 }
 
 // ── Audit Trail (HIPAA) ───────────────────────────────

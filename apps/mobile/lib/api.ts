@@ -123,6 +123,56 @@ export const api = {
       body: JSON.stringify({ enrollmentId, responseData }),
     }),
 
+  // Homework Instances
+  getHomeworkInstances: (params?: { date?: string; enrollmentId?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.date) qs.set("date", params.date);
+    if (params?.enrollmentId) qs.set("enrollmentId", params.enrollmentId);
+    const query = qs.toString();
+    return apiFetch(`/api/participant/homework-instances${query ? `?${query}` : ""}`);
+  },
+
+  getHomeworkStreak: (instanceId: string) =>
+    apiFetch(`/api/participant/homework-instances/${instanceId}/streak`),
+
+  completeHomeworkInstance: (instanceId: string, response?: any) =>
+    apiFetch(`/api/participant/homework-instances/${instanceId}/complete`, {
+      method: "POST",
+      body: JSON.stringify({ response: response ?? null }),
+    }),
+
+  skipHomeworkInstance: (instanceId: string) =>
+    apiFetch(`/api/participant/homework-instances/${instanceId}/skip`, {
+      method: "POST",
+    }),
+
+  // Daily Trackers
+  getDailyTrackers: () => apiFetch("/api/participant/daily-trackers"),
+
+  getTrackerToday: (trackerId: string) =>
+    apiFetch(`/api/participant/daily-trackers/${trackerId}/today`),
+
+  submitTrackerEntry: (trackerId: string, date: string, responses: Record<string, any>) =>
+    apiFetch(`/api/participant/daily-trackers/${trackerId}/entries`, {
+      method: "POST",
+      body: JSON.stringify({ date, responses }),
+    }),
+
+  getTrackerHistory: (trackerId: string, params?: { startDate?: string; endDate?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.startDate) qs.set("startDate", params.startDate);
+    if (params?.endDate) qs.set("endDate", params.endDate);
+    const query = qs.toString();
+    return apiFetch(`/api/participant/daily-trackers/${trackerId}/history${query ? `?${query}` : ""}`);
+  },
+
+  getTrackerStreak: (trackerId: string) =>
+    apiFetch(`/api/participant/daily-trackers/${trackerId}/streak`),
+
+  // File Downloads
+  getPresignedDownloadUrl: (key: string) =>
+    apiFetch<{ downloadUrl: string }>(`/api/uploads/presign-download?key=${encodeURIComponent(key)}`),
+
   // Notifications
   registerPushToken: (pushToken: string) =>
     apiFetch("/api/notifications/push-token", {

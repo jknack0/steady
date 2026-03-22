@@ -20,6 +20,7 @@ import sessionRoutes from "./routes/sessions";
 import adminRoutes from "./routes/admin";
 import practiceRoutes from "./routes/practice";
 import uploadRoutes from "./routes/uploads";
+import dailyTrackerRoutes from "./routes/daily-trackers";
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/practices", practiceRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/daily-trackers", dailyTrackerRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -2,6 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput } from "re
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@steady/shared";
+import { AudioPlayer } from "./audio-player";
 
 // ── Rich Text Parser ─────────────────────────────────
 // Converts HTML from Tiptap editor into React Native Text elements
@@ -465,8 +466,20 @@ export function ChecklistRenderer({
 export function ResourceLinkRenderer({
   content,
 }: {
-  content: { url: string; description?: string };
+  content: { url: string; fileKey?: string; description?: string; resourceType?: string; audioDurationSecs?: number };
 }) {
+  // Audio resource — render inline player
+  if (content.resourceType === "audio" && content.fileKey) {
+    return (
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+        {content.description ? (
+          <Text style={{ fontSize: 15, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 8 }}>{content.description}</Text>
+        ) : null}
+        <AudioPlayer audioKey={content.fileKey} durationSecs={content.audioDurationSecs} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {content.url ? (
@@ -515,7 +528,7 @@ export function DividerRenderer({ content }: { content: { label: string } }) {
 export function HomeworkRenderer({
   content,
 }: {
-  content: { items: Array<{ type: string; description?: string; subSteps?: string[]; prompts?: string[]; reminderText?: string; content?: string; resourceTitle?: string; resourceType?: string; resourceUrl?: string; options?: Array<{ label: string; detail?: string }> }> };
+  content: { items: Array<{ type: string; description?: string; subSteps?: string[]; prompts?: string[]; reminderText?: string; content?: string; resourceTitle?: string; resourceType?: string; resourceUrl?: string; resourceKey?: string; audioDurationSecs?: number; audioDescription?: string; options?: Array<{ label: string; detail?: string }> }> };
 }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -530,9 +543,19 @@ export function HomeworkRenderer({
             <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D" }}>{item.description}</Text>
           ) : null}
           {item.resourceTitle ? (
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-              <Ionicons name={item.resourceType === "video" ? "videocam-outline" : item.resourceType === "link" ? "link-outline" : "document-text-outline"} size={14} color="#5B8A8A" />
-              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A", marginLeft: 6 }}>{item.resourceTitle}</Text>
+            <View style={{ marginTop: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name={item.resourceType === "video" ? "videocam-outline" : item.resourceType === "audio" ? "musical-notes-outline" : item.resourceType === "link" ? "link-outline" : "document-text-outline"} size={14} color="#5B8A8A" />
+                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A", marginLeft: 6 }}>{item.resourceTitle}</Text>
+              </View>
+              {item.resourceType === "audio" && item.resourceKey ? (
+                <View style={{ marginTop: 8 }}>
+                  <AudioPlayer audioKey={item.resourceKey} durationSecs={item.audioDurationSecs} />
+                </View>
+              ) : null}
+              {item.audioDescription ? (
+                <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_400Regular", color: "#7A7A7A", marginTop: 4, fontStyle: "italic" }}>{item.audioDescription}</Text>
+              ) : null}
             </View>
           ) : null}
           {item.subSteps && item.subSteps.length > 0 ? (

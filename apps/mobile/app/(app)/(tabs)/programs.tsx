@@ -9,6 +9,8 @@ import { useAuth } from "../../../lib/auth-context";
 import { ModuleCard, type ProgramData } from "../../../lib/program-components";
 import { StreakBadges, calculateStreak } from "../../../components/streak-badges";
 import { MilestoneCelebration } from "../../../components/milestone-celebration";
+import { TodaysHomeworkInstances } from "../../../components/homework-instances";
+import { DailyTrackerCards } from "../../../components/daily-tracker-card";
 
 interface Enrollment {
   id: string;
@@ -396,6 +398,8 @@ export default function ProgramsScreen() {
         lastCelebratedMilestone={lastCelebratedMilestone}
         onDismiss={handleMilestoneDismiss}
       />
+      <TodaysHomeworkInstances />
+      <DailyTrackerCards />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
