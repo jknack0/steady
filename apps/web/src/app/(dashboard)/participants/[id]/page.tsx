@@ -472,12 +472,14 @@ function QuickActions({
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start"
+            className="w-full justify-start text-left"
             onClick={handleUnlock}
             disabled={unlockModule.isPending}
           >
-            <Unlock className="h-4 w-4 mr-2" />
-            {unlockModule.isPending ? "Unlocking..." : `Unlock: ${nextLocked.moduleTitle}`}
+            <Unlock className="h-4 w-4 mr-2 shrink-0" />
+            <span className="truncate">
+              {unlockModule.isPending ? "Unlocking..." : `Unlock: ${nextLocked.moduleTitle}`}
+            </span>
           </Button>
         )}
 
