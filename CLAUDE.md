@@ -120,6 +120,7 @@ Never use `z.any()` for structured data. Use `z.union([SchemaA, SchemaB, z.null(
 
 ## HIPAA Considerations
 
+- **Logging**: Use `logger` from `packages/api/src/lib/logger.ts` for ALL logging. Never use `console.error/log/warn` directly — the logger strips PII from error objects (logs error name + message only, never full objects which may contain Prisma query results with patient data). Usage: `logger.error("Context description", err)`, `logger.info("Message")`, `logger.warn("Message", "detail")`.
 - Never log PII (names, emails, health data) at INFO level. Only log IDs and operation names.
 - Session timeout: 30 minutes of inactivity.
 - All API communication over HTTPS in production.

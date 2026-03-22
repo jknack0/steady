@@ -1,4 +1,5 @@
 import PgBoss from "pg-boss";
+import { logger } from "../lib/logger";
 
 let boss: PgBoss | null = null;
 
@@ -13,7 +14,7 @@ export async function getQueue(): Promise<PgBoss> {
   boss = new PgBoss(databaseUrl);
   await boss.start();
 
-  console.log("PgBoss job queue started");
+  logger.info("PgBoss job queue started");
   return boss;
 }
 
