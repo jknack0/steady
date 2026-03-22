@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,10 +12,19 @@ import {
   RefreshControl,
   ScrollView,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  FadeOut,
+  Layout,
+} from "react-native-reanimated";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
+import { AnimatedCheckbox } from "../../../components/animated-checkbox";
 
 interface Task {
   id: string;
@@ -210,108 +219,120 @@ export default function TasksScreen() {
     const energy = item.energyLevel ? ENERGY_CONFIG[item.energyLevel] : null;
 
     return (
-      <TouchableOpacity
-        style={{
-          backgroundColor: "#FFFFFF",
-          borderRadius: 16,
-          padding: 16,
-          marginBottom: 12,
-          marginHorizontal: 16,
-          borderWidth: 1,
-          borderColor: "#F0EDE8",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.04,
-          shadowRadius: 8,
-          elevation: 2,
-          opacity: isDone ? 0.7 : 1,
-        }}
-        onPress={() => {
-          setEditingTask(item);
-          setTitle(item.title);
-          setDescription(item.description || "");
-          setEnergyLevel(item.energyLevel);
-          setCategory(item.category);
-        }}
-        onLongPress={() => handleDelete(item)}
-        activeOpacity={0.7}
+      <Animated.View
+        layout={Layout.springify()}
+        exiting={FadeOut.duration(400)}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "PlusJakartaSans_500Medium",
-                color: isDone ? "#8A8A8A" : "#2D2D2D",
-                textDecorationLine: isDone ? "line-through" : "none",
-              }}
-            >
-              {item.title}
-            </Text>
-
-            {item.description ? (
-              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 4 }} numberOfLines={1}>
-                {item.description}
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 12,
+            marginHorizontal: 16,
+            borderWidth: 1,
+            borderColor: "#F0EDE8",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.04,
+            shadowRadius: 8,
+            elevation: 2,
+            opacity: isDone ? 0.7 : 1,
+          }}
+          onPress={() => {
+            setEditingTask(item);
+            setTitle(item.title);
+            setDescription(item.description || "");
+            setEnergyLevel(item.energyLevel);
+            setCategory(item.category);
+          }}
+          onLongPress={() => handleDelete(item)}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <AnimatedCheckbox
+              checked={isDone}
+              onToggle={() =>
+                toggleMutation.mutate({ id: item.id, currentStatus: item.status })
+              }
+              size={22}
+            />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: "PlusJakartaSans_500Medium",
+                  color: isDone ? "#8A8A8A" : "#2D2D2D",
+                  textDecorationLine: isDone ? "line-through" : "none",
+                }}
+              >
+                {item.title}
               </Text>
-            ) : null}
 
-            <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-              {item.dueDate && (
-                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0EDE8", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <Ionicons name="calendar-outline" size={12} color="#8A8A8A" />
-                  <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#5A5A5A", marginLeft: 4 }}>
-                    {formatDueDate(item.dueDate)}
-                  </Text>
-                </View>
-              )}
-              {energy && (
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: energy.bg }}
-                >
-                  <Ionicons name={energy.icon as any} size={12} color={energy.text} />
-                  <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", marginLeft: 4, color: energy.text }}>
-                    {item.energyLevel!.charAt(0) + item.energyLevel!.slice(1).toLowerCase()}
-                  </Text>
-                </View>
-              )}
-              {item.category && (
-                <View style={{ backgroundColor: "#E3EDED", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A" }}>{item.category}</Text>
-                </View>
-              )}
-              {item.estimatedMinutes && (
-                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0EDE8", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <Ionicons name="time-outline" size={12} color="#8A8A8A" />
-                  <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginLeft: 4 }}>{item.estimatedMinutes}m</Text>
-                </View>
-              )}
+              {item.description ? (
+                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 4 }} numberOfLines={1}>
+                  {item.description}
+                </Text>
+              ) : null}
+
+              <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {item.dueDate && (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0EDE8", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Ionicons name="calendar-outline" size={12} color="#8A8A8A" />
+                    <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#5A5A5A", marginLeft: 4 }}>
+                      {formatDueDate(item.dueDate)}
+                    </Text>
+                  </View>
+                )}
+                {energy && (
+                  <View
+                    style={{ flexDirection: "row", alignItems: "center", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: energy.bg }}
+                  >
+                    <Ionicons name={energy.icon as any} size={12} color={energy.text} />
+                    <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", marginLeft: 4, color: energy.text }}>
+                      {item.energyLevel!.charAt(0) + item.energyLevel!.slice(1).toLowerCase()}
+                    </Text>
+                  </View>
+                )}
+                {item.category && (
+                  <View style={{ backgroundColor: "#E3EDED", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A" }}>{item.category}</Text>
+                  </View>
+                )}
+                {item.estimatedMinutes && (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0EDE8", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Ionicons name="time-outline" size={12} color="#8A8A8A" />
+                    <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginLeft: 4 }}>{item.estimatedMinutes}m</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
 
-          {!isDone && (
-            <TouchableOpacity
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: "#E3EDED",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: 12,
-              }}
-              onPress={(e) => {
-                e.stopPropagation();
-                setSchedulingTask(item);
-                setScheduleDate(getNextHour());
-                setScheduleDuration(item.estimatedMinutes || 60);
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="calendar-outline" size={20} color="#5B8A8A" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
+            {!isDone && (
+              <TouchableOpacity
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  backgroundColor: "#E3EDED",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginLeft: 12,
+                }}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setSchedulingTask(item);
+                  setScheduleDate(getNextHour());
+                  setScheduleDuration(item.estimatedMinutes || 60);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="calendar-outline" size={20} color="#5B8A8A" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 

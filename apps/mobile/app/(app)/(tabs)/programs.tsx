@@ -1,10 +1,14 @@
+import { useState, useEffect } from "react";
 import { View, Text, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "expo-secure-store";
 import { api } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth-context";
 import { ModuleCard, type ProgramData } from "../../../lib/program-components";
+import { StreakBadges, calculateStreak } from "../../../components/streak-badges";
+import { MilestoneCelebration } from "../../../components/milestone-celebration";
 
 interface Enrollment {
   id: string;
@@ -322,9 +326,45 @@ function SingleProgramView({ enrollment }: { enrollment: Enrollment }) {
   );
 }
 
+// ── Streak Data Hook ─────────────────────────────────
+
+function useStreaks() {
+  const { data } = useQuery({
+    queryKey: ["my-stats"],
+    queryFn: async () => {
+      const res = await api.getMyStats();
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    staleTime: 60000,
+  });
+
+  if (!data) return null;
+
+  const journalDates: string[] = data.journalHeatmap?.map((d: any) => d.date) || [];
+  const checkInDates: string[] = data.checkInDates || [];
+  const homeworkDates: string[] = data.homeworkCompletionDates || [];
+
+  return {
+    journalingStreak: calculateStreak(journalDates),
+    checkInStreak: calculateStreak(checkInDates),
+    homeworkStreak: calculateStreak(homeworkDates),
+  };
+}
+
 // ── Main Screen ──────────────────────────────────────
 
+const MILESTONE_STORAGE_KEY = "steady_last_celebrated_milestone";
+
 export default function ProgramsScreen() {
+  const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState(0);
+
+  useEffect(() => {
+    AsyncStorage.getItemAsync(MILESTONE_STORAGE_KEY).then((val) => {
+      if (val) setLastCelebratedMilestone(parseInt(val, 10));
+    });
+  }, []);
+
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["enrollments"],
     queryFn: async () => {
@@ -334,12 +374,28 @@ export default function ProgramsScreen() {
     },
   });
 
+  const streaks = useStreaks();
+  const maxStreak = streaks
+    ? Math.max(streaks.journalingStreak, streaks.checkInStreak, streaks.homeworkStreak)
+    : 0;
+
   const isSingleProgram = data?.length === 1;
+
+  function handleMilestoneDismiss(milestone: number) {
+    setLastCelebratedMilestone(milestone);
+    AsyncStorage.setItemAsync(MILESTONE_STORAGE_KEY, String(milestone));
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
       <GreetingBanner />
       <UpcomingSessionCard />
+      {streaks && <StreakBadges streaks={streaks} />}
+      <MilestoneCelebration
+        currentStreak={maxStreak}
+        lastCelebratedMilestone={lastCelebratedMilestone}
+        onDismiss={handleMilestoneDismiss}
+      />
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>

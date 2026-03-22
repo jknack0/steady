@@ -4,6 +4,7 @@ import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
+import { ModuleCompletionOverlay } from "../../../components/module-completion-overlay";
 import {
   TextRenderer,
   VideoRenderer,
@@ -62,6 +63,11 @@ export default function PartScreen() {
     ?.flatMap((m: any) => m.parts)
     ?.find((p: any) => p.id === partId);
 
+  const [completedModule, setCompletedModule] = useState<{
+    title: string;
+    message?: string | null;
+  } | null>(null);
+
   const markCompleteMutation = useMutation({
     mutationFn: async () => {
       const responseData = buildResponseData();
@@ -74,11 +80,10 @@ export default function PartScreen() {
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
 
       if (data?.moduleCompleted) {
-        Alert.alert(
-          "Module Complete!",
-          "Great work! The next module has been unlocked.",
-          [{ text: "Continue", onPress: () => router.back() }]
-        );
+        setCompletedModule({
+          title: data.moduleTitle || "Module",
+          message: data.clinicianMessage || null,
+        });
       } else {
         router.back();
       }
@@ -180,6 +185,16 @@ export default function PartScreen() {
             </TouchableOpacity>
           </View>
         ) : null}
+
+        <ModuleCompletionOverlay
+          visible={!!completedModule}
+          moduleTitle={completedModule?.title || ""}
+          clinicianMessage={completedModule?.message}
+          onDismiss={() => {
+            setCompletedModule(null);
+            router.back();
+          }}
+        />
       </View>
     </>
   );

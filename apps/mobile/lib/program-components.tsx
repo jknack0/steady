@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { AnimatedCheckbox } from "../components/animated-checkbox";
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -109,20 +110,20 @@ export function PartRow({
       disabled={!isAccessible}
       activeOpacity={0.7}
     >
-      <View
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 6,
-          borderWidth: 2,
-          marginRight: 12,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: isCompleted ? "#8FAE8B" : "transparent",
-          borderColor: isCompleted ? "#8FAE8B" : "#D4D0CB",
-        }}
-      >
-        {isCompleted ? <Ionicons name="checkmark" size={12} color="white" /> : null}
+      <View style={{ marginRight: 12 }}>
+        <AnimatedCheckbox
+          checked={isCompleted}
+          onToggle={() => {
+            if (isAccessible) {
+              router.push({
+                pathname: "/(app)/part/[partId]",
+                params: { partId: part.id, enrollmentId },
+              });
+            }
+          }}
+          size={20}
+          disabled={!isAccessible}
+        />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{

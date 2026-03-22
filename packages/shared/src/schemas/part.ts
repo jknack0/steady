@@ -33,6 +33,7 @@ const HomeworkResourceReviewSchema = z.object({
   resourceTitle: z.string().min(1),
   resourceType: z.enum(["handout", "video", "link"]),
   resourceUrl: z.string().url(),
+  resourceKey: z.string().optional(), // S3 key for uploaded files — use presign-download to get URL
   sortOrder: z.number().int(),
 });
 
@@ -117,6 +118,7 @@ const ChecklistContentSchema = z.object({
 const ResourceLinkContentSchema = z.object({
   type: z.literal("RESOURCE_LINK"),
   url: z.string(),
+  fileKey: z.string().optional(), // S3 key for uploaded files — use presign-download to get URL
   description: z.string().optional(),
 });
 
