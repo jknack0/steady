@@ -49,7 +49,19 @@ vi.mock("@steady/db", () => {
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      update: vi.fn(),
       upsert: vi.fn(),
+    },
+    homeworkInstance: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
+      count: vi.fn(),
     },
     moduleProgress: {
       create: vi.fn(),
@@ -72,16 +84,25 @@ vi.mock("@steady/db", () => {
     task: {
       create: vi.fn(),
       findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
       count: vi.fn(),
       groupBy: vi.fn(),
     },
     journalEntry: {
       findMany: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
       count: vi.fn(),
     },
     calendarEvent: {
       create: vi.fn(),
       findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
       count: vi.fn(),
     },
     session: {
@@ -120,6 +141,28 @@ vi.mock("@steady/db", () => {
       findMany: vi.fn(),
       count: vi.fn(),
       groupBy: vi.fn(),
+    },
+    dailyTracker: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
+    },
+    dailyTrackerField: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    dailyTrackerEntry: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
     },
   };
 

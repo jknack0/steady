@@ -34,12 +34,15 @@ HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Ne
 
 ## Test-Driven Development
 
-### TDD Workflow
+### TDD Workflow — MANDATORY
 1. **Write tests first** for any new feature, endpoint, or business logic function.
 2. Run the failing test to confirm it fails for the right reason.
 3. Write the minimum code to make it pass.
 4. Refactor with confidence the tests are green.
 5. Never skip step 1 — if you're writing implementation code without a test, stop and write the test first.
+6. **After writing any code**, run the relevant test suite (`npm run test` or target the specific package) before considering the task complete.
+7. **Every new API route** must have a corresponding test file in `packages/api/src/__tests__/`. Every new Zod schema must have tests in `packages/shared/src/__tests__/`.
+8. **Coverage gate**: `packages/api` and `packages/shared` must maintain >80% line coverage. Run `npx vitest run --coverage` to check before submitting work.
 
 ### What to Test
 - **API routes**: Integration tests that hit the Express app with supertest. Test happy path, validation errors, auth failures, ownership checks, and edge cases. One test file per route module (`programs.test.ts`, `modules.test.ts`, `parts.test.ts`).

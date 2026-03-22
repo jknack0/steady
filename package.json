@@ -17,6 +17,7 @@
     "postinstall": "node scripts/fix-expo-router-link.js"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.0",
     "prettier": "^3.2.0",
     "turbo": "^2.0.0",
     "typescript": "^5.9.3"

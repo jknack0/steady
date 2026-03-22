@@ -4,9 +4,20 @@ import { api } from "@/lib/api-client";
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// jsdom doesn't always provide localStorage — mock it
+const storage: Record<string, string> = {};
+Object.defineProperty(global, "localStorage", {
+  value: {
+    getItem: (key: string) => storage[key] ?? null,
+    setItem: (key: string, value: string) => { storage[key] = value; },
+    removeItem: (key: string) => { delete storage[key]; },
+    clear: () => { for (const k in storage) delete storage[k]; },
+  },
+  writable: true,
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
-  // Clear localStorage
   localStorage.clear();
 });
 
