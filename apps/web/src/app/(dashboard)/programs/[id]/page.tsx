@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useProgram, useUpdateProgram } from "@/hooks/use-programs";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveIndicator } from "@/components/save-indicator";
 import {
   useCreateModule,
   useDeleteModule,
@@ -188,6 +190,23 @@ export default function ProgramEditorPage() {
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
 
+  // Auto-save program fields with 2s debounce
+  const programSaveFn = useCallback(
+    async (data: { title?: string; description?: string }) => {
+      await updateProgram.mutateAsync(data);
+    },
+    [updateProgram]
+  );
+  const { save: autosaveProgram, status: programSaveStatus } = useAutosave(programSaveFn);
+
+  // Sync local state when program data loads
+  useEffect(() => {
+    if (program) {
+      setTitleValue(program.title);
+      setDescValue(program.description ?? "");
+    }
+  }, [program]);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -208,18 +227,18 @@ export default function ProgramEditorPage() {
     [program?.modules, reorderModules]
   );
 
-  const handleTitleBlur = () => {
-    setEditingTitle(false);
-    if (titleValue.trim() && titleValue !== program?.title) {
-      updateProgram.mutate({ title: titleValue.trim() });
+  const handleTitleChange = (value: string) => {
+    setTitleValue(value);
+    if (value.trim() && value !== program?.title) {
+      autosaveProgram({ title: value.trim() });
     }
   };
 
-  const handleDescBlur = () => {
-    setEditingDesc(false);
-    const newDesc = descValue.trim() || undefined;
-    if (descValue !== (program?.description ?? "")) {
-      updateProgram.mutate({ description: newDesc });
+  const handleDescChange = (value: string) => {
+    setDescValue(value);
+    const newDesc = value.trim() || undefined;
+    if (value !== (program?.description ?? "")) {
+      autosaveProgram({ description: newDesc });
     }
   };
 
@@ -267,23 +286,21 @@ export default function ProgramEditorPage() {
           {editingTitle ? (
             <Input
               value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              onBlur={handleTitleBlur}
-              onKeyDown={(e) => e.key === "Enter" && handleTitleBlur()}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              onBlur={() => setEditingTitle(false)}
+              onKeyDown={(e) => e.key === "Enter" && setEditingTitle(false)}
               className="text-2xl font-bold h-auto py-1"
               autoFocus
             />
           ) : (
             <h1
               className="text-3xl font-bold cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1 transition-colors"
-              onClick={() => {
-                setTitleValue(program.title);
-                setEditingTitle(true);
-              }}
+              onClick={() => setEditingTitle(true)}
             >
               {program.title}
             </h1>
           )}
+          <SaveIndicator status={programSaveStatus} />
           <Badge
             variant="outline"
             className={
@@ -308,9 +325,9 @@ export default function ProgramEditorPage() {
         {editingDesc ? (
           <Input
             value={descValue}
-            onChange={(e) => setDescValue(e.target.value)}
-            onBlur={handleDescBlur}
-            onKeyDown={(e) => e.key === "Enter" && handleDescBlur()}
+            onChange={(e) => handleDescChange(e.target.value)}
+            onBlur={() => setEditingDesc(false)}
+            onKeyDown={(e) => e.key === "Enter" && setEditingDesc(false)}
             placeholder="Add a description..."
             className="text-muted-foreground"
             autoFocus
@@ -318,10 +335,7 @@ export default function ProgramEditorPage() {
         ) : (
           <p
             className="text-muted-foreground cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1 transition-colors"
-            onClick={() => {
-              setDescValue(program.description ?? "");
-              setEditingDesc(true);
-            }}
+            onClick={() => setEditingDesc(true)}
           >
             {program.description || "Click to add a description..."}
           </p>
