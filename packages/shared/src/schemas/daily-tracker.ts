@@ -29,9 +29,16 @@ export const MultiCheckOptionsSchema = z.object({
 export const CreateTrackerFieldSchema = z.object({
   label: z.string().min(1).max(200),
   fieldType: TrackerFieldTypeEnum,
-  options: z.any().nullable().default(null),
+  options: z.union([ScaleOptionsSchema, MultiCheckOptionsSchema, z.null()]).default(null),
   sortOrder: z.number().int(),
   isRequired: z.boolean().default(true),
+}).superRefine((data, ctx) => {
+  if (data.fieldType === "SCALE" && (data.options === null || !("min" in data.options))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "SCALE fields require options with min and max", path: ["options"] });
+  }
+  if (data.fieldType === "MULTI_CHECK" && (data.options === null || !("choices" in data.options))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "MULTI_CHECK fields require options with choices", path: ["options"] });
+  }
 });
 
 // ── Tracker CRUD Schemas ────────────────────────────

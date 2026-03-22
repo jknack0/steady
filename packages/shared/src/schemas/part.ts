@@ -61,7 +61,7 @@ const HomeworkFreeTextNoteSchema = z.object({
 const HomeworkChoiceSchema = z.object({
   type: z.literal("CHOICE"),
   description: z.string().min(1),
-  options: z.array(z.object({ label: z.string(), detail: z.string().optional() })).min(2),
+  options: z.array(z.object({ label: z.string().max(200), detail: z.string().max(500).optional() })).min(2),
   sortOrder: z.number().int(),
 });
 
@@ -78,25 +78,25 @@ export const HomeworkItemSchema = z.discriminatedUnion("type", [
 
 const TextContentSchema = z.object({
   type: z.literal("TEXT"),
-  body: z.string(),
-  sections: z.array(z.string()).optional(),
+  body: z.string().max(50000),
+  sections: z.array(z.string().max(200)).optional(),
 });
 
 const VideoContentSchema = z.object({
   type: z.literal("VIDEO"),
-  url: z.string(),
+  url: z.string().url(),
   provider: z.enum(["youtube", "vimeo", "loom"]),
   transcriptUrl: z.string().url().optional(),
 });
 
 const StrategyCardsContentSchema = z.object({
   type: z.literal("STRATEGY_CARDS"),
-  deckName: z.string(),
+  deckName: z.string().min(1).max(200),
   cards: z.array(
     z.object({
-      title: z.string().min(1),
-      body: z.string(),
-      emoji: z.string().optional(),
+      title: z.string().min(1).max(200),
+      body: z.string().max(2000),
+      emoji: z.string().max(10).optional(),
     })
   ),
 });
@@ -111,7 +111,7 @@ const ChecklistContentSchema = z.object({
   type: z.literal("CHECKLIST"),
   items: z.array(
     z.object({
-      text: z.string(),
+      text: z.string().min(1).max(500),
       sortOrder: z.number().int(),
     })
   ),
@@ -139,39 +139,68 @@ export const CompleteHomeworkInstanceSchema = z.object({
   response: z.any().nullable().optional(),
 });
 
+// Base object used in discriminatedUnion (must remain ZodObject, not ZodEffects)
 const HomeworkContentSchema = z.object({
   type: z.literal("HOMEWORK"),
   dueTimingType: z.enum(["BEFORE_NEXT_SESSION", "SPECIFIC_DATE", "DAYS_AFTER_UNLOCK"]),
   dueTimingValue: z.union([z.string(), z.number()]).nullable().default(null),
   completionRule: z.enum(["ALL", "X_OF_Y"]),
-  completionMinimum: z.number().int().nullable().default(null),
+  completionMinimum: z.number().int().min(1).nullable().default(null),
   reminderCadence: z.enum(["DAILY", "EVERY_OTHER_DAY", "MID_WEEK"]),
   items: z.array(HomeworkItemSchema),
   recurrence: RecurrenceTypeEnum.default("NONE"),
   recurrenceDays: z.array(z.number().int().min(0).max(6)).default([]),
-  recurrenceEndDate: z.string().nullable().default(null),
+  recurrenceEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().default(null),
+});
+
+// Refined version with cross-field validation — use this for explicit validation calls
+export const HomeworkContentRefinedSchema = HomeworkContentSchema.superRefine((data, ctx) => {
+  if (data.dueTimingType === "SPECIFIC_DATE" && data.dueTimingValue !== null && typeof data.dueTimingValue !== "string") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "SPECIFIC_DATE requires a date string", path: ["dueTimingValue"] });
+  }
+  if (data.dueTimingType === "DAYS_AFTER_UNLOCK" && data.dueTimingValue !== null && typeof data.dueTimingValue !== "number") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "DAYS_AFTER_UNLOCK requires a number", path: ["dueTimingValue"] });
+  }
+  if (data.completionRule === "X_OF_Y" && data.completionMinimum === null) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "X_OF_Y requires completionMinimum", path: ["completionMinimum"] });
+  }
 });
 
 // ── Assessment Schema ─────────────────────────────────
 
 const AssessmentQuestionSchema = z.object({
-  question: z.string(),
+  question: z.string().min(1).max(1000),
   type: z.enum(["LIKERT", "MULTIPLE_CHOICE", "FREE_TEXT", "YES_NO"]),
-  options: z.array(z.string()).optional(),
+  options: z.array(z.string().max(500)).optional(),
   likertMin: z.number().int().optional(),
   likertMax: z.number().int().optional(),
-  likertMinLabel: z.string().optional(),
-  likertMaxLabel: z.string().optional(),
+  likertMinLabel: z.string().max(100).optional(),
+  likertMaxLabel: z.string().max(100).optional(),
   required: z.boolean().default(true),
   sortOrder: z.number().int(),
+}).superRefine((data, ctx) => {
+  if (data.type === "MULTIPLE_CHOICE" && (!data.options || data.options.length < 2)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "MULTIPLE_CHOICE requires at least 2 options", path: ["options"] });
+  }
+  if (data.type === "LIKERT") {
+    if (data.likertMin === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "LIKERT requires likertMin", path: ["likertMin"] });
+    }
+    if (data.likertMax === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "LIKERT requires likertMax", path: ["likertMax"] });
+    }
+    if (data.likertMin !== undefined && data.likertMax !== undefined && data.likertMin >= data.likertMax) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "likertMin must be less than likertMax", path: ["likertMax"] });
+    }
+  }
 });
 
-export const AssessmentQuestionType = AssessmentQuestionSchema.shape.type;
+export const AssessmentQuestionType = z.enum(["LIKERT", "MULTIPLE_CHOICE", "FREE_TEXT", "YES_NO"]);
 
 const AssessmentContentSchema = z.object({
   type: z.literal("ASSESSMENT"),
-  title: z.string().default(""),
-  instructions: z.string().default(""),
+  title: z.string().max(500).default(""),
+  instructions: z.string().max(2000).default(""),
   scoringEnabled: z.boolean().default(false),
   questions: z.array(AssessmentQuestionSchema).default([]),
 });
@@ -179,40 +208,44 @@ const AssessmentContentSchema = z.object({
 // ── Intake Form Schema ────────────────────────────────
 
 const IntakeFieldSchema = z.object({
-  label: z.string(),
+  label: z.string().min(1).max(200),
   type: z.enum(["TEXT", "TEXTAREA", "SELECT", "MULTI_SELECT", "DATE", "NUMBER", "CHECKBOX"]),
-  placeholder: z.string().optional(),
-  options: z.array(z.string()).optional(),
+  placeholder: z.string().max(200).optional(),
+  options: z.array(z.string().max(500)).optional(),
   required: z.boolean().default(true),
-  section: z.string().default("General"),
+  section: z.string().max(200).default("General"),
   sortOrder: z.number().int(),
+}).superRefine((data, ctx) => {
+  if ((data.type === "SELECT" || data.type === "MULTI_SELECT") && (!data.options || data.options.length < 1)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${data.type} requires at least 1 option`, path: ["options"] });
+  }
 });
 
 const IntakeFormContentSchema = z.object({
   type: z.literal("INTAKE_FORM"),
-  title: z.string().default(""),
-  instructions: z.string().default(""),
-  sections: z.array(z.string()).default(["General"]),
+  title: z.string().max(500).default(""),
+  instructions: z.string().max(2000).default(""),
+  sections: z.array(z.string().max(200)).default(["General"]),
   fields: z.array(IntakeFieldSchema).default([]),
 });
 
 // ── SMART Goals Schema ────────────────────────────────
 
 const SmartGoalSchema = z.object({
-  specific: z.string().default(""),
-  measurable: z.string().default(""),
-  achievable: z.string().default(""),
-  relevant: z.string().default(""),
-  timeBound: z.string().default(""),
+  specific: z.string().max(1000).default(""),
+  measurable: z.string().max(1000).default(""),
+  achievable: z.string().max(1000).default(""),
+  relevant: z.string().max(1000).default(""),
+  timeBound: z.string().max(1000).default(""),
   category: z.enum(["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"]).default("OTHER"),
   sortOrder: z.number().int(),
 });
 
 const SmartGoalsContentSchema = z.object({
   type: z.literal("SMART_GOALS"),
-  instructions: z.string().default(""),
+  instructions: z.string().max(2000).default(""),
   maxGoals: z.number().int().min(1).default(3),
-  categories: z.array(z.string()).default(["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"]),
+  categories: z.array(z.string().max(100)).default(["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"]),
   goals: z.array(SmartGoalSchema).default([]),
 });
 
@@ -220,8 +253,8 @@ const SmartGoalsContentSchema = z.object({
 
 const StyledContentSchema = z.object({
   type: z.literal("STYLED_CONTENT"),
-  rawContent: z.string().default(""),
-  styledHtml: z.string().default(""),
+  rawContent: z.string().max(100000).default(""),
+  styledHtml: z.string().max(200000).default(""),
 });
 
 export const PartContentSchema = z.discriminatedUnion("type", [

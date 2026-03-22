@@ -81,6 +81,7 @@ describe("CreateTrackerFieldSchema", () => {
     const result = CreateTrackerFieldSchema.safeParse({
       label: "Sleep quality",
       fieldType: "SCALE",
+      options: { min: 0, max: 10 },
       sortOrder: 0,
     });
     expect(result.success).toBe(true);
@@ -102,6 +103,7 @@ describe("CreateTrackerFieldSchema", () => {
     const result = CreateTrackerFieldSchema.safeParse({
       label: "Mood",
       fieldType: "SCALE",
+      options: { min: 0, max: 10 },
       sortOrder: 0,
     });
     expect(result.success).toBe(true);
@@ -180,7 +182,7 @@ describe("CreateDailyTrackerSchema", () => {
   const validTracker = {
     name: "Daily Mood Tracker",
     fields: [
-      { label: "Mood", fieldType: "SCALE", sortOrder: 0 },
+      { label: "Mood", fieldType: "SCALE", options: { min: 0, max: 10 }, sortOrder: 0 },
     ],
   };
 

@@ -9,7 +9,23 @@ HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Ne
 ### Scale-First Decisions
 - **Stateless API**: No in-memory sessions or caches. All state lives in PostgreSQL or Redis (when added). This lets us horizontally scale API instances behind a load balancer.
 - **Database indexes**: Always add indexes for foreign keys used in WHERE clauses and any column used for filtering/sorting. Check query plans for N+1s before merging.
-- **Pagination**: Every list endpoint MUST support cursor-based pagination (`cursor` + `limit` params). Never return unbounded arrays from the API.
+- **Pagination**: Every list endpoint MUST be bounded. Never call `findMany` without a `take` parameter.
+  - **Unbounded-growth lists** (programs, enrollments, participants, sessions) use cursor-based pagination:
+    ```typescript
+    const { cursor, limit = "50" } = req.query;
+    const take = Math.min(parseInt(limit as string) || 50, 100);
+    const items = await prisma.model.findMany({
+      where: { ... },
+      orderBy: { createdAt: "desc" },
+      take: take + 1,
+      ...(cursor ? { skip: 1, cursor: { id: cursor as string } } : {}),
+    });
+    const hasMore = items.length > take;
+    const data = hasMore ? items.slice(0, take) : items;
+    res.json({ success: true, data, cursor: hasMore ? data[data.length - 1].id : null });
+    ```
+  - **Bounded lists** (modules per program, parts per module, trackers per program) use a `take` cap (e.g., `take: 200`).
+  - **Naturally tiny lists** (notification preferences, hardcoded templates) are exempt.
 - **Connection pooling**: Use PgBouncer or Prisma's built-in connection pool. Never create ad-hoc PrismaClient instances — always use the singleton from `@steady/db`.
 - **Separation of concerns**: Keep business logic in service functions (`packages/api/src/services/`), not in route handlers. Route handlers only parse input, call services, and format output.
 - **Shared validation**: All Zod schemas live in `@steady/shared` so API and frontend validate identically. Never duplicate validation logic.
@@ -62,6 +78,37 @@ HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Ne
 - `packages/api/src/__tests__/` — API route + service tests
 - `packages/shared/src/__tests__/` — Schema validation tests
 - `apps/web/src/__tests__/` — Component and hook tests
+
+## Zod Schema Conventions
+
+All Zod schemas live in `packages/shared/src/schemas/`. Follow these rules:
+
+### String bounds
+Every `z.string()` field must have a `.max()` unless it's an enum or literal. Use these defaults:
+- Titles/labels: `.max(200)`
+- Descriptions/instructions: `.max(2000)`
+- Body/content: `.max(50000)`
+- Short identifiers (emoji, placeholder): `.max(10)` to `.max(200)`
+
+### Conditional field validation
+When a field's requirements depend on another field's value (e.g., LIKERT requires `likertMin`/`likertMax`, MULTIPLE_CHOICE requires `options`), use `.superRefine()`:
+```typescript
+const Schema = z.object({ ... }).superRefine((data, ctx) => {
+  if (data.type === "MULTIPLE_CHOICE" && (!data.options || data.options.length < 2)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "...", path: ["options"] });
+  }
+});
+```
+
+### Discriminated unions and superRefine
+Schemas that participate in `z.discriminatedUnion("type", [...])` **must remain `ZodObject`** — do NOT add `.superRefine()` directly to them, as it converts them to `ZodEffects` and breaks the discriminator. Instead, export a separate refined version:
+```typescript
+const BaseSchema = z.object({ type: z.literal("FOO"), ... }); // used in union
+export const RefinedSchema = BaseSchema.superRefine(...);      // used for explicit validation
+```
+
+### Typed options over `z.any()`
+Never use `z.any()` for structured data. Use `z.union([SchemaA, SchemaB, z.null()])` and validate which variant is required via `.superRefine()`.
 
 ## Code Style
 
