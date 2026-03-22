@@ -1,13 +1,5 @@
-import { useEffect } from "react";
-import { TouchableOpacity } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withDelay,
-  runOnJS,
-} from "react-native-reanimated";
+import { useEffect, useRef } from "react";
+import { TouchableOpacity, Animated } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -24,30 +16,42 @@ export function AnimatedCheckbox({
   size = 20,
   disabled = false,
 }: AnimatedCheckboxProps) {
-  const scale = useSharedValue(1);
-  const bgOpacity = useSharedValue(checked ? 1 : 0);
+  const scale = useRef(new Animated.Value(1)).current;
+  const fill = useRef(new Animated.Value(checked ? 1 : 0)).current;
 
   useEffect(() => {
-    bgOpacity.value = withSpring(checked ? 1 : 0, { damping: 15, stiffness: 200 });
+    Animated.spring(fill, {
+      toValue: checked ? 1 : 0,
+      damping: 15,
+      stiffness: 200,
+      useNativeDriver: true,
+    }).start();
   }, [checked]);
-
-  const containerStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const fillStyle = useAnimatedStyle(() => ({
-    opacity: bgOpacity.value,
-  }));
 
   function handlePress() {
     if (disabled) return;
 
     // Spring scale animation
-    scale.value = withSequence(
-      withSpring(0.8, { damping: 10, stiffness: 400 }),
-      withSpring(1.15, { damping: 8, stiffness: 300 }),
-      withSpring(1, { damping: 12, stiffness: 200 })
-    );
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 0.8,
+        damping: 10,
+        stiffness: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.15,
+        damping: 8,
+        stiffness: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        damping: 12,
+        stiffness: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     // Haptic feedback
     if (!checked) {
@@ -67,34 +71,30 @@ export function AnimatedCheckbox({
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <Animated.View
-        style={[
-          containerStyle,
-          {
-            width: size,
-            height: size,
-            borderRadius: size * 0.3,
-            borderWidth: 2,
-            borderColor: checked ? "#8FAE8B" : "#D4D0CB",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-          },
-        ]}
+        style={{
+          transform: [{ scale }],
+          width: size,
+          height: size,
+          borderRadius: size * 0.3,
+          borderWidth: 2,
+          borderColor: checked ? "#8FAE8B" : "#D4D0CB",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
       >
         <Animated.View
-          style={[
-            fillStyle,
-            {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "#8FAE8B",
-              alignItems: "center",
-              justifyContent: "center",
-            },
-          ]}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "#8FAE8B",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: fill,
+          }}
         >
           <Ionicons name="checkmark" size={size * 0.6} color="white" />
         </Animated.View>

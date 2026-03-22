@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -12,14 +12,6 @@ import {
   RefreshControl,
   ScrollView,
 } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  FadeOut,
-  Layout,
-} from "react-native-reanimated";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -219,10 +211,7 @@ export default function TasksScreen() {
     const energy = item.energyLevel ? ENERGY_CONFIG[item.energyLevel] : null;
 
     return (
-      <Animated.View
-        layout={Layout.springify()}
-        exiting={FadeOut.duration(400)}
-      >
+      <View>
         <TouchableOpacity
           style={{
             backgroundColor: "#FFFFFF",
@@ -332,7 +321,7 @@ export default function TasksScreen() {
             )}
           </View>
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     );
   };
 

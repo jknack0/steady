@@ -3,7 +3,7 @@ import { View, Text, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, 
 import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "expo-secure-store";
+import * as SecureStore from "expo-secure-store";
 import { api } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth-context";
 import { ModuleCard, type ProgramData } from "../../../lib/program-components";
@@ -360,7 +360,7 @@ export default function ProgramsScreen() {
   const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState(0);
 
   useEffect(() => {
-    AsyncStorage.getItemAsync(MILESTONE_STORAGE_KEY).then((val) => {
+    SecureStore.getItemAsync(MILESTONE_STORAGE_KEY).then((val) => {
       if (val) setLastCelebratedMilestone(parseInt(val, 10));
     });
   }, []);
@@ -383,7 +383,7 @@ export default function ProgramsScreen() {
 
   function handleMilestoneDismiss(milestone: number) {
     setLastCelebratedMilestone(milestone);
-    AsyncStorage.setItemAsync(MILESTONE_STORAGE_KEY, String(milestone));
+    SecureStore.setItemAsync(MILESTONE_STORAGE_KEY, String(milestone));
   }
 
   return (

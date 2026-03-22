@@ -1,16 +1,9 @@
 import { useEffect, useRef } from "react";
-import { View, Text, Modal, TouchableOpacity, Dimensions } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withDelay,
-  withSequence,
-} from "react-native-reanimated";
+import { View, Text, Modal, TouchableOpacity, Dimensions, Animated } from "react-native";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface ModuleCompletionOverlayProps {
   visible: boolean;
@@ -26,38 +19,44 @@ export function ModuleCompletionOverlay({
   onDismiss,
 }: ModuleCompletionOverlayProps) {
   const confettiRef = useRef<any>(null);
-  const contentScale = useSharedValue(0);
-  const checkScale = useSharedValue(0);
+  const contentScale = useRef(new Animated.Value(0)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      contentScale.value = withDelay(
-        300,
-        withSpring(1, { damping: 10, stiffness: 120 })
-      );
-      checkScale.value = withDelay(
-        500,
-        withSequence(
-          withSpring(1.2, { damping: 6, stiffness: 200 }),
-          withSpring(1, { damping: 10, stiffness: 150 })
-        )
-      );
+      contentScale.setValue(0);
+      checkScale.setValue(0);
+
+      Animated.sequence([
+        Animated.delay(300),
+        Animated.spring(contentScale, {
+          toValue: 1,
+          damping: 10,
+          stiffness: 120,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      Animated.sequence([
+        Animated.delay(500),
+        Animated.spring(checkScale, {
+          toValue: 1.2,
+          damping: 6,
+          stiffness: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(checkScale, {
+          toValue: 1,
+          damping: 10,
+          stiffness: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTimeout(() => confettiRef.current?.start(), 100);
-    } else {
-      contentScale.value = 0;
-      checkScale.value = 0;
     }
   }, [visible]);
-
-  const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: contentScale.value }],
-    opacity: contentScale.value,
-  }));
-
-  const checkStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: checkScale.value }],
-  }));
 
   const message =
     clinicianMessage ||
@@ -85,40 +84,37 @@ export function ModuleCompletionOverlay({
         />
 
         <Animated.View
-          style={[
-            contentStyle,
-            {
-              width: SCREEN_WIDTH - 48,
-              backgroundColor: "#FFFFFF",
-              borderRadius: 28,
-              padding: 36,
-              alignItems: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 12 },
-              shadowOpacity: 0.2,
-              shadowRadius: 32,
-              elevation: 16,
-            },
-          ]}
+          style={{
+            transform: [{ scale: contentScale }],
+            opacity: contentScale,
+            width: SCREEN_WIDTH - 48,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 28,
+            padding: 36,
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.2,
+            shadowRadius: 32,
+            elevation: 16,
+          }}
         >
           {/* Checkmark circle */}
           <Animated.View
-            style={[
-              checkStyle,
-              {
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                backgroundColor: "#8FAE8B",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 24,
-                shadowColor: "#8FAE8B",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 12,
-              },
-            ]}
+            style={{
+              transform: [{ scale: checkScale }],
+              width: 80,
+              height: 80,
+              borderRadius: 40,
+              backgroundColor: "#8FAE8B",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 24,
+              shadowColor: "#8FAE8B",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+            }}
           >
             <Text style={{ fontSize: 36, color: "white" }}>✓</Text>
           </Animated.View>

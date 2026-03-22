@@ -1,12 +1,5 @@
-import { useEffect, useState } from "react";
-import { View, Text, Modal, TouchableOpacity, Dimensions } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-  withDelay,
-} from "react-native-reanimated";
+import { useEffect, useState, useRef } from "react";
+import { View, Text, Modal, TouchableOpacity, Dimensions, Animated } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -53,48 +46,55 @@ export function MilestoneCelebration({
   onDismiss,
 }: MilestoneCelebrationProps) {
   const [activeMilestone, setActiveMilestone] = useState<number | null>(null);
-  const scale = useSharedValue(0);
-  const emojiScale = useSharedValue(0);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const emojiAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Find the highest uncelebrated milestone that the streak has reached
     const milestone = MILESTONES.filter(
       (m) => currentStreak >= m && m > lastCelebratedMilestone
     ).pop();
 
     if (milestone) {
       setActiveMilestone(milestone);
-      scale.value = withSpring(1, { damping: 12, stiffness: 150 });
-      emojiScale.value = withDelay(
-        200,
-        withSequence(
-          withSpring(1.3, { damping: 6, stiffness: 200 }),
-          withSpring(1, { damping: 10, stiffness: 150 })
-        )
-      );
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        damping: 12,
+        stiffness: 150,
+        useNativeDriver: true,
+      }).start();
+      Animated.sequence([
+        Animated.delay(200),
+        Animated.spring(emojiAnim, {
+          toValue: 1.3,
+          damping: 6,
+          stiffness: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(emojiAnim, {
+          toValue: 1,
+          damping: 10,
+          stiffness: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   }, [currentStreak, lastCelebratedMilestone]);
-
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: scale.value,
-  }));
-
-  const emojiStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: emojiScale.value }],
-  }));
 
   if (!activeMilestone) return null;
 
   const config = MILESTONE_CONFIG[activeMilestone];
 
   function handleDismiss() {
-    scale.value = withSpring(0, { damping: 15 });
-    setTimeout(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 0,
+      damping: 15,
+      stiffness: 200,
+      useNativeDriver: true,
+    }).start(() => {
       onDismiss(activeMilestone!);
       setActiveMilestone(null);
-    }, 200);
+    });
   }
 
   return (
@@ -109,23 +109,28 @@ export function MilestoneCelebration({
         }}
       >
         <Animated.View
-          style={[
-            sheetStyle,
-            {
-              width: SCREEN_WIDTH - 40,
-              backgroundColor: "#FFFFFF",
-              borderRadius: 24,
-              padding: 32,
-              alignItems: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.15,
-              shadowRadius: 24,
-              elevation: 12,
-            },
-          ]}
+          style={{
+            transform: [{ scale: scaleAnim }],
+            opacity: scaleAnim,
+            width: SCREEN_WIDTH - 40,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 24,
+            padding: 32,
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.15,
+            shadowRadius: 24,
+            elevation: 12,
+          }}
         >
-          <Animated.Text style={[emojiStyle, { fontSize: 56, marginBottom: 16 }]}>
+          <Animated.Text
+            style={{
+              transform: [{ scale: emojiAnim }],
+              fontSize: 56,
+              marginBottom: 16,
+            }}
+          >
             {config.emoji}
           </Animated.Text>
 
