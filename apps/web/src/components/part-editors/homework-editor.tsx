@@ -39,45 +39,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { HomeworkItem, HomeworkContent } from "@steady/shared";
 
-// ── Types ────────────────────────────────────────────
-
-interface HomeworkItem {
-  type: "ACTION" | "RESOURCE_REVIEW" | "JOURNAL_PROMPT" | "BRING_TO_SESSION" | "FREE_TEXT_NOTE";
-  sortOrder: number;
-  // ACTION
-  description?: string;
-  subSteps?: string[];
-  addToSteadySystem?: boolean;
-  dueDateOffsetDays?: number | null;
-  // RESOURCE_REVIEW
-  resourceTitle?: string;
-  resourceType?: "handout" | "video" | "link" | "audio";
-  resourceUrl?: string;
-  resourceKey?: string; // S3 key for uploaded files
-  audioDurationSecs?: number; // Duration in seconds for audio files
-  audioDescription?: string; // Clinician instructions for audio
-  // JOURNAL_PROMPT
-  prompts?: string[];
-  spaceSizeHint?: "small" | "medium" | "large";
-  // BRING_TO_SESSION
-  reminderText?: string;
-  // FREE_TEXT_NOTE
-  content?: string;
-}
-
-interface HomeworkContent {
-  type: "HOMEWORK";
-  dueTimingType: "BEFORE_NEXT_SESSION" | "SPECIFIC_DATE" | "DAYS_AFTER_UNLOCK";
-  dueTimingValue: string | number | null;
-  completionRule: "ALL" | "X_OF_Y";
-  completionMinimum: number | null;
-  reminderCadence: "DAILY" | "EVERY_OTHER_DAY" | "MID_WEEK";
-  items: HomeworkItem[];
-  recurrence: "NONE" | "DAILY" | "WEEKLY" | "CUSTOM";
-  recurrenceDays: number[];
-  recurrenceEndDate: string | null;
-}
+// Extract specific item variants from the discriminated union
+type ActionItem = Extract<HomeworkItem, { type: "ACTION" }>;
+type ResourceReviewItem = Extract<HomeworkItem, { type: "RESOURCE_REVIEW" }>;
+type JournalPromptItem = Extract<HomeworkItem, { type: "JOURNAL_PROMPT" }>;
+type BringToSessionItem = Extract<HomeworkItem, { type: "BRING_TO_SESSION" }>;
+type FreeTextNoteItem = Extract<HomeworkItem, { type: "FREE_TEXT_NOTE" }>;
 
 interface HomeworkEditorProps {
   content: HomeworkContent;
@@ -396,8 +365,8 @@ function ActionItemEditor({
   item,
   onUpdate,
 }: {
-  item: HomeworkItem;
-  onUpdate: (item: HomeworkItem) => void;
+  item: ActionItem;
+  onUpdate: (item: ActionItem) => void;
 }) {
   const addSubStep = () => {
     onUpdate({ ...item, subSteps: [...(item.subSteps || []), ""] });
@@ -501,8 +470,8 @@ function ResourceReviewEditor({
   item,
   onUpdate,
 }: {
-  item: HomeworkItem;
-  onUpdate: (item: HomeworkItem) => void;
+  item: ResourceReviewItem;
+  onUpdate: (item: ResourceReviewItem) => void;
 }) {
   const isAudio = item.resourceType === "audio";
 
@@ -522,8 +491,8 @@ function ResourceReviewEditor({
         <select
           value={item.resourceType || "link"}
           onChange={(e) => {
-            const newType = e.target.value as HomeworkItem["resourceType"];
-            const updates: Partial<HomeworkItem> = { resourceType: newType };
+            const newType = e.target.value as ResourceReviewItem["resourceType"];
+            const updates: Partial<ResourceReviewItem> = { resourceType: newType };
             if (newType === "audio") {
               updates.resourceUrl = "";
             } else {
@@ -602,8 +571,8 @@ function JournalPromptItemEditor({
   item,
   onUpdate,
 }: {
-  item: HomeworkItem;
-  onUpdate: (item: HomeworkItem) => void;
+  item: JournalPromptItem;
+  onUpdate: (item: JournalPromptItem) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -667,8 +636,8 @@ function BringToSessionEditor({
   item,
   onUpdate,
 }: {
-  item: HomeworkItem;
-  onUpdate: (item: HomeworkItem) => void;
+  item: BringToSessionItem;
+  onUpdate: (item: BringToSessionItem) => void;
 }) {
   return (
     <div>
@@ -687,8 +656,8 @@ function FreeTextNoteEditor({
   item,
   onUpdate,
 }: {
-  item: HomeworkItem;
-  onUpdate: (item: HomeworkItem) => void;
+  item: FreeTextNoteItem;
+  onUpdate: (item: FreeTextNoteItem) => void;
 }) {
   return (
     <div>
@@ -903,24 +872,34 @@ export function HomeworkPartEditor({ content, onChange }: HomeworkEditorProps) {
   const handleDeleteItem = (index: number) => {
     const items = content.items
       .filter((_, i) => i !== index)
-      .map((item, i) => ({ ...item, sortOrder: i }));
+      .map((item, i) => ({ ...item, sortOrder: i }) as HomeworkItem);
     onChange({ ...content, items });
   };
 
   const handleAddItem = (type: HomeworkItem["type"]) => {
-    const defaults: Record<string, Partial<HomeworkItem>> = {
-      ACTION: { description: "", subSteps: [], addToSteadySystem: false, dueDateOffsetDays: null },
-      RESOURCE_REVIEW: { resourceTitle: "", resourceType: "link", resourceUrl: "" },
-      JOURNAL_PROMPT: { prompts: [""], spaceSizeHint: "medium" },
-      BRING_TO_SESSION: { reminderText: "" },
-      FREE_TEXT_NOTE: { content: "" },
-    };
+    const sortOrder = content.items.length;
+    let newItem: HomeworkItem;
 
-    const newItem: HomeworkItem = {
-      type,
-      sortOrder: content.items.length,
-      ...defaults[type],
-    };
+    switch (type) {
+      case "ACTION":
+        newItem = { type, sortOrder, description: "", subSteps: [], addToSteadySystem: false, dueDateOffsetDays: null };
+        break;
+      case "RESOURCE_REVIEW":
+        newItem = { type, sortOrder, resourceTitle: "", resourceType: "link", resourceUrl: "" };
+        break;
+      case "JOURNAL_PROMPT":
+        newItem = { type, sortOrder, prompts: [""], spaceSizeHint: "medium" };
+        break;
+      case "BRING_TO_SESSION":
+        newItem = { type, sortOrder, reminderText: "" };
+        break;
+      case "FREE_TEXT_NOTE":
+        newItem = { type, sortOrder, content: "" };
+        break;
+      case "CHOICE":
+        newItem = { type, sortOrder, description: "", options: [{ label: "" }, { label: "" }] };
+        break;
+    }
 
     onChange({ ...content, items: [...content.items, newItem] });
     setShowAddMenu(false);
@@ -934,7 +913,7 @@ export function HomeworkPartEditor({ content, onChange }: HomeworkEditorProps) {
     const reordered = arrayMove(content.items, oldIndex, newIndex).map((item, i) => ({
       ...item,
       sortOrder: i,
-    }));
+    }) as HomeworkItem);
     onChange({ ...content, items: reordered });
   };
 
