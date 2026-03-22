@@ -13,6 +13,30 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 
+// Mock services used transitively by participant service
+vi.mock("../services/notifications", async (importOriginal) => {
+  const actual = (await importOriginal()) as any;
+  return {
+    ...actual,
+    cancelHomeworkReminders: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+vi.mock("../services/homework-instances", async (importOriginal) => {
+  const actual = (await importOriginal()) as any;
+  return {
+    ...actual,
+    generateInstancesForEnrollment: vi.fn().mockResolvedValue(undefined),
+    getStreakData: vi.fn().mockResolvedValue({
+      currentStreak: 3,
+      longestStreak: 7,
+      totalCompleted: 10,
+      totalInstances: 14,
+      completionRate: 0.71,
+    }),
+  };
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
 });

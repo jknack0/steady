@@ -1,16 +1,45 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
-import { cancelHomeworkReminders } from "../services/notifications";
+import { getStreakData } from "../services/homework-instances";
+import { SubmitTrackerEntrySchema } from "@steady/shared";
 import {
-  generateInstancesForEnrollment,
-  getStreakData,
-} from "../services/homework-instances";
-import { CompleteHomeworkInstanceSchema, SubmitTrackerEntrySchema } from "@steady/shared";
+  acceptEnrollment,
+  getProgramWithProgress,
+  markPartComplete,
+  getHomeworkInstances,
+  completeHomeworkInstance,
+  skipHomeworkInstance,
+  getAssignedTrackers,
+  submitTrackerEntry,
+  getTrackerStreak,
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+} from "../services/participant";
 
 const router = Router();
 
 router.use(authenticate, requireRole("PARTICIPANT"));
+
+// ── Helper ───────────────────────────────────────────
+
+function handleServiceError(res: Response, err: unknown, fallbackMsg: string) {
+  if (err instanceof NotFoundError) {
+    res.status(404).json({ success: false, error: err.message });
+  } else if (err instanceof ConflictError) {
+    res.status(409).json({ success: false, error: err.message });
+  } else if (err instanceof ValidationError) {
+    if (err.details) {
+      res.status(400).json({ success: false, error: err.message, details: err.details });
+    } else {
+      res.status(400).json({ success: false, error: err.message });
+    }
+  } else {
+    console.error(fallbackMsg + ":", err);
+    res.status(500).json({ success: false, error: fallbackMsg });
+  }
+}
 
 // GET /api/participant/enrollments — List my enrollments
 router.get("/enrollments", async (req: Request, res: Response) => {
@@ -33,6 +62,7 @@ router.get("/enrollments", async (req: Request, res: Response) => {
         },
       },
       orderBy: { enrolledAt: "desc" },
+      take: 50, // Cap at 50 enrollments per participant
     });
 
     res.json({ success: true, data: enrollments });
@@ -45,155 +75,20 @@ router.get("/enrollments", async (req: Request, res: Response) => {
 // POST /api/participant/enrollments/:id/accept — Accept an invitation
 router.post("/enrollments/:id/accept", async (req: Request, res: Response) => {
   try {
-    const enrollment = await prisma.enrollment.findFirst({
-      where: {
-        id: req.params.id,
-        participantId: req.user!.participantProfileId!,
-        status: "INVITED",
-      },
-      include: {
-        program: {
-          include: {
-            modules: {
-              orderBy: { sortOrder: "asc" },
-              select: { id: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!enrollment) {
-      res.status(404).json({ success: false, error: "Invitation not found" });
-      return;
-    }
-
-    // Accept enrollment and initialize progress for first module
-    const firstModule = enrollment.program.modules[0];
-
-    const updated = await prisma.enrollment.update({
-      where: { id: req.params.id },
-      data: {
-        status: "ACTIVE",
-        currentModuleId: firstModule?.id || null,
-      },
-    });
-
-    // Create module progress entries
-    if (enrollment.program.modules.length > 0) {
-      const progressData = enrollment.program.modules.map((mod, index) => ({
-        enrollmentId: enrollment.id,
-        moduleId: mod.id,
-        status: index === 0 ? "UNLOCKED" as const : "LOCKED" as const,
-        ...(index === 0 ? { unlockedAt: new Date() } : {}),
-      }));
-
-      await prisma.moduleProgress.createMany({
-        data: progressData,
-        skipDuplicates: true,
-      });
-    }
-
-    // Generate homework instances for any recurring homework parts
-    generateInstancesForEnrollment(enrollment.id).catch((err) => {
-      console.error("Failed to generate homework instances on accept:", err);
-    });
-
+    const updated = await acceptEnrollment(req.params.id, req.user!.participantProfileId!);
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Accept enrollment error:", err);
-    res.status(500).json({ success: false, error: "Failed to accept enrollment" });
+    handleServiceError(res, err, "Failed to accept enrollment");
   }
 });
 
 // GET /api/participant/programs/:enrollmentId — Get program content with progress
 router.get("/programs/:enrollmentId", async (req: Request, res: Response) => {
   try {
-    const enrollment = await prisma.enrollment.findFirst({
-      where: {
-        id: req.params.enrollmentId,
-        participantId: req.user!.participantProfileId!,
-        status: "ACTIVE",
-      },
-      include: {
-        program: {
-          include: {
-            modules: {
-              orderBy: { sortOrder: "asc" },
-              include: {
-                parts: {
-                  orderBy: { sortOrder: "asc" },
-                  select: {
-                    id: true,
-                    type: true,
-                    title: true,
-                    isRequired: true,
-                    content: true,
-                    sortOrder: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        moduleProgress: true,
-        partProgress: true,
-      },
-    });
-
-    if (!enrollment) {
-      res.status(404).json({ success: false, error: "Enrollment not found" });
-      return;
-    }
-
-    // Build progress maps
-    const moduleProgressMap = new Map(
-      enrollment.moduleProgress.map((mp) => [mp.moduleId, mp])
-    );
-    const partProgressMap = new Map(
-      enrollment.partProgress.map((pp) => [pp.partId, pp])
-    );
-
-    // Assemble response with progress
-    const modules = enrollment.program.modules.map((mod) => {
-      const mp = moduleProgressMap.get(mod.id);
-      return {
-        id: mod.id,
-        title: mod.title,
-        sortOrder: mod.sortOrder,
-        status: mp?.status || "LOCKED",
-        unlockedAt: mp?.unlockedAt,
-        completedAt: mp?.completedAt,
-        parts: mod.parts.map((part) => {
-          const pp = partProgressMap.get(part.id);
-          return {
-            ...part,
-            progressStatus: pp?.status || "NOT_STARTED",
-            completedAt: pp?.completedAt,
-            responseData: pp?.responseData,
-          };
-        }),
-      };
-    });
-
-    res.json({
-      success: true,
-      data: {
-        enrollmentId: enrollment.id,
-        status: enrollment.status,
-        currentModuleId: enrollment.currentModuleId,
-        program: {
-          id: enrollment.program.id,
-          title: enrollment.program.title,
-          description: enrollment.program.description,
-          cadence: enrollment.program.cadence,
-        },
-        modules,
-      },
-    });
+    const data = await getProgramWithProgress(req.params.enrollmentId, req.user!.participantProfileId!);
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("Get program content error:", err);
-    res.status(500).json({ success: false, error: "Failed to get program" });
+    handleServiceError(res, err, "Failed to get program");
   }
 });
 
@@ -201,135 +96,10 @@ router.get("/programs/:enrollmentId", async (req: Request, res: Response) => {
 router.post("/progress/part/:partId", async (req: Request, res: Response) => {
   try {
     const { enrollmentId, responseData } = req.body;
-
-    // Verify enrollment belongs to participant
-    const enrollment = await prisma.enrollment.findFirst({
-      where: {
-        id: enrollmentId,
-        participantId: req.user!.participantProfileId!,
-        status: "ACTIVE",
-      },
-    });
-
-    if (!enrollment) {
-      res.status(404).json({ success: false, error: "Enrollment not found" });
-      return;
-    }
-
-    // Verify part exists
-    const part = await prisma.part.findUnique({
-      where: { id: req.params.partId },
-      include: { module: true },
-    });
-
-    if (!part) {
-      res.status(404).json({ success: false, error: "Part not found" });
-      return;
-    }
-
-    // Upsert part progress
-    const progress = await prisma.partProgress.upsert({
-      where: {
-        enrollmentId_partId: {
-          enrollmentId,
-          partId: req.params.partId,
-        },
-      },
-      create: {
-        enrollmentId,
-        partId: req.params.partId,
-        status: "COMPLETED",
-        completedAt: new Date(),
-        responseData: responseData || null,
-      },
-      update: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-        responseData: responseData || null,
-      },
-    });
-
-    // Cancel homework reminders if this is a HOMEWORK part
-    if (part.type === "HOMEWORK") {
-      cancelHomeworkReminders(enrollmentId, req.params.partId).catch(() => {});
-    }
-
-    // Check if all required parts in the module are completed
-    const moduleParts = await prisma.part.findMany({
-      where: { moduleId: part.moduleId, isRequired: true },
-      select: { id: true },
-    });
-
-    const completedParts = await prisma.partProgress.findMany({
-      where: {
-        enrollmentId,
-        partId: { in: moduleParts.map((p) => p.id) },
-        status: "COMPLETED",
-      },
-    });
-
-    const moduleCompleted = completedParts.length >= moduleParts.length;
-
-    if (moduleCompleted) {
-      // Mark module as completed
-      await prisma.moduleProgress.update({
-        where: {
-          enrollmentId_moduleId: {
-            enrollmentId,
-            moduleId: part.moduleId,
-          },
-        },
-        data: {
-          status: "COMPLETED",
-          completedAt: new Date(),
-        },
-      });
-
-      // Unlock next module (sequential unlock)
-      const nextModule = await prisma.module.findFirst({
-        where: {
-          programId: part.module.programId,
-          sortOrder: part.module.sortOrder + 1,
-        },
-      });
-
-      if (nextModule) {
-        await prisma.moduleProgress.upsert({
-          where: {
-            enrollmentId_moduleId: {
-              enrollmentId,
-              moduleId: nextModule.id,
-            },
-          },
-          create: {
-            enrollmentId,
-            moduleId: nextModule.id,
-            status: "UNLOCKED",
-            unlockedAt: new Date(),
-          },
-          update: {
-            status: "UNLOCKED",
-            unlockedAt: new Date(),
-          },
-        });
-
-        await prisma.enrollment.update({
-          where: { id: enrollmentId },
-          data: { currentModuleId: nextModule.id },
-        });
-      }
-    }
-
-    res.json({
-      success: true,
-      data: {
-        progress,
-        moduleCompleted,
-      },
-    });
+    const data = await markPartComplete(enrollmentId, req.params.partId, req.user!.participantProfileId!, responseData);
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("Mark part complete error:", err);
-    res.status(500).json({ success: false, error: "Failed to update progress" });
+    handleServiceError(res, err, "Failed to update progress");
   }
 });
 
@@ -338,56 +108,13 @@ router.post("/progress/part/:partId", async (req: Request, res: Response) => {
 // GET /api/participant/homework-instances — List instances for today (or a given date)
 router.get("/homework-instances", async (req: Request, res: Response) => {
   try {
-    const dateParam = req.query.date as string | undefined;
-    const enrollmentId = req.query.enrollmentId as string | undefined;
-
-    const targetDate = dateParam ? new Date(dateParam) : new Date();
-    targetDate.setUTCHours(0, 0, 0, 0);
-
-    // Get all active enrollments for this participant
-    const enrollmentFilter: Record<string, unknown> = {
-      participantId: req.user!.participantProfileId!,
-      status: "ACTIVE",
-    };
-    if (enrollmentId) {
-      enrollmentFilter.id = enrollmentId;
-    }
-
-    const enrollments = await prisma.enrollment.findMany({
-      where: enrollmentFilter,
-      select: { id: true },
+    const data = await getHomeworkInstances(req.user!.participantProfileId!, {
+      date: req.query.date as string | undefined,
+      enrollmentId: req.query.enrollmentId as string | undefined,
     });
-
-    const enrollmentIds = enrollments.map((e) => e.id);
-
-    const instances = await prisma.homeworkInstance.findMany({
-      where: {
-        enrollmentId: { in: enrollmentIds },
-        dueDate: targetDate,
-      },
-      include: {
-        part: {
-          select: {
-            id: true,
-            title: true,
-            content: true,
-            type: true,
-          },
-        },
-        enrollment: {
-          select: {
-            id: true,
-            programId: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    res.json({ success: true, data: instances });
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("List homework instances error:", err);
-    res.status(500).json({ success: false, error: "Failed to list homework instances" });
+    handleServiceError(res, err, "Failed to list homework instances");
   }
 });
 
@@ -419,85 +146,20 @@ router.get("/homework-instances/:id/streak", async (req: Request, res: Response)
 // POST /api/participant/homework-instances/:id/complete — Complete an instance
 router.post("/homework-instances/:id/complete", async (req: Request, res: Response) => {
   try {
-    const instance = await prisma.homeworkInstance.findUnique({
-      where: { id: req.params.id },
-      include: {
-        enrollment: {
-          select: { participantId: true },
-        },
-      },
-    });
-
-    if (!instance || instance.enrollment.participantId !== req.user!.participantProfileId!) {
-      res.status(404).json({ success: false, error: "Instance not found" });
-      return;
-    }
-
-    if (instance.status === "COMPLETED") {
-      res.status(409).json({ success: false, error: "Instance already completed" });
-      return;
-    }
-
-    // Allow completion of past instances up to 48h back
-    const cutoff = new Date();
-    cutoff.setUTCDate(cutoff.getUTCDate() - 2);
-    cutoff.setUTCHours(0, 0, 0, 0);
-
-    if (instance.dueDate < cutoff) {
-      res.status(400).json({ success: false, error: "Cannot complete instances older than 48 hours" });
-      return;
-    }
-
-    const parsed = CompleteHomeworkInstanceSchema.safeParse(req.body);
-    const response = parsed.success ? parsed.data.response : null;
-
-    const updated = await prisma.homeworkInstance.update({
-      where: { id: req.params.id },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-        response: response ?? undefined,
-      },
-    });
-
-    res.json({ success: true, data: updated });
+    const data = await completeHomeworkInstance(req.params.id, req.user!.participantProfileId!, req.body);
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("Complete homework instance error:", err);
-    res.status(500).json({ success: false, error: "Failed to complete instance" });
+    handleServiceError(res, err, "Failed to complete instance");
   }
 });
 
 // POST /api/participant/homework-instances/:id/skip — Skip an instance
 router.post("/homework-instances/:id/skip", async (req: Request, res: Response) => {
   try {
-    const instance = await prisma.homeworkInstance.findUnique({
-      where: { id: req.params.id },
-      include: {
-        enrollment: {
-          select: { participantId: true },
-        },
-      },
-    });
-
-    if (!instance || instance.enrollment.participantId !== req.user!.participantProfileId!) {
-      res.status(404).json({ success: false, error: "Instance not found" });
-      return;
-    }
-
-    if (instance.status !== "PENDING") {
-      res.status(409).json({ success: false, error: "Can only skip pending instances" });
-      return;
-    }
-
-    const updated = await prisma.homeworkInstance.update({
-      where: { id: req.params.id },
-      data: { status: "SKIPPED" },
-    });
-
-    res.json({ success: true, data: updated });
+    const data = await skipHomeworkInstance(req.params.id, req.user!.participantProfileId!);
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("Skip homework instance error:", err);
-    res.status(500).json({ success: false, error: "Failed to skip instance" });
+    handleServiceError(res, err, "Failed to skip instance");
   }
 });
 
@@ -506,56 +168,10 @@ router.post("/homework-instances/:id/skip", async (req: Request, res: Response) 
 // GET /api/participant/daily-trackers — List assigned trackers
 router.get("/daily-trackers", async (req: Request, res: Response) => {
   try {
-    const participantId = req.user!.participantProfileId!;
-
-    // Find all active enrollments for this participant
-    const enrollments = await prisma.enrollment.findMany({
-      where: { participantId, status: "ACTIVE" },
-      select: { id: true, programId: true },
-    });
-
-    const programIds = enrollments.map((e) => e.programId);
-    const enrollmentIds = enrollments.map((e) => e.id);
-
-    // Find trackers assigned via program or directly to enrollment
-    const trackers = await prisma.dailyTracker.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          { programId: { in: programIds } },
-          { enrollmentId: { in: enrollmentIds } },
-        ],
-      },
-      include: {
-        fields: { orderBy: { sortOrder: "asc" } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    // Check today's completion status for each tracker
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const todayEntries = await prisma.dailyTrackerEntry.findMany({
-      where: {
-        trackerId: { in: trackers.map((t) => t.id) },
-        userId: req.user!.userId,
-        date: today,
-      },
-      select: { trackerId: true },
-    });
-
-    const completedTrackerIds = new Set(todayEntries.map((e) => e.trackerId));
-
-    const data = trackers.map((t) => ({
-      ...t,
-      completedToday: completedTrackerIds.has(t.id),
-    }));
-
+    const data = await getAssignedTrackers(req.user!.participantProfileId!, req.user!.userId);
     res.json({ success: true, data });
   } catch (err) {
-    console.error("List participant trackers error:", err);
-    res.status(500).json({ success: false, error: "Failed to list trackers" });
+    handleServiceError(res, err, "Failed to list trackers");
   }
 });
 
@@ -609,34 +225,10 @@ router.post("/daily-trackers/:id/entries", async (req: Request, res: Response) =
     }
 
     const { date, responses } = parsed.data;
-    const entryDate = new Date(date);
-    entryDate.setUTCHours(0, 0, 0, 0);
-
-    const entry = await prisma.dailyTrackerEntry.upsert({
-      where: {
-        trackerId_userId_date: {
-          trackerId: req.params.id,
-          userId: req.user!.userId,
-          date: entryDate,
-        },
-      },
-      create: {
-        trackerId: req.params.id,
-        userId: req.user!.userId,
-        date: entryDate,
-        responses,
-        completedAt: new Date(),
-      },
-      update: {
-        responses,
-        completedAt: new Date(),
-      },
-    });
-
-    res.json({ success: true, data: entry });
+    const data = await submitTrackerEntry(req.params.id, req.user!.userId, date, responses);
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("Submit tracker entry error:", err);
-    res.status(500).json({ success: false, error: "Failed to submit entry" });
+    handleServiceError(res, err, "Failed to submit entry");
   }
 });
 
@@ -681,37 +273,10 @@ router.get("/daily-trackers/:id/history", async (req: Request, res: Response) =>
 // GET /api/participant/daily-trackers/:id/streak — Current streak
 router.get("/daily-trackers/:id/streak", async (req: Request, res: Response) => {
   try {
-    const entries = await prisma.dailyTrackerEntry.findMany({
-      where: {
-        trackerId: req.params.id,
-        userId: req.user!.userId,
-      },
-      orderBy: { date: "desc" },
-      select: { date: true },
-      take: 365, // max 1 year lookback
-    });
-
-    let streak = 0;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    for (let i = 0; i < entries.length; i++) {
-      const expected = new Date(today);
-      expected.setUTCDate(expected.getUTCDate() - i);
-      const expectedStr = expected.toISOString().split("T")[0];
-      const entryStr = entries[i].date.toISOString().split("T")[0];
-
-      if (entryStr === expectedStr) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-
-    res.json({ success: true, data: { streak, totalEntries: entries.length } });
+    const data = await getTrackerStreak(req.params.id, req.user!.userId);
+    res.json({ success: true, data });
   } catch (err) {
-    console.error("Get tracker streak error:", err);
-    res.status(500).json({ success: false, error: "Failed to get streak" });
+    handleServiceError(res, err, "Failed to get streak");
   }
 });
 

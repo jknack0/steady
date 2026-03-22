@@ -133,6 +133,7 @@ router.get("/", async (req: Request, res: Response) => {
         _count: { select: { entries: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: 100, // Cap at 100 trackers per program
     });
 
     res.json({ success: true, data: trackers });

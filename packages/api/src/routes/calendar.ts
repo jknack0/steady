@@ -38,6 +38,7 @@ router.get("/", async (req: Request, res: Response) => {
         },
       },
       orderBy: { startTime: "asc" },
+      take: 500, // Cap at 500 events per date range query
     });
 
     res.json({ success: true, data: events });

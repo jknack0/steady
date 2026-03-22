@@ -26,6 +26,9 @@ router.get("/", async (req: Request, res: Response) => {
       return;
     }
 
+    const { cursor, limit = "50" } = req.query;
+    const take = Math.min(parseInt(limit as string) || 50, 100);
+
     const enrollments = await prisma.enrollment.findMany({
       where: { programId: req.params.programId },
       include: {
@@ -38,9 +41,14 @@ router.get("/", async (req: Request, res: Response) => {
         },
       },
       orderBy: { enrolledAt: "desc" },
+      take: take + 1,
+      ...(cursor ? { skip: 1, cursor: { id: cursor as string } } : {}),
     });
 
-    const data = enrollments.map((e) => ({
+    const hasMore = enrollments.length > take;
+    const page = hasMore ? enrollments.slice(0, take) : enrollments;
+
+    const data = page.map((e) => ({
       id: e.id,
       status: e.status,
       enrolledAt: e.enrolledAt,
@@ -48,7 +56,7 @@ router.get("/", async (req: Request, res: Response) => {
       participant: e.participant.user,
     }));
 
-    res.json({ success: true, data });
+    res.json({ success: true, data, cursor: hasMore ? page[page.length - 1].id : null });
   } catch (err) {
     console.error("List enrollments error:", err);
     res.status(500).json({ success: false, error: "Failed to list enrollments" });

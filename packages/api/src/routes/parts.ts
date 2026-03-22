@@ -73,6 +73,7 @@ router.get("/", async (req: Request, res: Response) => {
     const parts = await prisma.part.findMany({
       where: { moduleId: req.params.moduleId },
       orderBy: { sortOrder: "asc" },
+      take: 200, // Cap at 200 parts per module
     });
 
     res.json({ success: true, data: parts });

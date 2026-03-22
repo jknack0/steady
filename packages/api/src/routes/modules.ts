@@ -62,6 +62,7 @@ router.get("/", async (req: Request, res: Response) => {
       include: {
         _count: { select: { parts: true } },
       },
+      take: 200, // Cap at 200 modules per program
     });
 
     const data = modules.map((m) => ({

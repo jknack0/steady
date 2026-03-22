@@ -59,6 +59,7 @@ router.get("/", async (req: Request, res: Response) => {
           },
         },
       },
+      take: 50, // Cap at 50 practices per clinician
     });
 
     const practices = memberships.map((m) => ({

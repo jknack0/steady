@@ -29,6 +29,9 @@ router.post("/", validate(CreateProgramSchema), async (req: Request, res: Respon
 // GET /api/programs — List all programs for the authenticated clinician
 router.get("/", async (req: Request, res: Response) => {
   try {
+    const { cursor, limit = "50" } = req.query;
+    const take = Math.min(parseInt(limit as string) || 50, 100);
+
     const programs = await prisma.program.findMany({
       where: {
         clinicianId: req.user!.clinicianProfileId!,
@@ -43,16 +46,21 @@ router.get("/", async (req: Request, res: Response) => {
         },
       },
       orderBy: { updatedAt: "desc" },
+      take: take + 1,
+      ...(cursor ? { skip: 1, cursor: { id: cursor as string } } : {}),
     });
 
-    const data = programs.map((p) => ({
+    const hasMore = programs.length > take;
+    const page = hasMore ? programs.slice(0, take) : programs;
+
+    const data = page.map((p) => ({
       ...p,
       moduleCount: p._count.modules,
       activeEnrollmentCount: p._count.enrollments,
       _count: undefined,
     }));
 
-    res.json({ success: true, data });
+    res.json({ success: true, data, cursor: hasMore ? page[page.length - 1].id : null });
   } catch (err) {
     console.error("List programs error:", err);
     res.status(500).json({ success: false, error: "Failed to list programs" });
