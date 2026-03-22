@@ -46,26 +46,10 @@ export function useAuthState(): AuthContextValue {
     }
 
     try {
+      // api.get handles 401 → refresh automatically
       const user = await api.get<User>("/api/auth/me");
       setState({ user, isLoading: false, isAuthenticated: true });
     } catch {
-      // Token invalid/expired — try refresh
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (refreshToken) {
-        try {
-          const tokens = await api.post<{ accessToken: string; refreshToken: string }>(
-            "/api/auth/refresh",
-            { refreshToken }
-          );
-          localStorage.setItem("token", tokens.accessToken);
-          localStorage.setItem("refreshToken", tokens.refreshToken);
-          const user = await api.get<User>("/api/auth/me");
-          setState({ user, isLoading: false, isAuthenticated: true });
-          return;
-        } catch {
-          // Refresh also failed
-        }
-      }
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
       setState({ user: null, isLoading: false, isAuthenticated: false });

@@ -136,4 +136,71 @@ describe("api client", () => {
       })
     );
   });
+
+  it("retries with refreshed token on 401", async () => {
+    localStorage.setItem("token", "expired-token");
+    localStorage.setItem("refreshToken", "valid-refresh");
+
+    // First call returns 401
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: "Token expired" }),
+    });
+
+    // Refresh call succeeds
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data: { accessToken: "new-token", refreshToken: "new-refresh" } }),
+    });
+
+    // Retry with new token succeeds
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data: { id: "1" } }),
+    });
+
+    const result = await api.get("/api/programs");
+
+    expect(result).toEqual({ id: "1" });
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(localStorage.getItem("token")).toBe("new-token");
+  });
+
+  it("clears tokens when refresh fails", async () => {
+    localStorage.setItem("token", "expired-token");
+    localStorage.setItem("refreshToken", "bad-refresh");
+
+    // First call returns 401
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: "Token expired" }),
+    });
+
+    // Refresh call fails
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: "Invalid refresh token" }),
+    });
+
+    await expect(api.get("/api/programs")).rejects.toThrow();
+    expect(localStorage.getItem("token")).toBeNull();
+    expect(localStorage.getItem("refreshToken")).toBeNull();
+  });
+
+  it("does not attempt refresh without a token", async () => {
+    // No token set — 401 should not trigger refresh
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: "Not authenticated" }),
+    });
+
+    await expect(api.get("/api/programs")).rejects.toThrow("Not authenticated");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });
