@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -21,7 +22,7 @@ router.get("/participant", requireRole("PARTICIPANT"), async (req: Request, res:
 
     res.json({ success: true, data: stats });
   } catch (err) {
-    console.error("Get participant stats error:", err);
+    logger.error("Get participant stats error", err);
     res.status(500).json({ success: false, error: "Failed to get stats" });
   }
 });
@@ -60,7 +61,7 @@ router.get(
 
       res.json({ success: true, data: stats });
     } catch (err) {
-      console.error("Get participant stats error:", err);
+      logger.error("Get participant stats error", err);
       res.status(500).json({ success: false, error: "Failed to get stats" });
     }
   }

@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { prisma } from "@steady/db";
 import {
   scheduleSessionReminders,
@@ -80,7 +81,7 @@ export async function createSession(
   // Auto-schedule 3 reminders (24h, 1h, 10min before)
   const participantUserId = enrollment.participant.user.id;
   scheduleSessionReminders(participantUserId, session.id, startTime).catch(
-    (err) => console.error("Failed to schedule session reminders:", err)
+    (err) => logger.error("Failed to schedule session reminders", err)
   );
 
   return session;
@@ -332,90 +333,96 @@ export async function completeSession(sessionId: string, data: CompleteSessionDa
     return { error: "conflict" as const };
   }
 
-  // Mark session completed
-  const updated = await prisma.session.update({
-    where: { id: sessionId },
-    data: {
-      status: "COMPLETED",
-      clinicianNotes: clinicianNotes || null,
-      participantSummary: participantSummary || null,
-      moduleCompletedId: moduleCompletedId || null,
-    },
-  });
-
-  // Cancel pending reminders
-  cancelSessionReminders(session.id).catch(() => {});
-
   const participantProfileId = session.enrollment.participant.id;
   const participantUserId = session.enrollment.participant.user.id;
   const enrollmentId = session.enrollmentId;
 
-  // If a module was completed, mark it and unlock next
-  if (moduleCompletedId) {
-    await prisma.moduleProgress.upsert({
-      where: {
-        enrollmentId_moduleId: { enrollmentId, moduleId: moduleCompletedId },
-      },
-      create: {
-        enrollmentId,
-        moduleId: moduleCompletedId,
+  // All writes in a single transaction
+  const { updated, createdTasks } = await prisma.$transaction(async (tx) => {
+    const updated = await tx.session.update({
+      where: { id: sessionId },
+      data: {
         status: "COMPLETED",
-        completedAt: new Date(),
-      },
-      update: {
-        status: "COMPLETED",
-        completedAt: new Date(),
+        clinicianNotes: clinicianNotes || null,
+        participantSummary: participantSummary || null,
+        moduleCompletedId: moduleCompletedId || null,
       },
     });
 
-    // Find and unlock next module
-    const modules = session.enrollment.program.modules;
-    const currentIdx = modules.findIndex((m) => m.id === moduleCompletedId);
-    const nextModule = modules[currentIdx + 1];
-
-    if (nextModule) {
-      await prisma.moduleProgress.upsert({
+    // If a module was completed, mark it and unlock next
+    if (moduleCompletedId) {
+      await tx.moduleProgress.upsert({
         where: {
-          enrollmentId_moduleId: { enrollmentId, moduleId: nextModule.id },
+          enrollmentId_moduleId: { enrollmentId, moduleId: moduleCompletedId },
         },
         create: {
           enrollmentId,
-          moduleId: nextModule.id,
-          status: "UNLOCKED",
-          unlockedAt: new Date(),
+          moduleId: moduleCompletedId,
+          status: "COMPLETED",
+          completedAt: new Date(),
         },
         update: {
-          status: "UNLOCKED",
-          unlockedAt: new Date(),
+          status: "COMPLETED",
+          completedAt: new Date(),
         },
       });
 
-      await prisma.enrollment.update({
-        where: { id: enrollmentId },
-        data: { currentModuleId: nextModule.id },
-      });
-    }
-  }
+      const modules = session.enrollment.program.modules;
+      const currentIdx = modules.findIndex((m) => m.id === moduleCompletedId);
+      const nextModule = modules[currentIdx + 1];
 
-  // Push tasks to participant
-  if (Array.isArray(tasksToAssign) && tasksToAssign.length > 0) {
-    for (const task of tasksToAssign) {
-      if (!task.title?.trim()) continue;
+      if (nextModule) {
+        await tx.moduleProgress.upsert({
+          where: {
+            enrollmentId_moduleId: { enrollmentId, moduleId: nextModule.id },
+          },
+          create: {
+            enrollmentId,
+            moduleId: nextModule.id,
+            status: "UNLOCKED",
+            unlockedAt: new Date(),
+          },
+          update: {
+            status: "UNLOCKED",
+            unlockedAt: new Date(),
+          },
+        });
 
-      const created = await prisma.task.create({
-        data: {
-          participantId: participantProfileId,
-          title: task.title.trim(),
-          description: task.description || null,
-          dueDate: task.dueDate ? new Date(task.dueDate) : null,
-          sourceType: "SESSION",
-          sourceId: session.id,
-        },
-      });
-
-      if (created.dueDate) {
-        scheduleTaskReminder(participantUserId, created.id, created.title, created.dueDate).catch(() => {});
+        await tx.enrollment.update({
+          where: { id: enrollmentId },
+          data: { currentModuleId: nextModule.id },
+        });
       }
+    }
+
+    // Push tasks to participant
+    const createdTasks: Array<{ id: string; title: string; dueDate: Date | null }> = [];
+    if (Array.isArray(tasksToAssign) && tasksToAssign.length > 0) {
+      for (const task of tasksToAssign) {
+        if (!task.title?.trim()) continue;
+
+        const created = await tx.task.create({
+          data: {
+            participantId: participantProfileId,
+            title: task.title.trim(),
+            description: task.description || null,
+            dueDate: task.dueDate ? new Date(task.dueDate) : null,
+            sourceType: "SESSION",
+            sourceId: session.id,
+          },
+        });
+        createdTasks.push(created);
+      }
+    }
+
+    return { updated, createdTasks };
+  });
+
+  // Fire-and-forget side effects outside transaction
+  cancelSessionReminders(session.id).catch(() => {});
+  for (const task of createdTasks) {
+    if (task.dueDate) {
+      scheduleTaskReminder(participantUserId, task.id, task.title, task.dueDate).catch(() => {});
     }
   }
 

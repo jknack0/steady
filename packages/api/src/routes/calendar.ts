@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -43,7 +44,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: events });
   } catch (err) {
-    console.error("List calendar events error:", err);
+    logger.error("List calendar events error", err);
     res.status(500).json({ success: false, error: "Failed to list events" });
   }
 });
@@ -112,12 +113,12 @@ router.post("/", async (req: Request, res: Response) => {
         "TASK",
         { type: "calendar_reminder", eventId: event.id },
         { startAfter: reminderTime }
-      ).catch((err) => console.error("Failed to queue calendar reminder:", err));
+      ).catch((err) => logger.error("Failed to queue calendar reminder", err));
     }
 
     res.status(201).json({ success: true, data: event });
   } catch (err) {
-    console.error("Create calendar event error:", err);
+    logger.error("Create calendar event error", err);
     res.status(500).json({ success: false, error: "Failed to create event" });
   }
 });
@@ -156,7 +157,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: event });
   } catch (err) {
-    console.error("Update calendar event error:", err);
+    logger.error("Update calendar event error", err);
     res.status(500).json({ success: false, error: "Failed to update event" });
   }
 });
@@ -181,7 +182,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete calendar event error:", err);
+    logger.error("Delete calendar event error", err);
     res.status(500).json({ success: false, error: "Failed to delete event" });
   }
 });

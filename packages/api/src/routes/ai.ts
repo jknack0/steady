@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -115,7 +116,7 @@ router.post("/style-content", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { styledHtml } });
   } catch (err) {
-    console.error("AI style-content error:", err);
+    logger.error("AI style-content error", err);
     res.status(500).json({ success: false, error: "Failed to style content" });
   }
 });

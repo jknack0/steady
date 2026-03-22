@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -51,7 +52,7 @@ router.get("/audit-logs", async (req: Request, res: Response) => {
       cursor: hasMore ? data[data.length - 1].id : null,
     });
   } catch (err) {
-    console.error("List audit logs error:", err);
+    logger.error("List audit logs error", err);
     res.status(500).json({ success: false, error: "Failed to list audit logs" });
   }
 });
@@ -96,7 +97,7 @@ router.get("/audit-logs/stats", async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error("Audit logs stats error:", err);
+    logger.error("Audit logs stats error", err);
     res.status(500).json({ success: false, error: "Failed to get audit stats" });
   }
 });

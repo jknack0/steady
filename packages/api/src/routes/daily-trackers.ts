@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import {
@@ -65,7 +66,7 @@ router.post("/", validate(CreateDailyTrackerSchema), async (req: Request, res: R
 
     res.status(201).json({ success: true, data: tracker });
   } catch (err) {
-    console.error("Create daily tracker error:", err);
+    logger.error("Create daily tracker error", err);
     res.status(500).json({ success: false, error: "Failed to create tracker" });
   }
 });
@@ -104,7 +105,7 @@ router.post(
         res.status(400).json({ success: false, error: err.message });
         return;
       }
-      console.error("Create tracker from template error:", err);
+      logger.error("Create tracker from template error", err);
       res.status(500).json({ success: false, error: "Failed to create tracker from template" });
     }
   }
@@ -138,7 +139,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: trackers });
   } catch (err) {
-    console.error("List daily trackers error:", err);
+    logger.error("List daily trackers error", err);
     res.status(500).json({ success: false, error: "Failed to list trackers" });
   }
 });
@@ -158,7 +159,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: tracker });
   } catch (err) {
-    console.error("Get daily tracker error:", err);
+    logger.error("Get daily tracker error", err);
     res.status(500).json({ success: false, error: "Failed to get tracker" });
   }
 });
@@ -219,7 +220,7 @@ router.put("/:id", validate(UpdateDailyTrackerSchema), async (req: Request, res:
 
     res.json({ success: true, data: tracker });
   } catch (err) {
-    console.error("Update daily tracker error:", err);
+    logger.error("Update daily tracker error", err);
     res.status(500).json({ success: false, error: "Failed to update tracker" });
   }
 });
@@ -239,7 +240,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
     await prisma.dailyTracker.delete({ where: { id: req.params.id } });
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete daily tracker error:", err);
+    logger.error("Delete daily tracker error", err);
     res.status(500).json({ success: false, error: "Failed to delete tracker" });
   }
 });
@@ -283,7 +284,7 @@ router.get("/:id/entries", async (req: Request, res: Response) => {
       cursor: hasMore ? data[data.length - 1].id : null,
     });
   } catch (err) {
-    console.error("Get tracker entries error:", err);
+    logger.error("Get tracker entries error", err);
     res.status(500).json({ success: false, error: "Failed to get entries" });
   }
 });
@@ -387,7 +388,7 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error("Get tracker trends error:", err);
+    logger.error("Get tracker trends error", err);
     res.status(500).json({ success: false, error: "Failed to get trends" });
   }
 });

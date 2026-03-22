@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { CreateModuleSchema, UpdateModuleSchema, ReorderModulesSchema } from "@steady/shared";
@@ -42,7 +43,7 @@ router.post("/", validate(CreateModuleSchema), async (req: Request, res: Respons
 
     res.status(201).json({ success: true, data: module });
   } catch (err) {
-    console.error("Create module error:", err);
+    logger.error("Create module error", err);
     res.status(500).json({ success: false, error: "Failed to create module" });
   }
 });
@@ -73,7 +74,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data });
   } catch (err) {
-    console.error("List modules error:", err);
+    logger.error("List modules error", err);
     res.status(500).json({ success: false, error: "Failed to list modules" });
   }
 });
@@ -120,7 +121,7 @@ router.put("/reorder", validate(ReorderModulesSchema), async (req: Request, res:
 
     res.json({ success: true, data: modules });
   } catch (err) {
-    console.error("Reorder modules error:", err);
+    logger.error("Reorder modules error", err);
     res.status(500).json({ success: false, error: "Failed to reorder modules" });
   }
 });
@@ -149,7 +150,7 @@ router.put("/:id", validate(UpdateModuleSchema), async (req: Request, res: Respo
 
     res.json({ success: true, data: module });
   } catch (err) {
-    console.error("Update module error:", err);
+    logger.error("Update module error", err);
     res.status(500).json({ success: false, error: "Failed to update module" });
   }
 });
@@ -193,7 +194,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete module error:", err);
+    logger.error("Delete module error", err);
     res.status(500).json({ success: false, error: "Failed to delete module" });
   }
 });

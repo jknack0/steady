@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { authenticate, requireRole } from "../middleware/auth";
 import {
@@ -28,7 +29,7 @@ router.get("/participants", async (req: Request, res: Response) => {
 
     res.json({ success: true, data });
   } catch (err) {
-    console.error("List clinician participants error:", err);
+    logger.error("List clinician participants error", err);
     res
       .status(500)
       .json({ success: false, error: "Failed to list participants" });
@@ -55,7 +56,7 @@ router.get("/participants/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: result });
   } catch (err) {
-    console.error("Get clinician participant detail error:", err);
+    logger.error("Get clinician participant detail error", err);
     res
       .status(500)
       .json({ success: false, error: "Failed to get participant details" });
@@ -76,7 +77,7 @@ router.post("/participants/:id/push-task", async (req: Request, res: Response) =
     const task = await pushTaskToParticipant(id, { title, description, dueDate });
     res.status(201).json({ success: true, data: task });
   } catch (err) {
-    console.error("Push task error:", err);
+    logger.error("Push task error", err);
     res.status(500).json({ success: false, error: "Failed to push task" });
   }
 });
@@ -94,7 +95,7 @@ router.post("/participants/:id/unlock-module", async (req: Request, res: Respons
     const progress = await unlockModuleForParticipant(enrollmentId, moduleId);
     res.json({ success: true, data: progress });
   } catch (err) {
-    console.error("Unlock module error:", err);
+    logger.error("Unlock module error", err);
     res.status(500).json({ success: false, error: "Failed to unlock module" });
   }
 });
@@ -119,7 +120,7 @@ router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, re
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Manage enrollment error:", err);
+    logger.error("Manage enrollment error", err);
     res.status(500).json({ success: false, error: "Failed to manage enrollment" });
   }
 });
@@ -143,7 +144,7 @@ router.post("/participants/bulk", async (req: Request, res: Response) => {
     const data = await bulkAction(clinicianProfileId, action, participantIds, actionData);
     res.json({ success: true, data });
   } catch (err) {
-    console.error("Bulk action error:", err);
+    logger.error("Bulk action error", err);
     res.status(500).json({ success: false, error: "Failed to perform bulk action" });
   }
 });

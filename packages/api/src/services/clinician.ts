@@ -468,31 +468,32 @@ export async function unlockModuleForParticipant(
   enrollmentId: string,
   moduleId: string
 ) {
-  const progress = await prisma.moduleProgress.upsert({
-    where: {
-      enrollmentId_moduleId: { enrollmentId, moduleId },
-    },
-    create: {
-      enrollmentId,
-      moduleId,
-      status: "UNLOCKED",
-      unlockedAt: new Date(),
-      customUnlock: true,
-    },
-    update: {
-      status: "UNLOCKED",
-      unlockedAt: new Date(),
-      customUnlock: true,
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    const progress = await tx.moduleProgress.upsert({
+      where: {
+        enrollmentId_moduleId: { enrollmentId, moduleId },
+      },
+      create: {
+        enrollmentId,
+        moduleId,
+        status: "UNLOCKED",
+        unlockedAt: new Date(),
+        customUnlock: true,
+      },
+      update: {
+        status: "UNLOCKED",
+        unlockedAt: new Date(),
+        customUnlock: true,
+      },
+    });
 
-  // Update current module on enrollment
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: { currentModuleId: moduleId },
-  });
+    await tx.enrollment.update({
+      where: { id: enrollmentId },
+      data: { currentModuleId: moduleId },
+    });
 
-  return progress;
+    return progress;
+  });
 }
 
 // ── manageEnrollment ─────────────────────────────────
@@ -531,40 +532,40 @@ export async function manageEnrollment(
   }
 
   if (action === "reset-progress") {
-    // Delete all progress and reset to first module
-    await prisma.$transaction([
-      prisma.partProgress.deleteMany({ where: { enrollmentId } }),
-      prisma.moduleProgress.deleteMany({ where: { enrollmentId } }),
-    ]);
+    return prisma.$transaction(async (tx) => {
+      // Delete all progress
+      await tx.partProgress.deleteMany({ where: { enrollmentId } });
+      await tx.moduleProgress.deleteMany({ where: { enrollmentId } });
 
-    // Re-initialize first module
-    const program = await prisma.program.findUnique({
-      where: { id: enrollment.programId },
-      include: {
-        modules: { orderBy: { sortOrder: "asc" }, select: { id: true } },
-      },
-    });
-
-    const firstModuleId = program?.modules[0]?.id || null;
-
-    if (firstModuleId) {
-      await prisma.moduleProgress.create({
-        data: {
-          enrollmentId,
-          moduleId: firstModuleId,
-          status: "UNLOCKED",
-          unlockedAt: new Date(),
+      // Re-initialize first module
+      const program = await tx.program.findUnique({
+        where: { id: enrollment.programId },
+        include: {
+          modules: { orderBy: { sortOrder: "asc" }, select: { id: true } },
         },
       });
-    }
 
-    return prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        currentModuleId: firstModuleId,
-        status: "ACTIVE",
-        completedAt: null,
-      },
+      const firstModuleId = program?.modules[0]?.id || null;
+
+      if (firstModuleId) {
+        await tx.moduleProgress.create({
+          data: {
+            enrollmentId,
+            moduleId: firstModuleId,
+            status: "UNLOCKED",
+            unlockedAt: new Date(),
+          },
+        });
+      }
+
+      return tx.enrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          currentModuleId: firstModuleId,
+          status: "ACTIVE",
+          completedAt: null,
+        },
+      });
     });
   }
 

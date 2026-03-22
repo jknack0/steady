@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -71,7 +72,7 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res: Res
       },
     });
   } catch (err) {
-    console.error("Register error:", err);
+    logger.error("Register error", err);
     res.status(500).json({ success: false, error: "Registration failed" });
   }
 });
@@ -123,7 +124,7 @@ router.post("/login", validate(LoginSchema), async (req: Request, res: Response)
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
+    logger.error("Login error", err);
     res.status(500).json({ success: false, error: "Login failed" });
   }
 });
@@ -189,7 +190,7 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
 
     res.json({ success: true, data: user });
   } catch (err) {
-    console.error("Get me error:", err);
+    logger.error("Get me error", err);
     res.status(500).json({ success: false, error: "Failed to get user" });
   }
 });

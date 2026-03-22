@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate } from "../middleware/auth";
@@ -27,7 +28,7 @@ router.post("/push-token", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Register push token error:", err);
+    logger.error("Register push token error", err);
     res.status(500).json({ success: false, error: "Failed to register push token" });
   }
 });
@@ -45,7 +46,7 @@ router.delete("/push-token", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Remove push token error:", err);
+    logger.error("Remove push token error", err);
     res.status(500).json({ success: false, error: "Failed to remove push token" });
   }
 });
@@ -72,7 +73,7 @@ router.get("/preferences", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: result });
   } catch (err) {
-    console.error("Get notification preferences error:", err);
+    logger.error("Get notification preferences error", err);
     res.status(500).json({ success: false, error: "Failed to get preferences" });
   }
 });
@@ -119,7 +120,7 @@ router.put("/preferences", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Update notification preferences error:", err);
+    logger.error("Update notification preferences error", err);
     res.status(500).json({ success: false, error: "Failed to update preferences" });
   }
 });
@@ -138,7 +139,7 @@ router.post("/dismiss", async (req: Request, res: Response) => {
     await recordDismissal(req.user!.userId, category);
     res.json({ success: true });
   } catch (err) {
-    console.error("Record dismissal error:", err);
+    logger.error("Record dismissal error", err);
     res.status(500).json({ success: false, error: "Failed to record dismissal" });
   }
 });

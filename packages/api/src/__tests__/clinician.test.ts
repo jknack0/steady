@@ -380,7 +380,8 @@ describe("PUT /api/clinician/participants/:id/enrollment/:enrollmentId", () => {
       programId: "prog-1",
     } as any);
 
-    db.$transaction.mockResolvedValue([{}, {}] as any);
+    db.partProgress.deleteMany.mockResolvedValue({ count: 0 } as any);
+    db.moduleProgress.deleteMany.mockResolvedValue({ count: 0 } as any);
 
     db.program.findUnique.mockResolvedValue({
       id: "prog-1",
@@ -424,7 +425,8 @@ describe("PUT /api/clinician/participants/:id/enrollment/:enrollmentId", () => {
       programId: "prog-1",
     } as any);
 
-    db.$transaction.mockResolvedValue([{}, {}] as any);
+    db.partProgress.deleteMany.mockResolvedValue({ count: 0 } as any);
+    db.moduleProgress.deleteMany.mockResolvedValue({ count: 0 } as any);
 
     db.program.findUnique.mockResolvedValue({
       id: "prog-1",

@@ -26,6 +26,13 @@ vi.mock("../services/notifications", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Restore default $transaction behavior (execute callback with mockPrisma)
+  db.$transaction.mockImplementation(async (fnOrArray: any) => {
+    if (typeof fnOrArray === "function") {
+      return fnOrArray(db);
+    }
+    return Promise.all(fnOrArray);
+  });
 });
 
 // ── POST /api/sessions ──────────────────────────────

@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { prisma } from "@steady/db";
 import { cancelHomeworkReminders } from "./notifications";
 import {
@@ -61,32 +62,35 @@ export async function acceptEnrollment(
 
   const firstModule = enrollment.program.modules[0];
 
-  const updated = await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: {
-      status: "ACTIVE",
-      currentModuleId: firstModule?.id || null,
-    },
-  });
-
-  // Create module progress entries
-  if (enrollment.program.modules.length > 0) {
-    const progressData = enrollment.program.modules.map((mod, index) => ({
-      enrollmentId: enrollment.id,
-      moduleId: mod.id,
-      status: index === 0 ? ("UNLOCKED" as const) : ("LOCKED" as const),
-      ...(index === 0 ? { unlockedAt: new Date() } : {}),
-    }));
-
-    await prisma.moduleProgress.createMany({
-      data: progressData,
-      skipDuplicates: true,
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        status: "ACTIVE",
+        currentModuleId: firstModule?.id || null,
+      },
     });
-  }
+
+    if (enrollment.program.modules.length > 0) {
+      const progressData = enrollment.program.modules.map((mod, index) => ({
+        enrollmentId: enrollment.id,
+        moduleId: mod.id,
+        status: index === 0 ? ("UNLOCKED" as const) : ("LOCKED" as const),
+        ...(index === 0 ? { unlockedAt: new Date() } : {}),
+      }));
+
+      await tx.moduleProgress.createMany({
+        data: progressData,
+        skipDuplicates: true,
+      });
+    }
+
+    return result;
+  });
 
   // Generate homework instances for any recurring homework parts (fire-and-forget)
   generateInstancesForEnrollment(enrollment.id).catch((err) => {
-    console.error("Failed to generate homework instances on accept:", err);
+    logger.error("Failed to generate homework instances on accept", err);
   });
 
   return updated;
@@ -209,100 +213,102 @@ export async function markPartComplete(
     throw new NotFoundError("Part not found");
   }
 
-  // Upsert part progress
-  const progress = await prisma.partProgress.upsert({
-    where: {
-      enrollmentId_partId: {
+  const result = await prisma.$transaction(async (tx) => {
+    // Upsert part progress
+    const progress = await tx.partProgress.upsert({
+      where: {
+        enrollmentId_partId: {
+          enrollmentId,
+          partId,
+        },
+      },
+      create: {
         enrollmentId,
         partId,
+        status: "COMPLETED",
+        completedAt: new Date(),
+        responseData: responseData || null,
       },
-    },
-    create: {
-      enrollmentId,
-      partId,
-      status: "COMPLETED",
-      completedAt: new Date(),
-      responseData: responseData || null,
-    },
-    update: {
-      status: "COMPLETED",
-      completedAt: new Date(),
-      responseData: responseData || null,
-    },
+      update: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+        responseData: responseData || null,
+      },
+    });
+
+    // Check if all required parts in the module are completed
+    const moduleParts = await tx.part.findMany({
+      where: { moduleId: part.moduleId, isRequired: true },
+      select: { id: true },
+    });
+
+    const completedParts = await tx.partProgress.findMany({
+      where: {
+        enrollmentId,
+        partId: { in: moduleParts.map((p) => p.id) },
+        status: "COMPLETED",
+      },
+    });
+
+    const moduleCompleted = completedParts.length >= moduleParts.length;
+
+    if (moduleCompleted) {
+      await tx.moduleProgress.update({
+        where: {
+          enrollmentId_moduleId: {
+            enrollmentId,
+            moduleId: part.moduleId,
+          },
+        },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+        },
+      });
+
+      const nextModule = await tx.module.findFirst({
+        where: {
+          programId: part.module.programId,
+          sortOrder: part.module.sortOrder + 1,
+        },
+      });
+
+      if (nextModule) {
+        await tx.moduleProgress.upsert({
+          where: {
+            enrollmentId_moduleId: {
+              enrollmentId,
+              moduleId: nextModule.id,
+            },
+          },
+          create: {
+            enrollmentId,
+            moduleId: nextModule.id,
+            status: "UNLOCKED",
+            unlockedAt: new Date(),
+          },
+          update: {
+            status: "UNLOCKED",
+            unlockedAt: new Date(),
+          },
+        });
+
+        await tx.enrollment.update({
+          where: { id: enrollmentId },
+          data: { currentModuleId: nextModule.id },
+        });
+      }
+    }
+
+    return { progress, moduleCompleted };
   });
 
-  // Cancel homework reminders if this is a HOMEWORK part
+  // Cancel homework reminders outside transaction (fire-and-forget, non-critical)
   if (part.type === "HOMEWORK") {
     cancelHomeworkReminders(enrollmentId, partId).catch(() => {});
   }
 
-  // Check if all required parts in the module are completed
-  const moduleParts = await prisma.part.findMany({
-    where: { moduleId: part.moduleId, isRequired: true },
-    select: { id: true },
-  });
-
-  const completedParts = await prisma.partProgress.findMany({
-    where: {
-      enrollmentId,
-      partId: { in: moduleParts.map((p) => p.id) },
-      status: "COMPLETED",
-    },
-  });
-
-  const moduleCompleted = completedParts.length >= moduleParts.length;
-
-  if (moduleCompleted) {
-    // Mark module as completed
-    await prisma.moduleProgress.update({
-      where: {
-        enrollmentId_moduleId: {
-          enrollmentId,
-          moduleId: part.moduleId,
-        },
-      },
-      data: {
-        status: "COMPLETED",
-        completedAt: new Date(),
-      },
-    });
-
-    // Unlock next module (sequential unlock)
-    const nextModule = await prisma.module.findFirst({
-      where: {
-        programId: part.module.programId,
-        sortOrder: part.module.sortOrder + 1,
-      },
-    });
-
-    if (nextModule) {
-      await prisma.moduleProgress.upsert({
-        where: {
-          enrollmentId_moduleId: {
-            enrollmentId,
-            moduleId: nextModule.id,
-          },
-        },
-        create: {
-          enrollmentId,
-          moduleId: nextModule.id,
-          status: "UNLOCKED",
-          unlockedAt: new Date(),
-        },
-        update: {
-          status: "UNLOCKED",
-          unlockedAt: new Date(),
-        },
-      });
-
-      await prisma.enrollment.update({
-        where: { id: enrollmentId },
-        data: { currentModuleId: nextModule.id },
-      });
-    }
-  }
-
-  return { progress, moduleCompleted };
+  return result;
 }
 
 // ── 4. Get Homework Instances ────────────────────────

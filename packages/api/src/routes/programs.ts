@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { CreateProgramSchema, UpdateProgramSchema } from "@steady/shared";
@@ -21,7 +22,7 @@ router.post("/", validate(CreateProgramSchema), async (req: Request, res: Respon
     });
     res.status(201).json({ success: true, data: program });
   } catch (err) {
-    console.error("Create program error:", err);
+    logger.error("Create program error", err);
     res.status(500).json({ success: false, error: "Failed to create program" });
   }
 });
@@ -62,7 +63,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data, cursor: hasMore ? page[page.length - 1].id : null });
   } catch (err) {
-    console.error("List programs error:", err);
+    logger.error("List programs error", err);
     res.status(500).json({ success: false, error: "Failed to list programs" });
   }
 });
@@ -114,7 +115,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error("Get program error:", err);
+    logger.error("Get program error", err);
     res.status(500).json({ success: false, error: "Failed to get program" });
   }
 });
@@ -146,7 +147,7 @@ router.get("/:id/preview", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: program });
   } catch (err) {
-    console.error("Get program preview error:", err);
+    logger.error("Get program preview error", err);
     res.status(500).json({ success: false, error: "Failed to get program preview" });
   }
 });
@@ -170,7 +171,7 @@ router.put("/:id", validate(UpdateProgramSchema), async (req: Request, res: Resp
 
     res.json({ success: true, data: program });
   } catch (err) {
-    console.error("Update program error:", err);
+    logger.error("Update program error", err);
     res.status(500).json({ success: false, error: "Failed to update program" });
   }
 });
@@ -202,7 +203,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete program error:", err);
+    logger.error("Delete program error", err);
     res.status(500).json({ success: false, error: "Failed to archive program" });
   }
 });
@@ -280,7 +281,7 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, data: result });
   } catch (err) {
-    console.error("Clone program error:", err);
+    logger.error("Clone program error", err);
     res.status(500).json({ success: false, error: "Failed to clone program" });
   }
 });

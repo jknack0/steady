@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth";
 import { generateUploadUrl, generateDownloadUrl } from "../services/s3";
@@ -72,7 +73,7 @@ router.post("/presign", async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error("Presign upload error:", err);
+    logger.error("Presign upload error", err);
     res.status(500).json({ success: false, error: "Failed to generate upload URL" });
   }
 });
@@ -91,7 +92,7 @@ router.get("/presign-download", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { downloadUrl } });
   } catch (err) {
-    console.error("Presign download error:", err);
+    logger.error("Presign download error", err);
     res.status(500).json({ success: false, error: "Failed to generate download URL" });
   }
 });

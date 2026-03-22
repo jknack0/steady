@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -33,7 +34,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, data: practice });
   } catch (err) {
-    console.error("Create practice error:", err);
+    logger.error("Create practice error", err);
     res.status(500).json({ success: false, error: "Failed to create practice" });
   }
 });
@@ -81,7 +82,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: practices });
   } catch (err) {
-    console.error("List practices error:", err);
+    logger.error("List practices error", err);
     res.status(500).json({ success: false, error: "Failed to list practices" });
   }
 });
@@ -113,7 +114,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Update practice error:", err);
+    logger.error("Update practice error", err);
     res.status(500).json({ success: false, error: "Failed to update practice" });
   }
 });
@@ -180,7 +181,7 @@ router.post("/:id/invite", async (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, data: newMembership });
   } catch (err) {
-    console.error("Invite to practice error:", err);
+    logger.error("Invite to practice error", err);
     res.status(500).json({ success: false, error: "Failed to invite clinician" });
   }
 });
@@ -221,7 +222,7 @@ router.delete("/:id/members/:memberId", async (req: Request, res: Response) => {
     await prisma.practiceMembership.delete({ where: { id: req.params.memberId } });
     res.json({ success: true });
   } catch (err) {
-    console.error("Remove member error:", err);
+    logger.error("Remove member error", err);
     res.status(500).json({ success: false, error: "Failed to remove member" });
   }
 });
@@ -273,7 +274,7 @@ router.get("/:id/templates", async (req: Request, res: Response) => {
       })),
     });
   } catch (err) {
-    console.error("List practice templates error:", err);
+    logger.error("List practice templates error", err);
     res.status(500).json({ success: false, error: "Failed to list templates" });
   }
 });
@@ -324,7 +325,7 @@ router.post("/:id/share-program", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Share program error:", err);
+    logger.error("Share program error", err);
     res.status(500).json({ success: false, error: "Failed to share program" });
   }
 });
@@ -395,7 +396,7 @@ router.get("/:id/dashboard", async (req: Request, res: Response) => {
       data: { totals, clinicianStats },
     });
   } catch (err) {
-    console.error("Practice dashboard error:", err);
+    logger.error("Practice dashboard error", err);
     res.status(500).json({ success: false, error: "Failed to load dashboard" });
   }
 });

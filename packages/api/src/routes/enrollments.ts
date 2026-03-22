@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
@@ -58,7 +59,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data, cursor: hasMore ? page[page.length - 1].id : null });
   } catch (err) {
-    console.error("List enrollments error:", err);
+    logger.error("List enrollments error", err);
     res.status(500).json({ success: false, error: "Failed to list enrollments" });
   }
 });
@@ -143,7 +144,7 @@ router.post("/", validate(CreateEnrollmentSchema), async (req: Request, res: Res
       },
     });
   } catch (err) {
-    console.error("Create enrollment error:", err);
+    logger.error("Create enrollment error", err);
     res.status(500).json({ success: false, error: "Failed to create enrollment" });
   }
 });
@@ -176,7 +177,7 @@ router.put("/:id", validate(UpdateEnrollmentSchema), async (req: Request, res: R
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Update enrollment error:", err);
+    logger.error("Update enrollment error", err);
     res.status(500).json({ success: false, error: "Failed to update enrollment" });
   }
 });
@@ -229,7 +230,7 @@ router.get("/:id/homework-compliance", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: compliance });
   } catch (err) {
-    console.error("Get homework compliance error:", err);
+    logger.error("Get homework compliance error", err);
     res.status(500).json({ success: false, error: "Failed to get compliance data" });
   }
 });
@@ -256,22 +257,31 @@ router.post("/:enrollmentId/parts/:partId/stop-recurrence", async (req: Request,
       return;
     }
 
-    // Update recurrenceEndDate in the part content
+    // Update content and cancel instances atomically
     const content = part.content as Record<string, unknown>;
     const today = new Date().toISOString().split("T")[0];
     content.recurrenceEndDate = today;
 
-    await prisma.part.update({
-      where: { id: part.id },
-      data: { content: content as any },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.part.update({
+        where: { id: part.id },
+        data: { content: content as any },
+      });
 
-    // Cancel future instances for this enrollment (or all if no enrollmentId)
-    await cancelFutureInstances(part.id, req.params.enrollmentId);
+      // Cancel future PENDING instances for this enrollment
+      await tx.homeworkInstance.deleteMany({
+        where: {
+          partId: part.id,
+          enrollmentId: req.params.enrollmentId,
+          status: "PENDING",
+          dueDate: { gte: new Date() },
+        },
+      });
+    });
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Stop recurrence error:", err);
+    logger.error("Stop recurrence error", err);
     res.status(500).json({ success: false, error: "Failed to stop recurrence" });
   }
 });
@@ -298,7 +308,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete enrollment error:", err);
+    logger.error("Delete enrollment error", err);
     res.status(500).json({ success: false, error: "Failed to delete enrollment" });
   }
 });

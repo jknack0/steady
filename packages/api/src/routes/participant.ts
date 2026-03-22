@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -36,7 +37,7 @@ function handleServiceError(res: Response, err: unknown, fallbackMsg: string) {
       res.status(400).json({ success: false, error: err.message });
     }
   } else {
-    console.error(fallbackMsg + ":", err);
+    logger.error(fallbackMsg, err);
     res.status(500).json({ success: false, error: fallbackMsg });
   }
 }
@@ -67,7 +68,7 @@ router.get("/enrollments", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: enrollments });
   } catch (err) {
-    console.error("List participant enrollments error:", err);
+    logger.error("List participant enrollments error", err);
     res.status(500).json({ success: false, error: "Failed to list enrollments" });
   }
 });
@@ -138,7 +139,7 @@ router.get("/homework-instances/:id/streak", async (req: Request, res: Response)
     const streak = await getStreakData(instance.partId, instance.enrollmentId);
     res.json({ success: true, data: streak });
   } catch (err) {
-    console.error("Get streak error:", err);
+    logger.error("Get streak error", err);
     res.status(500).json({ success: false, error: "Failed to get streak data" });
   }
 });
@@ -203,7 +204,7 @@ router.get("/daily-trackers/:id/today", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { tracker, entry } });
   } catch (err) {
-    console.error("Get today tracker entry error:", err);
+    logger.error("Get today tracker entry error", err);
     res.status(500).json({ success: false, error: "Failed to get today's entry" });
   }
 });
@@ -265,7 +266,7 @@ router.get("/daily-trackers/:id/history", async (req: Request, res: Response) =>
       cursor: hasMore ? data[data.length - 1].id : null,
     });
   } catch (err) {
-    console.error("Get tracker history error:", err);
+    logger.error("Get tracker history error", err);
     res.status(500).json({ success: false, error: "Failed to get history" });
   }
 });

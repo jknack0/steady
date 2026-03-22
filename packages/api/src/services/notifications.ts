@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Expo, ExpoPushMessage } from "expo-server-sdk";
 import { prisma } from "@steady/db";
 import { getQueue } from "./queue";
@@ -69,7 +70,7 @@ async function sendPushNotification(job: SendNotificationJob): Promise<void> {
       await expo.sendPushNotificationsAsync(chunk);
     }
   } catch (err) {
-    console.error("Failed to send push notification:", err);
+    logger.error("Failed to send push notification", err);
   }
 }
 
@@ -176,7 +177,7 @@ export async function registerNotificationWorkers(): Promise<void> {
   await boss.schedule("generate-homework-instances", "0 3 * * *"); // 3am UTC daily (before reminders)
   await boss.schedule("schedule-tracker-reminders", "0 17 * * *"); // 5pm UTC daily
 
-  console.log("Notification workers registered");
+  logger.info("Notification workers registered");
 }
 
 // ── Public API ───────────────────────────────────────
@@ -220,7 +221,7 @@ export async function cancelNotificationsByKey(keyPrefix: string): Promise<void>
     );
   } catch {
     // Fallback: if pgboss schema not available, silently skip
-    console.warn(`Could not cancel notifications with key prefix: ${keyPrefix}`);
+    logger.warn("Could not cancel notifications", `key prefix: ${keyPrefix}`);
   }
 }
 

@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -40,7 +41,7 @@ router.get("/", async (req: Request, res: Response) => {
       cursor: hasMore ? data[data.length - 1].id : null,
     });
   } catch (err) {
-    console.error("List tasks error:", err);
+    logger.error("List tasks error", err);
     res.status(500).json({ success: false, error: "Failed to list tasks" });
   }
 });
@@ -78,7 +79,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, data: task });
   } catch (err) {
-    console.error("Create task error:", err);
+    logger.error("Create task error", err);
     res.status(500).json({ success: false, error: "Failed to create task" });
   }
 });
@@ -124,7 +125,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: task });
   } catch (err) {
-    console.error("Update task error:", err);
+    logger.error("Update task error", err);
     res.status(500).json({ success: false, error: "Failed to update task" });
   }
 });
@@ -150,7 +151,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Archive task error:", err);
+    logger.error("Archive task error", err);
     res.status(500).json({ success: false, error: "Failed to archive task" });
   }
 });

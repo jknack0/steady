@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { authenticate, requireRole } from "../middleware/auth";
 import {
@@ -38,7 +39,7 @@ router.post("/", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Re
 
     res.status(201).json({ success: true, data: session });
   } catch (err) {
-    console.error("Create session error:", err);
+    logger.error("Create session error", err);
     res.status(500).json({ success: false, error: "Failed to create session" });
   }
 });
@@ -60,7 +61,7 @@ router.get("/", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Res
 
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error("List sessions error:", err);
+    logger.error("List sessions error", err);
     res.status(500).json({ success: false, error: "Failed to list sessions" });
   }
 });
@@ -74,7 +75,7 @@ router.get("/upcoming", requireRole("PARTICIPANT"), async (req: Request, res: Re
     const data = await getUpcomingSession(participantId);
     res.json({ success: true, data });
   } catch (err) {
-    console.error("Get upcoming session error:", err);
+    logger.error("Get upcoming session error", err);
     res.status(500).json({ success: false, error: "Failed to get upcoming session" });
   }
 });
@@ -93,7 +94,7 @@ router.get("/history", requireRole("PARTICIPANT"), async (req: Request, res: Res
 
     res.json({ success: true, ...result });
   } catch (err) {
-    console.error("Get session history error:", err);
+    logger.error("Get session history error", err);
     res.status(500).json({ success: false, error: "Failed to get session history" });
   }
 });
@@ -112,7 +113,7 @@ router.put("/:id", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: 
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    console.error("Update session error:", err);
+    logger.error("Update session error", err);
     res.status(500).json({ success: false, error: "Failed to update session" });
   }
 });
@@ -135,7 +136,7 @@ router.put("/:id/complete", requireRole("CLINICIAN", "ADMIN"), async (req: Reque
 
     res.json({ success: true, data: result.data });
   } catch (err) {
-    console.error("Complete session error:", err);
+    logger.error("Complete session error", err);
     res.status(500).json({ success: false, error: "Failed to complete session" });
   }
 });
@@ -152,7 +153,7 @@ router.get("/:id/prepare", requireRole("CLINICIAN", "ADMIN"), async (req: Reques
 
     res.json({ success: true, data });
   } catch (err) {
-    console.error("Prepare session error:", err);
+    logger.error("Prepare session error", err);
     res.status(500).json({ success: false, error: "Failed to prepare session data" });
   }
 });

@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -37,7 +38,7 @@ router.get("/", async (req: Request, res: Response) => {
       cursor: hasMore ? data[data.length - 1].id : null,
     });
   } catch (err) {
-    console.error("List journal entries error:", err);
+    logger.error("List journal entries error", err);
     res.status(500).json({ success: false, error: "Failed to list journal entries" });
   }
 });
@@ -64,7 +65,7 @@ router.get("/:date", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: entry });
   } catch (err) {
-    console.error("Get journal entry error:", err);
+    logger.error("Get journal entry error", err);
     res.status(500).json({ success: false, error: "Failed to get journal entry" });
   }
 });
@@ -121,7 +122,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: entry });
   } catch (err) {
-    console.error("Upsert journal entry error:", err);
+    logger.error("Upsert journal entry error", err);
     res.status(500).json({ success: false, error: "Failed to save journal entry" });
   }
 });

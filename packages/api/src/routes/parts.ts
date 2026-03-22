@@ -1,3 +1,4 @@
+import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { CreatePartSchema, UpdatePartSchema, ReorderPartsSchema, type HomeworkContent } from "@steady/shared";
@@ -56,7 +57,7 @@ router.post("/", validate(CreatePartSchema), async (req: Request, res: Response)
 
     res.status(201).json({ success: true, data: part });
   } catch (err) {
-    console.error("Create part error:", err);
+    logger.error("Create part error", err);
     res.status(500).json({ success: false, error: "Failed to create part" });
   }
 });
@@ -78,7 +79,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: parts });
   } catch (err) {
-    console.error("List parts error:", err);
+    logger.error("List parts error", err);
     res.status(500).json({ success: false, error: "Failed to list parts" });
   }
 });
@@ -124,7 +125,7 @@ router.put("/reorder", validate(ReorderPartsSchema), async (req: Request, res: R
 
     res.json({ success: true, data: parts });
   } catch (err) {
-    console.error("Reorder parts error:", err);
+    logger.error("Reorder parts error", err);
     res.status(500).json({ success: false, error: "Failed to reorder parts" });
   }
 });
@@ -161,13 +162,13 @@ router.put("/:id", validate(UpdatePartSchema), async (req: Request, res: Respons
     if (part.type === "HOMEWORK" && req.body.content) {
       const content = req.body.content as HomeworkContent;
       regenerateInstancesForPart(part.id, content).catch((err) => {
-        console.error("Failed to regenerate homework instances:", err);
+        logger.error("Failed to regenerate homework instances", err);
       });
     }
 
     res.json({ success: true, data: part });
   } catch (err) {
-    console.error("Update part error:", err);
+    logger.error("Update part error", err);
     res.status(500).json({ success: false, error: "Failed to update part" });
   }
 });
@@ -209,7 +210,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("Delete part error:", err);
+    logger.error("Delete part error", err);
     res.status(500).json({ success: false, error: "Failed to delete part" });
   }
 });
