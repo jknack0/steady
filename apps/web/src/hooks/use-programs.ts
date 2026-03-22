@@ -86,9 +86,28 @@ export function useDeleteProgram() {
 export function useCloneProgram() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.post<Program>(`/api/programs/${id}/clone`),
+    mutationFn: ({ id, title }: { id: string; title?: string }) =>
+      api.post<Program>(`/api/programs/${id}/clone`, title ? { title } : {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["programs"] });
     },
+  });
+}
+
+export interface ProgramTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  durationWeeks: number | null;
+  cadence: string;
+  sessionType: string;
+  moduleCount: number;
+}
+
+export function useTemplates() {
+  return useQuery<ProgramTemplate[]>({
+    queryKey: ["program-templates"],
+    queryFn: () => api.get("/api/programs/templates"),
   });
 }

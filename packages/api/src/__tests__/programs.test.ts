@@ -240,6 +240,7 @@ describe("POST /api/programs/:id/clone", () => {
           ],
         },
       ],
+      dailyTrackers: [],
     });
 
     db.program.findFirst.mockResolvedValue(source as any);

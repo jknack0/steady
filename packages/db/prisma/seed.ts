@@ -1,6 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { seedTemplate1_CBTDepression, seedTemplate2_DBTSkillsTraining, seedTemplate3_ERPForOCD } from "./templates/templates-1-3";
+import { seedTemplate4_CPT_PTSD, seedTemplate5_CBTI_Insomnia, seedTemplate6_RelapsePrevention } from "./templates/templates-4-6";
+import { seedTemplate7_BehavioralActivation, seedTemplate8_MBSR } from "./templates/templates-7-8";
+import { seedTemplate9_AngerManagement, seedTemplate10_ParentingSkills } from "./templates/templates-9-10";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
@@ -217,6 +221,25 @@ async function main() {
           ],
         },
       },
+      {
+        type: "HOMEWORK",
+        title: "Steady Work: Build Your STEADY SYSTEM",
+        content: {
+          type: "HOMEWORK",
+          items: [
+            { type: "ACTION", description: "Choose one system that includes a Calendar, To-do list, and Journal. Paper options: Anecdote, Erin Condren, Laurel Denise, Papier, or any planner with calendar + to-do + journal space. A whiteboard can be part of your calendar system. Tech options: Fantastical, Notes app, iCalendar (Mac); Calendly, Google Calendar, Proton Calendar (Android). Make sure it syncs across your devices." },
+            { type: "ACTION", description: "Review the Material: Read the Memory Handouts and watch the Videos." },
+            { type: "JOURNAL_PROMPT", description: "How confident are you (1-10) that the STEADY system will help you make meaningful changes? Why that number?" },
+            { type: "JOURNAL_PROMPT", description: "What are your thoughts about journaling? Have you tried it before? What was that experience like?" },
+            { type: "JOURNAL_PROMPT", description: "Did we address your specific needs in your intended outcomes? Was there anything we missed?" },
+            { type: "JOURNAL_PROMPT", description: "Once you set up your STEADY SYSTEM, where will you keep it so you actually use it?" },
+            { type: "BRING_TO_SESSION", description: "Bring your STEADY SYSTEM so we can begin using it together." },
+          ],
+          dueTimingType: "BEFORE_NEXT_SESSION",
+          completionRule: "ALL",
+          reminderCadence: "DAILY",
+        },
+      },
     ]
   );
 
@@ -268,13 +291,16 @@ async function main() {
       },
       {
         type: "HOMEWORK",
-        title: "Week 1 Homework",
+        title: "Steady Work: Get Up to Speed",
         content: {
           type: "HOMEWORK",
           items: [
-            { type: "ACTION", description: "Track your energy and focus levels 3 times per day (morning, afternoon, evening) for the next week. Use a simple 1-5 scale. Note what you were doing and how engaged you felt." },
-            { type: "JOURNAL_PROMPT", description: "At the end of each day, write 2-3 sentences about what went well and what was hard. Look for ADHD-related patterns." },
-            { type: "BRING_TO_SESSION", description: "Bring your energy/focus tracking notes to your next session. We'll use them to identify your peak performance windows." },
+            { type: "ACTION", description: "Identify What You're Behind On — Make a list of tasks you need to catch up on. Examples: Emails, Texts, Cleaning, Work tasks, Bills, Chores." },
+            { type: "ACTION", description: "Break Each Item Into Smaller Steps — Divide big tasks into manageable parts. Examples: Work emails vs. personal emails; list chores and start with the easiest; list bills and start by paying one or setting up auto-pay." },
+            { type: "ACTION", description: "Estimate How Long Each Step Will Take — Write down an approximate time for each step. Being realistic helps you plan without overwhelm." },
+            { type: "ACTION", description: "Schedule Each Step in Your STEADY SYSTEM — Break tasks into hours or blocks. Be realistic about what you can complete in one sitting. Consider using the Pomodoro Method (25 minutes work / 5 minutes break). Calculate your total estimated time to catch up." },
+            { type: "ACTION", description: "Start Catching Up — Begin with your first step. Focus on progress, not perfection." },
+            { type: "JOURNAL_PROMPT", description: "Bring the Future to the Present: Visualize yourself fully caught up. Use all your senses — see it, hear it, feel it. Imagine how you'll feel when the last task is done. Describe your experience of finishing these tasks." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -338,18 +364,21 @@ async function main() {
       },
       {
         type: "HOMEWORK",
-        title: "Week 2 Homework",
+        title: "Steady Work: Build Your Steady System",
         content: {
           type: "HOMEWORK",
           items: [
-            { type: "ACTION", description: "Try the 2-Minute Bridge technique at least 3 times this week when you're struggling to start a task. Note whether momentum carried you forward." },
-            { type: "ACTION", description: "Identify your peak performance window and protect it for 3 days this week — no meetings, no email, just focused work." },
-            { type: "ACTION", description: "Try body doubling (virtual or in-person) for at least one work session." },
-            { type: "JOURNAL_PROMPT", description: "Which focus technique resonated most with you? Why do you think it fits your brain?" },
+            { type: "ACTION", description: "Watch the Videos — Take notes as needed. Focus on understanding the concept of STEADY TASKS." },
+            { type: "ACTION", description: "Practice Identifying STEADY TASKS — Look at your tasks and decide which ones belong in your STEADY SYSTEM." },
+            { type: "ACTION", description: "Practice Adding STEADY TASKS to Your To-Do List — Write each task in your list. Reflect: How often did you forget to add a task, and why? How often did you remember, and why?" },
+            { type: "ACTION", description: "Practice Transferring To-Do List Items to Your Calendar — Give each STEADY TASK a specific time slot in your calendar." },
+            { type: "ACTION", description: "Track Time for Repetitive Tasks — Record how long these usually take so you can schedule realistically: Shower, Making dinner, Getting ready to leave the house, Laundry, Regular phone calls, Homework, Bedtime routine, Grocery shopping, Drive to work." },
+            { type: "JOURNAL_PROMPT", description: "How sustainable do you think it will be to consistently use your STEADY SYSTEM? What might be the barriers?" },
+            { type: "BRING_TO_SESSION", description: "Bring your STEADY SYSTEM to the next meeting — be ready to review and refine it." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
-          completionRule: "MAJORITY",
-          reminderCadence: "EVERY_OTHER_DAY",
+          completionRule: "ALL",
+          reminderCadence: "DAILY",
         },
       },
     ]
@@ -403,14 +432,14 @@ async function main() {
       },
       {
         type: "HOMEWORK",
-        title: "Week 3 Homework",
+        title: "Steady Work: Self-Activation",
         content: {
           type: "HOMEWORK",
           items: [
-            { type: "ACTION", description: "Practice the STOP technique at least once per day, even during mild emotional moments. Build the habit before you need it in a crisis." },
-            { type: "ACTION", description: "Create an 'emotional first aid kit' — a list of 5 things that help you calm down (specific songs, activities, people to call, sensory tools)." },
-            { type: "JOURNAL_PROMPT", description: "Each evening, name 3 emotions you felt that day. Practice 'name it to tame it' in retrospect." },
-            { type: "BRING_TO_SESSION", description: "Bring your emotional first aid kit list and any observations about your RSD patterns." },
+            { type: "ACTION", description: "Eliminating Micro-Stressors — Go through each sensory category and adjust small things in your environment. Touch: Pillows/sheets, Clothes, Work chair, Couch, Lotion/soap, Toothbrush, Water bottle. Smell: Cleaning products, Soaps, Lotion, Hair products, Laundry detergent, Deodorant, Bad smells. Taste: Toothpaste, Drinking water, Snacks, Condiments, Floss. See: Decorations, House setup, Your car, Colors, Clutter. Hear: Sound machine, Music, Alarm tones, Ring tones, Text notifications, TV volume. Mark Y for changes made, N for no change." },
+            { type: "ACTION", description: "Healthy vs. Unhealthy Dopamine Behaviors — List your healthy dopamine behaviors and your unhealthy dopamine behaviors." },
+            { type: "ACTION", description: "Reflection: Which healthy behaviors do you want to increase? Which unhealthy behaviors do you want to reduce? Name new healthy behaviors you will try." },
+            { type: "JOURNAL_PROMPT", description: "For all changes you made (Y answers), describe the changes you made to reduce micro-stress. If you increased healthy behaviors or reduced unhealthy behaviors, write about those here." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -468,18 +497,22 @@ async function main() {
       },
       {
         type: "HOMEWORK",
-        title: "Week 4 Homework",
+        title: "Steady Work: Emotion Regulation",
         content: {
           type: "HOMEWORK",
           items: [
-            { type: "ACTION", description: "Use the Time Multiplier Rule for every scheduled task this week. Track your estimates vs. actual time to calibrate." },
-            { type: "ACTION", description: "Do a Weekly Planning Ritual at the start of this week. Block your peak hours and identify your Big 3." },
-            { type: "ACTION", description: "Set up transition alarms (15min / 5min / 0min) for at least 3 events or transitions this week." },
-            { type: "JOURNAL_PROMPT", description: "How does your relationship with time affect your self-esteem? What would change if you stopped judging yourself for time blindness?" },
+            { type: "ACTION", description: "Identify What Dysregulates You — List situations, people, or triggers that make you feel off-balance. Rate each from 1-10 (10 = most dysregulating)." },
+            { type: "ACTION", description: "Notice Your Common Impulses — What actions or urges often show up when you're stressed or dysregulated?" },
+            { type: "ACTION", description: "How Do You Cope with RSD? — Where does Rejection Sensitive Dysphoria show up for you?" },
+            { type: "ACTION", description: "Early Messages About Your ADHD — List messages you remember receiving about your ADHD symptoms. Who sent these messages? (Mom, Dad, Brother, Sister, Aunt, Uncle, Cousin, Teacher, Friend, Partner, Tutor, Coach, Other). How do you cope with these early messages now?" },
+            { type: "ACTION", description: "Childhood Challenges — How did your ADHD symptoms make life harder when you were young?" },
+            { type: "ACTION", description: "Inner Critic — What does your inner critic say? How does it make you feel?" },
+            { type: "ACTION", description: "Strengths & Weaknesses — List your strengths and weaknesses." },
+            { type: "JOURNAL_PROMPT", description: "Throughout the week, notice a moment when your inner critic spoke up. Write what it said and how it made you feel." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
-          completionRule: "MAJORITY",
-          reminderCadence: "EVERY_OTHER_DAY",
+          completionRule: "ALL",
+          reminderCadence: "DAILY",
         },
       },
     ]
@@ -536,13 +569,16 @@ async function main() {
       },
       {
         type: "HOMEWORK",
-        title: "Week 5 Homework",
+        title: "Steady Work: Self Awareness",
         content: {
           type: "HOMEWORK",
           items: [
-            { type: "ACTION", description: "Design your personal morning routine using the chain method. Start with just 3-4 steps and practice them for the full week." },
-            { type: "ACTION", description: "Set up one external cue for your routine (alarm, sticky note on mirror, phone wallpaper reminder)." },
-            { type: "JOURNAL_PROMPT", description: "Track which days you completed your morning routine and what got in the way on days you didn't. Look for patterns." },
+            { type: "ACTION", description: "HINDSIGHT (Success) — Think about something in your past that worked out well. What was it? How exactly did you do that? How could you repeat the success? What helped it work? Were there any barriers? How did you get through them?" },
+            { type: "ACTION", description: "HINDSIGHT (Learning from a tough moment) — Think of a difficult moment. What went wrong? What could you try differently next time? What got in the way?" },
+            { type: "ACTION", description: "HINDSIGHT + SELF-AWARENESS — Notice your patterns. Identify one pattern you see in your behavior. Do you react the same way in certain situations? Are you usually grumpy in the morning? More impulsive with certain people? More irritable in certain places? What kinds of things do you usually look forward to?" },
+            { type: "ACTION", description: "Foresight and Time Horizon — Look in your STEADY SYSTEM and identify an upcoming event. Imagine the event using your senses. How might this feel for me? Should I schedule this if I might be tired after work? Will I enjoy going? Should I bring anything I might need later? Who will be there? Will it be loud or overstimulating? Do I actually enjoy doing this activity? Is this important for me to attend?" },
+            { type: "ACTION", description: "ADHD + RELATIONSHIPS — How does ADHD show up in your relationships? What changes might you make? How will you make these changes? Consider: Co-workers, Friends, Romantic partner(s), Family, Roommate, Strangers." },
+            { type: "JOURNAL_PROMPT", description: "Describe yourself in 3 sentences." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -2920,6 +2956,48 @@ async function main() {
     JWT_SECRET,
     { expiresIn: "7d" }
   );
+
+  // ── Seed Program Templates ──────────────────────────────
+  // Delete existing templates before re-seeding
+  const existingTemplates = await prisma.program.findMany({ where: { isTemplate: true } });
+  for (const t of existingTemplates) {
+    const tModules = await prisma.module.findMany({ where: { programId: t.id } });
+    for (const m of tModules) {
+      await prisma.part.deleteMany({ where: { moduleId: m.id } });
+    }
+    await prisma.module.deleteMany({ where: { programId: t.id } });
+    const tTrackers = await prisma.dailyTracker.findMany({ where: { programId: t.id } });
+    for (const tr of tTrackers) {
+      await prisma.dailyTrackerField.deleteMany({ where: { trackerId: tr.id } });
+    }
+    await prisma.dailyTracker.deleteMany({ where: { programId: t.id } });
+    await prisma.program.delete({ where: { id: t.id } });
+  }
+
+  console.log("\nSeeding program templates...");
+  const templateClinicianId = admin.clinicianProfile!.id;
+
+  const t1 = await seedTemplate1_CBTDepression(prisma, templateClinicianId);
+  console.log(`  ✓ Template 1: ${t1.title}`);
+  const t2 = await seedTemplate2_DBTSkillsTraining(prisma, templateClinicianId);
+  console.log(`  ✓ Template 2: ${t2.title}`);
+  const t3 = await seedTemplate3_ERPForOCD(prisma, templateClinicianId);
+  console.log(`  ✓ Template 3: ${t3.title}`);
+  const t4 = await seedTemplate4_CPT_PTSD(prisma, templateClinicianId);
+  console.log(`  ✓ Template 4: ${t4.title}`);
+  const t5 = await seedTemplate5_CBTI_Insomnia(prisma, templateClinicianId);
+  console.log(`  ✓ Template 5: ${t5.title}`);
+  const t6 = await seedTemplate6_RelapsePrevention(prisma, templateClinicianId);
+  console.log(`  ✓ Template 6: ${t6.title}`);
+  const t7 = await seedTemplate7_BehavioralActivation(prisma, templateClinicianId);
+  console.log(`  ✓ Template 7: ${t7.title}`);
+  const t8 = await seedTemplate8_MBSR(prisma, templateClinicianId);
+  console.log(`  ✓ Template 8: ${t8.title}`);
+  const t9 = await seedTemplate9_AngerManagement(prisma, templateClinicianId);
+  console.log(`  ✓ Template 9: ${t9.title}`);
+  const t10 = await seedTemplate10_ParentingSkills(prisma, templateClinicianId);
+  console.log(`  ✓ Template 10: ${t10.title}`);
+  console.log("All 10 templates seeded.");
 
   console.log("\n=== Seed Complete ===\n");
 

@@ -227,12 +227,12 @@ export async function markPartComplete(
         partId,
         status: "COMPLETED",
         completedAt: new Date(),
-        responseData: responseData || null,
+        responseData: (responseData ?? undefined) as any,
       },
       update: {
         status: "COMPLETED",
         completedAt: new Date(),
-        responseData: responseData || null,
+        responseData: (responseData ?? undefined) as any,
       },
     });
 
@@ -513,11 +513,11 @@ export async function submitTrackerEntry(
       trackerId,
       userId,
       date: entryDate,
-      responses,
+      responses: responses as any,
       completedAt: new Date(),
     },
     update: {
-      responses,
+      responses: responses as any,
       completedAt: new Date(),
     },
   });

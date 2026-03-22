@@ -27,6 +27,36 @@ router.post("/", validate(CreateProgramSchema), async (req: Request, res: Respon
   }
 });
 
+// GET /api/programs/templates — List all available program templates
+router.get("/templates", async (_req: Request, res: Response) => {
+  try {
+    const templates = await prisma.program.findMany({
+      where: { isTemplate: true, status: "PUBLISHED" },
+      include: {
+        _count: { select: { modules: true } },
+      },
+      orderBy: { title: "asc" },
+      take: 100,
+    });
+
+    const data = templates.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      category: t.category,
+      durationWeeks: t.durationWeeks,
+      cadence: t.cadence,
+      sessionType: t.sessionType,
+      moduleCount: t._count.modules,
+    }));
+
+    res.json({ success: true, data });
+  } catch (err) {
+    logger.error("List templates error", err);
+    res.status(500).json({ success: false, error: "Failed to list templates" });
+  }
+});
+
 // GET /api/programs — List all programs for the authenticated clinician
 router.get("/", async (req: Request, res: Response) => {
   try {
@@ -36,6 +66,7 @@ router.get("/", async (req: Request, res: Response) => {
     const programs = await prisma.program.findMany({
       where: {
         clinicianId: req.user!.clinicianProfileId!,
+        isTemplate: false,
         status: { not: "ARCHIVED" },
       },
       include: {
@@ -208,15 +239,25 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/programs/:id/clone — Clone a program (template functionality)
+// POST /api/programs/:id/clone — Clone a program (or template) with all content
 router.post("/:id/clone", async (req: Request, res: Response) => {
   try {
+    // Templates can be cloned by any clinician; own programs require ownership
     const source = await prisma.program.findFirst({
-      where: { id: req.params.id, clinicianId: req.user!.clinicianProfileId! },
+      where: {
+        id: req.params.id,
+        OR: [
+          { isTemplate: true, status: "PUBLISHED" },
+          { clinicianId: req.user!.clinicianProfileId! },
+        ],
+      },
       include: {
         modules: {
           orderBy: { sortOrder: "asc" },
           include: { parts: { orderBy: { sortOrder: "asc" } } },
+        },
+        dailyTrackers: {
+          include: { fields: { orderBy: { sortOrder: "asc" } } },
         },
       },
     });
@@ -226,12 +267,20 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
       return;
     }
 
+    const customTitle = typeof req.body.title === "string" && req.body.title.trim()
+      ? req.body.title.trim()
+      : source.isTemplate
+        ? source.title
+        : `${source.title} (Copy)`;
+
     const clone = await prisma.$transaction(async (tx) => {
       const newProgram = await tx.program.create({
         data: {
           clinicianId: req.user!.clinicianProfileId!,
-          title: `${source.title} (Copy)`,
+          title: customTitle,
           description: source.description,
+          category: source.category,
+          durationWeeks: source.durationWeeks,
           coverImageUrl: source.coverImageUrl,
           cadence: source.cadence,
           enrollmentMethod: source.enrollmentMethod,
@@ -266,6 +315,31 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
               sortOrder: p.sortOrder,
               isRequired: p.isRequired,
               content: p.content as any,
+            })),
+          });
+        }
+      }
+
+      // Clone daily trackers and their fields
+      for (const tracker of source.dailyTrackers) {
+        const newTracker = await tx.dailyTracker.create({
+          data: {
+            programId: newProgram.id,
+            createdById: req.user!.clinicianProfileId!,
+            name: tracker.name,
+            description: tracker.description,
+          },
+        });
+
+        if (tracker.fields.length > 0) {
+          await tx.dailyTrackerField.createMany({
+            data: tracker.fields.map((f) => ({
+              trackerId: newTracker.id,
+              label: f.label,
+              fieldType: f.fieldType,
+              sortOrder: f.sortOrder,
+              isRequired: f.isRequired,
+              options: f.options as any,
             })),
           });
         }

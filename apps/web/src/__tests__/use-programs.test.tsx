@@ -145,10 +145,10 @@ describe("useCloneProgram", () => {
 
     const { result } = renderHook(() => useCloneProgram(), { wrapper: createWrapper() });
 
-    result.current.mutate("p1");
+    result.current.mutate({ id: "p1" });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApi.post).toHaveBeenCalledWith("/api/programs/p1/clone");
+    expect(mockApi.post).toHaveBeenCalledWith("/api/programs/p1/clone", {});
   });
 });
