@@ -731,7 +731,7 @@ function ClientCard({ client, status, onLogTime, onSendReminder }: ClientCardPro
 
 // ── Main Dashboard Page ─────────────────────────────────────────────────────
 
-export default function RtmDashboardPage() {
+export function RtmDashboardContent() {
   const { data, isLoading, error } = useRtmDashboard();
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [logDialogOpen, setLogDialogOpen] = useState(false);
@@ -800,37 +800,24 @@ export default function RtmDashboardPage() {
 
       {data && (
         <>
-          {/* ── Revenue Banner ───────────────────────────────────────── */}
-          <div className="rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 p-6 sm:p-8 mb-8 text-white">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <p className="text-green-100 text-sm font-medium mb-1">
-                  Estimated RTM Revenue This Month
-                </p>
-                <p className="text-4xl sm:text-5xl font-bold tracking-tight">
-                  {formatCurrency(data.summary.estimatedRevenue)}
-                </p>
-                <p className="text-green-100 mt-2 text-sm">
-                  {data.summary.clientsBillable} clients billable
-                  {data.summary.clientsApproaching > 0 && (
-                    <> &middot; {data.summary.clientsApproaching} approaching</>
-                  )}
-                  {data.summary.clientsAtRisk > 0 && (
-                    <> &middot; {data.summary.clientsAtRisk} need attention</>
-                  )}
-                </p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  variant="secondary"
-                  className="bg-white/20 text-white hover:bg-white/30 border-0"
-                  onClick={() => openLogDialog()}
-                >
-                  <Timer className="mr-2 h-4 w-4" />
-                  Log Time
-                </Button>
-              </div>
-            </div>
+          {/* ── Summary bar ──────────────────────────────────────────── */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <p className="text-sm text-muted-foreground">
+              {data.summary.totalActiveClients} active clients
+              {data.summary.clientsBillable > 0 && (
+                <> &middot; <span className="text-green-600 font-medium">{data.summary.clientsBillable} billable</span></>
+              )}
+              {data.summary.clientsApproaching > 0 && (
+                <> &middot; <span className="text-yellow-600 font-medium">{data.summary.clientsApproaching} approaching</span></>
+              )}
+              {data.summary.clientsAtRisk > 0 && (
+                <> &middot; <span className="text-red-600 font-medium">{data.summary.clientsAtRisk} need attention</span></>
+              )}
+            </p>
+            <Button size="sm" onClick={() => openLogDialog()}>
+              <Timer className="mr-2 h-4 w-4" />
+              Log Time
+            </Button>
           </div>
 
           {/* ── Tab Filters ──────────────────────────────────────────── */}
@@ -913,4 +900,8 @@ export default function RtmDashboardPage() {
       />
     </div>
   );
+}
+
+export default function RtmDashboardPage() {
+  return <RtmDashboardContent />;
 }

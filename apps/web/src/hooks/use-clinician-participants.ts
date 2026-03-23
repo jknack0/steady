@@ -19,6 +19,7 @@ export interface ParticipantRow {
   lastActive: string | null;
   statusIndicator: "green" | "amber" | "red";
   enrollmentStatus: string;
+  rtm: { engagementDays: number; clinicianMinutes: number; status: string } | null;
 }
 
 interface ParticipantListResponse {

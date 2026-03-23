@@ -179,11 +179,6 @@ export default function ParticipantsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Participants</h1>
-      <p className="text-muted-foreground mb-6">
-        Track participant progress and engagement across your programs.
-      </p>
-
       {/* Search + Filter bar */}
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
@@ -245,10 +240,10 @@ export default function ParticipantsPage() {
                   Program
                 </th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                  Current Module
+                  Homework
                 </th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                  Homework
+                  RTM
                 </th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
                   Last Active
@@ -287,9 +282,6 @@ export default function ParticipantsPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-sm">{row.programTitle}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {row.currentModule?.title || "—"}
-                  </td>
                   <td className="px-4 py-3">
                     <Badge
                       variant="outline"
@@ -300,6 +292,27 @@ export default function ParticipantsPage() {
                     >
                       {HOMEWORK_LABEL[row.homeworkStatus]}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.rtm ? (
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "inline-block w-2 h-2 rounded-full",
+                            row.rtm.status === "billable"
+                              ? "bg-green-500"
+                              : row.rtm.status === "approaching"
+                                ? "bg-yellow-500"
+                                : "bg-blue-400"
+                          )}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {row.rtm.engagementDays}d / {row.rtm.clinicianMinutes}m
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">
                     {formatLastActive(row.lastActive)}

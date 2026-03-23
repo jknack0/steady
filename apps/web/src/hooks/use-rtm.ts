@@ -42,7 +42,7 @@ export interface RtmDashboardData {
 
 export interface EngagementEvent {
   date: string;
-  events: string[];
+  events: Array<{ type: string; timestamp: string }>;
 }
 
 export interface TimeLogEntry {
@@ -72,10 +72,8 @@ export interface RtmClientDetail {
   monitoringType: string;
   enrollmentStatus: string;
   enrolledAt: string;
-  currentPeriod: RtmClientRow["currentPeriod"] & {
-    engagementCalendar: Record<string, boolean>;
-  } | null;
-  engagementEvents: EngagementEvent[];
+  currentPeriod: RtmClientRow["currentPeriod"];
+  engagementCalendar: EngagementEvent[];
   timeLogs: TimeLogEntry[];
   previousPeriods: PreviousPeriod[];
 }

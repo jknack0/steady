@@ -25,6 +25,7 @@ interface ParticipantRow {
   lastActive: string | null;
   statusIndicator: "green" | "amber" | "red";
   enrollmentStatus: string;
+  rtm: { engagementDays: number; clinicianMinutes: number; status: string } | null;
 }
 
 interface ParticipantListResult {
@@ -230,8 +231,42 @@ export async function getClinicianParticipants(
       lastActive: lastActive?.toISOString() || null,
       statusIndicator,
       enrollmentStatus: enrollment.status,
+      rtm: null as { engagementDays: number; clinicianMinutes: number; status: string } | null,
     };
   });
+
+  // Enrich with RTM data
+  const participantUserIds = participants.map((p) => p.participantId);
+  if (participantUserIds.length > 0) {
+    const rtmEnrollments = await prisma.rtmEnrollment.findMany({
+      where: {
+        clinicianId: clinicianProfileId,
+        clientId: { in: participantUserIds },
+        status: { in: ["ACTIVE", "PENDING_CONSENT"] },
+      },
+      include: {
+        billingPeriods: {
+          orderBy: { periodStart: "desc" },
+          take: 3,
+        },
+      },
+    });
+
+    for (const rtm of rtmEnrollments) {
+      const participant = participants.find((p) => p.participantId === rtm.clientId);
+      if (!participant) continue;
+      const activePeriod = rtm.billingPeriods.find(
+        (bp) => bp.status === "ACTIVE" || bp.status === "THRESHOLD_MET"
+      ) || rtm.billingPeriods[0];
+      if (activePeriod) {
+        participant.rtm = {
+          engagementDays: activePeriod.engagementDays,
+          clinicianMinutes: activePeriod.clinicianMinutes,
+          status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+        };
+      }
+    }
+  }
 
   // Apply search filter
   let filtered = participants;

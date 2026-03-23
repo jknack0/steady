@@ -230,31 +230,17 @@ function EngagementCalendar({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const days: {
-    date: Date;
-    key: string;
-    engaged: boolean;
-    isToday: boolean;
-    inRange: boolean;
-    engagedIndex: number;
-  }[] = [];
-
-  let engagedCount = 0;
+  const days: { key: string; engaged: boolean; isToday: boolean; isFuture: boolean }[] = [];
   const cursor = new Date(start);
   while (cursor <= end) {
     const key = cursor.toISOString().split("T")[0];
     const cursorMidnight = new Date(cursor);
     cursorMidnight.setHours(0, 0, 0, 0);
-    const engaged = calendar[key] === true;
-    if (engaged) engagedCount++;
-
     days.push({
-      date: new Date(cursor),
       key,
-      engaged,
+      engaged: calendar[key] === true,
       isToday: cursorMidnight.getTime() === today.getTime(),
-      inRange: cursorMidnight <= today,
-      engagedIndex: engaged ? engagedCount : 0,
+      isFuture: cursorMidnight > today,
     });
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -263,68 +249,48 @@ function EngagementCalendar({
 
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1.5">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <div
-            key={i}
-            className="text-xs text-center text-muted-foreground font-medium pb-1"
-          >
-            {d}
-          </div>
-        ))}
-
-        {Array.from({ length: start.getDay() }).map((_, i) => (
-          <div key={`pad-${i}`} />
-        ))}
-
+      {/* GitHub-style heatmap — single horizontal row */}
+      <div className="flex items-center gap-[3px]">
         {days.map((day) => (
           <div
             key={day.key}
             className={cn(
-              "aspect-square rounded-md flex items-center justify-center text-xs font-medium transition-colors",
-              day.engaged
-                ? day.engagedIndex > 16
-                  ? "bg-green-600 text-white"
-                  : "bg-green-500 text-white"
-                : day.inRange
-                  ? "bg-gray-100 text-gray-400"
-                  : "bg-gray-50 text-gray-300",
-              day.isToday && "ring-2 ring-primary ring-offset-1"
+              "w-3 h-3 rounded-sm transition-colors",
+              day.isFuture
+                ? "bg-gray-100"
+                : day.engaged
+                  ? "bg-green-500"
+                  : "bg-gray-200",
+              day.isToday && "ring-1 ring-primary ring-offset-1"
             )}
-            title={`${day.key}${day.engaged ? ` — engaged (day ${day.engagedIndex})` : ""}`}
-          >
-            {day.date.getDate()}
-          </div>
+            title={`${day.key}${day.engaged ? " — engaged" : ""}`}
+          />
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-green-500" />
-            Engaged
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-green-600" />
-            Beyond threshold
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-gray-100 border" />
+      {/* Legend + stats */}
+      <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm bg-gray-200" />
             No activity
           </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm bg-green-500" />
+            Engaged
+          </div>
         </div>
+        <span className="text-xs text-muted-foreground">
+          {engagementDays}/30 days | threshold{" "}
+          {thresholdMet ? (
+            <span className="text-green-600 font-medium">met</span>
+          ) : (
+            <span className="text-amber-600 font-medium">
+              {16 - engagementDays} more needed
+            </span>
+          )}
+        </span>
       </div>
-
-      <p className="text-sm mt-2 text-muted-foreground">
-        {engagementDays} of 30 days | 16-day threshold{" "}
-        {thresholdMet ? (
-          <span className="text-green-600 font-medium">met</span>
-        ) : (
-          <span className="text-amber-600 font-medium">
-            {16 - engagementDays} more needed
-          </span>
-        )}
-      </p>
     </div>
   );
 }
@@ -670,10 +636,17 @@ export default function RtmClientDetailPage() {
                         Eligible Codes:
                       </span>
                       <span className="font-medium">
-                        {billability.eligibleCodes.map((code) => {
-                          const info = CPT_INFO[code];
-                          return `${code}${info ? ` (${formatMoney(info.rate)})` : ""}`;
-                        }).join(", ")}
+                        {(() => {
+                          const counts = new Map<string, number>();
+                          for (const code of billability.eligibleCodes) {
+                            counts.set(code, (counts.get(code) || 0) + 1);
+                          }
+                          return Array.from(counts.entries()).map(([code, count]) => {
+                            const info = CPT_INFO[code];
+                            const unitLabel = count > 1 ? ` x${count}` : "";
+                            return `${code}${unitLabel}${info ? ` (${formatMoney(info.rate * count)})` : ""}`;
+                          }).join(", ");
+                        })()}
                       </span>
                     </div>
                   )}

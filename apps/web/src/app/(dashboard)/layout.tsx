@@ -37,7 +37,6 @@ const navItems = [
   { href: "/programs", label: "My Programs", icon: BookOpen },
   { href: "/participants", label: "Participants", icon: Users },
   { href: "/sessions", label: "Sessions", icon: Calendar },
-  { href: "/rtm", label: "RTM", icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -87,7 +86,7 @@ function Sidebar({ className }: { className?: string }) {
             >
               <item.icon className="h-4 w-4" />
               {item.label}
-              {item.href === "/rtm" && <RtmBadge />}
+              {item.href === "/participants" && <RtmBadge />}
             </Link>
           );
         })}
