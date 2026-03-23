@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/loading-state";
 import {
   Loader2,
   Calendar,
@@ -112,9 +113,7 @@ export default function SessionsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <LoadingState />
       ) : !sessions || sessions.length === 0 ? (
         <div className="rounded-lg border border-dashed py-16 text-center">
           <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3" />

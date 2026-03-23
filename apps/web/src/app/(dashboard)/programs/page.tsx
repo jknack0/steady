@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Users, Loader2 } from "lucide-react";
+import { LoadingState } from "@/components/loading-state";
 import { CreateProgramDialog } from "./create-program-dialog";
 
 const statusColors: Record<string, string> = {
@@ -34,11 +35,7 @@ export default function ProgramsPage() {
         </Button>
       </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      {isLoading && <LoadingState />}
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">

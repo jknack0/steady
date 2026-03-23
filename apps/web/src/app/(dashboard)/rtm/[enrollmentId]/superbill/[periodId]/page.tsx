@@ -8,17 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
+import { LoadingState } from "@/components/loading-state";
 
 export default function SuperbillPage() {
   const params = useParams<{ enrollmentId: string; periodId: string }>();
   const { data, isLoading, error } = useSuperbillData(params.periodId);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (error || !data) {

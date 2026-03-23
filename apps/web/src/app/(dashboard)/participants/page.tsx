@@ -37,6 +37,9 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatLastActive } from "@/lib/format";
+import { LoadingState } from "@/components/loading-state";
+import { EmptyState } from "@/components/empty-state";
 
 const HOMEWORK_BADGE: Record<string, string> = {
   COMPLETE: "bg-green-100 text-green-800 border-green-200",
@@ -92,20 +95,6 @@ function StatusDot({ status }: { status: "green" | "amber" | "red" }) {
       title={titles[status]}
     />
   );
-}
-
-function formatLastActive(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function ParticipantsPage() {
@@ -209,18 +198,17 @@ export default function ParticipantsPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <LoadingState />
       ) : participants.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-16 text-center">
-          <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">
-            {search
+        <EmptyState
+          icon={Users}
+          title={search ? "No results" : "No participants yet"}
+          description={
+            search
               ? "No participants match your search."
-              : "No participants enrolled yet. Publish a program and invite participants to get started."}
-          </p>
-        </div>
+              : "No participants enrolled yet. Publish a program and invite participants to get started."
+          }
+        />
       ) : (
         <div className="rounded-lg border overflow-hidden">
           <table className="w-full">

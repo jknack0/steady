@@ -10,16 +10,14 @@ import {
   useManageEnrollment,
   type ParticipantDetail,
 } from "@/hooks/use-clinician-participants";
-import { useParticipantStats } from "@/hooks/use-participant-stats";
 import { useCreateSession } from "@/hooks/use-sessions";
-import { useCreateRtmEnrollment, useRtmEnrollments, useRtmClientDetail, useLogRtmTime } from "@/hooks/use-rtm";
+import { useCreateRtmEnrollment, useRtmEnrollments } from "@/hooks/use-rtm";
+import { RtmClientDetailContent } from "@/app/(dashboard)/rtm/[enrollmentId]/page";
 import { CPT_CODES } from "@steady/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/loading-state";
 import {
   Loader2,
   ArrowLeft,
@@ -49,8 +48,6 @@ import {
   Play,
   XCircle,
   RotateCcw,
-  TrendingUp,
-  TrendingDown,
   BookOpen,
   ClipboardList,
   Target,
@@ -59,19 +56,8 @@ import {
   X,
   Plus,
 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 
-type Tab = "overview" | "patterns" | "rtm";
+type Tab = "overview" | "rtm";
 
 export default function ParticipantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,11 +65,7 @@ export default function ParticipantDetailPage() {
   const { data, isLoading, isError } = useClinicianParticipant(id);
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (isError || !data) {
@@ -115,7 +97,7 @@ export default function ParticipantDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
-        {(["overview", "patterns", "rtm"] as const).map((t) => (
+        {(["overview", "rtm"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -133,10 +115,8 @@ export default function ParticipantDetailPage() {
 
       {tab === "overview" ? (
         <OverviewTab data={data} participantId={id} />
-      ) : tab === "patterns" ? (
-        <PatternsTab participantId={id} />
       ) : (
-        <RtmTab participantId={id} />
+        <RtmTabWrapper participantId={id} />
       )}
     </div>
   );
@@ -192,9 +172,6 @@ function OverviewTab({
           participantId={participantId}
           enrollment={enrollment}
         />
-
-        {/* RTM Status */}
-        <RtmSummaryCard participantId={participantId} />
 
         {/* SMART Goals */}
         <SmartGoals goals={data.smartGoals} />
@@ -710,87 +687,18 @@ const CUSTOM_ICD10_PATTERN = /^F\d{2}\.\d{1,2}$/;
 
 const CPT_INFO: Record<string, { description: string; rate: number }> = CPT_CODES;
 
-const TIME_PRESETS = [
-  { label: "5 min review", duration: 5, activityType: "DATA_REVIEW", description: "Reviewed client engagement data and tracker submissions." },
-  { label: "10 min adjustment", duration: 10, activityType: "PROGRAM_ADJUSTMENT", description: "Reviewed progress and adjusted program content." },
-  { label: "15 min analysis", duration: 15, activityType: "OUTCOME_ANALYSIS", description: "Analyzed tracker data trends and clinical outcomes." },
-  { label: "20 min session", duration: 20, activityType: "INTERACTIVE_COMMUNICATION", description: "Live interactive session with client.", isInteractive: true },
-];
+// ── RTM Tab Wrapper ──────────────────────────────────────────────────
 
-// ── RTM Summary Card (for Overview tab right column) ────────────────
-
-function RtmSummaryCard({ participantId }: { participantId: string }) {
-  const { data: rtmEnrollments } = useRtmEnrollments();
+function RtmTabWrapper({ participantId }: { participantId: string }) {
+  const { data: rtmEnrollments, isLoading } = useRtmEnrollments();
 
   const rtmEnrollment = rtmEnrollments?.find(
     (e: any) => e.clientId === participantId && (e.status === "ACTIVE" || e.status === "PENDING_CONSENT")
   );
 
-  const enrollmentId = rtmEnrollment?.id ?? "";
-  const { data: detail } = useRtmClientDetail(enrollmentId);
-  const p = detail?.currentPeriod;
-
-  if (!rtmEnrollment) return null;
-
-  return (
-    <div className="rounded-lg border p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <Activity className="h-4 w-4 text-primary" />
-        <h3 className="font-semibold">RTM Billing</h3>
-        <Badge variant="outline" className="ml-auto text-xs bg-green-100 text-green-800 border-green-200">
-          Active
-        </Badge>
-      </div>
-      {p ? (
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Engagement Days</span>
-            <span className={cn("font-medium", p.engagementDays >= 16 ? "text-green-600" : "text-amber-600")}>
-              {p.engagementDays}/16
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Monitoring Time</span>
-            <span className={cn("font-medium", p.clinicianMinutes >= 20 ? "text-green-600" : "text-amber-600")}>
-              {p.clinicianMinutes}/20 min
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Live Interaction</span>
-            <span className={cn("font-medium", p.hasInteractiveCommunication ? "text-green-600" : "text-red-500")}>
-              {p.hasInteractiveCommunication ? "Done" : "Needed"}
-            </span>
-          </div>
-          {/* Mini progress bar */}
-          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
-            <div
-              className={cn("h-full rounded-full", p.engagementDays >= 16 ? "bg-green-500" : p.engagementDays >= 12 ? "bg-yellow-500" : "bg-red-400")}
-              style={{ width: `${Math.min((p.engagementDays / 16) * 100, 100)}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {p.daysRemaining} days remaining in period
-          </p>
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">No active billing period.</p>
-      )}
-    </div>
-  );
-}
-
-// ── RTM Tab ─────────────────────────────────────────────────────────
-
-function RtmTab({ participantId }: { participantId: string }) {
-  const { data: rtmEnrollments } = useRtmEnrollments();
-  const logTime = useLogRtmTime();
-  const [isInteractive, setIsInteractive] = useState(false);
-  const [customMinutes, setCustomMinutes] = useState("");
-  const [customActivity, setCustomActivity] = useState("");
-
-  const rtmEnrollment = rtmEnrollments?.find(
-    (e: any) => e.clientId === participantId && (e.status === "ACTIVE" || e.status === "PENDING_CONSENT")
-  );
+  if (isLoading) {
+    return <LoadingState />;
+  }
 
   if (!rtmEnrollment) {
     return (
@@ -802,223 +710,8 @@ function RtmTab({ participantId }: { participantId: string }) {
     );
   }
 
-  const { data: detail, isLoading } = useRtmClientDetail(rtmEnrollment.id);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!detail) return null;
-
-  const p = detail.currentPeriod;
-
-  const handlePreset = (preset: typeof TIME_PRESETS[0]) => {
-    logTime.mutate({
-      rtmEnrollmentId: rtmEnrollment.id,
-      durationMinutes: preset.duration,
-      activityType: preset.activityType,
-      description: preset.description,
-      isInteractiveCommunication: preset.isInteractive || isInteractive,
-    });
-  };
-
-  return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Billability Status */}
-      {p && (
-        <div className="rounded-lg border-2 p-5">
-          <h3 className="font-semibold mb-3">Billing Status</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              {p.engagementDays >= 16 ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              ) : (
-                <Circle className="h-5 w-5 text-amber-500" />
-              )}
-              <div>
-                <p className="text-sm font-medium">{p.engagementDays}/16 days</p>
-                <p className="text-xs text-muted-foreground">Engagement</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {p.clinicianMinutes >= 20 ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              ) : (
-                <Circle className="h-5 w-5 text-amber-500" />
-              )}
-              <div>
-                <p className="text-sm font-medium">{p.clinicianMinutes}/20 min</p>
-                <p className="text-xs text-muted-foreground">Monitoring time</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {p.hasInteractiveCommunication ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-red-500" />
-              )}
-              <div>
-                <p className="text-sm font-medium">{p.hasInteractiveCommunication ? "Complete" : "Needed"}</p>
-                <p className="text-xs text-muted-foreground">Live interaction</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Eligible codes */}
-          {p.eligibleCodes.length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              Eligible: {(() => {
-                const counts = new Map<string, number>();
-                for (const code of p.eligibleCodes) counts.set(code, (counts.get(code) || 0) + 1);
-                return Array.from(counts.entries()).map(([code, count]) => {
-                  const info = CPT_INFO[code];
-                  return `${code}${count > 1 ? ` x${count}` : ""}${info ? ` ($${(info.rate * count).toFixed(0)})` : ""}`;
-                }).join(", ");
-              })()}
-            </div>
-          )}
-
-          <p className="text-xs text-muted-foreground mt-2">{p.daysRemaining} days remaining in period</p>
-        </div>
-      )}
-
-      {/* Quick Log Time */}
-      <div className="rounded-lg border p-5">
-        <h3 className="font-semibold mb-3">Log Monitoring Time</h3>
-        {p && (
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={cn("h-full rounded-full", p.clinicianMinutes >= 20 ? "bg-green-500" : "bg-blue-500")}
-                style={{ width: `${Math.min((p.clinicianMinutes / 20) * 100, 100)}%` }}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{p.clinicianMinutes}/20 min</span>
-          </div>
-        )}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-          {TIME_PRESETS.map((preset) => (
-            <Button
-              key={preset.label}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              disabled={logTime.isPending}
-              onClick={() => handlePreset(preset)}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 mb-3">
-          <Checkbox
-            id="rtm-tab-interactive"
-            checked={isInteractive}
-            onCheckedChange={(c) => setIsInteractive(c === true)}
-          />
-          <Label htmlFor="rtm-tab-interactive" className="text-xs text-muted-foreground cursor-pointer">
-            This was a live interaction
-          </Label>
-        </div>
-
-        {/* Custom entry */}
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            min="1"
-            max="120"
-            placeholder="Min"
-            className="w-20 h-8 text-xs"
-            value={customMinutes}
-            onChange={(e) => setCustomMinutes(e.target.value)}
-          />
-          <Select value={customActivity} onValueChange={setCustomActivity}>
-            <SelectTrigger className="h-8 text-xs flex-1">
-              <SelectValue placeholder="Activity type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="DATA_REVIEW">Data Review</SelectItem>
-              <SelectItem value="PROGRAM_ADJUSTMENT">Program Adjustment</SelectItem>
-              <SelectItem value="OUTCOME_ANALYSIS">Outcome Analysis</SelectItem>
-              <SelectItem value="INTERACTIVE_COMMUNICATION">Interactive Communication</SelectItem>
-              <SelectItem value="OTHER">Other</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            size="sm"
-            className="h-8 text-xs"
-            disabled={logTime.isPending || !customMinutes || !customActivity}
-            onClick={() => {
-              logTime.mutate({
-                rtmEnrollmentId: rtmEnrollment.id,
-                durationMinutes: parseInt(customMinutes, 10),
-                activityType: customActivity,
-                isInteractiveCommunication: isInteractive || customActivity === "INTERACTIVE_COMMUNICATION",
-              });
-              setCustomMinutes("");
-              setCustomActivity("");
-            }}
-          >
-            {logTime.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Log"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Time Logs */}
-      {detail.timeLogs.length > 0 && (
-        <div className="rounded-lg border p-5">
-          <h3 className="font-semibold mb-3">Time Logs</h3>
-          <div className="space-y-2">
-            {detail.timeLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground text-xs w-20">
-                    {new Date(log.activityDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
-                  <span>{log.description || log.activityType.replace(/_/g, " ").toLowerCase()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {log.isInteractiveCommunication && (
-                    <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">Live</Badge>
-                  )}
-                  <span className="font-medium">{log.durationMinutes} min</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Engagement Calendar */}
-      {detail.engagementCalendar && detail.engagementCalendar.length > 0 && p && (
-        <div className="rounded-lg border p-5">
-          <h3 className="font-semibold mb-3">Engagement Activity</h3>
-          <div className="space-y-2">
-            {detail.engagementCalendar.map((day) => (
-              <div key={day.date} className="flex items-start gap-3 text-sm py-1 border-b last:border-0">
-                <span className="text-muted-foreground text-xs w-20 pt-0.5">
-                  {new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </span>
-                <div className="flex flex-wrap gap-1">
-                  {day.events.map((evt, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">
-                      {(typeof evt === "string" ? evt : evt.type).replace(/_/g, " ").toLowerCase()}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <RtmClientDetailContent enrollmentId={rtmEnrollment.id} hideHeader />;
 }
-
 function RtmEnrollmentDialog({
   open,
   onOpenChange,
@@ -1455,208 +1148,6 @@ function SharedJournal({
 }
 
 // ── Patterns Tab ─────────────────────────────────────────
-
-function PatternsTab({ participantId }: { participantId: string }) {
-  const { data: stats, isLoading, isError } = useParticipantStats(participantId);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (isError || !stats) {
-    return (
-      <div className="rounded-lg border border-dashed py-12 text-center">
-        <p className="text-muted-foreground">Failed to load participant stats.</p>
-      </div>
-    );
-  }
-
-  const hasConcerns =
-    stats.taskCompletion.rate < 0.4 ||
-    stats.journaling.rate < 0.3 ||
-    (stats.regulationTrend.average !== null && stats.regulationTrend.average < 4);
-
-  return (
-    <div className="space-y-6">
-      {hasConcerns && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-          <h3 className="text-sm font-semibold text-rose-800 mb-1 flex items-center gap-2">
-            <TrendingDown className="h-4 w-4" /> Concerning Trends
-          </h3>
-          <ul className="text-sm text-rose-700 space-y-1">
-            {stats.taskCompletion.rate < 0.4 && (
-              <li>
-                Task completion rate is low (
-                {Math.round(stats.taskCompletion.rate * 100)}%)
-              </li>
-            )}
-            {stats.journaling.rate < 0.3 && (
-              <li>
-                Journaling consistency below 30% (
-                {Math.round(stats.journaling.rate * 100)}%)
-              </li>
-            )}
-            {stats.regulationTrend.average !== null &&
-              stats.regulationTrend.average < 4 && (
-                <li>
-                  Average regulation score is{" "}
-                  {stats.regulationTrend.average}/10
-                </li>
-              )}
-          </ul>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Task Completion */}
-        <div className="rounded-lg border p-5">
-          <h3 className="text-sm font-semibold mb-1">Task Completion</h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            {stats.taskCompletion.completed}/{stats.taskCompletion.total} tasks (
-            {Math.round(stats.taskCompletion.rate * 100)}%)
-          </p>
-          {stats.taskCompletion.weeklyBreakdown.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={stats.taskCompletion.weeklyBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0EDE8" />
-                <XAxis
-                  dataKey="weekStart"
-                  tickFormatter={(v) => {
-                    const d = new Date(v);
-                    return `${d.getMonth() + 1}/${d.getDate()}`;
-                  }}
-                  fontSize={12}
-                  stroke="#8A8A8A"
-                />
-                <YAxis fontSize={12} stroke="#8A8A8A" />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="total" fill="#E3EDED" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="completed" fill="#5B8A8A" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <EmptyChart />
-          )}
-        </div>
-
-        {/* Regulation Trend */}
-        <div className="rounded-lg border p-5">
-          <h3 className="text-sm font-semibold mb-1">Regulation Trend</h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            {stats.regulationTrend.average !== null
-              ? `Average: ${stats.regulationTrend.average}/10`
-              : "No scores recorded"}
-          </p>
-          {stats.regulationTrend.points.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={stats.regulationTrend.points}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F0EDE8" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(v) => {
-                    const d = new Date(v);
-                    return `${d.getMonth() + 1}/${d.getDate()}`;
-                  }}
-                  fontSize={12}
-                  stroke="#8A8A8A"
-                />
-                <YAxis domain={[1, 10]} fontSize={12} stroke="#8A8A8A" />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#5B8A8A"
-                  strokeWidth={2}
-                  dot={{ fill: "#5B8A8A", r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <EmptyChart />
-          )}
-        </div>
-
-        {/* Journaling Consistency */}
-        <div className="rounded-lg border p-5">
-          <h3 className="text-sm font-semibold mb-1">Journaling Consistency</h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            {stats.journaling.journaledDays}/{stats.journaling.totalDays} days (
-            {Math.round(stats.journaling.rate * 100)}%)
-            {stats.journaling.streak > 0 &&
-              ` · ${stats.journaling.streak}-day streak`}
-          </p>
-          <CalendarHeatmap calendar={stats.journaling.calendar} />
-        </div>
-
-        {/* Homework Completion */}
-        <div className="rounded-lg border p-5">
-          <h3 className="text-sm font-semibold mb-1">Homework Completion</h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            {stats.homeworkCompletion.overall.completedParts}/
-            {stats.homeworkCompletion.overall.totalParts} items (
-            {Math.round(stats.homeworkCompletion.overall.rate * 100)}%)
-          </p>
-          {stats.homeworkCompletion.modules.length > 0 ? (
-            <div className="space-y-3">
-              {stats.homeworkCompletion.modules.map((mod) => (
-                <div key={mod.moduleId}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium truncate mr-2">
-                      {mod.moduleTitle}
-                    </span>
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      {mod.completedParts}/{mod.totalParts}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${Math.round(mod.rate * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyChart />
-          )}
-        </div>
-      </div>
-
-      {/* Summary row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard
-          label="Time Estimation"
-          value={
-            stats.timeEstimation.sampleSize > 0
-              ? `${Math.round(stats.timeEstimation.averageAccuracy * 100)}%`
-              : "N/A"
-          }
-          detail={`${stats.timeEstimation.sampleSize} tasks measured`}
-        />
-        <SummaryCard
-          label="System Check-in"
-          value={`${Math.round(stats.systemCheckin.rate * 100)}%`}
-          detail={`${stats.systemCheckin.totalCompleted}/${stats.systemCheckin.totalExpected} days`}
-        />
-        <SummaryCard
-          label="Task Rate"
-          value={`${Math.round(stats.taskCompletion.rate * 100)}%`}
-          detail={`${stats.taskCompletion.completed} completed`}
-        />
-        <SummaryCard
-          label="Journal Rate"
-          value={`${Math.round(stats.journaling.rate * 100)}%`}
-          detail={`${stats.journaling.streak}-day streak`}
-        />
-      </div>
-    </div>
-  );
-}
 
 // ── Shared Sub-components ────────────────────────────────
 

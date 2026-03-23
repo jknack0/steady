@@ -6,6 +6,7 @@ import { useDailyTracker, useUpdateDailyTracker } from "@/hooks/use-daily-tracke
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingState } from "@/components/loading-state";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
@@ -367,11 +368,7 @@ export default function TrackerEditorPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!tracker) {

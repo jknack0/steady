@@ -53,37 +53,11 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ── Constants ───────────────────────────────────────────────────────────────
-
-const ACTIVITY_TYPES = [
-  { value: "DATA_REVIEW", label: "Data Review" },
-  { value: "PROGRAM_ADJUSTMENT", label: "Program Adjustment" },
-  { value: "OUTCOME_ANALYSIS", label: "Outcome Analysis" },
-  { value: "INTERACTIVE_COMMUNICATION", label: "Interactive Communication" },
-  { value: "OTHER", label: "Other" },
-];
-
-const ACTIVITY_LABELS: Record<string, string> = {
-  DATA_REVIEW: "Data Review",
-  PROGRAM_ADJUSTMENT: "Program Adjustment",
-  OUTCOME_ANALYSIS: "Outcome Analysis",
-  INTERACTIVE_COMMUNICATION: "Interactive Communication",
-  OTHER: "Other",
-};
+import { formatDate, formatShortDate, formatMoney } from "@/lib/format";
+import { ACTIVITY_TYPES, ACTIVITY_LABELS, QUICK_LOG_PRESETS } from "@/lib/rtm-constants";
+import { LoadingState } from "@/components/loading-state";
 
 const CPT_INFO: Record<string, { description: string; rate: number }> = CPT_CODES;
-
-const QUICK_LOG_PRESETS = [
-  { minutes: 5, label: "5 min review", activity: "DATA_REVIEW" },
-  { minutes: 10, label: "10 min adjustment", activity: "PROGRAM_ADJUSTMENT" },
-  { minutes: 15, label: "15 min analysis", activity: "OUTCOME_ANALYSIS" },
-  {
-    minutes: 20,
-    label: "20 min session",
-    activity: "INTERACTIVE_COMMUNICATION",
-  },
-];
 
 const EVENT_TYPE_ICONS: Record<string, typeof ClipboardList> = {
   tracker_completion: ClipboardList,
@@ -93,25 +67,6 @@ const EVENT_TYPE_ICONS: Record<string, typeof ClipboardList> = {
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatMoney(amount: number): string {
-  return `$${amount.toFixed(2)}`;
-}
 
 function daysRemaining(endDate: string): number {
   const end = new Date(endDate);
@@ -355,9 +310,7 @@ function buildTimeline(
 
 // ── Detail Page ─────────────────────────────────────────────────────────────
 
-export default function RtmClientDetailPage() {
-  const params = useParams();
-  const enrollmentId = params.enrollmentId as string;
+export function RtmClientDetailContent({ enrollmentId, hideHeader = false }: { enrollmentId: string; hideHeader?: boolean }) {
 
   const { data, isLoading, error } = useRtmClientDetail(enrollmentId);
   const logTime = useLogRtmTime();
@@ -419,11 +372,7 @@ export default function RtmClientDetailPage() {
 
   // Loading
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   // Error
@@ -499,47 +448,51 @@ export default function RtmClientDetailPage() {
 
   return (
     <div className="max-w-5xl">
-      {/* ── Back link ──────────────────────────────────────────────── */}
-      <Link
-        href="/rtm"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to RTM Dashboard
-      </Link>
+      {!hideHeader && (
+        <>
+          {/* ── Back link ──────────────────────────────────────────────── */}
+          <Link
+            href="/rtm"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to RTM Dashboard
+          </Link>
 
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{data.clientName}</h1>
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-xs",
-                data.enrollmentStatus === "ACTIVE"
-                  ? "bg-green-100 text-green-800 border-green-200"
-                  : "bg-amber-100 text-amber-800 border-amber-200"
+          {/* ── Header ─────────────────────────────────────────────────── */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">{data.clientName}</h1>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs",
+                    data.enrollmentStatus === "ACTIVE"
+                      ? "bg-green-100 text-green-800 border-green-200"
+                      : "bg-amber-100 text-amber-800 border-amber-200"
+                  )}
+                >
+                  {statusLabel}
+                </Badge>
+              </div>
+              {p && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Period: {formatShortDate(p.periodStart)} &ndash;{" "}
+                  {formatShortDate(p.periodEnd)} ({p.daysRemaining} days left)
+                </p>
               )}
-            >
-              {statusLabel}
-            </Badge>
-          </div>
-          {p && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Period: {formatShortDate(p.periodStart)} &ndash;{" "}
-              {formatShortDate(p.periodEnd)} ({p.daysRemaining} days left)
-            </p>
-          )}
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Button onClick={() => setLogDialogOpen(true)}>
-            <Timer className="h-4 w-4 mr-2" />
-            Log Time
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button onClick={() => setLogDialogOpen(true)}>
+                <Timer className="h-4 w-4 mr-2" />
+                Log Time
           </Button>
           {renderSecondaryAction()}
         </div>
       </div>
+        </>
+      )}
 
       {p ? (
         <div className="space-y-6">
@@ -1079,4 +1032,10 @@ export default function RtmClientDetailPage() {
       </Dialog>
     </div>
   );
+}
+
+export default function RtmClientDetailPage() {
+  const params = useParams();
+  const enrollmentId = params.enrollmentId as string;
+  return <RtmClientDetailContent enrollmentId={enrollmentId} />;
 }

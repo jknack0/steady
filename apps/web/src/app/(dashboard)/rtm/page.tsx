@@ -47,6 +47,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { daysAgoLabel, formatCurrency } from "@/lib/format";
+import { ACTIVITY_TYPES, TIME_PRESETS, type TimePreset } from "@/lib/rtm-constants";
+import { LoadingState } from "@/components/loading-state";
+import { EmptyState } from "@/components/empty-state";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -81,73 +85,6 @@ const STATUS_SORT_ORDER: Record<ClientStatus, number> = {
   billed: 3,
   "no-period": 4,
 };
-
-function formatCurrency(dollars: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(dollars);
-}
-
-function daysAgoLabel(dateStr: string | null): { label: string; isStale: boolean } {
-  if (!dateStr) return { label: "Never", isStale: true };
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return { label: "Today", isStale: false };
-  if (diffDays === 1) return { label: "Yesterday", isStale: false };
-  return { label: `${diffDays} days ago`, isStale: diffDays > 2 };
-}
-
-const ACTIVITY_TYPES = [
-  { value: "DATA_REVIEW", label: "Data Review" },
-  { value: "PROGRAM_ADJUSTMENT", label: "Program Adjustment" },
-  { value: "OUTCOME_ANALYSIS", label: "Outcome Analysis" },
-  { value: "INTERACTIVE_COMMUNICATION", label: "Interactive Communication" },
-  { value: "OTHER", label: "Other" },
-];
-
-interface TimePreset {
-  label: string;
-  duration: number;
-  activityType: string;
-  description: string;
-  isInteractive: boolean;
-}
-
-const TIME_PRESETS: TimePreset[] = [
-  {
-    label: "5 min data review",
-    duration: 5,
-    activityType: "DATA_REVIEW",
-    description: "Reviewed client engagement data and tracker submissions.",
-    isInteractive: false,
-  },
-  {
-    label: "10 min program adjustment",
-    duration: 10,
-    activityType: "PROGRAM_ADJUSTMENT",
-    description: "Reviewed progress and adjusted program content based on outcomes.",
-    isInteractive: false,
-  },
-  {
-    label: "15 min outcome analysis",
-    duration: 15,
-    activityType: "OUTCOME_ANALYSIS",
-    description: "Analyzed tracker data trends and clinical outcomes for treatment planning.",
-    isInteractive: false,
-  },
-  {
-    label: "20 min interactive session",
-    duration: 20,
-    activityType: "INTERACTIVE_COMMUNICATION",
-    description: "Live interactive session with client to discuss progress and treatment plan.",
-    isInteractive: true,
-  },
-];
 
 // ── Billability Check Item ──────────────────────────────────────────────────
 
@@ -272,7 +209,7 @@ function LogTimeDialog({
     setDuration(String(preset.duration));
     setActivityType(preset.activityType);
     setDescription(preset.description);
-    setIsInteractive(preset.isInteractive);
+    setIsInteractive(preset.isInteractive ?? false);
   }
 
   function handleSubmit() {
@@ -785,11 +722,7 @@ export function RtmDashboardContent() {
   return (
     <div>
       {/* Loading */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      )}
+      {isLoading && <LoadingState />}
 
       {/* Error */}
       {error && (
@@ -852,22 +785,19 @@ export function RtmDashboardContent() {
 
           {/* ── Client Cards ─────────────────────────────────────────── */}
           {data.clients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 px-4">
-              <DollarSign className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-center">
-                No RTM enrollments yet
-              </h3>
-              <p className="text-muted-foreground mt-2 text-center max-w-md text-sm">
-                Enable RTM on any client&apos;s profile to start earning
-                $100&ndash;150/month per client.
-              </p>
-              <Link href="/participants" className="mt-4">
-                <Button variant="outline" className="gap-1.5">
-                  Go to Participants
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </div>
+            <EmptyState
+              icon={DollarSign}
+              title="No RTM enrollments yet"
+              description="Enable RTM on any client's profile to start earning $100-150/month per client."
+              action={
+                <Link href="/participants">
+                  <Button variant="outline" className="gap-1.5">
+                    Go to Participants
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              }
+            />
           ) : filteredClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
               <p className="text-muted-foreground text-sm">

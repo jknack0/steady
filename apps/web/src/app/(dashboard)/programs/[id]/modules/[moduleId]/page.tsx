@@ -13,6 +13,7 @@ import {
 } from "@/hooks/use-parts";
 import { useUpdateModule } from "@/hooks/use-modules";
 import { useAutosave } from "@/hooks/use-autosave";
+import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,11 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { SaveIndicator } from "@/components/save-indicator";
 import { PartCard, PART_TYPE_CONFIG } from "@/components/part-card";
 import {
@@ -130,6 +132,7 @@ export default function ModuleEditorPage() {
   const [subtitleValue, setSubtitleValue] = useState("");
   const [summaryValue, setSummaryValue] = useState("");
   const [editingSummary, setEditingSummary] = useState(false);
+  const [addPartOpen, setAddPartOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -211,11 +214,7 @@ export default function ModuleEditorPage() {
   };
 
   if (moduleLoading || partsLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!module) {
@@ -385,31 +384,14 @@ export default function ModuleEditorPage() {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Parts</h2>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" disabled={createPart.isPending}>
-                {createPart.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
-                )}
-                Add Part
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {CREATABLE_TYPES.map((type) => {
-                const config = PART_TYPE_CONFIG[type];
-                if (!config) return null;
-                const Icon = config.icon;
-                return (
-                  <DropdownMenuItem key={type} onClick={() => handleAddPart(type)}>
-                    <Icon className={`mr-2 h-4 w-4 ${config.color}`} />
-                    {config.label}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button size="sm" variant="outline" disabled={createPart.isPending} onClick={() => setAddPartOpen(true)}>
+            {createPart.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Add Part
+          </Button>
         </div>
 
         {parts && parts.length > 0 ? (
@@ -439,30 +421,45 @@ export default function ModuleEditorPage() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
             <p className="text-muted-foreground mb-3">No parts yet</p>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Part
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48">
-                {CREATABLE_TYPES.map((type) => {
-                  const config = PART_TYPE_CONFIG[type];
-                  if (!config) return null;
-                  const Icon = config.icon;
-                  return (
-                    <DropdownMenuItem key={type} onClick={() => handleAddPart(type)}>
-                      <Icon className={`mr-2 h-4 w-4 ${config.color}`} />
-                      {config.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button size="sm" variant="outline" onClick={() => setAddPartOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add First Part
+            </Button>
           </div>
         )}
       </div>
+
+      {/* Add Part Modal */}
+      <Dialog open={addPartOpen} onOpenChange={setAddPartOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Part</DialogTitle>
+            <DialogDescription>
+              Choose a content type to add to this module.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
+            {CREATABLE_TYPES.map((type) => {
+              const config = PART_TYPE_CONFIG[type];
+              if (!config) return null;
+              const Icon = config.icon;
+              return (
+                <button
+                  key={type}
+                  onClick={() => {
+                    handleAddPart(type);
+                    setAddPartOpen(false);
+                  }}
+                  className="flex flex-col items-center gap-2 rounded-lg border p-4 hover:bg-accent hover:border-primary/30 transition-colors text-center"
+                >
+                  <Icon className={`h-6 w-6 ${config.color}`} />
+                  <span className="text-sm font-medium">{config.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <PhonePreviewModal
         programId={programId}

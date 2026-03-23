@@ -6,6 +6,7 @@ import { usePrepareSession, useCompleteSession } from "@/hooks/use-sessions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { LoadingState } from "@/components/loading-state";
 import {
   Select,
   SelectContent,
@@ -43,11 +44,7 @@ export default function PrepareSessionPage() {
   const [newTask, setNewTask] = useState("");
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (isError || !data) {
