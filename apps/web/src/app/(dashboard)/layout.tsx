@@ -18,6 +18,20 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useRtmDashboard } from "@/hooks/use-rtm";
+
+function RtmBadge() {
+  const { data } = useRtmDashboard();
+  const count =
+    (data?.summary.clientsApproaching ?? 0) +
+    (data?.summary.clientsAtRisk ?? 0);
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold h-5 min-w-5 px-1.5">
+      {count}
+    </span>
+  );
+}
 
 const navItems = [
   { href: "/programs", label: "My Programs", icon: BookOpen },
@@ -73,6 +87,7 @@ function Sidebar({ className }: { className?: string }) {
             >
               <item.icon className="h-4 w-4" />
               {item.label}
+              {item.href === "/rtm" && <RtmBadge />}
             </Link>
           );
         })}

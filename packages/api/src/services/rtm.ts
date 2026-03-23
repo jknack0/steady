@@ -1,5 +1,6 @@
 import { logger } from "../lib/logger";
 import { prisma } from "@steady/db";
+import { getCptRate } from "@steady/shared";
 import type {
   RtmEventType,
   RtmEnrollment,
@@ -22,17 +23,6 @@ export class ConflictError extends Error {
     this.name = "ConflictError";
   }
 }
-
-// ── CPT Reimbursement Rates ───────────────────────────
-
-const CPT_RATES: Record<string, number> = {
-  "98975": 19.65,
-  "98978": 55,
-  "98986": 50,
-  "98979": 26,
-  "98980": 54,
-  "98981": 41,
-};
 
 // ── 1. Engagement Event Logging (fire-and-forget) ─────
 
@@ -420,10 +410,15 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       periodEnd: Date;
       engagementDays: number;
       clinicianMinutes: number;
+      hasInteractiveCommunication: boolean;
+      interactiveCommunicationDate: Date | null;
       billingTier: string;
       status: string;
       eligibleCodes: unknown;
+      daysRemaining: number;
+      daysElapsed: number;
     } | null;
+    lastEngagementDate: string | null;
   }>;
 }> {
   const enrollments = await prisma.rtmEnrollment.findMany({
@@ -442,6 +437,20 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
     },
   });
 
+  // Batch-fetch last engagement date per client
+  const clientIds = enrollments.map((e) => e.clientId);
+  const lastEngagementEvents = clientIds.length > 0
+    ? await prisma.rtmEngagementEvent.findMany({
+        where: { userId: { in: clientIds } },
+        orderBy: { eventDate: "desc" },
+        distinct: ["userId"],
+        select: { userId: true, eventDate: true },
+      })
+    : [];
+  const lastEngagementMap = new Map(
+    lastEngagementEvents.map((e) => [e.userId, e.eventDate.toISOString().split("T")[0]])
+  );
+
   let clientsBillable = 0;
   let clientsApproaching = 0;
   let clientsAtRisk = 0;
@@ -459,8 +468,16 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
 
       const codes = (currentPeriod.eligibleCodes as string[]) || [];
       for (const code of codes) {
-        estimatedRevenue += CPT_RATES[code] || 0;
+        estimatedRevenue += getCptRate(code);
       }
+
+      const now = new Date();
+      const start = new Date(currentPeriod.periodStart);
+      const end = new Date(currentPeriod.periodEnd);
+      const daysElapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 86400000));
+      const daysRemaining = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 86400000));
+      const totalDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86400000));
+      const periodHalfElapsed = daysElapsed > totalDays * 0.5;
 
       if (
         currentPeriod.billingTier === "FULL_PERIOD" ||
@@ -468,15 +485,47 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       ) {
         clientsBillable++;
       } else if (
-        currentPeriod.engagementDays >= 10 &&
-        currentPeriod.billingTier === "SHORT_PERIOD"
+        (currentPeriod.engagementDays >= 12 && currentPeriod.engagementDays <= 15) ||
+        (currentPeriod.clinicianMinutes >= 10 && currentPeriod.clinicianMinutes <= 19)
       ) {
         clientsApproaching++;
-      } else if (currentPeriod.engagementDays < 5) {
+      } else if (currentPeriod.engagementDays < 12 && periodHalfElapsed) {
         clientsAtRisk++;
       }
     } else {
       clientsAtRisk++;
+    }
+
+    const lastEngagementDate = lastEngagementMap.get(enrollment.clientId) || null;
+
+    if (currentPeriod) {
+      const now = new Date();
+      const start = new Date(currentPeriod.periodStart);
+      const end = new Date(currentPeriod.periodEnd);
+      const daysElapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 86400000));
+      const daysRemaining = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 86400000));
+
+      return {
+        rtmEnrollmentId: enrollment.id,
+        clientId: enrollment.clientId,
+        clientName:
+          `${enrollment.client.firstName} ${enrollment.client.lastName}`.trim(),
+        currentPeriod: {
+          id: currentPeriod.id,
+          periodStart: currentPeriod.periodStart,
+          periodEnd: currentPeriod.periodEnd,
+          engagementDays: currentPeriod.engagementDays,
+          clinicianMinutes: currentPeriod.clinicianMinutes,
+          hasInteractiveCommunication: currentPeriod.hasInteractiveCommunication,
+          interactiveCommunicationDate: currentPeriod.interactiveCommunicationDate,
+          billingTier: currentPeriod.billingTier,
+          status: currentPeriod.status,
+          eligibleCodes: currentPeriod.eligibleCodes,
+          daysRemaining,
+          daysElapsed,
+        },
+        lastEngagementDate,
+      };
     }
 
     return {
@@ -484,18 +533,8 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       clientId: enrollment.clientId,
       clientName:
         `${enrollment.client.firstName} ${enrollment.client.lastName}`.trim(),
-      currentPeriod: currentPeriod
-        ? {
-            id: currentPeriod.id,
-            periodStart: currentPeriod.periodStart,
-            periodEnd: currentPeriod.periodEnd,
-            engagementDays: currentPeriod.engagementDays,
-            clinicianMinutes: currentPeriod.clinicianMinutes,
-            billingTier: currentPeriod.billingTier,
-            status: currentPeriod.status,
-            eligibleCodes: currentPeriod.eligibleCodes,
-          }
-        : null,
+      currentPeriod: null,
+      lastEngagementDate,
     };
   });
 

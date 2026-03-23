@@ -1,36 +1,7 @@
 import { logger } from "../lib/logger";
 import { prisma } from "@steady/db";
+import { CPT_CODES } from "@steady/shared";
 import { NotFoundError } from "./rtm";
-
-// CPT code descriptions and default rates
-const CPT_CODES: Record<string, { description: string; rate: number }> = {
-  "98975": {
-    description: "RTM initial setup and patient education",
-    rate: 19.65,
-  },
-  "98978": {
-    description:
-      "RTM device supply with scheduled recordings, each 30 days (CBT)",
-    rate: 55.0,
-  },
-  "98986": {
-    description:
-      "RTM device supply with scheduled recordings, 2-15 days (CBT)",
-    rate: 50.0,
-  },
-  "98980": {
-    description: "RTM treatment management, first 20 minutes",
-    rate: 54.0,
-  },
-  "98979": {
-    description: "RTM treatment management, 10-19 minutes",
-    rate: 26.0,
-  },
-  "98981": {
-    description: "RTM treatment management, each additional 20 minutes",
-    rate: 41.0,
-  },
-};
 
 export interface SuperbillData {
   // Provider info
@@ -146,7 +117,7 @@ export async function generateSuperbillData(
   }
 
   for (const [code, units] of codeCounts) {
-    const cptInfo = CPT_CODES[code];
+    const cptInfo = CPT_CODES[code as keyof typeof CPT_CODES];
     if (!cptInfo) continue;
 
     // Device supply codes use periodEnd as date of service

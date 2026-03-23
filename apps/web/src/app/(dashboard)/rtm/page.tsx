@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useRtmDashboard,
   useLogRtmTime,
@@ -14,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -33,22 +35,30 @@ import {
   Loader2,
   DollarSign,
   Users,
-  TrendingUp,
-  AlertTriangle,
   CheckCircle2,
   Clock,
   Timer,
-  ChevronRight,
   Check,
   X,
+  Bell,
+  FileText,
+  MessageSquare,
+  ExternalLink,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// ── Types ───────────────────────────────────────────────────────────────────
+
+type ClientStatus = "billable" | "approaching" | "at-risk" | "billed" | "no-period";
+type TabFilter = "all" | "needs-action" | "billable";
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function getClientStatus(client: RtmClientRow): "billable" | "approaching" | "at-risk" | "no-period" {
+function getClientStatus(client: RtmClientRow): ClientStatus {
   const p = client.currentPeriod;
   if (!p) return "no-period";
+  if (p.status === "BILLED") return "billed";
 
   const isBillable =
     p.engagementDays >= 16 &&
@@ -64,31 +74,33 @@ function getClientStatus(client: RtmClientRow): "billable" | "approaching" | "at
   return "at-risk";
 }
 
-const statusBadge: Record<string, { label: string; className: string }> = {
-  billable: {
-    label: "Billable",
-    className: "bg-green-100 text-green-800 border-green-200",
-  },
-  approaching: {
-    label: "Approaching",
-    className: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  },
-  "at-risk": {
-    label: "At Risk",
-    className: "bg-red-100 text-red-800 border-red-200",
-  },
-  "no-period": {
-    label: "No Period",
-    className: "bg-gray-100 text-gray-600 border-gray-200",
-  },
+const STATUS_SORT_ORDER: Record<ClientStatus, number> = {
+  "at-risk": 0,
+  approaching: 1,
+  billable: 2,
+  billed: 3,
+  "no-period": 4,
 };
 
-const rowTint: Record<string, string> = {
-  billable: "bg-green-50/60",
-  approaching: "bg-yellow-50/60",
-  "at-risk": "bg-red-50/40",
-  "no-period": "",
-};
+function formatCurrency(dollars: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(dollars);
+}
+
+function daysAgoLabel(dateStr: string | null): { label: string; isStale: boolean } {
+  if (!dateStr) return { label: "Never", isStale: true };
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return { label: "Today", isStale: false };
+  if (diffDays === 1) return { label: "Yesterday", isStale: false };
+  return { label: `${diffDays} days ago`, isStale: diffDays > 2 };
+}
 
 const ACTIVITY_TYPES = [
   { value: "DATA_REVIEW", label: "Data Review" },
@@ -98,13 +110,111 @@ const ACTIVITY_TYPES = [
   { value: "OTHER", label: "Other" },
 ];
 
-function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
+interface TimePreset {
+  label: string;
+  duration: number;
+  activityType: string;
+  description: string;
+  isInteractive: boolean;
+}
+
+const TIME_PRESETS: TimePreset[] = [
+  {
+    label: "5 min data review",
+    duration: 5,
+    activityType: "DATA_REVIEW",
+    description: "Reviewed client engagement data and tracker submissions.",
+    isInteractive: false,
+  },
+  {
+    label: "10 min program adjustment",
+    duration: 10,
+    activityType: "PROGRAM_ADJUSTMENT",
+    description: "Reviewed progress and adjusted program content based on outcomes.",
+    isInteractive: false,
+  },
+  {
+    label: "15 min outcome analysis",
+    duration: 15,
+    activityType: "OUTCOME_ANALYSIS",
+    description: "Analyzed tracker data trends and clinical outcomes for treatment planning.",
+    isInteractive: false,
+  },
+  {
+    label: "20 min interactive session",
+    duration: 20,
+    activityType: "INTERACTIVE_COMMUNICATION",
+    description: "Live interactive session with client to discuss progress and treatment plan.",
+    isInteractive: true,
+  },
+];
+
+// ── Billability Check Item ──────────────────────────────────────────────────
+
+function BillabilityCheck({
+  passed,
+  passedLabel,
+  failedLabel,
+  variant,
+}: {
+  passed: boolean;
+  passedLabel: string;
+  failedLabel: string;
+  variant: "green" | "yellow" | "red";
+}) {
+  if (passed) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+        <span className="text-green-700">{passedLabel}</span>
+      </div>
+    );
+  }
+  const colorMap = {
+    green: "text-green-600",
+    yellow: "text-yellow-600",
+    red: "text-red-600",
+  };
+  const iconColorMap = {
+    green: "text-green-500",
+    yellow: "text-yellow-500",
+    red: "text-red-500",
+  };
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <X className={cn("h-4 w-4 shrink-0", iconColorMap[variant])} />
+      <span className={colorMap[variant]}>{failedLabel}</span>
+    </div>
+  );
+}
+
+// ── Engagement Progress Bar ─────────────────────────────────────────────────
+
+function EngagementProgressBar({ days }: { days: number }) {
+  const pct = Math.min((days / 30) * 100, 100);
+  const thresholdPct = (16 / 30) * 100;
+
+  return (
+    <div className="relative w-full h-2.5 bg-gray-200 rounded-full overflow-visible mt-1">
+      <div
+        className={cn(
+          "h-full rounded-full transition-all duration-500",
+          days >= 16
+            ? "bg-green-500"
+            : days >= 12
+              ? "bg-yellow-500"
+              : "bg-red-400"
+        )}
+        style={{ width: `${pct}%` }}
+      />
+      {/* Threshold marker at 16 */}
+      <div
+        className="absolute top-[-3px] w-0.5 h-4 bg-gray-500"
+        style={{ left: `${thresholdPct}%` }}
+        title="16-day threshold"
+      />
+    </div>
+  );
 }
 
 // ── Log Time Dialog ─────────────────────────────────────────────────────────
@@ -114,6 +224,7 @@ interface LogTimeDialogProps {
   onOpenChange: (open: boolean) => void;
   clients: RtmClientRow[];
   preselectedEnrollmentId?: string;
+  presetInteractive?: boolean;
 }
 
 function LogTimeDialog({
@@ -121,20 +232,47 @@ function LogTimeDialog({
   onOpenChange,
   clients,
   preselectedEnrollmentId,
+  presetInteractive,
 }: LogTimeDialogProps) {
   const [enrollmentId, setEnrollmentId] = useState(preselectedEnrollmentId || "");
   const [duration, setDuration] = useState("");
   const [activityType, setActivityType] = useState("");
   const [description, setDescription] = useState("");
-  const [isInteractive, setIsInteractive] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(presetInteractive || false);
   const logTime = useLogRtmTime();
+
+  const effectiveEnrollmentId = preselectedEnrollmentId || enrollmentId;
+
+  // Find the selected client to show progress
+  const selectedClient = clients.find(
+    (c) => c.rtmEnrollmentId === effectiveEnrollmentId
+  );
+  const currentMinutes = selectedClient?.currentPeriod?.clinicianMinutes ?? 0;
+
+  useEffect(() => {
+    if (preselectedEnrollmentId) setEnrollmentId(preselectedEnrollmentId);
+  }, [preselectedEnrollmentId]);
+
+  useEffect(() => {
+    if (presetInteractive) {
+      setIsInteractive(true);
+      setActivityType("INTERACTIVE_COMMUNICATION");
+    }
+  }, [presetInteractive]);
 
   function resetForm() {
     setEnrollmentId(preselectedEnrollmentId || "");
     setDuration("");
     setActivityType("");
     setDescription("");
-    setIsInteractive(false);
+    setIsInteractive(presetInteractive || false);
+  }
+
+  function applyPreset(preset: TimePreset) {
+    setDuration(String(preset.duration));
+    setActivityType(preset.activityType);
+    setDescription(preset.description);
+    setIsInteractive(preset.isInteractive);
   }
 
   function handleSubmit() {
@@ -156,9 +294,6 @@ function LogTimeDialog({
     );
   }
 
-  // Sync preselectedEnrollmentId when it changes
-  const effectiveEnrollmentId = preselectedEnrollmentId || enrollmentId;
-
   return (
     <Dialog
       open={open}
@@ -167,7 +302,7 @@ function LogTimeDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Log Monitoring Time</DialogTitle>
           <DialogDescription>
@@ -175,7 +310,48 @@ function LogTimeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        {/* Progress indicator */}
+        {effectiveEnrollmentId && (
+          <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">
+              {currentMinutes}/20 min logged this period
+            </span>
+            <div className="ml-auto h-1.5 w-20 rounded-full bg-gray-200">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  currentMinutes >= 20 ? "bg-green-500" : "bg-blue-500"
+                )}
+                style={{ width: `${Math.min((currentMinutes / 20) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Quick presets */}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+            Quick Presets
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            {TIME_PRESETS.map((preset) => (
+              <Button
+                key={preset.label}
+                variant="outline"
+                size="sm"
+                className="justify-start text-xs h-auto py-2"
+                onClick={() => applyPreset(preset)}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
           {/* Client select */}
           {!preselectedEnrollmentId && (
             <div className="space-y-2">
@@ -275,39 +451,342 @@ function LogTimeDialog({
   );
 }
 
+// ── Client Card ─────────────────────────────────────────────────────────────
+
+interface ClientCardProps {
+  client: RtmClientRow;
+  status: ClientStatus;
+  onLogTime: (enrollmentId: string, presetInteractive?: boolean) => void;
+  onSendReminder: (enrollmentId: string) => void;
+}
+
+function ClientCard({ client, status, onLogTime, onSendReminder }: ClientCardProps) {
+  const router = useRouter();
+  const p = client.currentPeriod;
+
+  const engagementDays = p?.engagementDays ?? 0;
+  const clinicianMinutes = p?.clinicianMinutes ?? 0;
+  const hasInteraction = p?.hasInteractiveCommunication ?? false;
+  const daysRemaining = p?.daysRemaining ?? 0;
+
+  const engagementPassed = engagementDays >= 16;
+  const minutesPassed = clinicianMinutes >= 20;
+  const engagementDaysNeeded = Math.max(0, 16 - engagementDays);
+
+  const engagementVariant: "green" | "yellow" | "red" =
+    engagementDays >= 16 ? "green" : engagementDays >= 12 ? "yellow" : "red";
+  const minutesVariant: "green" | "yellow" | "red" =
+    clinicianMinutes >= 20 ? "green" : clinicianMinutes >= 10 ? "yellow" : "red";
+
+  // Determine the last engagement date heuristic: use interactiveCommunicationDate
+  // or periodStart as a fallback (the API doesn't give us a dedicated "last active" field)
+  const lastEngagement = daysAgoLabel(p?.interactiveCommunicationDate ?? p?.periodStart ?? null);
+
+  // Determine the single next action
+  function renderNextAction() {
+    if (status === "billed") {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            router.push(`/rtm/${client.rtmEnrollmentId}`);
+          }}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          View Superbill
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      );
+    }
+
+    if (engagementPassed && minutesPassed && hasInteraction) {
+      return (
+        <Button
+          size="sm"
+          className="gap-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            router.push(`/rtm/${client.rtmEnrollmentId}`);
+          }}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Generate Superbill
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      );
+    }
+
+    if (!hasInteraction) {
+      return (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="gap-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onLogTime(client.rtmEnrollmentId, true);
+          }}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          Log Interaction
+        </Button>
+      );
+    }
+
+    if (!minutesPassed) {
+      return (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="gap-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onLogTime(client.rtmEnrollmentId);
+          }}
+        >
+          <Timer className="h-3.5 w-3.5" />
+          Log Time
+        </Button>
+      );
+    }
+
+    if (!engagementPassed && lastEngagement.isStale) {
+      return (
+        <Button
+          size="sm"
+          variant="secondary"
+          className="gap-1.5"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onSendReminder(client.rtmEnrollmentId);
+          }}
+        >
+          <Bell className="h-3.5 w-3.5" />
+          Send Reminder
+        </Button>
+      );
+    }
+
+    return null;
+  }
+
+  const cardBorder =
+    status === "billable"
+      ? "border-green-200"
+      : status === "approaching"
+        ? "border-yellow-200"
+        : status === "at-risk"
+          ? "border-red-200"
+          : status === "billed"
+            ? "border-blue-200"
+            : "";
+
+  return (
+    <Link href={`/rtm/${client.rtmEnrollmentId}`} className="block">
+      <Card
+        className={cn(
+          "transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer",
+          cardBorder
+        )}
+      >
+        <CardContent className="p-4 sm:p-5">
+          {/* Top row: name + badges */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <h3 className="font-semibold text-base truncate">
+              {client.clientName}
+            </h3>
+            <div className="flex items-center gap-2 shrink-0">
+              {p && (
+                <Badge
+                  variant="outline"
+                  className="text-xs tabular-nums whitespace-nowrap"
+                >
+                  {daysRemaining} days left
+                </Badge>
+              )}
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs whitespace-nowrap",
+                  status === "billable" && "bg-green-100 text-green-800 border-green-200",
+                  status === "approaching" && "bg-yellow-100 text-yellow-800 border-yellow-200",
+                  status === "at-risk" && "bg-red-100 text-red-800 border-red-200",
+                  status === "billed" && "bg-blue-100 text-blue-800 border-blue-200",
+                  status === "no-period" && "bg-gray-100 text-gray-600 border-gray-200"
+                )}
+              >
+                {status === "at-risk"
+                  ? "At Risk"
+                  : status === "no-period"
+                    ? "No Period"
+                    : status.charAt(0).toUpperCase() + status.slice(1)}
+              </Badge>
+            </div>
+          </div>
+
+          {p ? (
+            <>
+              {/* Billability checklist */}
+              <div className="space-y-1.5 mb-3">
+                <BillabilityCheck
+                  passed={engagementPassed}
+                  passedLabel="16+ engagement days"
+                  failedLabel={`${engagementDays}/16 days (${engagementDaysNeeded} remaining)`}
+                  variant={engagementVariant}
+                />
+                <BillabilityCheck
+                  passed={minutesPassed}
+                  passedLabel="20+ monitoring minutes"
+                  failedLabel={`${clinicianMinutes}/20 min logged`}
+                  variant={minutesVariant}
+                />
+                <BillabilityCheck
+                  passed={hasInteraction}
+                  passedLabel={
+                    p.interactiveCommunicationDate
+                      ? `Live interaction (${new Date(p.interactiveCommunicationDate).toLocaleDateString()})`
+                      : "Live interaction"
+                  }
+                  failedLabel="Not yet"
+                  variant="red"
+                />
+              </div>
+
+              {/* Progress bar */}
+              <EngagementProgressBar days={engagementDays} />
+              <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 mb-3">
+                <span>0</span>
+                <span className="text-gray-500">16</span>
+                <span>30</span>
+              </div>
+
+              {/* Last engagement + next action */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span
+                  className={cn(
+                    "text-xs",
+                    lastEngagement.isStale
+                      ? "text-red-600 font-medium"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  Last active: {lastEngagement.label}
+                </span>
+                <div
+                  onClick={(e) => e.preventDefault()}
+                  className="shrink-0"
+                >
+                  {renderNextAction()}
+                </div>
+              </div>
+
+              {/* Quick actions row */}
+              <Separator className="my-3" />
+              <div className="flex items-center gap-3 text-xs">
+                <button
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onLogTime(client.rtmEnrollmentId);
+                  }}
+                >
+                  Log Time
+                </button>
+                <span className="text-muted-foreground/40">|</span>
+                <span className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  View Details
+                </span>
+                <span className="text-muted-foreground/40">|</span>
+                <button
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSendReminder(client.rtmEnrollmentId);
+                  }}
+                >
+                  Send Reminder
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No active billing period.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 // ── Main Dashboard Page ─────────────────────────────────────────────────────
 
 export default function RtmDashboardPage() {
   const { data, isLoading, error } = useRtmDashboard();
+  const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [logDialogOpen, setLogDialogOpen] = useState(false);
-  const [logPreselected, setLogPreselected] = useState<string | undefined>(
-    undefined
-  );
+  const [logPreselected, setLogPreselected] = useState<string | undefined>(undefined);
+  const [logPresetInteractive, setLogPresetInteractive] = useState(false);
 
-  function openLogDialog(enrollmentId?: string) {
+  function openLogDialog(enrollmentId?: string, presetInteractive?: boolean) {
     setLogPreselected(enrollmentId);
+    setLogPresetInteractive(presetInteractive || false);
     setLogDialogOpen(true);
   }
 
+  function handleSendReminder(_enrollmentId: string) {
+    // TODO: Wire to POST /api/rtm/enrollments/:id/reminder when endpoint is built
+    // For now this is a placeholder
+  }
+
+  // Sorted and filtered clients
+  const sortedClients = useMemo(() => {
+    if (!data?.clients) return [];
+    return [...data.clients]
+      .map((c) => ({ client: c, status: getClientStatus(c) }))
+      .sort((a, b) => STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status]);
+  }, [data?.clients]);
+
+  const filteredClients = useMemo(() => {
+    if (activeTab === "all") return sortedClients;
+    if (activeTab === "needs-action") {
+      return sortedClients.filter(
+        ({ status }) => status === "at-risk" || status === "approaching"
+      );
+    }
+    // "billable"
+    return sortedClients.filter(({ status }) => status === "billable");
+  }, [sortedClients, activeTab]);
+
+  const needsActionCount = sortedClients.filter(
+    ({ status }) => status === "at-risk" || status === "approaching"
+  ).length;
+
+  const billableCount = sortedClients.filter(
+    ({ status }) => status === "billable"
+  ).length;
+
+  const tabs: { key: TabFilter; label: string; count?: number }[] = [
+    { key: "all", label: "All" },
+    { key: "needs-action", label: "Needs Action", count: needsActionCount },
+    { key: "billable", label: "Billable", count: billableCount },
+  ];
+
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">RTM Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Remote Therapeutic Monitoring — billing status and client engagement
-          </p>
-        </div>
-        <Button onClick={() => openLogDialog()}>
-          <Timer className="mr-2 h-4 w-4" />
-          Log Time
-        </Button>
-      </div>
-
       {/* Loading */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-24">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
@@ -321,258 +800,104 @@ export default function RtmDashboardPage() {
 
       {data && (
         <>
-          {/* ── Summary Cards ─────────────────────────────────────────── */}
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Active Clients
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {data.summary.totalActiveClients}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-green-700">
-                  Billable
-                </CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-700">
-                  {data.summary.clientsBillable}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-yellow-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-yellow-700">
-                  Approaching
-                </CardTitle>
-                <TrendingUp className="h-4 w-4 text-yellow-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-700">
-                  {data.summary.clientsApproaching}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-red-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-red-700">
-                  At Risk
-                </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-700">
-                  {data.summary.clientsAtRisk}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-300 bg-green-50/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-green-800">
-                  Est. Revenue
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-800">
+          {/* ── Revenue Banner ───────────────────────────────────────── */}
+          <div className="rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 p-6 sm:p-8 mb-8 text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="text-green-100 text-sm font-medium mb-1">
+                  Estimated RTM Revenue This Month
+                </p>
+                <p className="text-4xl sm:text-5xl font-bold tracking-tight">
                   {formatCurrency(data.summary.estimatedRevenue)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Minutes
-                </CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {data.summary.totalMonitoringMinutes}
-                </div>
-              </CardContent>
-            </Card>
+                </p>
+                <p className="text-green-100 mt-2 text-sm">
+                  {data.summary.clientsBillable} clients billable
+                  {data.summary.clientsApproaching > 0 && (
+                    <> &middot; {data.summary.clientsApproaching} approaching</>
+                  )}
+                  {data.summary.clientsAtRisk > 0 && (
+                    <> &middot; {data.summary.clientsAtRisk} need attention</>
+                  )}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="secondary"
+                  className="bg-white/20 text-white hover:bg-white/30 border-0"
+                  onClick={() => openLogDialog()}
+                >
+                  <Timer className="mr-2 h-4 w-4" />
+                  Log Time
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* ── Client Table ──────────────────────────────────────────── */}
+          {/* ── Tab Filters ──────────────────────────────────────────── */}
+          <div className="flex items-center gap-1 mb-6 border-b">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+                  activeTab === tab.key
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
+                )}
+              >
+                {tab.label}
+                {tab.count !== undefined && tab.count > 0 && (
+                  <span
+                    className={cn(
+                      "ml-1.5 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-medium",
+                      activeTab === tab.key
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Client Cards ─────────────────────────────────────────── */}
           {data.clients.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
-              <Users className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">
-                No active RTM enrollments
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 px-4">
+              <DollarSign className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-center">
+                No RTM enrollments yet
               </h3>
-              <p className="text-muted-foreground mt-1 text-center max-w-md">
-                Enable RTM on a client&apos;s profile to start monitoring.
+              <p className="text-muted-foreground mt-2 text-center max-w-md text-sm">
+                Enable RTM on any client&apos;s profile to start earning
+                $100&ndash;150/month per client.
+              </p>
+              <Link href="/participants" className="mt-4">
+                <Button variant="outline" className="gap-1.5">
+                  Go to Participants
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+          ) : filteredClients.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+              <p className="text-muted-foreground text-sm">
+                No clients match this filter.
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border overflow-x-auto">
-              <table className="w-full min-w-[800px]">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                      Client
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                      Engagement Days
-                    </th>
-                    <th className="text-center text-xs font-medium text-muted-foreground px-4 py-3">
-                      Threshold
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                      Monitoring Time
-                    </th>
-                    <th className="text-center text-xs font-medium text-muted-foreground px-4 py-3">
-                      Live Interaction
-                    </th>
-                    <th className="text-center text-xs font-medium text-muted-foreground px-4 py-3">
-                      Status
-                    </th>
-                    <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {data.clients.map((client) => {
-                    const status = getClientStatus(client);
-                    const p = client.currentPeriod;
-                    const badge = statusBadge[status];
-
-                    return (
-                      <tr
-                        key={client.rtmEnrollmentId}
-                        className={cn(
-                          "hover:bg-accent/50 transition-colors",
-                          rowTint[status]
-                        )}
-                      >
-                        {/* Client name */}
-                        <td className="px-4 py-3">
-                          <Link
-                            href={`/rtm/${client.rtmEnrollmentId}`}
-                            className="font-medium text-sm hover:underline"
-                          >
-                            {client.clientName}
-                          </Link>
-                        </td>
-
-                        {/* Engagement days */}
-                        <td className="px-4 py-3">
-                          {p ? (
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium whitespace-nowrap">
-                                {p.engagementDays}/30
-                              </span>
-                              {p.engagementDays > 0 && (
-                                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div
-                                    className={cn(
-                                      "h-full rounded-full transition-all",
-                                      p.engagementDays >= 16
-                                        ? "bg-green-500"
-                                        : p.engagementDays >= 12
-                                          ? "bg-yellow-500"
-                                          : "bg-red-500"
-                                    )}
-                                    style={{
-                                      width: `${Math.min((p.engagementDays / 30) * 100, 100)}%`,
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              --
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Threshold status */}
-                        <td className="px-4 py-3 text-center">
-                          {p ? (
-                            p.engagementDays >= 16 ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" />
-                            ) : p.engagementDays >= 12 ? (
-                              <AlertTriangle className="h-5 w-5 text-yellow-600 mx-auto" />
-                            ) : (
-                              <X className="h-5 w-5 text-red-500 mx-auto" />
-                            )
-                          ) : (
-                            <span className="text-muted-foreground">--</span>
-                          )}
-                        </td>
-
-                        {/* Monitoring time */}
-                        <td className="px-4 py-3">
-                          <span className="text-sm">
-                            {p ? `${p.clinicianMinutes} min` : "--"}
-                          </span>
-                        </td>
-
-                        {/* Live interaction */}
-                        <td className="px-4 py-3 text-center">
-                          {p ? (
-                            p.hasInteractiveCommunication ? (
-                              <Check className="h-5 w-5 text-green-600 mx-auto" />
-                            ) : (
-                              <X className="h-5 w-5 text-red-400 mx-auto" />
-                            )
-                          ) : (
-                            <span className="text-muted-foreground">--</span>
-                          )}
-                        </td>
-
-                        {/* Status badge */}
-                        <td className="px-4 py-3 text-center">
-                          <Badge
-                            variant="outline"
-                            className={cn("text-xs", badge.className)}
-                          >
-                            {badge.label}
-                          </Badge>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                openLogDialog(client.rtmEnrollmentId)
-                              }
-                            >
-                              <Timer className="h-4 w-4 mr-1" />
-                              Log Time
-                            </Button>
-                            <Link href={`/rtm/${client.rtmEnrollmentId}`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <ChevronRight className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {filteredClients.map(({ client, status }) => (
+                <ClientCard
+                  key={client.rtmEnrollmentId}
+                  client={client}
+                  status={status}
+                  onLogTime={(id, interactive) => openLogDialog(id, interactive)}
+                  onSendReminder={handleSendReminder}
+                />
+              ))}
             </div>
           )}
         </>
@@ -584,6 +909,7 @@ export default function RtmDashboardPage() {
         onOpenChange={setLogDialogOpen}
         clients={data?.clients || []}
         preselectedEnrollmentId={logPreselected}
+        presetInteractive={logPresetInteractive}
       />
     </div>
   );

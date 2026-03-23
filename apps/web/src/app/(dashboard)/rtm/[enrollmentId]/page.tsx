@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { CPT_CODES, getCptRate, getCptDescription } from "@steady/shared";
 import {
   useRtmClientDetail,
   useLogRtmTime,
   useUpdateBillingPeriod,
   type TimeLogEntry,
+  type EngagementEvent,
 } from "@/hooks/use-rtm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -37,12 +40,17 @@ import {
   Timer,
   Check,
   X,
-  ChevronDown,
-  ChevronUp,
   Calendar,
   CheckCircle2,
   Clock,
   FileText,
+  AlertCircle,
+  CircleDot,
+  BookOpen,
+  MessageSquare,
+  ClipboardList,
+  Send,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,14 +72,145 @@ const ACTIVITY_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-const CPT_DESCRIPTIONS: Record<string, { description: string; rate: string }> = {
-  "98975": { description: "RTM initial setup (device/platform)", rate: "$21" },
-  "98976": { description: "RTM device supply (musculoskeletal)", rate: "$52" },
-  "98977": { description: "RTM device supply (respiratory)", rate: "$52" },
-  "98978": { description: "RTM device supply (cognitive behavioral)", rate: "$52" },
-  "98980": { description: "RTM treatment management, first 20 min", rate: "$51" },
-  "98981": { description: "RTM treatment management, addl 20 min", rate: "$42" },
+const CPT_INFO: Record<string, { description: string; rate: number }> = CPT_CODES;
+
+const QUICK_LOG_PRESETS = [
+  { minutes: 5, label: "5 min review", activity: "DATA_REVIEW" },
+  { minutes: 10, label: "10 min adjustment", activity: "PROGRAM_ADJUSTMENT" },
+  { minutes: 15, label: "15 min analysis", activity: "OUTCOME_ANALYSIS" },
+  {
+    minutes: 20,
+    label: "20 min session",
+    activity: "INTERACTIVE_COMMUNICATION",
+  },
+];
+
+const EVENT_TYPE_ICONS: Record<string, typeof ClipboardList> = {
+  tracker_completion: ClipboardList,
+  homework_completion: BookOpen,
+  journal_entry: FileText,
+  session_attendance: MessageSquare,
 };
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatShortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatMoney(amount: number): string {
+  return `$${amount.toFixed(2)}`;
+}
+
+function daysRemaining(endDate: string): number {
+  const end = new Date(endDate);
+  const now = new Date();
+  end.setHours(0, 0, 0, 0);
+  now.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+}
+
+function eventTypeLabel(eventType: string): string {
+  return eventType
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// ── Billability helpers ─────────────────────────────────────────────────────
+
+interface BillabilityItem {
+  label: string;
+  status: "done" | "warning" | "missing";
+  detail: string;
+  shortDetail: string;
+  action?: { label: string; minutes?: number; interactive?: boolean };
+}
+
+function computeBillability(period: NonNullable<ReturnType<typeof useRtmClientDetail>["data"]>["currentPeriod"]): {
+  items: BillabilityItem[];
+  eligibleCodes: string[];
+  missingCodes: Array<{ code: string; reason: string }>;
+  potentialRevenue: number;
+} {
+  if (!period) return { items: [], eligibleCodes: [], missingCodes: [], potentialRevenue: 0 };
+
+  const items: BillabilityItem[] = [];
+  const eligibleCodes = [...period.eligibleCodes];
+  const missingCodes: Array<{ code: string; reason: string }> = [];
+
+  // Engagement days
+  const engagementMet = period.engagementDays >= 16;
+  items.push({
+    label: "Engagement Days",
+    status: engagementMet ? "done" : period.engagementDays >= 12 ? "warning" : "missing",
+    detail: `${period.engagementDays}/16 required (30-day total: ${period.engagementDays}/30)`,
+    shortDetail: engagementMet ? "DONE" : `${16 - period.engagementDays} MORE DAYS`,
+  });
+
+  // Monitoring time
+  const minutesMet = period.clinicianMinutes >= 20;
+  const minutesPartial = period.clinicianMinutes >= 10;
+  items.push({
+    label: "Monitoring Time",
+    status: minutesMet ? "done" : minutesPartial ? "warning" : "missing",
+    detail: `${period.clinicianMinutes}/20 minutes required`,
+    shortDetail: minutesMet ? "DONE" : `${20 - period.clinicianMinutes} MORE MIN`,
+    action: minutesMet
+      ? undefined
+      : {
+          label: `Log ${20 - period.clinicianMinutes} min`,
+          minutes: 20 - period.clinicianMinutes,
+        },
+  });
+
+  // Interactive communication
+  items.push({
+    label: "Live Interaction",
+    status: period.hasInteractiveCommunication ? "done" : "missing",
+    detail: period.hasInteractiveCommunication
+      ? `Recorded${period.interactiveCommunicationDate ? ` on ${formatShortDate(period.interactiveCommunicationDate)}` : ""}`
+      : "Not recorded yet",
+    shortDetail: period.hasInteractiveCommunication ? "DONE" : "REQUIRED",
+    action: period.hasInteractiveCommunication
+      ? undefined
+      : { label: "Log Interaction", interactive: true },
+  });
+
+  // Determine missing codes
+  if (!eligibleCodes.includes("98978") && !eligibleCodes.includes("98986")) {
+    if (!engagementMet) {
+      missingCodes.push({ code: "98978", reason: `needs ${16 - period.engagementDays} more engagement days` });
+    }
+  }
+  if (!eligibleCodes.includes("98980")) {
+    const reasons: string[] = [];
+    if (!minutesMet) reasons.push(`${20 - period.clinicianMinutes} more min`);
+    if (!period.hasInteractiveCommunication) reasons.push("live interaction");
+    if (reasons.length > 0) {
+      missingCodes.push({ code: "98980", reason: `needs ${reasons.join(" + ")}` });
+    }
+  }
+
+  // Revenue
+  let potentialRevenue = 0;
+  const allPotentialCodes = [...new Set([...eligibleCodes, ...missingCodes.map((m) => m.code)])];
+  for (const code of allPotentialCodes) {
+    if (CPT_INFO[code]) potentialRevenue += CPT_INFO[code].rate;
+  }
+
+  return { items, eligibleCodes, missingCodes, potentialRevenue };
+}
 
 // ── Engagement Calendar ─────────────────────────────────────────────────────
 
@@ -79,72 +218,173 @@ function EngagementCalendar({
   periodStart,
   periodEnd,
   calendar,
+  engagementDays,
 }: {
   periodStart: string;
   periodEnd: string;
   calendar: Record<string, boolean>;
+  engagementDays: number;
 }) {
   const start = new Date(periodStart);
   const end = new Date(periodEnd);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const days: { date: Date; key: string; engaged: boolean; isToday: boolean; inRange: boolean }[] = [];
+  const days: {
+    date: Date;
+    key: string;
+    engaged: boolean;
+    isToday: boolean;
+    inRange: boolean;
+    engagedIndex: number;
+  }[] = [];
 
-  // Build all days in range
+  let engagedCount = 0;
   const cursor = new Date(start);
   while (cursor <= end) {
     const key = cursor.toISOString().split("T")[0];
     const cursorMidnight = new Date(cursor);
     cursorMidnight.setHours(0, 0, 0, 0);
+    const engaged = calendar[key] === true;
+    if (engaged) engagedCount++;
 
     days.push({
       date: new Date(cursor),
       key,
-      engaged: calendar[key] === true,
+      engaged,
       isToday: cursorMidnight.getTime() === today.getTime(),
       inRange: cursorMidnight <= today,
+      engagedIndex: engaged ? engagedCount : 0,
     });
     cursor.setDate(cursor.getDate() + 1);
   }
 
+  const thresholdMet = engagementDays >= 16;
+
   return (
-    <div className="grid grid-cols-7 gap-1.5">
-      {/* Day labels */}
-      {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-        <div
-          key={i}
-          className="text-xs text-center text-muted-foreground font-medium pb-1"
-        >
-          {d}
-        </div>
-      ))}
+    <div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          <div
+            key={i}
+            className="text-xs text-center text-muted-foreground font-medium pb-1"
+          >
+            {d}
+          </div>
+        ))}
 
-      {/* Offset for first day of period */}
-      {Array.from({ length: start.getDay() }).map((_, i) => (
-        <div key={`pad-${i}`} />
-      ))}
+        {Array.from({ length: start.getDay() }).map((_, i) => (
+          <div key={`pad-${i}`} />
+        ))}
 
-      {/* Day cells */}
-      {days.map((day) => (
-        <div
-          key={day.key}
-          className={cn(
-            "aspect-square rounded-md flex items-center justify-center text-xs font-medium transition-colors",
-            day.engaged
-              ? "bg-green-500 text-white"
-              : day.inRange
-                ? "bg-gray-100 text-gray-400"
-                : "bg-gray-50 text-gray-300",
-            day.isToday && "ring-2 ring-primary ring-offset-1"
-          )}
-          title={`${day.key}${day.engaged ? " — engaged" : ""}`}
-        >
-          {day.date.getDate()}
+        {days.map((day) => (
+          <div
+            key={day.key}
+            className={cn(
+              "aspect-square rounded-md flex items-center justify-center text-xs font-medium transition-colors",
+              day.engaged
+                ? day.engagedIndex > 16
+                  ? "bg-green-600 text-white"
+                  : "bg-green-500 text-white"
+                : day.inRange
+                  ? "bg-gray-100 text-gray-400"
+                  : "bg-gray-50 text-gray-300",
+              day.isToday && "ring-2 ring-primary ring-offset-1"
+            )}
+            title={`${day.key}${day.engaged ? ` — engaged (day ${day.engagedIndex})` : ""}`}
+          >
+            {day.date.getDate()}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-green-500" />
+            Engaged
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-green-600" />
+            Beyond threshold
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-gray-100 border" />
+            No activity
+          </div>
         </div>
-      ))}
+      </div>
+
+      <p className="text-sm mt-2 text-muted-foreground">
+        {engagementDays} of 30 days | 16-day threshold{" "}
+        {thresholdMet ? (
+          <span className="text-green-600 font-medium">met</span>
+        ) : (
+          <span className="text-amber-600 font-medium">
+            {16 - engagementDays} more needed
+          </span>
+        )}
+      </p>
     </div>
   );
+}
+
+// ── Activity Timeline ───────────────────────────────────────────────────────
+
+interface TimelineItem {
+  id: string;
+  date: string;
+  timestamp: string;
+  type: "engagement" | "time_log";
+  icon: typeof ClipboardList;
+  title: string;
+  description: string;
+  isInteractive?: boolean;
+  durationMinutes?: number;
+}
+
+function buildTimeline(
+  engagementEvents: EngagementEvent[],
+  timeLogs: TimeLogEntry[]
+): TimelineItem[] {
+  const items: TimelineItem[] = [];
+
+  for (const day of engagementEvents) {
+    for (const evt of day.events) {
+      const evtType = typeof evt === "string" ? evt : evt.type;
+      const evtTimestamp = typeof evt === "string" ? day.date : evt.timestamp || day.date;
+      const IconComponent =
+        EVENT_TYPE_ICONS[evtType.toLowerCase()] ||
+        EVENT_TYPE_ICONS[evtType] ||
+        CircleDot;
+      items.push({
+        id: `eng-${day.date}-${evtType}`,
+        date: day.date,
+        timestamp: evtTimestamp,
+        type: "engagement",
+        icon: IconComponent,
+        title: eventTypeLabel(evtType),
+        description: `Client activity on ${formatShortDate(day.date)}`,
+      });
+    }
+  }
+
+  for (const log of timeLogs) {
+    items.push({
+      id: log.id,
+      date: log.activityDate,
+      timestamp: log.activityDate,
+      type: "time_log",
+      icon: Clock,
+      title: ACTIVITY_LABELS[log.activityType] || log.activityType,
+      description: log.description || `${log.durationMinutes} min logged`,
+      isInteractive: log.isInteractiveCommunication,
+      durationMinutes: log.durationMinutes,
+    });
+  }
+
+  items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return items;
 }
 
 // ── Detail Page ─────────────────────────────────────────────────────────────
@@ -162,7 +402,7 @@ export default function RtmClientDetailPage() {
   const [activityType, setActivityType] = useState("");
   const [description, setDescription] = useState("");
   const [isInteractive, setIsInteractive] = useState(false);
-  const [previousExpanded, setPreviousExpanded] = useState(false);
+  const [quickLogInteractive, setQuickLogInteractive] = useState(false);
 
   function resetLogForm() {
     setDuration("");
@@ -190,6 +430,19 @@ export default function RtmClientDetailPage() {
     );
   }
 
+  function handleQuickLog(
+    minutes: number,
+    activity: string,
+    interactive: boolean
+  ) {
+    logTime.mutate({
+      rtmEnrollmentId: enrollmentId,
+      durationMinutes: minutes,
+      activityType: activity,
+      isInteractiveCommunication: interactive,
+    });
+  }
+
   function handleMarkBilled() {
     if (!data?.currentPeriod?.id) return;
     updatePeriod.mutate({
@@ -198,22 +451,7 @@ export default function RtmClientDetailPage() {
     });
   }
 
-  function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
-
-  function formatShortDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-
-  // Loading state
+  // Loading
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -222,7 +460,7 @@ export default function RtmClientDetailPage() {
     );
   }
 
-  // Error state
+  // Error
   if (error) {
     return (
       <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
@@ -234,10 +472,68 @@ export default function RtmClientDetailPage() {
   if (!data) return null;
 
   const p = data.currentPeriod;
+  const billability = p ? computeBillability(p) : null;
+  const timeline = buildTimeline(data.engagementCalendar || [], data.timeLogs);
+
+  // Determine secondary action button
+  function renderSecondaryAction() {
+    if (!p) return null;
+
+    if (p.status === "BILLED") return null;
+
+    // Superbill generated (FINALIZED) -> Mark as Billed
+    if (p.status === "FINALIZED") {
+      return (
+        <Button
+          variant="outline"
+          onClick={handleMarkBilled}
+          disabled={updatePeriod.isPending}
+        >
+          {updatePeriod.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Check className="h-4 w-4 mr-2" />
+          )}
+          Mark as Billed
+        </Button>
+      );
+    }
+
+    // Billable -> Generate Superbill
+    if (billability && billability.eligibleCodes.length > 0 && p.billingTier !== "NONE") {
+      return (
+        <Link href={`/rtm/${enrollmentId}/superbill/${p.id}`}>
+          <Button variant="outline">
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Superbill
+          </Button>
+        </Link>
+      );
+    }
+
+    // At risk -> Send Reminder
+    if (billability && billability.items.some((i) => i.status === "missing")) {
+      return (
+        <Button variant="outline">
+          <Send className="h-4 w-4 mr-2" />
+          Send Reminder
+        </Button>
+      );
+    }
+
+    return null;
+  }
+
+  const statusLabel =
+    data.enrollmentStatus === "ACTIVE"
+      ? "Active"
+      : data.enrollmentStatus === "PENDING_CONSENT"
+        ? "Pending Consent"
+        : data.enrollmentStatus;
 
   return (
     <div className="max-w-5xl">
-      {/* ── Back link + Header ──────────────────────────────────────── */}
+      {/* ── Back link ──────────────────────────────────────────────── */}
       <Link
         href="/rtm"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
@@ -246,394 +542,459 @@ export default function RtmClientDetailPage() {
         Back to RTM Dashboard
       </Link>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold">{data.clientName}</h1>
-          <div className="flex items-center gap-3 mt-1">
-            <Badge variant="outline" className="text-xs">
-              {data.monitoringType}
-            </Badge>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">{data.clientName}</h1>
             <Badge
               variant="outline"
               className={cn(
                 "text-xs",
                 data.enrollmentStatus === "ACTIVE"
                   ? "bg-green-100 text-green-800 border-green-200"
-                  : "bg-gray-100 text-gray-600 border-gray-200"
+                  : "bg-amber-100 text-amber-800 border-amber-200"
               )}
             >
-              {data.enrollmentStatus}
+              {statusLabel}
             </Badge>
           </div>
+          {p && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Period: {formatShortDate(p.periodStart)} &ndash;{" "}
+              {formatShortDate(p.periodEnd)} ({p.daysRemaining} days left)
+            </p>
+          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button onClick={() => setLogDialogOpen(true)}>
             <Timer className="h-4 w-4 mr-2" />
             Log Time
           </Button>
-          {p && p.status !== "BILLED" && (
-            <Button
-              variant="outline"
-              onClick={handleMarkBilled}
-              disabled={updatePeriod.isPending}
-            >
-              {updatePeriod.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <FileText className="h-4 w-4 mr-2" />
-              )}
-              Mark as Billed
-            </Button>
-          )}
+          {renderSecondaryAction()}
         </div>
       </div>
 
-      {/* ── Current Period ──────────────────────────────────────────── */}
       {p ? (
         <div className="space-y-6">
-          {/* Period overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Current Period
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col lg:flex-row gap-8">
-                {/* Left: stats */}
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Period Dates
-                    </p>
-                    <p className="font-medium">
-                      {formatDate(p.periodStart)} - {formatDate(p.periodEnd)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {p.daysElapsed} days elapsed, {p.daysRemaining} remaining
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Engagement Days
-                    </p>
-                    <div className="flex items-end gap-2">
-                      <span className="text-4xl font-bold">
-                        {p.engagementDays}
-                      </span>
-                      <span className="text-xl text-muted-foreground mb-1">
-                        /30
-                      </span>
-                    </div>
-                    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mt-2">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all",
-                          p.engagementDays >= 16
-                            ? "bg-green-500"
-                            : p.engagementDays >= 12
-                              ? "bg-yellow-500"
-                              : "bg-red-500"
-                        )}
-                        style={{
-                          width: `${Math.min((p.engagementDays / 30) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {p.engagementDays >= 16
-                        ? "Threshold met (16+ days)"
-                        : `${16 - p.engagementDays} more days needed to meet threshold`}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Monitoring Time
-                      </p>
-                      <p className="text-xl font-bold">
-                        {p.clinicianMinutes} min
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {p.clinicianMinutes >= 20
-                          ? "20 min threshold met"
-                          : `${20 - p.clinicianMinutes} min remaining`}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Interactive Communication
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {p.hasInteractiveCommunication ? (
-                          <>
-                            <Check className="h-5 w-5 text-green-600" />
-                            <span className="text-sm">
-                              {p.interactiveCommunicationDate
-                                ? formatShortDate(
-                                    p.interactiveCommunicationDate
-                                  )
-                                : "Yes"}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <X className="h-5 w-5 text-red-400" />
-                            <span className="text-sm text-muted-foreground">
-                              Not yet
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: calendar grid */}
-                <div className="lg:w-72">
-                  <p className="text-sm font-medium mb-3">
-                    Engagement Calendar
-                  </p>
-                  {"engagementCalendar" in p && p.engagementCalendar ? (
-                    <EngagementCalendar
-                      periodStart={p.periodStart}
-                      periodEnd={p.periodEnd}
-                      calendar={
-                        p.engagementCalendar as Record<string, boolean>
-                      }
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Calendar data unavailable.
-                    </p>
-                  )}
-                  <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded bg-green-500" />
-                      Engaged
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded bg-gray-100 border" />
-                      No activity
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* ── Engagement Events ──────────────────────────────────── */}
-          {data.engagementCalendar?.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Engagement Events</CardTitle>
+          {/* ── Billability Checklist ─────────────────────────────── */}
+          {billability && (
+            <Card className="border-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">
+                  Billability Checklist
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {data.engagementCalendar.map((day) => (
-                    <div key={day.date} className="flex gap-4">
-                      <div className="text-sm font-medium text-muted-foreground w-20 shrink-0 pt-0.5">
-                        {formatShortDate(day.date)}
-                      </div>
-                      <div className="flex-1">
-                        <ul className="space-y-1">
-                          {day.events.map((evt, i) => (
-                            <li
-                              key={i}
-                              className="text-sm flex items-center gap-2"
+                  {billability.items.map((item) => {
+                    const StatusIcon =
+                      item.status === "done"
+                        ? CheckCircle2
+                        : item.status === "warning"
+                          ? AlertCircle
+                          : X;
+                    const statusColor =
+                      item.status === "done"
+                        ? "text-green-600"
+                        : item.status === "warning"
+                          ? "text-amber-500"
+                          : "text-red-500";
+
+                    return (
+                      <div
+                        key={item.label}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <StatusIcon
+                            className={cn("h-5 w-5 shrink-0", statusColor)}
+                          />
+                          <span className="text-sm font-medium">
+                            {item.label}:
+                          </span>
+                          <span className="text-sm text-muted-foreground truncate">
+                            {item.detail}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 ml-7 sm:ml-0">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-xs whitespace-nowrap",
+                              item.status === "done"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : item.status === "warning"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-red-50 text-red-700 border-red-200"
+                            )}
+                          >
+                            {item.shortDetail}
+                          </Badge>
+                          {item.action && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              disabled={logTime.isPending}
+                              onClick={() => {
+                                if (item.action?.interactive) {
+                                  setIsInteractive(true);
+                                  setActivityType("INTERACTIVE_COMMUNICATION");
+                                  setDuration("5");
+                                  setLogDialogOpen(true);
+                                } else if (item.action?.minutes) {
+                                  handleQuickLog(
+                                    item.action.minutes,
+                                    "DATA_REVIEW",
+                                    false
+                                  );
+                                }
+                              }}
                             >
-                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                              {evt.type.replace(/_/g, " ").toLowerCase()}
-                            </li>
-                          ))}
-                        </ul>
+                              {item.action.label}
+                            </Button>
+                          )}
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="space-y-1 text-sm">
+                  {billability.eligibleCodes.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        Eligible Codes:
+                      </span>
+                      <span className="font-medium">
+                        {billability.eligibleCodes.map((code) => {
+                          const info = CPT_INFO[code];
+                          return `${code}${info ? ` (${formatMoney(info.rate)})` : ""}`;
+                        }).join(", ")}
+                      </span>
                     </div>
-                  ))}
+                  )}
+
+                  {billability.missingCodes.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-muted-foreground whitespace-nowrap">
+                        Missing:
+                      </span>
+                      <span className="text-sm">
+                        {billability.missingCodes.map((m) => {
+                          const info = CPT_INFO[m.code];
+                          return `${m.code}${info ? ` (${formatMoney(info.rate)})` : ""} — ${m.reason}`;
+                        }).join("; ")}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-muted-foreground">
+                      Potential revenue this period:
+                    </span>
+                    <span className="font-bold text-lg">
+                      {formatMoney(billability.potentialRevenue)}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* ── Clinician Time Logs ───────────────────────────────── */}
+          {/* ── 30-Day Engagement Calendar ────────────────────────── */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Clinician Time Logs
+                <Calendar className="h-5 w-5" />
+                30-Day Engagement Calendar
               </CardTitle>
-              <div className="text-sm text-muted-foreground">
-                Total: <span className="font-bold text-foreground">{p.clinicianMinutes} min</span>
-              </div>
             </CardHeader>
             <CardContent>
-              {data.timeLogs.length === 0 ? (
+              {data.engagementCalendar ? (
+                <EngagementCalendar
+                  periodStart={p.periodStart}
+                  periodEnd={p.periodEnd}
+                  calendar={Object.fromEntries(
+                    (data.engagementCalendar as Array<{ date: string }>).map((d) => [d.date, true])
+                  )}
+                  engagementDays={p.engagementDays}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Calendar data unavailable.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Quick Log Time ────────────────────────────────────── */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Timer className="h-5 w-5" />
+                Quick Log Time
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Progress bar */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-muted-foreground">
+                    {p.clinicianMinutes}/20 minutes logged
+                  </span>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      p.clinicianMinutes >= 20
+                        ? "text-green-600"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {p.clinicianMinutes >= 20
+                      ? "Threshold met"
+                      : `${20 - p.clinicianMinutes} min remaining`}
+                  </span>
+                </div>
+                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      p.clinicianMinutes >= 20
+                        ? "bg-green-500"
+                        : p.clinicianMinutes >= 10
+                          ? "bg-amber-500"
+                          : "bg-red-400"
+                    )}
+                    style={{
+                      width: `${Math.min((p.clinicianMinutes / 20) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Preset buttons */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                {QUICK_LOG_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.minutes}
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    disabled={logTime.isPending}
+                    onClick={() =>
+                      handleQuickLog(
+                        preset.minutes,
+                        preset.activity,
+                        quickLogInteractive
+                      )
+                    }
+                  >
+                    {logTime.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Interactive toggle + custom entry */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="quick-interactive"
+                    checked={quickLogInteractive}
+                    onCheckedChange={(checked) =>
+                      setQuickLogInteractive(checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="quick-interactive"
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    This was a live interaction
+                  </Label>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLogDialogOpen(true)}
+                  className="text-muted-foreground"
+                >
+                  Custom entry...
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Activity Timeline ─────────────────────────────────── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Activity Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {timeline.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
-                  No time logged for this period yet.
+                  No activity recorded for this period yet.
                 </p>
               ) : (
+                <div className="space-y-1">
+                  {timeline.map((item, idx) => {
+                    const Icon = item.icon;
+                    const isTimeLog = item.type === "time_log";
+                    return (
+                      <div
+                        key={item.id}
+                        className={cn(
+                          "flex items-start gap-3 py-2.5 px-3 rounded-md",
+                          isTimeLog
+                            ? "bg-blue-50/60 border border-blue-100"
+                            : idx % 2 === 0
+                              ? "bg-muted/30"
+                              : ""
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-4 w-4 mt-0.5 shrink-0",
+                            isTimeLog
+                              ? "text-blue-600"
+                              : "text-green-600"
+                          )}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {item.title}
+                            </span>
+                            {item.isInteractive && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-200"
+                              >
+                                Live
+                              </Badge>
+                            )}
+                            {item.durationMinutes && (
+                              <span className="text-xs text-muted-foreground">
+                                {item.durationMinutes} min
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {item.description}
+                          </p>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                          {formatShortDate(item.date)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Previous Periods ───────────────────────────────────── */}
+          {data.previousPeriods.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  Previous Periods ({data.previousPeriods.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="rounded-lg border overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b bg-muted/50">
                         <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">
-                          Date
+                          Period
+                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2 hidden sm:table-cell">
+                          Engagement
+                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2 hidden sm:table-cell">
+                          Minutes
                         </th>
                         <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">
-                          Activity
+                          Revenue
                         </th>
                         <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">
-                          Duration
+                          Status
                         </th>
-                        <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">
-                          Description
-                        </th>
-                        <th className="text-center text-xs font-medium text-muted-foreground px-4 py-2">
-                          Interactive
-                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2 hidden sm:table-cell" />
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {data.timeLogs.map((log: TimeLogEntry) => (
-                        <tr
-                          key={log.id}
-                          className="hover:bg-accent/50 transition-colors"
-                        >
-                          <td className="px-4 py-2 text-sm">
-                            {formatShortDate(log.activityDate)}
-                          </td>
-                          <td className="px-4 py-2 text-sm">
-                            {ACTIVITY_LABELS[log.activityType] ||
-                              log.activityType}
-                          </td>
-                          <td className="px-4 py-2 text-sm font-medium">
-                            {log.durationMinutes} min
-                          </td>
-                          <td className="px-4 py-2 text-sm text-muted-foreground max-w-xs truncate">
-                            {log.description || "--"}
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            {log.isInteractiveCommunication ? (
-                              <Check className="h-4 w-4 text-green-600 mx-auto" />
-                            ) : (
-                              <span className="text-muted-foreground">--</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {data.previousPeriods.map((period) => {
+                        const revenue = period.eligibleCodes.reduce(
+                          (sum, code) =>
+                            sum + (CPT_INFO[code]?.rate ?? 0),
+                          0
+                        );
+                        return (
+                          <tr
+                            key={period.id}
+                            className="hover:bg-accent/50 transition-colors"
+                          >
+                            <td className="px-4 py-2.5 text-sm">
+                              {formatShortDate(period.periodStart)} &ndash;{" "}
+                              {formatShortDate(period.periodEnd)}
+                            </td>
+                            <td className="px-4 py-2.5 text-sm hidden sm:table-cell">
+                              {period.engagementDays} days
+                            </td>
+                            <td className="px-4 py-2.5 text-sm hidden sm:table-cell">
+                              {period.clinicianMinutes} min
+                            </td>
+                            <td className="px-4 py-2.5 text-sm font-medium">
+                              {revenue > 0
+                                ? formatMoney(revenue)
+                                : "--"}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-xs",
+                                  period.status === "BILLED"
+                                    ? "bg-gray-100 text-gray-700 border-gray-200"
+                                    : period.status === "FINALIZED"
+                                      ? "bg-blue-100 text-blue-700 border-blue-200"
+                                      : "bg-green-100 text-green-800 border-green-200"
+                                )}
+                              >
+                                {period.status}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-2.5 hidden sm:table-cell">
+                              {(period.status === "FINALIZED" ||
+                                period.status === "BILLED") && (
+                                <Link
+                                  href={`/rtm/${enrollmentId}/superbill/${period.id}`}
+                                  className="text-xs text-blue-600 hover:underline"
+                                >
+                                  View Superbill
+                                </Link>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── Eligible CPT Codes ────────────────────────────────── */}
-          {p.eligibleCodes && p.eligibleCodes.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Eligible CPT Codes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {p.eligibleCodes.map((code) => {
-                    const info = CPT_DESCRIPTIONS[code];
-                    return (
-                      <div
-                        key={code}
-                        className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-                          <div>
-                            <span className="text-sm font-mono font-bold">
-                              {code}
-                            </span>
-                            {info && (
-                              <p className="text-xs text-muted-foreground">
-                                {info.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        {info && (
-                          <span className="text-sm font-medium text-green-700">
-                            {info.rate}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
               </CardContent>
-            </Card>
-          )}
-
-          {/* ── Previous Periods ──────────────────────────────────── */}
-          {data.previousPeriods.length > 0 && (
-            <Card>
-              <CardHeader>
-                <button
-                  className="flex items-center justify-between w-full"
-                  onClick={() => setPreviousExpanded(!previousExpanded)}
-                >
-                  <CardTitle className="text-lg">
-                    Previous Periods ({data.previousPeriods.length})
-                  </CardTitle>
-                  {previousExpanded ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </button>
-              </CardHeader>
-              {previousExpanded && (
-                <CardContent>
-                  <div className="space-y-3">
-                    {data.previousPeriods.map((period) => (
-                      <div
-                        key={period.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-2"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">
-                            {formatDate(period.periodStart)} -{" "}
-                            {formatDate(period.periodEnd)}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            <span>{period.engagementDays} days</span>
-                            <span>{period.clinicianMinutes} min</span>
-                            <span>
-                              {period.eligibleCodes.length} codes
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs",
-                              period.status === "BILLED"
-                                ? "bg-gray-100 text-gray-700 border-gray-200"
-                                : period.status === "FINALIZED"
-                                  ? "bg-blue-100 text-blue-700 border-blue-200"
-                                  : "bg-green-100 text-green-800 border-green-200"
-                            )}
-                          >
-                            {period.status}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {period.billingTier}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              )}
             </Card>
           )}
         </div>
@@ -650,7 +1011,7 @@ export default function RtmClientDetailPage() {
         </Card>
       )}
 
-      {/* ── Log Time Dialog ──────────────────────────────────────── */}
+      {/* ── Log Time Dialog (custom entry) ─────────────────────── */}
       <Dialog
         open={logDialogOpen}
         onOpenChange={(v) => {
@@ -733,9 +1094,7 @@ export default function RtmClientDetailPage() {
             </Button>
             <Button
               onClick={handleLogTime}
-              disabled={
-                logTime.isPending || !duration || !activityType
-              }
+              disabled={logTime.isPending || !duration || !activityType}
             >
               {logTime.isPending && (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

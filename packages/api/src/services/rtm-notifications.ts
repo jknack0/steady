@@ -1,21 +1,12 @@
 import { logger } from "../lib/logger";
 import { prisma } from "@steady/db";
+import { getCptRate } from "@steady/shared";
 import { getQueue } from "./queue";
 import { queueNotification } from "./notifications";
 import {
   rolloverBillingPeriods,
   recalculateAllActivePeriods,
 } from "./rtm";
-
-// ── CPT Reimbursement Rates (mirrored from rtm.ts) ───
-const CPT_RATES: Record<string, number> = {
-  "98975": 19.65,
-  "98978": 55,
-  "98986": 50,
-  "98979": 26,
-  "98980": 54,
-  "98981": 41,
-};
 
 // ── Helpers ──────────────────────────────────────────
 
@@ -595,7 +586,7 @@ async function rtmMonthlySummary(): Promise<void> {
     const existing = clinicianSummaries.get(period.clinicianId);
     const codes = (period.eligibleCodes as string[]) || [];
     const revenue = codes.reduce(
-      (sum, code) => sum + (CPT_RATES[code] || 0),
+      (sum, code) => sum + getCptRate(code),
       0
     );
 

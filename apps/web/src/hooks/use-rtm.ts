@@ -32,6 +32,7 @@ export interface RtmClientRow {
     daysRemaining: number;
     daysElapsed: number;
   } | null;
+  lastEngagementDate: string | null;
 }
 
 export interface RtmDashboardData {

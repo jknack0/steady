@@ -5,6 +5,7 @@ import {
   cancelSessionReminders,
   scheduleTaskReminder,
 } from "./notifications";
+import { logClinicianTime } from "./rtm";
 
 // ── Types ────────────────────────────────────────────
 
@@ -424,6 +425,45 @@ export async function completeSession(sessionId: string, data: CompleteSessionDa
     if (task.dueDate) {
       scheduleTaskReminder(participantUserId, task.id, task.title, task.dueDate).catch(() => {});
     }
+  }
+
+  // Auto-log interactive communication time for active RTM enrollments
+  try {
+    const rtmEnrollment = await prisma.rtmEnrollment.findFirst({
+      where: {
+        enrollmentId: session.enrollmentId,
+        status: "ACTIVE",
+      },
+    });
+
+    if (rtmEnrollment) {
+      const activePeriod = await prisma.rtmBillingPeriod.findFirst({
+        where: {
+          rtmEnrollmentId: rtmEnrollment.id,
+          status: { in: ["ACTIVE", "THRESHOLD_MET"] },
+        },
+        orderBy: { periodStart: "desc" },
+      });
+
+      if (activePeriod) {
+        const now = new Date();
+        const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+
+        logClinicianTime({
+          billingPeriodId: activePeriod.id,
+          clinicianId: rtmEnrollment.clinicianId,
+          activityType: "INTERACTIVE_COMMUNICATION",
+          durationMinutes: 20,
+          description: "In-session interactive communication (auto-logged)",
+          activityDate: today,
+          isInteractiveCommunication: true,
+        }).catch((err) =>
+          logger.error("Failed to auto-log RTM interactive communication time", err)
+        );
+      }
+    }
+  } catch (err) {
+    logger.error("Failed to check RTM enrollment for session completion", err);
   }
 
   return { data: updated };

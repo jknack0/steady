@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   useClinicianParticipant,
@@ -53,6 +53,9 @@ import {
   ClipboardList,
   Target,
   Activity,
+  Search,
+  X,
+  Plus,
 } from "lucide-react";
 import {
   BarChart,
@@ -640,25 +643,63 @@ function QuickActions({
 // ── RTM Enrollment Dialog ──────────────────────────────
 
 const COMMON_ICD10_CODES = [
+  // Depression
   { code: "F32.0", label: "Major depressive disorder, single episode, mild" },
   { code: "F32.1", label: "Major depressive disorder, single episode, moderate" },
   { code: "F32.2", label: "Major depressive disorder, single episode, severe" },
+  { code: "F32.9", label: "Major depressive disorder, single episode, unspecified" },
   { code: "F33.0", label: "Major depressive disorder, recurrent, mild" },
   { code: "F33.1", label: "Major depressive disorder, recurrent, moderate" },
-  { code: "F41.0", label: "Panic disorder" },
+  { code: "F33.2", label: "Major depressive disorder, recurrent, severe" },
+  { code: "F33.9", label: "Major depressive disorder, recurrent, unspecified" },
+  // Anxiety
+  { code: "F41.0", label: "Panic disorder without agoraphobia" },
   { code: "F41.1", label: "Generalized anxiety disorder" },
+  { code: "F41.9", label: "Anxiety disorder, unspecified" },
+  { code: "F40.10", label: "Social anxiety disorder, unspecified" },
+  { code: "F40.11", label: "Social anxiety disorder, generalized" },
+  // PTSD / Trauma
   { code: "F43.10", label: "Post-traumatic stress disorder, unspecified" },
+  { code: "F43.11", label: "Post-traumatic stress disorder, acute" },
   { code: "F43.12", label: "Post-traumatic stress disorder, chronic" },
-  { code: "F90.0", label: "ADHD, predominantly inattentive" },
-  { code: "F90.1", label: "ADHD, predominantly hyperactive" },
+  { code: "F43.20", label: "Adjustment disorder, unspecified" },
+  { code: "F43.21", label: "Adjustment disorder with depressed mood" },
+  { code: "F43.22", label: "Adjustment disorder with anxiety" },
+  { code: "F43.23", label: "Adjustment disorder with mixed anxiety and depressed mood" },
+  { code: "F43.25", label: "Adjustment disorder with mixed disturbance of emotions and conduct" },
+  // ADHD
+  { code: "F90.0", label: "ADHD, predominantly inattentive type" },
+  { code: "F90.1", label: "ADHD, predominantly hyperactive-impulsive type" },
   { code: "F90.2", label: "ADHD, combined type" },
-  { code: "F42.2", label: "Obsessive-compulsive disorder, mixed" },
+  { code: "F90.9", label: "ADHD, unspecified type" },
+  // OCD
+  { code: "F42.2", label: "Obsessive-compulsive disorder, mixed obsessional thoughts and acts" },
+  { code: "F42.3", label: "Hoarding disorder" },
+  { code: "F42.8", label: "Other obsessive-compulsive disorder" },
+  { code: "F42.9", label: "Obsessive-compulsive disorder, unspecified" },
+  // Eating disorders
   { code: "F50.00", label: "Anorexia nervosa, unspecified" },
+  { code: "F50.01", label: "Anorexia nervosa, restricting type" },
+  { code: "F50.02", label: "Anorexia nervosa, binge eating/purging type" },
   { code: "F50.2", label: "Bulimia nervosa" },
+  { code: "F50.81", label: "Binge eating disorder" },
+  { code: "F50.89", label: "Other specified eating disorder" },
+  // Substance use
+  { code: "F10.10", label: "Alcohol use disorder, mild" },
   { code: "F10.20", label: "Alcohol use disorder, moderate" },
+  { code: "F11.10", label: "Opioid use disorder, mild" },
+  { code: "F11.20", label: "Opioid use disorder, moderate" },
+  { code: "F12.10", label: "Cannabis use disorder, mild" },
+  { code: "F12.20", label: "Cannabis use disorder, moderate" },
+  // Insomnia
   { code: "F51.01", label: "Primary insomnia" },
+  { code: "F51.02", label: "Adjustment insomnia" },
+  { code: "F51.09", label: "Other insomnia not due to a substance or known physiological condition" },
+  // Anger / Impulse
   { code: "F63.81", label: "Intermittent explosive disorder" },
 ];
+
+const CUSTOM_ICD10_PATTERN = /^F\d{2}\.\d{1,2}$/;
 
 function RtmEnrollmentDialog({
   open,
@@ -677,12 +718,45 @@ function RtmEnrollmentDialog({
   const [groupNumber, setGroupNumber] = useState("");
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [monitoringType, setMonitoringType] = useState("CBT");
+  const [codeSearch, setCodeSearch] = useState("");
 
   const toggleCode = (code: string) => {
     setSelectedCodes((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
     );
   };
+
+  const removeCode = (code: string) => {
+    setSelectedCodes((prev) => prev.filter((c) => c !== code));
+  };
+
+  const searchLower = codeSearch.toLowerCase().trim();
+
+  const filteredCodes = useMemo(() => {
+    if (!searchLower) return COMMON_ICD10_CODES;
+    return COMMON_ICD10_CODES.filter(
+      ({ code, label }) =>
+        code.toLowerCase().includes(searchLower) ||
+        label.toLowerCase().includes(searchLower)
+    );
+  }, [searchLower]);
+
+  const selectedCodeEntries = useMemo(() => {
+    return selectedCodes.map((code) => {
+      const found = COMMON_ICD10_CODES.find((c) => c.code === code);
+      return found ?? { code, label: "Custom code" };
+    });
+  }, [selectedCodes]);
+
+  const customCodeCandidate = useMemo(() => {
+    const trimmed = codeSearch.trim().toUpperCase();
+    if (!CUSTOM_ICD10_PATTERN.test(trimmed)) return null;
+    // Don't show if it already exists in the list or is already selected
+    const existsInList = COMMON_ICD10_CODES.some((c) => c.code === trimmed);
+    const alreadySelected = selectedCodes.includes(trimmed);
+    if (existsInList || alreadySelected) return null;
+    return trimmed;
+  }, [codeSearch, selectedCodes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -704,6 +778,7 @@ function RtmEnrollmentDialog({
       setSubscriberId("");
       setGroupNumber("");
       setSelectedCodes([]);
+      setCodeSearch("");
     } catch {
       // handled by React Query
     }
@@ -775,29 +850,107 @@ function RtmEnrollmentDialog({
               <p className="text-xs text-muted-foreground">
                 Select at least one diagnosis code for billing.
               </p>
-              <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
-                {COMMON_ICD10_CODES.map(({ code, label }) => (
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by code or description..."
+                  value={codeSearch}
+                  onChange={(e) => setCodeSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              {/* Selected codes as removable badges */}
+              {selectedCodes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCodeEntries.map(({ code, label }) => (
+                    <Badge
+                      key={code}
+                      variant="secondary"
+                      className="text-xs gap-1 pr-1"
+                    >
+                      <span className="font-mono">{code}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeCode(code)}
+                        className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="max-h-56 overflow-y-auto border rounded-md p-2 space-y-0.5">
+                {/* Recently Used / Selected section */}
+                {selectedCodes.length > 0 && !searchLower && (
+                  <>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pt-1 pb-0.5">
+                      Selected
+                    </p>
+                    {selectedCodeEntries.map(({ code, label }) => (
+                      <button
+                        type="button"
+                        key={`selected-${code}`}
+                        onClick={() => toggleCode(code)}
+                        className="w-full text-left text-sm px-2 py-1.5 rounded transition-colors bg-primary/10 text-primary font-medium"
+                      >
+                        <span className="font-mono text-xs mr-2">{code}</span>
+                        {label}
+                      </button>
+                    ))}
+                    <div className="border-b my-1.5" />
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-2 pt-1 pb-0.5">
+                      All Codes
+                    </p>
+                  </>
+                )}
+
+                {/* Filtered code list */}
+                {filteredCodes.length > 0 ? (
+                  filteredCodes.map(({ code, label }) => (
+                    <button
+                      type="button"
+                      key={code}
+                      onClick={() => toggleCode(code)}
+                      className={cn(
+                        "w-full text-left text-sm px-2 py-1.5 rounded transition-colors",
+                        selectedCodes.includes(code)
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <span className="font-mono text-xs mr-2">{code}</span>
+                      {label}
+                    </button>
+                  ))
+                ) : !customCodeCandidate ? (
+                  <p className="text-sm text-muted-foreground text-center py-3">
+                    No matching codes
+                  </p>
+                ) : null}
+
+                {/* Custom code option */}
+                {customCodeCandidate && (
                   <button
                     type="button"
-                    key={code}
-                    onClick={() => toggleCode(code)}
-                    className={cn(
-                      "w-full text-left text-sm px-2 py-1.5 rounded transition-colors",
-                      selectedCodes.includes(code)
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "hover:bg-muted"
-                    )}
+                    onClick={() => {
+                      toggleCode(customCodeCandidate);
+                      setCodeSearch("");
+                    }}
+                    className="w-full text-left text-sm px-2 py-1.5 rounded transition-colors hover:bg-muted flex items-center gap-2 border-t mt-1 pt-2"
                   >
-                    <span className="font-mono text-xs mr-2">{code}</span>
-                    {label}
+                    <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>
+                      Add custom code:{" "}
+                      <span className="font-mono font-medium">{customCodeCandidate}</span>
+                    </span>
                   </button>
-                ))}
+                )}
               </div>
-              {selectedCodes.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Selected: {selectedCodes.join(", ")}
-                </p>
-              )}
             </div>
           </div>
 
