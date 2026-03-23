@@ -2,6 +2,7 @@ import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
+import { logRtmEngagement } from "../services/rtm";
 
 const router = Router();
 
@@ -118,6 +119,11 @@ router.post("/", async (req: Request, res: Response) => {
         isSharedWithClinician: isSharedWithClinician ?? undefined,
         promptPartId: promptPartId ?? undefined,
       },
+    });
+
+    // Log RTM engagement for journal entry creation (fire-and-forget)
+    logRtmEngagement(req.user!.userId, "JOURNAL_ENTRY_CREATED", undefined, {
+      journalEntryId: entry.id,
     });
 
     res.json({ success: true, data: entry });

@@ -6,6 +6,7 @@ import {
   getStreakData,
 } from "./homework-instances";
 import { CompleteHomeworkInstanceSchema } from "@steady/shared";
+import { logRtmEngagement } from "./rtm";
 
 // ── Error types ──────────────────────────────────────
 
@@ -521,6 +522,9 @@ export async function submitTrackerEntry(
       completedAt: new Date(),
     },
   });
+
+  // Log RTM engagement for daily tracker completion (fire-and-forget)
+  logRtmEngagement(userId, "DAILY_TRACKER_COMPLETED", undefined, { trackerId });
 
   return entry;
 }

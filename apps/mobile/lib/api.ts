@@ -291,6 +291,15 @@ export const api = {
       body: JSON.stringify({ category }),
     }),
 
+  // RTM
+  getPendingRtmConsent: () => apiFetch("/api/participant/rtm/pending"),
+
+  submitRtmConsent: (data: { rtmEnrollmentId: string; consentGiven: boolean; signatureName: string }) =>
+    apiFetch("/api/participant/rtm/consent", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

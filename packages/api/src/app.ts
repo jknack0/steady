@@ -21,6 +21,8 @@ import adminRoutes from "./routes/admin";
 import practiceRoutes from "./routes/practice";
 import uploadRoutes from "./routes/uploads";
 import dailyTrackerRoutes from "./routes/daily-trackers";
+import rtmRoutes from "./routes/rtm";
+import { rtmParticipantRouter } from "./routes/rtm";
 
 const app = express();
 
@@ -62,6 +64,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/practices", practiceRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/daily-trackers", dailyTrackerRoutes);
+app.use("/api/rtm", rtmRoutes);
+app.use("/api/participant/rtm", rtmParticipantRouter);
 
 // Error handler
 app.use(errorHandler);

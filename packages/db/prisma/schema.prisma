@@ -199,6 +199,11 @@ model User {
   participantProfile    ParticipantProfile?
   notificationPreferences NotificationPreference[]
 
+  rtmEngagementEvents  RtmEngagementEvent[]
+  rtmEnrollmentsAsClient RtmEnrollment[]      @relation("RtmClient")
+  rtmBillingPeriodsAsClient RtmBillingPeriod[] @relation("RtmBillingClient")
+  rtmTimeLogsAsClient  RtmClinicianTimeLog[]  @relation("RtmTimeLogClient")
+
   @@map("users")
 }
 
@@ -213,6 +218,11 @@ model ClinicianProfile {
 
   programs    Program[]
   memberships PracticeMembership[]
+
+  rtmEnrollments    RtmEnrollment[]
+  rtmBillingPeriods RtmBillingPeriod[]
+  rtmTimeLogs       RtmClinicianTimeLog[]
+  billingProfile    ClinicianBillingProfile?
 
   @@map("clinician_profiles")
 }
@@ -321,11 +331,14 @@ model Enrollment {
   enrolledAt      DateTime         @default(now())
   completedAt     DateTime?
 
-  moduleProgress    ModuleProgress[]
-  partProgress      PartProgress[]
-  sessions          Session[]
-  homeworkInstances HomeworkInstance[]
-  dailyTrackers     DailyTracker[]
+  moduleProgress      ModuleProgress[]
+  partProgress        PartProgress[]
+  sessions            Session[]
+  homeworkInstances   HomeworkInstance[]
+  dailyTrackers       DailyTracker[]
+  rtmEngagementEvents RtmEngagementEvent[]
+  rtmEnrollments      RtmEnrollment[]
+  rtmBillingPeriods   RtmBillingPeriod[]
 
   @@map("enrollments")
 }
@@ -534,6 +547,183 @@ model DailyTrackerEntry {
   @@index([userId])
   @@index([date])
   @@map("daily_tracker_entries")
+}
+
+// ── RTM (Remote Therapeutic Monitoring) ──────────────
+
+enum RtmEventType {
+  DAILY_TRACKER_COMPLETED
+  HOMEWORK_COMPLETED
+  ASSESSMENT_COMPLETED
+  STRATEGY_CARD_VIEWED
+  JOURNAL_ENTRY_CREATED
+  RESOURCE_VIEWED
+  APP_OPENED
+  MESSAGE_SENT
+}
+
+enum RtmPeriodStatus {
+  ACTIVE
+  THRESHOLD_MET
+  BILLED
+  EXPIRED
+}
+
+enum RtmBillingTier {
+  NONE
+  SHORT_PERIOD
+  FULL_PERIOD
+}
+
+enum RtmActivityType {
+  DATA_REVIEW
+  PROGRAM_ADJUSTMENT
+  OUTCOME_ANALYSIS
+  INTERACTIVE_COMMUNICATION
+  OTHER
+}
+
+enum RtmInteractionType {
+  IN_SESSION
+  PHONE_CALL
+  VIDEO_CALL
+  OTHER
+}
+
+enum RtmMonitoringType {
+  CBT
+  MSK
+  RESPIRATORY
+}
+
+enum RtmEnrollmentStatus {
+  PENDING_CONSENT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+model RtmEngagementEvent {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  enrollmentId    String?
+  enrollment      Enrollment?  @relation(fields: [enrollmentId], references: [id])
+  eventType       RtmEventType
+  eventDate       DateTime     @db.Date
+  eventTimestamp   DateTime     @default(now())
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+
+  @@index([userId, eventDate])
+  @@index([enrollmentId, eventDate])
+  @@map("rtm_engagement_events")
+}
+
+model RtmEnrollment {
+  id                 String              @id @default(cuid())
+  clinicianId        String
+  clinician          ClinicianProfile    @relation(fields: [clinicianId], references: [id])
+  clientId           String
+  client             User                @relation("RtmClient", fields: [clientId], references: [id])
+  enrollmentId       String?
+  enrollment         Enrollment?         @relation(fields: [enrollmentId], references: [id])
+  monitoringType     RtmMonitoringType   @default(CBT)
+  diagnosisCodes     Json
+  payerName          String
+  subscriberId       String
+  groupNumber        String?
+  consentSignedAt    DateTime?
+  consentDocumentUrl String?
+  status             RtmEnrollmentStatus @default(PENDING_CONSENT)
+  startDate          DateTime            @db.Date
+  endDate            DateTime?           @db.Date
+  setupBilled        Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  billingPeriods RtmBillingPeriod[]
+
+  @@index([clinicianId])
+  @@index([clientId])
+  @@map("rtm_enrollments")
+}
+
+model RtmBillingPeriod {
+  id                           String             @id @default(cuid())
+  rtmEnrollmentId              String
+  rtmEnrollment                RtmEnrollment      @relation(fields: [rtmEnrollmentId], references: [id], onDelete: Cascade)
+  clinicianId                  String
+  clinician                    ClinicianProfile   @relation(fields: [clinicianId], references: [id])
+  clientId                     String
+  client                       User               @relation("RtmBillingClient", fields: [clientId], references: [id])
+  enrollmentId                 String?
+  enrollment                   Enrollment?        @relation(fields: [enrollmentId], references: [id])
+  periodStart                  DateTime           @db.Date
+  periodEnd                    DateTime           @db.Date
+  engagementDays               Int                @default(0)
+  clinicianMinutes             Int                @default(0)
+  hasInteractiveCommunication  Boolean            @default(false)
+  interactiveCommunicationDate DateTime?          @db.Date
+  interactiveCommunicationType RtmInteractionType?
+  status                       RtmPeriodStatus    @default(ACTIVE)
+  billingTier                  RtmBillingTier     @default(NONE)
+  eligibleCodes                Json               @default("[]")
+  notes                        String?
+  superbillUrl                 String?
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  timeLogs RtmClinicianTimeLog[]
+
+  @@unique([rtmEnrollmentId, periodStart])
+  @@index([clinicianId])
+  @@index([clientId])
+  @@index([status])
+  @@map("rtm_billing_periods")
+}
+
+model RtmClinicianTimeLog {
+  id                         String           @id @default(cuid())
+  billingPeriodId            String
+  billingPeriod              RtmBillingPeriod @relation(fields: [billingPeriodId], references: [id], onDelete: Cascade)
+  clinicianId                String
+  clinician                  ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  clientId                   String
+  client                     User             @relation("RtmTimeLogClient", fields: [clientId], references: [id])
+  activityType               RtmActivityType
+  durationMinutes            Int
+  description                String
+  activityDate               DateTime         @db.Date
+  isInteractiveCommunication Boolean          @default(false)
+  createdAt                  DateTime         @default(now())
+
+  @@index([billingPeriodId])
+  @@index([clinicianId])
+  @@map("rtm_clinician_time_logs")
+}
+
+model ClinicianBillingProfile {
+  id                  String           @id @default(cuid())
+  clinicianId         String           @unique
+  clinician           ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  providerName        String
+  credentials         String
+  npiNumber           String
+  taxId               String
+  practiceName        String
+  practiceAddress     String
+  practiceCity        String
+  practiceState       String
+  practiceZip         String
+  practicePhone       String
+  licenseNumber       String
+  licenseState        String
+  placeOfServiceCode  String           @default("02")
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("clinician_billing_profiles")
 }
 
 // ── Audit Trail (HIPAA) ───────────────────────────────

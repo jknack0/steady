@@ -12,9 +12,27 @@ import {
 } from "@/hooks/use-clinician-participants";
 import { useParticipantStats } from "@/hooks/use-participant-stats";
 import { useCreateSession } from "@/hooks/use-sessions";
+import { useCreateRtmEnrollment, useRtmEnrollments } from "@/hooks/use-rtm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   Loader2,
@@ -34,6 +52,7 @@ import {
   BookOpen,
   ClipboardList,
   Target,
+  Activity,
 } from "lucide-react";
 import {
   BarChart,
@@ -427,9 +446,16 @@ function QuickActions({
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [sessionDate, setSessionDate] = useState("");
   const [sessionUrl, setSessionUrl] = useState("");
+  const [showRtmDialog, setShowRtmDialog] = useState(false);
   const pushTask = usePushTask(participantId);
   const unlockModule = useUnlockModule(participantId);
   const createSession = useCreateSession();
+  const { data: rtmEnrollments } = useRtmEnrollments();
+
+  // Check if this participant already has an active RTM enrollment
+  const hasActiveRtm = rtmEnrollments?.some(
+    (e: any) => e.clientId === participantId && (e.status === "ACTIVE" || e.status === "PENDING_CONSENT")
+  );
 
   // Find next locked module
   const nextLocked = [...enrollment.moduleProgress]
@@ -574,8 +600,233 @@ function QuickActions({
             </div>
           </div>
         )}
+
+        {/* Enable RTM */}
+        {!hasActiveRtm && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-start mt-2"
+            onClick={() => setShowRtmDialog(true)}
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            Enable RTM Billing
+          </Button>
+        )}
+        {hasActiveRtm && (
+          <Link href="/rtm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-green-700 mt-2"
+            >
+              <Activity className="h-4 w-4 mr-2" />
+              RTM Active — View Dashboard
+            </Button>
+          </Link>
+        )}
       </div>
+
+      <RtmEnrollmentDialog
+        open={showRtmDialog}
+        onOpenChange={setShowRtmDialog}
+        clientId={participantId}
+        enrollmentId={enrollment.id}
+      />
     </div>
+  );
+}
+
+// ── RTM Enrollment Dialog ──────────────────────────────
+
+const COMMON_ICD10_CODES = [
+  { code: "F32.0", label: "Major depressive disorder, single episode, mild" },
+  { code: "F32.1", label: "Major depressive disorder, single episode, moderate" },
+  { code: "F32.2", label: "Major depressive disorder, single episode, severe" },
+  { code: "F33.0", label: "Major depressive disorder, recurrent, mild" },
+  { code: "F33.1", label: "Major depressive disorder, recurrent, moderate" },
+  { code: "F41.0", label: "Panic disorder" },
+  { code: "F41.1", label: "Generalized anxiety disorder" },
+  { code: "F43.10", label: "Post-traumatic stress disorder, unspecified" },
+  { code: "F43.12", label: "Post-traumatic stress disorder, chronic" },
+  { code: "F90.0", label: "ADHD, predominantly inattentive" },
+  { code: "F90.1", label: "ADHD, predominantly hyperactive" },
+  { code: "F90.2", label: "ADHD, combined type" },
+  { code: "F42.2", label: "Obsessive-compulsive disorder, mixed" },
+  { code: "F50.00", label: "Anorexia nervosa, unspecified" },
+  { code: "F50.2", label: "Bulimia nervosa" },
+  { code: "F10.20", label: "Alcohol use disorder, moderate" },
+  { code: "F51.01", label: "Primary insomnia" },
+  { code: "F63.81", label: "Intermittent explosive disorder" },
+];
+
+function RtmEnrollmentDialog({
+  open,
+  onOpenChange,
+  clientId,
+  enrollmentId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  clientId: string;
+  enrollmentId: string;
+}) {
+  const createRtmEnrollment = useCreateRtmEnrollment();
+  const [payerName, setPayerName] = useState("");
+  const [subscriberId, setSubscriberId] = useState("");
+  const [groupNumber, setGroupNumber] = useState("");
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [monitoringType, setMonitoringType] = useState("CBT");
+
+  const toggleCode = (code: string) => {
+    setSelectedCodes((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payerName.trim() || !subscriberId.trim() || selectedCodes.length === 0) return;
+
+    try {
+      await createRtmEnrollment.mutateAsync({
+        clientId,
+        enrollmentId,
+        monitoringType: monitoringType as any,
+        diagnosisCodes: selectedCodes,
+        payerName: payerName.trim(),
+        subscriberId: subscriberId.trim(),
+        groupNumber: groupNumber.trim() || undefined,
+        startDate: new Date().toISOString().split("T")[0],
+      });
+      onOpenChange(false);
+      setPayerName("");
+      setSubscriberId("");
+      setGroupNumber("");
+      setSelectedCodes([]);
+    } catch {
+      // handled by React Query
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Enable RTM Billing</DialogTitle>
+            <DialogDescription>
+              Enroll this client in Remote Therapeutic Monitoring. You can bill
+              insurance ~$100-150/month for monitoring their app engagement between
+              sessions.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {/* Insurance Info */}
+            <div className="grid gap-2">
+              <Label>Payer / Insurance *</Label>
+              <Input
+                placeholder="e.g., Blue Cross Blue Shield"
+                value={payerName}
+                onChange={(e) => setPayerName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Subscriber ID *</Label>
+                <Input
+                  placeholder="e.g., XYZ123456"
+                  value={subscriberId}
+                  onChange={(e) => setSubscriberId(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Group Number</Label>
+                <Input
+                  placeholder="Optional"
+                  value={groupNumber}
+                  onChange={(e) => setGroupNumber(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Monitoring Type */}
+            <div className="grid gap-2">
+              <Label>Monitoring Type</Label>
+              <Select value={monitoringType} onValueChange={setMonitoringType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CBT">Cognitive Behavioral Therapy (98978)</SelectItem>
+                  <SelectItem value="MSK">Musculoskeletal (98977)</SelectItem>
+                  <SelectItem value="RESPIRATORY">Respiratory (98976)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Diagnosis Codes */}
+            <div className="grid gap-2">
+              <Label>Diagnosis Codes (ICD-10) *</Label>
+              <p className="text-xs text-muted-foreground">
+                Select at least one diagnosis code for billing.
+              </p>
+              <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                {COMMON_ICD10_CODES.map(({ code, label }) => (
+                  <button
+                    type="button"
+                    key={code}
+                    onClick={() => toggleCode(code)}
+                    className={cn(
+                      "w-full text-left text-sm px-2 py-1.5 rounded transition-colors",
+                      selectedCodes.includes(code)
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-muted"
+                    )}
+                  >
+                    <span className="font-mono text-xs mr-2">{code}</span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {selectedCodes.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {selectedCodes.join(", ")}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                createRtmEnrollment.isPending ||
+                !payerName.trim() ||
+                !subscriberId.trim() ||
+                selectedCodes.length === 0
+              }
+            >
+              {createRtmEnrollment.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Enable RTM
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

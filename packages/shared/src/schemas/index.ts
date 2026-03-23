@@ -5,3 +5,4 @@ export * from "./auth";
 export * from "./enrollment";
 export * from "./stats";
 export * from "./daily-tracker";
+export * from "./rtm";

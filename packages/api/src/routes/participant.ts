@@ -18,6 +18,7 @@ import {
   ConflictError,
   ValidationError,
 } from "../services/participant";
+import { logRtmEngagement } from "../services/rtm";
 
 const router = Router();
 
@@ -98,6 +99,18 @@ router.post("/progress/part/:partId", async (req: Request, res: Response) => {
   try {
     const { enrollmentId, responseData } = req.body;
     const data = await markPartComplete(enrollmentId, req.params.partId, req.user!.participantProfileId!, responseData);
+
+    // Log RTM engagement for assessment completions (fire-and-forget)
+    const part = await prisma.part.findUnique({
+      where: { id: req.params.partId },
+      select: { type: true },
+    });
+    if (part?.type === "ASSESSMENT") {
+      logRtmEngagement(req.user!.userId, "ASSESSMENT_COMPLETED", enrollmentId, {
+        partId: req.params.partId,
+      });
+    }
+
     res.json({ success: true, data });
   } catch (err) {
     handleServiceError(res, err, "Failed to update progress");
@@ -148,6 +161,13 @@ router.get("/homework-instances/:id/streak", async (req: Request, res: Response)
 router.post("/homework-instances/:id/complete", async (req: Request, res: Response) => {
   try {
     const data = await completeHomeworkInstance(req.params.id, req.user!.participantProfileId!, req.body);
+
+    // Log RTM engagement for homework completion (fire-and-forget)
+    logRtmEngagement(req.user!.userId, "HOMEWORK_COMPLETED", data.enrollmentId, {
+      partId: data.partId,
+      homeworkInstanceId: data.id,
+    });
+
     res.json({ success: true, data });
   } catch (err) {
     handleServiceError(res, err, "Failed to complete instance");

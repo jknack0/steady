@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/programs", label: "My Programs", icon: BookOpen },
   { href: "/participants", label: "Participants", icon: Users },
   { href: "/sessions", label: "Sessions", icon: Calendar },
+  { href: "/rtm", label: "RTM", icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
