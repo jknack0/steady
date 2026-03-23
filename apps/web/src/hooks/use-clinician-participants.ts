@@ -152,6 +152,17 @@ export function useBulkAction() {
   });
 }
 
+export function useAddClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { email: string; firstName: string; lastName: string }) =>
+      api.post("/api/clinician/clients", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
+    },
+  });
+}
+
 export function useManageEnrollment(participantId: string) {
   const queryClient = useQueryClient();
   return useMutation({

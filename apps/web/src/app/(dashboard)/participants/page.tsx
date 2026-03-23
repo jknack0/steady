@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   useClinicianParticipants,
   useBulkAction,
+  useAddClient,
   type ParticipantRow,
 } from "@/hooks/use-clinician-participants";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Search,
@@ -35,6 +37,7 @@ import {
   Send,
   Bell,
   X,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatLastActive } from "@/lib/format";
@@ -103,6 +106,8 @@ export default function ParticipantsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmAction, setConfirmAction] = useState<BulkActionType | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
+  const [addClientOpen, setAddClientOpen] = useState(false);
+  const [clientForm, setClientForm] = useState({ email: "", firstName: "", lastName: "" });
 
   const { data, isLoading } = useClinicianParticipants({
     search: search || undefined,
@@ -110,6 +115,7 @@ export default function ParticipantsPage() {
   });
 
   const bulkAction = useBulkAction();
+  const addClient = useAddClient();
 
   const participants = data?.participants || [];
   const programs = data?.programs || [];
@@ -194,6 +200,10 @@ export default function ParticipantsPage() {
             </SelectContent>
           </Select>
         )}
+        <Button onClick={() => setAddClientOpen(true)} className="gap-1.5">
+          <UserPlus className="h-4 w-4" />
+          Add Client
+        </Button>
       </div>
 
       {/* Table */}
@@ -409,6 +419,102 @@ export default function ParticipantsPage() {
               Confirm
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Client Dialog */}
+      <Dialog
+        open={addClientOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddClientOpen(false);
+            setClientForm({ email: "", firstName: "", lastName: "" });
+            addClient.reset();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Client</DialogTitle>
+            <DialogDescription>
+              Add a new client to your practice. They will receive an email to set up their account.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addClient.mutate(clientForm, {
+                onSuccess: () => {
+                  setAddClientOpen(false);
+                  setClientForm({ email: "", firstName: "", lastName: "" });
+                },
+              });
+            }}
+            className="space-y-4 py-2"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="client-email">Email</Label>
+              <Input
+                id="client-email"
+                type="email"
+                placeholder="client@example.com"
+                value={clientForm.email}
+                onChange={(e) => setClientForm((prev) => ({ ...prev, email: e.target.value }))}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-first-name">First name</Label>
+              <Input
+                id="client-first-name"
+                placeholder="First name"
+                value={clientForm.firstName}
+                onChange={(e) => setClientForm((prev) => ({ ...prev, firstName: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client-last-name">Last name</Label>
+              <Input
+                id="client-last-name"
+                placeholder="Last name"
+                value={clientForm.lastName}
+                onChange={(e) => setClientForm((prev) => ({ ...prev, lastName: e.target.value }))}
+                required
+              />
+            </div>
+
+            {addClient.isError && (
+              <p className="text-sm text-destructive">
+                {addClient.error instanceof Error ? addClient.error.message : "Failed to add client. Please try again."}
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAddClientOpen(false);
+                  setClientForm({ email: "", firstName: "", lastName: "" });
+                  addClient.reset();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={addClient.isPending || !clientForm.email || !clientForm.firstName || !clientForm.lastName}
+              >
+                {addClient.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                )}
+                Add Client
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

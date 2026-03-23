@@ -145,6 +145,16 @@ enum HomeworkInstanceStatus {
   MISSED
 }
 
+enum ProviderType {
+  THERAPIST
+  PSYCHIATRIST
+  PSYCHOLOGIST
+  COUNSELOR
+  PSYCH_NP
+  COACH
+  OTHER
+}
+
 // ── Practices ─────────────────────────────────────────
 
 enum PracticeRole {
@@ -203,6 +213,8 @@ model User {
   rtmEnrollmentsAsClient RtmEnrollment[]      @relation("RtmClient")
   rtmBillingPeriodsAsClient RtmBillingPeriod[] @relation("RtmBillingClient")
   rtmTimeLogsAsClient  RtmClinicianTimeLog[]  @relation("RtmTimeLogClient")
+  clientConfigs        ClientConfig[]         @relation("ClientConfigs")
+  clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
 
   @@map("users")
 }
@@ -223,6 +235,9 @@ model ClinicianProfile {
   rtmBillingPeriods RtmBillingPeriod[]
   rtmTimeLogs       RtmClinicianTimeLog[]
   billingProfile    ClinicianBillingProfile?
+  config            ClinicianConfig?
+  clientConfigs     ClientConfig[]   @relation("ClinicianClientConfigs")
+  clients           ClinicianClient[]
 
   @@map("clinician_profiles")
 }
@@ -724,6 +739,77 @@ model ClinicianBillingProfile {
   updatedAt           DateTime         @updatedAt
 
   @@map("clinician_billing_profiles")
+}
+
+// ── Clinician & Client Configs ────────────────────────
+
+model ClinicianConfig {
+  id                   String       @id @default(cuid())
+  clinicianId          String       @unique
+  clinician            ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  providerType         ProviderType @default(OTHER)
+  presetId             String?
+  primaryModality      String?
+  enabledModules       Json
+  dashboardLayout      Json
+  defaultTrackerPreset String?
+  defaultAssessments   Json?
+  practiceName         String?
+  practiceLogoUrl      String?
+  brandColor           String?
+  setupCompleted       Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@map("clinician_configs")
+}
+
+model ClientConfig {
+  id                  String   @id @default(cuid())
+  clientId            String
+  client              User     @relation("ClientConfigs", fields: [clientId], references: [id])
+  clinicianId         String
+  clinician           ClinicianProfile @relation("ClinicianClientConfigs", fields: [clinicianId], references: [id])
+  enabledModules      Json?
+  activeTrackers      Json?
+  activeAssessments   Json?
+  activeMedications   Json?
+  customConfig        Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([clientId, clinicianId])
+  @@index([clinicianId])
+  @@map("client_configs")
+}
+
+// ── Clinician-Client Relationship ─────────────────────
+
+enum ClinicianClientStatus {
+  INVITED
+  ACTIVE
+  PAUSED
+  DISCHARGED
+}
+
+model ClinicianClient {
+  id           String                @id @default(cuid())
+  clinicianId  String
+  clinician    ClinicianProfile      @relation(fields: [clinicianId], references: [id])
+  clientId     String
+  client       User                  @relation("ClinicianClientUser", fields: [clientId], references: [id])
+  status       ClinicianClientStatus @default(INVITED)
+  invitedAt    DateTime              @default(now())
+  acceptedAt   DateTime?
+  dischargedAt DateTime?
+  notes        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([clinicianId, clientId])
+  @@index([clinicianId])
+  @@index([clientId])
+  @@map("clinician_clients")
 }
 
 // ── Audit Trail (HIPAA) ───────────────────────────────

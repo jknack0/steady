@@ -11,6 +11,7 @@ import { StreakBadges, calculateStreak } from "../../../components/streak-badges
 import { MilestoneCelebration } from "../../../components/milestone-celebration";
 import { TodaysHomeworkInstances } from "../../../components/homework-instances";
 import { DailyTrackerCards } from "../../../components/daily-tracker-card";
+import { useConfig } from "../../../lib/config-context";
 
 interface Enrollment {
   id: string;
@@ -359,6 +360,7 @@ function useStreaks() {
 const MILESTONE_STORAGE_KEY = "steady_last_celebrated_milestone";
 
 export default function ProgramsScreen() {
+  const { isModuleEnabled } = useConfig();
   const [lastCelebratedMilestone, setLastCelebratedMilestone] = useState(0);
 
   useEffect(() => {
@@ -398,8 +400,8 @@ export default function ProgramsScreen() {
         lastCelebratedMilestone={lastCelebratedMilestone}
         onDismiss={handleMilestoneDismiss}
       />
-      <TodaysHomeworkInstances />
-      <DailyTrackerCards />
+      {isModuleEnabled("homework") && <TodaysHomeworkInstances />}
+      {isModuleEnabled("daily_tracker") && <DailyTrackerCards />}
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -423,15 +425,28 @@ export default function ProgramsScreen() {
           </TouchableOpacity>
         </View>
       ) : !data || data.length === 0 ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-            <Ionicons name="library-outline" size={36} color="#5B8A8A" />
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "#F7F5F2" }}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#5B8A8A" />
+          }
+        >
+          {/* Welcome message — softer than a dead end */}
+          <View style={{ alignItems: "center", paddingHorizontal: 32, paddingTop: 24, paddingBottom: 8 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <Ionicons name="leaf-outline" size={28} color="#5B8A8A" />
+            </View>
+            <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 6 }}>
+              Welcome to Steady
+            </Text>
+            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", textAlign: "center", lineHeight: 20 }}>
+              {isModuleEnabled("program_modules")
+                ? "Your clinician is getting things set up for you. In the meantime, explore the tools below."
+                : "Your clinician is getting things set up for you."}
+            </Text>
           </View>
-          <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 8 }}>No Programs Yet</Text>
-          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", textAlign: "center", lineHeight: 20 }}>
-            Your clinician will invite you to a program. Check back soon!
-          </Text>
-        </View>
+        </ScrollView>
       ) : isSingleProgram ? (
         <SingleProgramView enrollment={data[0]} />
       ) : (

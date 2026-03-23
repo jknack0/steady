@@ -1,19 +1,34 @@
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Redirect clinicians who haven't completed setup to the onboarding wizard
+  useEffect(() => {
+    if (
+      !isLoading &&
+      isAuthenticated &&
+      user &&
+      user.role === "CLINICIAN" &&
+      !user.hasCompletedSetup &&
+      pathname !== "/setup"
+    ) {
+      router.replace("/setup");
+    }
+  }, [isLoading, isAuthenticated, user, pathname, router]);
 
   if (isLoading) {
     return (

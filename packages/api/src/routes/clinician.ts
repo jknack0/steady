@@ -1,14 +1,25 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import {
   getClinicianParticipants,
+  getClinicianClients,
   getParticipantDetail,
   pushTaskToParticipant,
   unlockModuleForParticipant,
   manageEnrollment,
   bulkAction,
+  addClient,
+  ConflictError,
 } from "../services/clinician";
+
+const AddClientSchema = z.object({
+  email: z.string().email().max(200),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+});
 
 const router = Router();
 
@@ -33,6 +44,43 @@ router.get("/participants", async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ success: false, error: "Failed to list participants" });
+  }
+});
+
+// GET /api/clinician/clients — List all direct clients
+router.get("/clients", async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+    const data = await getClinicianClients(clinicianProfileId);
+    res.json({ success: true, data });
+  } catch (err) {
+    logger.error("List clinician clients error", err);
+    res.status(500).json({ success: false, error: "Failed to list clients" });
+  }
+});
+
+// POST /api/clinician/clients — Add a new client
+router.post("/clients", validate(AddClientSchema), async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+    const { email, firstName, lastName } = req.body;
+
+    const result = await addClient(clinicianProfileId, { email, firstName, lastName });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        clinicianClient: result.clinicianClient,
+        isNewUser: result.isNewUser,
+      },
+    });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      res.status(409).json({ success: false, error: err.message });
+      return;
+    }
+    logger.error("Add client error", err);
+    res.status(500).json({ success: false, error: "Failed to add client" });
   }
 });
 

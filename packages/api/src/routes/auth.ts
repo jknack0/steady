@@ -188,7 +188,17 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({ success: true, data: user });
+    // Check if clinician has completed setup
+    let hasCompletedSetup = false;
+    if (user.role === "CLINICIAN" && req.user!.clinicianProfileId) {
+      const config = await prisma.clinicianConfig.findUnique({
+        where: { clinicianId: req.user!.clinicianProfileId },
+        select: { setupCompleted: true },
+      });
+      hasCompletedSetup = config?.setupCompleted === true;
+    }
+
+    res.json({ success: true, data: { ...user, hasCompletedSetup } });
   } catch (err) {
     logger.error("Get me error", err);
     res.status(500).json({ success: false, error: "Failed to get user" });

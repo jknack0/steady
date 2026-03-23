@@ -2,6 +2,7 @@ import { Stack, Redirect } from "expo-router";
 import { View, Text, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../lib/auth-context";
+import { ConfigProvider } from "../../lib/config-context";
 import { RtmConsentModal } from "../../components/rtm-consent-modal";
 
 export default function AppLayout() {
@@ -25,7 +26,7 @@ export default function AppLayout() {
   }
 
   return (
-    <>
+    <ConfigProvider>
     <RtmConsentModal />
     <Stack
       screenOptions={{
@@ -57,6 +58,6 @@ export default function AppLayout() {
         options={{ title: "My Insights", headerBackTitle: "Back" }}
       />
     </Stack>
-    </>
+    </ConfigProvider>
   );
 }

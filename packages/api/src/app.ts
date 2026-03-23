@@ -23,6 +23,8 @@ import uploadRoutes from "./routes/uploads";
 import dailyTrackerRoutes from "./routes/daily-trackers";
 import rtmRoutes from "./routes/rtm";
 import { rtmParticipantRouter } from "./routes/rtm";
+import configRoutes from "./routes/config";
+import { configParticipantRouter } from "./routes/config";
 
 const app = express();
 
@@ -66,6 +68,8 @@ app.use("/api/uploads", uploadRoutes);
 app.use("/api/daily-trackers", dailyTrackerRoutes);
 app.use("/api/rtm", rtmRoutes);
 app.use("/api/participant/rtm", rtmParticipantRouter);
+app.use("/api/config", configRoutes);
+app.use("/api/participant/config", configParticipantRouter);
 
 // Error handler
 app.use(errorHandler);

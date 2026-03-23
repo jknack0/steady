@@ -3,6 +3,7 @@ import { View, Text, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
+import { useConfig } from "../../../lib/config-context";
 
 function BrandHeader() {
   return (
@@ -17,6 +18,8 @@ function BrandHeader() {
 }
 
 export default function TabsLayout() {
+  const { isModuleEnabled } = useConfig();
+
   // Read enrollment count to toggle "Program" vs "Programs" label
   const { data: enrollments } = useQuery({
     queryKey: ["enrollments"],
@@ -77,36 +80,42 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          headerTitle: () => <BrandHeader />,
-          title: "Tasks",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="checkbox-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          headerTitle: () => <BrandHeader />,
-          title: "Calendar",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="journal"
-        options={{
-          headerTitle: () => <BrandHeader />,
-          title: "Journal",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      {isModuleEnabled("todo_list") && (
+        <Tabs.Screen
+          name="tasks"
+          options={{
+            headerTitle: () => <BrandHeader />,
+            title: "Tasks",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="checkbox-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+      {isModuleEnabled("calendar") && (
+        <Tabs.Screen
+          name="calendar"
+          options={{
+            headerTitle: () => <BrandHeader />,
+            title: "Calendar",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="calendar-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
+      {isModuleEnabled("journal") && (
+        <Tabs.Screen
+          name="journal"
+          options={{
+            headerTitle: () => <BrandHeader />,
+            title: "Journal",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="book-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      )}
       <Tabs.Screen
         name="settings"
         options={{

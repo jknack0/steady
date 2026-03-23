@@ -39,6 +39,11 @@ async function main() {
       await prisma.calendarEvent.deleteMany({ where: { participant: { userId: existing.id } } });
       await prisma.journalEntry.deleteMany({ where: { participant: { userId: existing.id } } });
       await prisma.participantProfile.deleteMany({ where: { userId: existing.id } });
+      // Delete clinician configs before profiles (FK dependency)
+      const clinicianProfiles = await prisma.clinicianProfile.findMany({ where: { userId: existing.id }, select: { id: true } });
+      for (const cp of clinicianProfiles) {
+        await prisma.clinicianConfig.deleteMany({ where: { clinicianId: cp.id } });
+      }
       await prisma.clinicianProfile.deleteMany({ where: { userId: existing.id } });
       await prisma.notificationPreference.deleteMany({ where: { userId: existing.id } });
       await prisma.user.delete({ where: { id: existing.id } });
@@ -65,6 +70,39 @@ async function main() {
       },
     },
     include: { clinicianProfile: true },
+  });
+
+  // Create default config for admin clinician
+  const defaultEnabledModules = [
+    "daily_tracker", "homework", "journal", "assessments", "strategy_cards",
+    "todo_list", "calendar", "program_modules", "secure_messaging", "rtm_billing", "pre_visit_summary",
+  ];
+  const defaultDashboardLayout = [
+    { widgetId: "rtm_overview", visible: true },
+    { widgetId: "homework_status", visible: true },
+    { widgetId: "assessment_scores", visible: true },
+    { widgetId: "tracker_summary", visible: true },
+    { widgetId: "pre_visit", visible: true },
+    { widgetId: "recent_messages", visible: true },
+  ];
+  const defaultAssessments = [
+    { instrumentId: "PHQ9", frequency: "WEEKLY" },
+    { instrumentId: "GAD7", frequency: "WEEKLY" },
+  ];
+
+  await prisma.clinicianConfig.upsert({
+    where: { clinicianId: admin.clinicianProfile!.id },
+    update: {},
+    create: {
+      clinicianId: admin.clinicianProfile!.id,
+      providerType: "THERAPIST",
+      presetId: "THERAPIST_CBT",
+      enabledModules: defaultEnabledModules,
+      dashboardLayout: defaultDashboardLayout,
+      defaultTrackerPreset: "mood_log",
+      defaultAssessments: defaultAssessments,
+      setupCompleted: true,
+    },
   });
 
   // ── 2. Create participant (test@test.com) ─────────────────
@@ -109,6 +147,21 @@ async function main() {
       },
     },
     include: { clinicianProfile: true },
+  });
+
+  await prisma.clinicianConfig.upsert({
+    where: { clinicianId: joClinician.clinicianProfile!.id },
+    update: {},
+    create: {
+      clinicianId: joClinician.clinicianProfile!.id,
+      providerType: "THERAPIST",
+      presetId: "THERAPIST_CBT",
+      enabledModules: defaultEnabledModules,
+      dashboardLayout: defaultDashboardLayout,
+      defaultTrackerPreset: "mood_log",
+      defaultAssessments: defaultAssessments,
+      setupCompleted: true,
+    },
   });
 
   // ── 3. Create the "Steady with ADHD" program ─────────────
@@ -1374,6 +1427,21 @@ async function main() {
     include: { clinicianProfile: true },
   });
 
+  await prisma.clinicianConfig.upsert({
+    where: { clinicianId: jimClinician.clinicianProfile!.id },
+    update: {},
+    create: {
+      clinicianId: jimClinician.clinicianProfile!.id,
+      providerType: "THERAPIST",
+      presetId: "THERAPIST_CBT",
+      enabledModules: defaultEnabledModules,
+      dashboardLayout: defaultDashboardLayout,
+      defaultTrackerPreset: "mood_log",
+      defaultAssessments: defaultAssessments,
+      setupCompleted: true,
+    },
+  });
+
   // Helper for Jim's modules
   async function createJimModule(
     programId: string,
@@ -2003,6 +2071,21 @@ async function main() {
     include: { clinicianProfile: true },
   });
 
+  await prisma.clinicianConfig.upsert({
+    where: { clinicianId: mayaClinician.clinicianProfile!.id },
+    update: {},
+    create: {
+      clinicianId: mayaClinician.clinicianProfile!.id,
+      providerType: "THERAPIST",
+      presetId: "THERAPIST_CBT",
+      enabledModules: defaultEnabledModules,
+      dashboardLayout: defaultDashboardLayout,
+      defaultTrackerPreset: "mood_log",
+      defaultAssessments: defaultAssessments,
+      setupCompleted: true,
+    },
+  });
+
   async function createMayaModule(
     programId: string,
     sortOrder: number,
@@ -2573,6 +2656,21 @@ async function main() {
       },
     },
     include: { clinicianProfile: true },
+  });
+
+  await prisma.clinicianConfig.upsert({
+    where: { clinicianId: priyaClinician.clinicianProfile!.id },
+    update: {},
+    create: {
+      clinicianId: priyaClinician.clinicianProfile!.id,
+      providerType: "THERAPIST",
+      presetId: "THERAPIST_CBT",
+      enabledModules: defaultEnabledModules,
+      dashboardLayout: defaultDashboardLayout,
+      defaultTrackerPreset: "mood_log",
+      defaultAssessments: defaultAssessments,
+      setupCompleted: true,
+    },
   });
 
   async function createPriyaModule(

@@ -164,6 +164,54 @@ vi.mock("@steady/db", () => {
       findUnique: vi.fn(),
       count: vi.fn(),
     },
+    rtmEngagementEvent: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+    },
+    rtmEnrollment: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    rtmBillingPeriod: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    rtmClinicianTimeLog: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      createMany: vi.fn(),
+    },
+    clinicianConfig: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+      update: vi.fn(),
+    },
+    clientConfig: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+      update: vi.fn(),
+    },
+    clinicianBillingProfile: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+    },
+    clinicianClient: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+    },
   };
 
   return {

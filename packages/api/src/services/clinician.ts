@@ -1,4 +1,23 @@
 import { prisma } from "@steady/db";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { logger } from "../lib/logger";
+
+// ── Error Classes ────────────────────────────────────
+
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConflictError";
+  }
+}
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
 
 // ── Interfaces ────────────────────────────────────────
 
@@ -242,6 +261,83 @@ export async function getClinicianParticipants(
       where: {
         clinicianId: clinicianProfileId,
         clientId: { in: participantUserIds },
+        status: { in: ["ACTIVE", "PENDING_CONSENT"] },
+      },
+      include: {
+        billingPeriods: {
+          orderBy: { periodStart: "desc" },
+          take: 3,
+        },
+      },
+    });
+
+    for (const rtm of rtmEnrollments) {
+      const participant = participants.find((p) => p.participantId === rtm.clientId);
+      if (!participant) continue;
+      const activePeriod = rtm.billingPeriods.find(
+        (bp) => bp.status === "ACTIVE" || bp.status === "THRESHOLD_MET"
+      ) || rtm.billingPeriods[0];
+      if (activePeriod) {
+        participant.rtm = {
+          engagementDays: activePeriod.engagementDays,
+          clinicianMinutes: activePeriod.clinicianMinutes,
+          status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+        };
+      }
+    }
+  }
+
+  // Include clients from ClinicianClient who don't have program enrollments
+  const existingUserIds = new Set(participants.map((p) => p.participantId));
+  const clinicianClients = await prisma.clinicianClient.findMany({
+    where: {
+      clinicianId: clinicianProfileId,
+      status: { not: "DISCHARGED" },
+      clientId: { notIn: [...existingUserIds] },
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          participantProfile: { select: { id: true } },
+        },
+      },
+    },
+    take: 200,
+  });
+
+  for (const cc of clinicianClients) {
+    const name = `${cc.client.firstName} ${cc.client.lastName}`.trim();
+    participants.push({
+      participantId: cc.client.id,
+      participantProfileId: cc.client.participantProfile?.id || "",
+      enrollmentId: "",
+      name,
+      email: cc.client.email,
+      programId: "",
+      programTitle: "",
+      currentModule: null,
+      homeworkStatus: "NOT_STARTED",
+      homeworkRate: 0,
+      completedHomework: 0,
+      totalHomework: 0,
+      lastActive: null,
+      statusIndicator: "amber",
+      enrollmentStatus: cc.status,
+      rtm: null,
+    });
+  }
+
+  // Enrich non-enrolled clients with RTM data
+  if (clinicianClients.length > 0) {
+    const newClientIds = clinicianClients.map((cc) => cc.clientId);
+    const rtmEnrollments = await prisma.rtmEnrollment.findMany({
+      where: {
+        clinicianId: clinicianProfileId,
+        clientId: { in: newClientIds },
         status: { in: ["ACTIVE", "PENDING_CONSENT"] },
       },
       include: {
@@ -724,4 +820,257 @@ export async function bulkAction(
   const failed = results.filter((r) => !r.success).length;
 
   return { succeeded, failed, results };
+}
+
+// ── addClient ─────────────────────────────────────────
+
+interface AddClientData {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface AddClientResult {
+  clinicianClient: {
+    id: string;
+    clinicianId: string;
+    clientId: string;
+    status: string;
+    invitedAt: Date;
+    client: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
+  };
+  isNewUser: boolean;
+}
+
+export async function addClient(
+  clinicianProfileId: string,
+  data: AddClientData
+): Promise<AddClientResult> {
+  const { email, firstName, lastName } = data;
+
+  // 1. Check if user exists with this email
+  let user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase().trim() },
+    include: { participantProfile: true },
+  });
+
+  let isNewUser = false;
+
+  if (user && user.role === "CLINICIAN") {
+    throw new ConflictError("Cannot add a clinician as a client");
+  }
+
+  if (!user) {
+    // Create a placeholder participant account
+    const tempPassword = await bcrypt.hash(crypto.randomUUID(), 10);
+    user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase().trim(),
+        passwordHash: tempPassword,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        role: "PARTICIPANT",
+        participantProfile: { create: {} },
+      },
+      include: { participantProfile: true },
+    });
+    isNewUser = true;
+  }
+
+  // 2. Check for existing ClinicianClient relationship
+  const existing = await prisma.clinicianClient.findFirst({
+    where: {
+      clinicianId: clinicianProfileId,
+      clientId: user.id,
+    },
+  });
+
+  if (existing && existing.status !== "DISCHARGED") {
+    throw new ConflictError("This client is already in your client list");
+  }
+
+  // 3. Create or update ClinicianClient record
+  const clinicianClient = await prisma.clinicianClient.upsert({
+    where: {
+      clinicianId_clientId: {
+        clinicianId: clinicianProfileId,
+        clientId: user.id,
+      },
+    },
+    create: {
+      clinicianId: clinicianProfileId,
+      clientId: user.id,
+      status: "INVITED",
+    },
+    update: {
+      status: "INVITED",
+      invitedAt: new Date(),
+      acceptedAt: null,
+      dischargedAt: null,
+    },
+    include: {
+      client: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
+    },
+  });
+
+  // 4. Auto-create ClientConfig with defaults from ClinicianConfig
+  const clinicianConfig = await prisma.clinicianConfig.findUnique({
+    where: { clinicianId: clinicianProfileId },
+  });
+
+  if (clinicianConfig) {
+    await prisma.clientConfig.upsert({
+      where: {
+        clientId_clinicianId: {
+          clientId: user.id,
+          clinicianId: clinicianProfileId,
+        },
+      },
+      create: {
+        clientId: user.id,
+        clinicianId: clinicianProfileId,
+        enabledModules: clinicianConfig.enabledModules ?? undefined,
+        activeTrackers: undefined,
+        activeAssessments: clinicianConfig.defaultAssessments ?? undefined,
+      },
+      update: {},
+    });
+  }
+
+  return {
+    clinicianClient: {
+      id: clinicianClient.id,
+      clinicianId: clinicianClient.clinicianId,
+      clientId: clinicianClient.clientId,
+      status: clinicianClient.status,
+      invitedAt: clinicianClient.invitedAt,
+      client: clinicianClient.client,
+    },
+    isNewUser,
+  };
+}
+
+// ── getClinicianClients ───────────────────────────────
+
+interface ClientRow {
+  id: string;
+  clientId: string;
+  name: string;
+  email: string;
+  status: string;
+  invitedAt: string;
+  acceptedAt: string | null;
+  hasEnrollment: boolean;
+  rtm: { engagementDays: number; clinicianMinutes: number; status: string } | null;
+}
+
+export async function getClinicianClients(
+  clinicianProfileId: string
+): Promise<ClientRow[]> {
+  // Get all ClinicianClient records for this clinician
+  const clinicianClients = await prisma.clinicianClient.findMany({
+    where: {
+      clinicianId: clinicianProfileId,
+      status: { not: "DISCHARGED" },
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          participantProfile: { select: { id: true } },
+        },
+      },
+    },
+    orderBy: { invitedAt: "desc" },
+    take: 200,
+  });
+
+  if (clinicianClients.length === 0) {
+    return [];
+  }
+
+  // Get clinician's program IDs
+  const programs = await prisma.program.findMany({
+    where: { clinicianId: clinicianProfileId },
+    select: { id: true },
+  });
+  const programIds = programs.map((p) => p.id);
+
+  // Get participant profile IDs for enrolled check
+  const participantProfileIds = clinicianClients
+    .map((cc) => cc.client.participantProfile?.id)
+    .filter((id): id is string => !!id);
+
+  // Check for active enrollments
+  const activeEnrollments = programIds.length > 0 && participantProfileIds.length > 0
+    ? await prisma.enrollment.findMany({
+        where: {
+          participantId: { in: participantProfileIds },
+          programId: { in: programIds },
+          status: { in: ["ACTIVE", "INVITED"] },
+        },
+        select: { participantId: true },
+      })
+    : [];
+
+  const enrolledProfileIds = new Set(activeEnrollments.map((e) => e.participantId));
+
+  // Get RTM data
+  const clientUserIds = clinicianClients.map((cc) => cc.clientId);
+  const rtmEnrollments = await prisma.rtmEnrollment.findMany({
+    where: {
+      clinicianId: clinicianProfileId,
+      clientId: { in: clientUserIds },
+      status: { in: ["ACTIVE", "PENDING_CONSENT"] },
+    },
+    include: {
+      billingPeriods: {
+        orderBy: { periodStart: "desc" },
+        take: 3,
+      },
+    },
+  });
+
+  const rtmMap = new Map<string, { engagementDays: number; clinicianMinutes: number; status: string }>();
+  for (const rtm of rtmEnrollments) {
+    const activePeriod = rtm.billingPeriods.find(
+      (bp) => bp.status === "ACTIVE" || bp.status === "THRESHOLD_MET"
+    ) || rtm.billingPeriods[0];
+    if (activePeriod) {
+      rtmMap.set(rtm.clientId, {
+        engagementDays: activePeriod.engagementDays,
+        clinicianMinutes: activePeriod.clinicianMinutes,
+        status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+      });
+    }
+  }
+
+  // Build client rows
+  return clinicianClients.map((cc) => {
+    const name = `${cc.client.firstName} ${cc.client.lastName}`.trim();
+    const participantProfileId = cc.client.participantProfile?.id;
+    const hasEnrollment = participantProfileId ? enrolledProfileIds.has(participantProfileId) : false;
+
+    return {
+      id: cc.id,
+      clientId: cc.clientId,
+      name,
+      email: cc.client.email,
+      status: cc.status,
+      invitedAt: cc.invitedAt.toISOString(),
+      acceptedAt: cc.acceptedAt?.toISOString() ?? null,
+      hasEnrollment,
+      rtm: rtmMap.get(cc.clientId) ?? null,
+    };
+  });
 }

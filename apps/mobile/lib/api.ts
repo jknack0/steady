@@ -300,6 +300,9 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // Config
+  getMyConfig: () => apiFetch("/api/participant/config"),
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

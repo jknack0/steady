@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,10 +20,11 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (isAuthenticated) {
-    router.replace("/programs");
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/programs");
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

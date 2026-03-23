@@ -9,6 +9,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  hasCompletedSetup: boolean;
 }
 
 interface AuthState {
@@ -21,6 +22,7 @@ interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -89,5 +91,5 @@ export function useAuthState(): AuthContextValue {
     setState({ user: null, isLoading: false, isAuthenticated: false });
   }, []);
 
-  return { ...state, login, register, logout };
+  return { ...state, login, register, logout, refreshUser: checkAuth };
 }

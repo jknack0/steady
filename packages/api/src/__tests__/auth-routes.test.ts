@@ -165,6 +165,8 @@ describe("GET /api/auth/me", () => {
       createdAt: new Date(),
     } as any);
 
+    db.clinicianConfig.findUnique.mockResolvedValue(null as any);
+
     const res = await request(app)
       .get("/api/auth/me")
       .set(...authHeader());

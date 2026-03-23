@@ -15,6 +15,10 @@ vi.mock("bcryptjs", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // RTM enrichment in getClinicianParticipants needs this mock
+  db.rtmEnrollment.findMany.mockResolvedValue([] as any);
+  // ClinicianClient fallback in getClinicianParticipants needs this mock
+  db.clinicianClient.findMany.mockResolvedValue([] as any);
 });
 
 // ── GET /api/clinician/participants ──────────────────────
