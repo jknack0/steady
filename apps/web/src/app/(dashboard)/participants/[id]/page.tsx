@@ -101,7 +101,7 @@ export default function ParticipantDetailPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
         {(["overview", "trackers", "rtm"] as const).map((t) => {
-          const labels: Record<Tab, string> = { overview: "Overview", trackers: "Daily Trackers", rtm: "RTM" };
+          const labels: Record<Tab, string> = { overview: "Overview", trackers: "Daily Pulse", rtm: "RTM" };
           return (
             <button
               key={t}
@@ -1287,12 +1287,145 @@ interface TemplateData {
   fields: Array<{ label: string; fieldType: string }>;
 }
 
-type TrackerDialogMode = "pick" | "ai" | "review";
+type TrackerDialogMode = "pick" | "review" | "custom";
 
 const FIELD_TYPE_LABELS: Record<string, string> = {
   SCALE: "Scale", NUMBER: "Number", YES_NO: "Yes/No",
   MULTI_CHECK: "Multi-Check", FREE_TEXT: "Free Text", TIME: "Time",
 };
+
+const ALL_FIELD_TYPES = [
+  { value: "SCALE", label: "Scale (1-10)" },
+  { value: "NUMBER", label: "Number" },
+  { value: "YES_NO", label: "Yes / No" },
+  { value: "MULTI_CHECK", label: "Multi-Check" },
+  { value: "FREE_TEXT", label: "Free Text" },
+  { value: "TIME", label: "Time" },
+];
+
+function TrackerFieldEditor({
+  generated,
+  setGenerated,
+  isCustom,
+}: {
+  generated: { name: string; description: string; fields: any[] };
+  setGenerated: (g: { name: string; description: string; fields: any[] }) => void;
+  isCustom: boolean;
+}) {
+  const [newLabel, setNewLabel] = useState("");
+  const [newType, setNewType] = useState("SCALE");
+
+  const addField = () => {
+    if (!newLabel.trim()) return;
+    const field: any = {
+      label: newLabel.trim(),
+      fieldType: newType,
+      options: null,
+      sortOrder: generated.fields.length,
+      isRequired: true,
+    };
+    if (newType === "SCALE") {
+      field.options = { min: 1, max: 10, minLabel: "Low", maxLabel: "High" };
+    }
+    if (newType === "MULTI_CHECK") {
+      field.options = { choices: ["Option 1", "Option 2"] };
+    }
+    setGenerated({ ...generated, fields: [...generated.fields, field] });
+    setNewLabel("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label>Tracker Name</Label>
+        <Input
+          value={generated.name}
+          onChange={(e) => setGenerated({ ...generated, name: e.target.value })}
+          placeholder="e.g., Daily Mood & Symptom Log"
+          autoFocus={isCustom}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Description</Label>
+        <Input
+          value={generated.description}
+          onChange={(e) => setGenerated({ ...generated, description: e.target.value })}
+          placeholder="Brief description shown to participant"
+        />
+      </div>
+
+      {/* Fields */}
+      <div className="space-y-1.5">
+        <Label>Fields ({generated.fields.length})</Label>
+        <div className="space-y-2">
+          {generated.fields.map((field, i) => (
+            <div key={i} className="flex items-center gap-2 rounded-md border p-2.5">
+              <span className="text-xs font-mono text-muted-foreground w-5 shrink-0">{i + 1}</span>
+              <Input
+                value={field.label}
+                onChange={(e) => {
+                  const fields = [...generated.fields];
+                  fields[i] = { ...fields[i], label: e.target.value };
+                  setGenerated({ ...generated, fields });
+                }}
+                className="flex-1 h-8 text-sm"
+              />
+              <select
+                value={field.fieldType}
+                onChange={(e) => {
+                  const fields = [...generated.fields];
+                  const ft = e.target.value;
+                  let options = null;
+                  if (ft === "SCALE") options = { min: 1, max: 10, minLabel: "Low", maxLabel: "High" };
+                  if (ft === "MULTI_CHECK") options = field.options?.choices ? field.options : { choices: ["Option 1"] };
+                  fields[i] = { ...fields[i], fieldType: ft, options };
+                  setGenerated({ ...generated, fields });
+                }}
+                className="h-8 rounded-md border bg-background px-2 text-xs shrink-0"
+              >
+                {ALL_FIELD_TYPES.map((ft) => (
+                  <option key={ft.value} value={ft.value}>{ft.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => setGenerated({
+                  ...generated,
+                  fields: generated.fields.filter((_, j) => j !== i).map((f, j) => ({ ...f, sortOrder: j })),
+                })}
+                className="text-muted-foreground hover:text-destructive shrink-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Add field row */}
+        <div className="flex items-center gap-2 pt-1">
+          <Input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Field label..."
+            className="flex-1 h-8 text-sm"
+            onKeyDown={(e) => { if (e.key === "Enter") addField(); }}
+          />
+          <select
+            value={newType}
+            onChange={(e) => setNewType(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs shrink-0"
+          >
+            {ALL_FIELD_TYPES.map((ft) => (
+              <option key={ft.value} value={ft.value}>{ft.label}</option>
+            ))}
+          </select>
+          <Button size="sm" variant="outline" onClick={addField} disabled={!newLabel.trim()} className="h-8 px-3">
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function TrackersTab({ participantProfileId, participantUserId }: { participantProfileId: string; participantUserId: string }) {
   const queryClient = useQueryClient();
@@ -1310,15 +1443,6 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     queryKey: ["tracker-templates"],
     queryFn: () => api.get("/api/daily-trackers/templates"),
     enabled: dialogOpen,
-  });
-
-  const createFromTemplate = useMutation({
-    mutationFn: (templateKey: string) =>
-      api.post("/api/daily-trackers/from-template", { templateKey, participantId: participantProfileId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
-      closeDialog();
-    },
   });
 
   const createCustom = useMutation({
@@ -1370,9 +1494,9 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Daily Trackers</h3>
+          <h3 className="text-lg font-semibold">Daily Pulse</h3>
           <p className="text-sm text-muted-foreground">
-            Assign daily trackers for this client to complete in the app.
+            Assign daily pulse trackers for this client to complete in the app.
           </p>
         </div>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
@@ -1438,7 +1562,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
             <DialogTitle>
-              {dialogMode === "review" ? "Review Tracker" : "Add Daily Tracker"}
+              {dialogMode === "review" ? "Review Pulse Tracker" : "Add Daily Pulse"}
             </DialogTitle>
             {dialogMode === "pick" && (
               <DialogDescription>
@@ -1491,8 +1615,20 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                   {templates?.map((template) => (
                     <button
                       key={template.key}
-                      onClick={() => createFromTemplate.mutate(template.key)}
-                      disabled={createFromTemplate.isPending}
+                      onClick={() => {
+                        setGenerated({
+                          name: template.name,
+                          description: template.description,
+                          fields: template.fields.map((f, i) => ({
+                            label: f.label,
+                            fieldType: f.fieldType,
+                            options: (f as any).options || null,
+                            sortOrder: i,
+                            isRequired: true,
+                          })),
+                        });
+                        setDialogMode("review");
+                      }}
                       className="w-full text-left rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all"
                     >
                       <div className="flex items-center gap-2">
@@ -1514,60 +1650,38 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                       <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                     </div>
                   )}
+
+                  {/* Build custom */}
+                  <button
+                    onClick={() => {
+                      setGenerated({ name: "", description: "", fields: [] });
+                      setDialogMode("custom");
+                    }}
+                    className="w-full text-left rounded-lg border border-dashed p-3 hover:shadow-md hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm font-semibold">Build Custom Tracker</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 ml-6">
+                      Create a tracker from scratch with your own fields
+                    </p>
+                  </button>
                 </div>
               </div>
             )}
 
-            {dialogMode === "review" && generated && (
-              <div className="space-y-4">
-                {/* Editable name */}
-                <div className="space-y-1.5">
-                  <Label>Tracker Name</Label>
-                  <Input
-                    value={generated.name}
-                    onChange={(e) => setGenerated({ ...generated, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Description</Label>
-                  <Input
-                    value={generated.description}
-                    onChange={(e) => setGenerated({ ...generated, description: e.target.value })}
-                  />
-                </div>
-
-                {/* Fields preview */}
-                <div className="space-y-1.5">
-                  <Label>Fields ({generated.fields.length})</Label>
-                  <div className="space-y-2">
-                    {generated.fields.map((field, i) => (
-                      <div key={i} className="flex items-center gap-3 rounded-md border p-3">
-                        <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{field.label}</p>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {FIELD_TYPE_LABELS[field.fieldType] || field.fieldType}
-                        </Badge>
-                        <button
-                          onClick={() => setGenerated({
-                            ...generated,
-                            fields: generated.fields.filter((_, j) => j !== i),
-                          })}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            {(dialogMode === "review" || dialogMode === "custom") && generated && (
+              <TrackerFieldEditor
+                generated={generated}
+                setGenerated={setGenerated}
+                isCustom={dialogMode === "custom"}
+              />
             )}
           </div>
 
           {/* Footer */}
-          {dialogMode === "review" && generated && (
+          {(dialogMode === "review" || dialogMode === "custom") && generated && (
             <div className="flex items-center justify-between border-t px-6 py-4 shrink-0">
               <Button variant="ghost" size="sm" onClick={() => setDialogMode("pick")}>
                 Back

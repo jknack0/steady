@@ -20,7 +20,7 @@ export const MODULE_CATEGORIES = [
 export const MODULE_REGISTRY = {
   daily_tracker: {
     id: "daily_tracker",
-    label: "Daily Tracker",
+    label: "Daily Pulse",
     description: "Track daily symptoms, mood, focus, and medication adherence with customizable metrics",
     icon: "Activity",
     category: "MONITORING" as ModuleCategory,

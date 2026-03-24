@@ -4,7 +4,7 @@ export const DASHBOARD_WIDGETS = {
   tracker_summary: {
     id: "tracker_summary",
     label: "Tracker Summary",
-    description: "Overview of daily tracker submissions and trends",
+    description: "Overview of daily pulse submissions and trends",
     size: "half" as const,
     requiresModule: "daily_tracker" as ModuleId | null,
   },

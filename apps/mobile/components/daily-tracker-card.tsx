@@ -143,7 +143,7 @@ export function DailyTrackerCards() {
             color: "#2D2D2D",
           }}
         >
-          Daily Check-ins
+          Daily Pulse
         </Text>
       </View>
       {data.map((tracker) => (

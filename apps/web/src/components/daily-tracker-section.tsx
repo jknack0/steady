@@ -46,7 +46,7 @@ export function DailyTrackerSection({ programId }: { programId: string }) {
           onClick={() => setOpen(!open)}
         >
           <ClipboardList className="h-5 w-5" />
-          Daily Trackers
+          Daily Pulse
           {trackers && (
             <span className="text-sm font-normal text-muted-foreground">
               ({trackers.length})
@@ -135,7 +135,7 @@ export function DailyTrackerSection({ programId }: { programId: string }) {
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8">
               <ClipboardList className="h-8 w-8 text-muted-foreground mb-3" />
               <p className="text-muted-foreground mb-3 text-sm">
-                No daily trackers yet
+                No daily pulse trackers yet
               </p>
               <Button
                 size="sm"
