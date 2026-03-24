@@ -145,12 +145,17 @@ router.get("/homework-instances/:id/streak", async (req: Request, res: Response)
       },
     });
 
-    if (!instance || instance.enrollment.participantId !== req.user!.participantProfileId!) {
+    const ownsInstance = instance &&
+      (instance.participantId === req.user!.participantProfileId! ||
+       instance.enrollment?.participantId === req.user!.participantProfileId!);
+    if (!ownsInstance) {
       res.status(404).json({ success: false, error: "Instance not found" });
       return;
     }
 
-    const streak = await getStreakData(instance.partId, instance.enrollmentId);
+    const streak = instance.partId && instance.enrollmentId
+      ? await getStreakData(instance.partId, instance.enrollmentId)
+      : { currentStreak: 0, longestStreak: 0, totalCompleted: 0, totalInstances: 0, completionRate: 0 };
     res.json({ success: true, data: streak });
   } catch (err) {
     logger.error("Get streak error", err);
@@ -174,10 +179,12 @@ router.post("/homework-instances/:id/complete", async (req: Request, res: Respon
     const data = await completeHomeworkInstance(req.params.id, req.user!.participantProfileId!, req.body);
 
     // Log RTM engagement for homework completion (fire-and-forget)
-    logRtmEngagement(req.user!.userId, "HOMEWORK_COMPLETED", data.enrollmentId, {
-      partId: data.partId,
-      homeworkInstanceId: data.id,
-    });
+    if (data.enrollmentId) {
+      logRtmEngagement(req.user!.userId, "HOMEWORK_COMPLETED", data.enrollmentId, {
+        partId: data.partId,
+        homeworkInstanceId: data.id,
+      });
+    }
 
     res.json({ success: true, data });
   } catch (err) {

@@ -338,8 +338,10 @@ export async function getHomeworkInstances(
 
   const instances = await prisma.homeworkInstance.findMany({
     where: {
-      enrollmentId: { in: enrollmentIds },
-      dueDate: targetDate,
+      OR: [
+        { enrollmentId: { in: enrollmentIds }, dueDate: targetDate },
+        { participantId: participantProfileId, dueDate: targetDate },
+      ],
     },
     include: {
       part: {
@@ -379,9 +381,10 @@ export async function saveHomeworkResponse(
     },
   });
 
-  if (!instance || instance.enrollment.participantId !== participantProfileId) {
-    throw new NotFoundError("Instance not found");
-  }
+  if (!instance) throw new NotFoundError("Instance not found");
+  const ownerMatch = instance.participantId === participantProfileId ||
+    instance.enrollment?.participantId === participantProfileId;
+  if (!ownerMatch) throw new NotFoundError("Instance not found");
 
   if (instance.status !== "PENDING") {
     throw new ConflictError("Can only save responses for pending instances");
@@ -423,9 +426,10 @@ export async function completeHomeworkInstance(
     },
   });
 
-  if (!instance || instance.enrollment.participantId !== participantProfileId) {
-    throw new NotFoundError("Instance not found");
-  }
+  if (!instance) throw new NotFoundError("Instance not found");
+  const ownerMatch2 = instance.participantId === participantProfileId ||
+    instance.enrollment?.participantId === participantProfileId;
+  if (!ownerMatch2) throw new NotFoundError("Instance not found");
 
   if (instance.status === "COMPLETED") {
     throw new ConflictError("Instance already completed");
@@ -470,9 +474,10 @@ export async function skipHomeworkInstance(
     },
   });
 
-  if (!instance || instance.enrollment.participantId !== participantProfileId) {
-    throw new NotFoundError("Instance not found");
-  }
+  if (!instance) throw new NotFoundError("Instance not found");
+  const ownerMatch3 = instance.participantId === participantProfileId ||
+    instance.enrollment?.participantId === participantProfileId;
+  if (!ownerMatch3) throw new NotFoundError("Instance not found");
 
   if (instance.status !== "PENDING") {
     throw new ConflictError("Can only skip pending instances");

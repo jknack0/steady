@@ -118,7 +118,6 @@ router.get("/participants/:id/homework", async (req: Request, res: Response) => 
     const { id } = req.params;
     const clinicianProfileId = req.user!.clinicianProfileId!;
 
-    // Verify this participant belongs to the clinician
     const detail = await getParticipantDetail(clinicianProfileId, id);
     if (!detail || "notFound" in detail) {
       res.status(404).json({ success: false, error: "Participant not found" });
@@ -126,9 +125,15 @@ router.get("/participants/:id/homework", async (req: Request, res: Response) => 
     }
 
     const enrollmentIds = detail.enrollments.map((e: any) => e.id);
+    const participantProfileId = detail.participantProfileId;
 
     const instances = await prisma.homeworkInstance.findMany({
-      where: { enrollmentId: { in: enrollmentIds } },
+      where: {
+        OR: [
+          { enrollmentId: { in: enrollmentIds } },
+          { participantId: participantProfileId },
+        ],
+      },
       include: {
         part: {
           select: { id: true, title: true, content: true, moduleId: true },
@@ -142,6 +147,45 @@ router.get("/participants/:id/homework", async (req: Request, res: Response) => 
   } catch (err) {
     logger.error("Get participant homework error", err);
     res.status(500).json({ success: false, error: "Failed to get homework data" });
+  }
+});
+
+// POST /api/clinician/participants/:id/homework — Assign standalone homework
+router.post("/participants/:id/homework", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+    const { title, content, dueDate } = req.body;
+
+    if (!title || !content) {
+      res.status(400).json({ success: false, error: "title and content are required" });
+      return;
+    }
+
+    const detail = await getParticipantDetail(clinicianProfileId, id);
+    if (!detail || "notFound" in detail) {
+      res.status(404).json({ success: false, error: "Participant not found" });
+      return;
+    }
+
+    const due = dueDate ? new Date(dueDate) : new Date();
+    due.setUTCHours(0, 0, 0, 0);
+
+    const instance = await prisma.homeworkInstance.create({
+      data: {
+        participantId: detail.participantProfileId,
+        title,
+        content,
+        dueDate: due,
+        status: "PENDING",
+        createdById: req.user!.userId,
+      },
+    });
+
+    res.status(201).json({ success: true, data: instance });
+  } catch (err) {
+    logger.error("Create standalone homework error", err);
+    res.status(500).json({ success: false, error: "Failed to create homework" });
   }
 });
 

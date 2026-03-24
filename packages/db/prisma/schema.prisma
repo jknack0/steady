@@ -250,11 +250,12 @@ model ParticipantProfile {
   timezone             String  @default("America/New_York")
   onboardingCompleted  Boolean @default(false)
 
-  enrollments    Enrollment[]
-  tasks          Task[]
-  calendarEvents CalendarEvent[]
-  journalEntries JournalEntry[]
-  dailyTrackers  DailyTracker[]
+  enrollments       Enrollment[]
+  tasks             Task[]
+  calendarEvents    CalendarEvent[]
+  journalEntries    JournalEntry[]
+  dailyTrackers     DailyTracker[]
+  homeworkInstances HomeworkInstance[]
 
   @@map("participant_profiles")
 }
@@ -493,20 +494,26 @@ model NotificationPreference {
 // ── Homework Instances (Recurring) ────────────────────
 
 model HomeworkInstance {
-  id           String                 @id @default(cuid())
-  partId       String
-  part         Part                   @relation(fields: [partId], references: [id], onDelete: Cascade)
-  enrollmentId String
-  enrollment   Enrollment             @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  dueDate      DateTime               @db.Date
-  status       HomeworkInstanceStatus  @default(PENDING)
-  completedAt  DateTime?
-  response     Json?
-  createdAt    DateTime               @default(now())
+  id            String                 @id @default(cuid())
+  partId        String?
+  part          Part?                  @relation(fields: [partId], references: [id], onDelete: Cascade)
+  enrollmentId  String?
+  enrollment    Enrollment?            @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   ParticipantProfile?    @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  title         String?
+  content       Json?
+  dueDate       DateTime               @db.Date
+  status        HomeworkInstanceStatus  @default(PENDING)
+  completedAt   DateTime?
+  response      Json?
+  createdAt     DateTime               @default(now())
+  createdById   String?
 
   @@unique([partId, enrollmentId, dueDate])
   @@index([enrollmentId])
   @@index([partId])
+  @@index([participantId])
   @@index([dueDate])
   @@map("homework_instances")
 }
