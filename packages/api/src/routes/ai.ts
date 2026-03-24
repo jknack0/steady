@@ -122,6 +122,113 @@ router.post("/style-content", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/ai/generate-part — Generate structured part content from raw text
+router.post("/generate-part", async (req: Request, res: Response) => {
+  try {
+    const { partType, rawInput } = req.body;
+
+    if (!partType || typeof partType !== "string") {
+      res.status(400).json({ success: false, error: "partType is required" });
+      return;
+    }
+    if (!rawInput || typeof rawInput !== "string" || rawInput.trim().length === 0) {
+      res.status(400).json({ success: false, error: "rawInput is required" });
+      return;
+    }
+
+    const schema = PART_SCHEMAS[partType];
+    if (!schema) {
+      res.status(400).json({ success: false, error: `Unsupported part type: ${partType}` });
+      return;
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ success: false, error: "AI service not configured" });
+      return;
+    }
+
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 8192,
+      system: GENERATE_PART_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Generate a ${partType} part from the following input. Return ONLY valid JSON matching the schema.\n\nPart type: ${partType}\nSchema: ${schema}\n\nUser input:\n${rawInput}`,
+        },
+      ],
+    });
+
+    const textBlock = message.content.find((block) => block.type === "text");
+    let rawJson = textBlock?.text || "";
+
+    // Strip markdown code fences if present
+    rawJson = rawJson.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+
+    let content: any;
+    try {
+      content = JSON.parse(rawJson);
+    } catch {
+      logger.error("AI generate-part returned invalid JSON", new Error(rawJson.slice(0, 200)));
+      res.status(500).json({ success: false, error: "AI returned invalid content. Try again." });
+      return;
+    }
+
+    // Also generate a suggested title
+    let title: string | undefined;
+    if (content._title) {
+      title = content._title;
+      delete content._title;
+    }
+
+    res.json({ success: true, data: { content, title } });
+  } catch (err) {
+    logger.error("AI generate-part error", err);
+    res.status(500).json({ success: false, error: "Failed to generate part content" });
+  }
+});
+
+const GENERATE_PART_SYSTEM_PROMPT = `You are a content generator for Steady, a clinical healthcare app for ADHD treatment. Clinicians give you rough notes and you generate structured JSON content for different part types.
+
+CRITICAL RULES:
+- Return ONLY valid JSON. No markdown, no explanation, no code fences.
+- The JSON must match the schema provided exactly.
+- Include a "_title" field with a suggested short title for the part (max 60 chars).
+- Be thorough — generate complete, clinically appropriate content from the notes.
+- If the input is sparse, expand it intelligently based on clinical best practices.
+- Use warm, encouraging, patient-friendly language in all content.
+
+For STYLED_CONTENT: generate styledHtml using these CSS variables in inline styles:
+  var(--steady-teal) — primary accent, links
+  var(--steady-teal-bg) — light teal callout background
+  var(--steady-rose) — warning accent
+  var(--steady-cream) — warm highlight background
+  var(--steady-warm-50) — lightest background
+  var(--steady-warm-500) — primary text
+Use <h2>, <h3>, <p>, <ul>, <li>, <div> with inline styles for callout boxes, step boxes, and themed headings. Make it visually rich.
+
+For HOMEWORK items, use these types: ACTION (tasks with optional subSteps), JOURNAL_PROMPT (reflection prompts), WORKSHEET (grid with columns/rows), CHOICE (multiple options), RESOURCE_REVIEW (link/pdf/audio to review), RATING_SCALE (1-10 scale), TIMER (timed exercise), MOOD_CHECK (emoji mood picker), HABIT_TRACKER (yes/no habit), BRING_TO_SESSION (reminder), FREE_TEXT_NOTE (informational note).
+
+For ASSESSMENT questions, use types: LIKERT (scale), MULTIPLE_CHOICE (options), FREE_TEXT (open), YES_NO.`;
+
+const PART_SCHEMAS: Record<string, string> = {
+  STYLED_CONTENT: `{ type: "STYLED_CONTENT", rawContent: "<plain text version>", styledHtml: "<styled HTML with CSS vars>" }`,
+  VIDEO: `{ type: "VIDEO", url: "<youtube/vimeo/loom URL>", provider: "youtube"|"vimeo"|"loom", transcriptUrl?: "<optional>" }`,
+  STRATEGY_CARDS: `{ type: "STRATEGY_CARDS", deckName: "<deck title>", cards: [{ title: "<card title>", body: "<card body text>", emoji: "<single emoji>" }] }`,
+  JOURNAL_PROMPT: `{ type: "JOURNAL_PROMPT", prompts: ["<prompt 1>", "<prompt 2>", ...], spaceSizeHint: "small"|"medium"|"large" }`,
+  CHECKLIST: `{ type: "CHECKLIST", items: [{ text: "<item text>", sortOrder: <number> }] }`,
+  RESOURCE_LINK: `{ type: "RESOURCE_LINK", url: "<URL>", description: "<description>", resourceType?: "file"|"link"|"audio" }`,
+  DIVIDER: `{ type: "DIVIDER", label: "<optional label text>" }`,
+  HOMEWORK: `{ type: "HOMEWORK", dueTimingType: "BEFORE_NEXT_SESSION"|"SPECIFIC_DATE"|"DAYS_AFTER_UNLOCK", dueTimingValue: null, completionRule: "ALL"|"X_OF_Y", completionMinimum: null|<number>, reminderCadence: "DAILY"|"EVERY_OTHER_DAY"|"MID_WEEK", items: [{ type: "<item type>", sortOrder: <n>, ...type-specific fields }] }`,
+  ASSESSMENT: `{ type: "ASSESSMENT", title: "<title>", instructions: "<instructions>", scoringEnabled: false, questions: [{ question: "<text>", type: "LIKERT"|"MULTIPLE_CHOICE"|"FREE_TEXT"|"YES_NO", options?: ["<opt>"], likertMin?: <n>, likertMax?: <n>, likertMinLabel?: "<label>", likertMaxLabel?: "<label>", required: true, sortOrder: <n> }] }`,
+  INTAKE_FORM: `{ type: "INTAKE_FORM", title: "<title>", instructions: "<instructions>", sections: ["<section names>"], fields: [{ label: "<label>", type: "TEXT"|"TEXTAREA"|"SELECT"|"MULTI_SELECT"|"DATE"|"NUMBER"|"CHECKBOX", placeholder?: "<hint>", options?: ["<opt>"], required: true|false, section: "<section name>", sortOrder: <n> }] }`,
+  SMART_GOALS: `{ type: "SMART_GOALS", instructions: "<instructions for the participant>", maxGoals: <number 1-5>, categories: ["DAILY_ROUTINE","WORK","RELATIONSHIPS","HEALTH","SELF_CARE","OTHER"], goals: [] }`,
+  PDF: `{ type: "PDF", fileKey: "", url: "", fileName: "", description: "<description of what the PDF contains>" }`,
+};
+
 // POST /api/ai/parse-homework-pdf — Extract homework items from a PDF
 router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
   try {

@@ -11,8 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles, PenLine } from "lucide-react";
 import { PART_TYPE_CONFIG } from "@/components/part-card";
+import { useGeneratePart } from "@/hooks/use-generate-part";
 import {
   TextPartEditor,
   VideoPartEditor,
@@ -136,12 +137,36 @@ interface CreatePartModalProps {
   isPending: boolean;
 }
 
+// Types that support AI generation (excludes DIVIDER — too simple, and PDF — needs file upload)
+const AI_GENERABLE_TYPES = new Set([
+  "STYLED_CONTENT", "STRATEGY_CARDS", "JOURNAL_PROMPT", "CHECKLIST",
+  "HOMEWORK", "ASSESSMENT", "INTAKE_FORM", "SMART_GOALS", "VIDEO", "RESOURCE_LINK",
+]);
+
+const AI_PLACEHOLDERS: Record<string, string> = {
+  STYLED_CONTENT: "e.g., Explain the CBT model of anxiety. Cover the thought-feeling-behavior cycle, common thinking traps, and how to challenge automatic thoughts. Include a practical example.",
+  STRATEGY_CARDS: "e.g., 5 grounding techniques for anxiety: 5-4-3-2-1 senses, cold water on wrists, box breathing, progressive muscle relaxation, counting backwards from 100 by 7s",
+  JOURNAL_PROMPT: "e.g., Reflect on a time this week when you noticed an automatic thought. What was the situation? What did you think? How did it make you feel? What's an alternative perspective?",
+  CHECKLIST: "e.g., Pre-session checklist: review last week's homework, complete mood tracker, write down 3 things to discuss, rate current anxiety 1-10, bring medication list",
+  HOMEWORK: "e.g., Practice box breathing 5 min daily, journal about one trigger each day, review the cognitive distortions handout, track mood 3x daily using the app, try one new coping strategy from the strategy cards",
+  ASSESSMENT: "e.g., Anxiety screening: rate worry frequency, physical symptoms (muscle tension, racing heart, trouble sleeping), avoidance behaviors, impact on work/relationships, current coping methods",
+  INTAKE_FORM: "e.g., Client intake: demographics (name, age, pronouns), referral source, presenting concerns, mental health history, current medications, substance use, support system, treatment goals",
+  SMART_GOALS: "e.g., Help the client set goals around daily routine management, medication adherence, and building a morning routine. Focus on ADHD-specific challenges.",
+  VIDEO: "e.g., YouTube video about progressive muscle relaxation: https://youtube.com/watch?v=example",
+  RESOURCE_LINK: "e.g., Link to the ADAA anxiety toolkit: https://adaa.org/understanding-anxiety",
+};
+
 export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: CreatePartModalProps) {
   const [step, setStep] = useState<"type" | "editor">("type");
+  const [mode, setMode] = useState<"ai" | "manual">("ai");
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [isRequired, setIsRequired] = useState(true);
   const [content, setContent] = useState<any>(null);
+  const [rawInput, setRawInput] = useState("");
+  const generatePart = useGeneratePart();
+
+  const canUseAI = selectedType ? AI_GENERABLE_TYPES.has(selectedType) : false;
 
   const handleSelectType = (type: string) => {
     setSelectedType(type);
@@ -149,7 +174,25 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
     setTitle(config?.label || type);
     setIsRequired(type !== "DIVIDER");
     setContent(DEFAULT_CONTENT[type]);
+    setRawInput("");
+    setMode(AI_GENERABLE_TYPES.has(type) ? "ai" : "manual");
+    generatePart.reset();
     setStep("editor");
+  };
+
+  const handleGenerate = async () => {
+    if (!selectedType || !rawInput.trim()) return;
+    try {
+      const result = await generatePart.mutateAsync({
+        partType: selectedType,
+        rawInput: rawInput.trim(),
+      });
+      setContent(result.content);
+      if (result.title) setTitle(result.title);
+      setMode("manual"); // Switch to manual to show + edit the generated content
+    } catch {
+      // Error shown via mutation state
+    }
   };
 
   const handleCreate = async () => {
@@ -166,6 +209,9 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
       setTitle("");
       setIsRequired(true);
       setContent(null);
+      setRawInput("");
+      setMode("ai");
+      generatePart.reset();
     }, 200);
   };
 
@@ -203,7 +249,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
           </>
         ) : (
           <>
-            <DialogHeader className="shrink-0 px-6 pt-6">
+            <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setStep("type")}
@@ -214,55 +260,123 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
                 {Icon && <Icon className={`h-5 w-5 ${config?.color}`} />}
                 <DialogTitle>New {config?.label}</DialogTitle>
               </div>
+
+              {/* Mode tabs */}
+              {canUseAI && (
+                <div className="flex border-b mt-3 -mx-6 px-6">
+                  <button
+                    type="button"
+                    onClick={() => setMode("ai")}
+                    className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                      mode === "ai"
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Generate with AI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("manual")}
+                    className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                      mode === "manual"
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <PenLine className="h-3.5 w-3.5" />
+                    Build Manually
+                  </button>
+                </div>
+              )}
             </DialogHeader>
 
             <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
-              {/* Title + Required */}
-              <div className="flex items-end gap-3">
-                <div className="flex-1 space-y-1.5">
-                  <Label htmlFor="create-title">Title</Label>
-                  <Input
-                    id="create-title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={PLACEHOLDER_TITLES[selectedType!] || "Part title"}
-                    autoFocus
-                  />
-                </div>
-                {selectedType !== "DIVIDER" && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRequired(!isRequired)}
-                    className={`shrink-0 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
-                      isRequired
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "text-muted-foreground hover:bg-accent"
-                    }`}
+              {mode === "ai" && canUseAI ? (
+                <>
+                  {/* AI generation mode */}
+                  <div className="space-y-2">
+                    <Label>Describe what you want</Label>
+                    <textarea
+                      value={rawInput}
+                      onChange={(e) => setRawInput(e.target.value)}
+                      placeholder={AI_PLACEHOLDERS[selectedType!] || "Describe the content you want to create..."}
+                      className="min-h-[160px] w-full rounded-md border bg-background p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+                      autoFocus
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Write rough notes, bullet points, or a description. AI will generate the full structured {config?.label?.toLowerCase()}.
+                    </p>
+                  </div>
+
+                  {generatePart.isError && (
+                    <p className="text-sm text-destructive">Failed to generate. Try again or switch to manual.</p>
+                  )}
+
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={generatePart.isPending || !rawInput.trim()}
+                    className="w-full"
                   >
-                    {isRequired ? "Required" : "Optional"}
-                  </button>
-                )}
-              </div>
+                    {generatePart.isPending ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating {config?.label}...</>
+                    ) : (
+                      <><Sparkles className="mr-2 h-4 w-4" />Generate {config?.label}</>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {/* Manual mode — title + required + editor */}
+                  <div className="flex items-end gap-3">
+                    <div className="flex-1 space-y-1.5">
+                      <Label htmlFor="create-title">Title</Label>
+                      <Input
+                        id="create-title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder={PLACEHOLDER_TITLES[selectedType!] || "Part title"}
+                        autoFocus={!canUseAI}
+                      />
+                    </div>
+                    {selectedType !== "DIVIDER" && (
+                      <button
+                        type="button"
+                        onClick={() => setIsRequired(!isRequired)}
+                        className={`shrink-0 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
+                          isRequired
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {isRequired ? "Required" : "Optional"}
+                      </button>
+                    )}
+                  </div>
 
-              <Separator />
+                  <Separator />
 
-              {/* Part editor */}
-              {content && (
-                <ContentEditor type={selectedType!} content={content} onChange={setContent} />
+                  {content && (
+                    <ContentEditor type={selectedType!} content={content} onChange={setContent} />
+                  )}
+                </>
               )}
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-2 border-t px-6 py-4 shrink-0">
-              <Button variant="outline" onClick={handleClose}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={!title.trim() || isPending}>
-                {isPending ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
-                ) : (
-                  "Create Part"
-                )}
-              </Button>
-            </div>
+            {mode === "manual" && (
+              <div className="flex justify-end gap-2 border-t px-6 py-4 shrink-0">
+                <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                <Button onClick={handleCreate} disabled={!title.trim() || isPending}>
+                  {isPending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                  ) : (
+                    "Create Part"
+                  )}
+                </Button>
+              </div>
+            )}
           </>
         )}
       </DialogContent>
