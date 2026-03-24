@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { SaveIndicator } from "@/components/save-indicator";
 import { PartCard, PART_TYPE_CONFIG } from "@/components/part-card";
+import { CreatePartModal, EditPartModal } from "@/components/part-editor-modal";
 import {
   ArrowLeft,
   ChevronDown,
@@ -53,7 +54,6 @@ import {
 } from "@dnd-kit/sortable";
 import type { Module } from "@/hooks/use-programs";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
-import { CreatePartModal } from "@/components/create-part-modal";
 
 
 export default function ModuleEditorPage() {
@@ -89,6 +89,7 @@ export default function ModuleEditorPage() {
   const [summaryValue, setSummaryValue] = useState("");
   const [editingSummary, setEditingSummary] = useState(false);
   const [addPartOpen, setAddPartOpen] = useState(false);
+  const [editPartId, setEditPartId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -364,10 +365,7 @@ export default function ModuleEditorPage() {
                   <PartCard
                     key={part.id}
                     part={part}
-                    onUpdate={(data) => handlePartUpdate(part.id, data)}
-                    onDelete={() => handlePartDelete(part.id)}
-                    onDuplicate={() => handlePartDuplicate(part.id)}
-                    onPreview={() => { setPreviewPartId(part.id); setPreviewOpen(true); }}
+                    onClick={() => setEditPartId(part.id)}
                   />
                 ))}
               </div>
@@ -390,6 +388,17 @@ export default function ModuleEditorPage() {
         onOpenChange={setAddPartOpen}
         onCreate={handleCreatePart}
         isPending={createPart.isPending}
+      />
+
+      {/* Edit Part Modal */}
+      <EditPartModal
+        open={!!editPartId}
+        onOpenChange={(open) => { if (!open) setEditPartId(null); }}
+        part={parts?.find((p) => p.id === editPartId) || null}
+        onSave={(data) => handlePartUpdate(editPartId!, data)}
+        onDelete={() => { handlePartDelete(editPartId!); setEditPartId(null); }}
+        onDuplicate={() => { handlePartDuplicate(editPartId!); setEditPartId(null); }}
+        onPreview={() => { setPreviewPartId(editPartId); setPreviewOpen(true); }}
       />
 
       <PhonePreviewModal

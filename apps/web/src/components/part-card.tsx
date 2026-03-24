@@ -1,45 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { SaveIndicator } from "@/components/save-indicator";
-import {
-  TextPartEditor,
-  VideoPartEditor,
-  StrategyCardsPartEditor,
-  JournalPromptPartEditor,
-  ChecklistPartEditor,
-  ResourceLinkPartEditor,
-  DividerPartEditor,
-  HomeworkPartEditor,
-  AssessmentPartEditor,
-  IntakeFormPartEditor,
-  SmartGoalsPartEditor,
-  StyledContentPartEditor,
-  PdfPartEditor,
-} from "@/components/part-editors";
-import type { Part } from "@/hooks/use-parts";
-import {
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Eye,
   GripVertical,
-  MoreVertical,
-  Pencil,
-  ToggleLeft,
-  Trash2,
   FileText,
   Video,
   Layers,
@@ -53,6 +19,7 @@ import {
   Target,
   Sparkles,
 } from "lucide-react";
+import type { Part } from "@/hooks/use-parts";
 
 const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string; color: string }> = {
   TEXT: { icon: FileText, label: "Text", color: "text-blue-400" },
@@ -72,17 +39,10 @@ const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string;
 
 interface PartCardProps {
   part: Part;
-  onUpdate: (data: { title?: string; isRequired?: boolean; content?: any }) => Promise<unknown>;
-  onDelete: () => void;
-  onDuplicate: () => void;
-  onPreview?: () => void;
+  onClick: () => void;
 }
 
-export function PartCard({ part, onUpdate, onDelete, onDuplicate, onPreview }: PartCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState(part.title);
-
+export function PartCard({ part, onClick }: PartCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: part.id,
   });
@@ -93,96 +53,14 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate, onPreview }: P
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const [localContent, setLocalContent] = useState<any>(part.content);
-  const dirtyRef = useRef(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-
-  // Sync from server when part.content changes (e.g. after query refetch)
-  // but only if there are no unsaved local edits
-  useEffect(() => {
-    if (!dirtyRef.current) {
-      setLocalContent(part.content);
-    }
-  }, [part.content]);
-
-  const handleContentChange = (content: any) => {
-    dirtyRef.current = true;
-    setLocalContent(content);
-  };
-
-  const editorRef = useRef<HTMLDivElement>(null);
-
-  const handleEditorBlur = useCallback((e: { relatedTarget: EventTarget | null }) => {
-    // Only save when focus leaves the editor container entirely,
-    // not when moving between inputs within the editor.
-    if (editorRef.current?.contains(e.relatedTarget as Node)) return;
-    if (!dirtyRef.current) return;
-    dirtyRef.current = false;
-    setSaveStatus("saving");
-    onUpdate({ content: localContent })
-      .then(() => {
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-      })
-      .catch(() => {
-        setSaveStatus("error");
-      });
-  }, [onUpdate, localContent]);
-
-  const handleTitleBlur = () => {
-    setEditingTitle(false);
-    if (titleValue.trim() && titleValue !== part.title) {
-      onUpdate({ title: titleValue.trim() });
-    }
-  };
-
   const typeConfig = PART_TYPE_CONFIG[part.type] || PART_TYPE_CONFIG.TEXT;
   const Icon = typeConfig.icon;
 
-  const renderEditor = () => {
-    const content = localContent as any;
-    switch (part.type) {
-      case "TEXT":
-        return <TextPartEditor content={content} onChange={handleContentChange} />;
-      case "VIDEO":
-        return <VideoPartEditor content={content} onChange={handleContentChange} />;
-      case "STRATEGY_CARDS":
-        return <StrategyCardsPartEditor content={content} onChange={handleContentChange} />;
-      case "JOURNAL_PROMPT":
-        return <JournalPromptPartEditor content={content} onChange={handleContentChange} />;
-      case "CHECKLIST":
-        return <ChecklistPartEditor content={content} onChange={handleContentChange} />;
-      case "RESOURCE_LINK":
-        return <ResourceLinkPartEditor content={content} onChange={handleContentChange} />;
-      case "DIVIDER":
-        return <DividerPartEditor content={content} onChange={handleContentChange} />;
-      case "HOMEWORK":
-        return <HomeworkPartEditor content={content} onChange={handleContentChange} />;
-      case "ASSESSMENT":
-        return <AssessmentPartEditor content={content} onChange={handleContentChange} />;
-      case "INTAKE_FORM":
-        return <IntakeFormPartEditor content={content} onChange={handleContentChange} />;
-      case "SMART_GOALS":
-        return <SmartGoalsPartEditor content={content} onChange={handleContentChange} />;
-      case "STYLED_CONTENT":
-        return <StyledContentPartEditor content={content} onChange={handleContentChange} />;
-      case "PDF":
-        return <PdfPartEditor content={content} onChange={handleContentChange} />;
-      default:
-        return (
-          <div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground">
-            {typeConfig.label} editor coming in Phase 2
-          </div>
-        );
-    }
-  };
-
   return (
     <div ref={setNodeRef} style={style} className="rounded-lg border bg-card shadow-sm">
-      {/* Card Header */}
       <div className="flex items-center gap-2 p-3">
         <button
-          className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+          className="cursor-grab touch-none text-muted-foreground hover:text-foreground shrink-0"
           {...attributes}
           {...listeners}
         >
@@ -190,33 +68,12 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate, onPreview }: P
         </button>
 
         <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-muted-foreground hover:text-foreground"
+          onClick={onClick}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
         >
-          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          <Icon className={cn("h-4 w-4 shrink-0", typeConfig.color)} />
+          <span className="text-sm font-medium truncate">{part.title}</span>
         </button>
-
-        <Icon className={cn("h-4 w-4", typeConfig.color)} />
-
-        {editingTitle ? (
-          <Input
-            value={titleValue}
-            onChange={(e) => setTitleValue(e.target.value)}
-            onBlur={handleTitleBlur}
-            onKeyDown={(e) => e.key === "Enter" && handleTitleBlur()}
-            className="h-7 text-sm flex-1"
-            autoFocus
-          />
-        ) : (
-          <span
-            className="flex-1 text-sm font-medium cursor-pointer hover:text-primary truncate"
-            onClick={() => setExpanded(!expanded)}
-          >
-            {part.title}
-          </span>
-        )}
-
-        <SaveIndicator status={saveStatus} />
 
         <Badge variant="outline" className="text-xs shrink-0">
           {typeConfig.label}
@@ -225,54 +82,7 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate, onPreview }: P
         <Badge variant={part.isRequired ? "default" : "secondary"} className="text-xs shrink-0">
           {part.isRequired ? "Required" : "Optional"}
         </Badge>
-
-        {/* Dropdown menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="rounded p-1 hover:bg-accent">
-            <MoreVertical className="h-4 w-4 text-muted-foreground" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {onPreview && (
-              <DropdownMenuItem onClick={onPreview}>
-                <Eye className="mr-2 h-4 w-4" />
-                Preview
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              onClick={() => {
-                setTitleValue(part.title);
-                setEditingTitle(true);
-              }}
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Title
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onUpdate({ isRequired: !part.isRequired })}
-            >
-              <ToggleLeft className="mr-2 h-4 w-4" />
-              {part.isRequired ? "Mark Optional" : "Mark Required"}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className="mr-2 h-4 w-4" />
-              Duplicate
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
-
-      {/* Expanded Editor */}
-      {expanded && (
-        <div ref={editorRef} className="border-t px-4 py-4 pl-14" onBlur={handleEditorBlur}>{renderEditor()}</div>
-      )}
     </div>
   );
 }
