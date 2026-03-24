@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
+import { TrackerDataView } from "@/components/tracker-data-view";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
 import {
@@ -1432,6 +1433,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<TrackerDialogMode>("pick");
   const [aiInput, setAiInput] = useState("");
+  const [viewingTrackerId, setViewingTrackerId] = useState<string | null>(null);
   const [generated, setGenerated] = useState<{ name: string; description: string; fields: any[] } | null>(null);
 
   const { data: trackers, isLoading } = useQuery<TrackerData[]>({
@@ -1505,7 +1507,21 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         </Button>
       </div>
 
-      {(!trackers || trackers.length === 0) ? (
+      {viewingTrackerId && trackers ? (
+        (() => {
+          const t = trackers.find((tr) => tr.id === viewingTrackerId);
+          if (!t) return null;
+          return (
+            <TrackerDataView
+              trackerId={t.id}
+              trackerName={t.name}
+              userId={participantUserId}
+              fields={t.fields}
+              onBack={() => setViewingTrackerId(null)}
+            />
+          );
+        })()
+      ) : (!trackers || trackers.length === 0) ? (
         <div className="rounded-lg border border-dashed py-12 text-center">
           <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No check-ins assigned yet</p>
@@ -1519,7 +1535,12 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
           {trackers.map((tracker) => (
             <div
               key={tracker.id}
-              className={cn("rounded-lg border p-4 transition-colors", !tracker.isActive && "opacity-60")}
+              className={cn(
+                "rounded-lg border p-4 transition-all",
+                !tracker.isActive && "opacity-60",
+                tracker._count.entries > 0 && "cursor-pointer hover:shadow-md hover:border-primary/30"
+              )}
+              onClick={() => { if (tracker._count.entries > 0) setViewingTrackerId(tracker.id); }}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -1539,7 +1560,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                     <span>Reminder: {tracker.reminderTime}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <Button variant="ghost" size="sm" onClick={() => toggleActive.mutate({ id: tracker.id, isActive: !tracker.isActive })}>
                     {tracker.isActive ? "Pause" : "Resume"}
                   </Button>
