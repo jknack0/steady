@@ -92,7 +92,7 @@ async function main() {
 
   await prisma.clinicianConfig.upsert({
     where: { clinicianId: admin.clinicianProfile!.id },
-    update: {},
+    update: { setupCompleted: true },
     create: {
       clinicianId: admin.clinicianProfile!.id,
       providerType: "THERAPIST",
@@ -151,7 +151,7 @@ async function main() {
 
   await prisma.clinicianConfig.upsert({
     where: { clinicianId: joClinician.clinicianProfile!.id },
-    update: {},
+    update: { setupCompleted: true },
     create: {
       clinicianId: joClinician.clinicianProfile!.id,
       providerType: "THERAPIST",
@@ -1482,7 +1482,7 @@ Here's the truth about ADHD management: it's not a destination. There will be gr
 
   await prisma.clinicianConfig.upsert({
     where: { clinicianId: jimClinician.clinicianProfile!.id },
-    update: {},
+    update: { setupCompleted: true },
     create: {
       clinicianId: jimClinician.clinicianProfile!.id,
       providerType: "THERAPIST",
@@ -2138,7 +2138,7 @@ Here's the truth about ADHD management: it's not a destination. There will be gr
 
   await prisma.clinicianConfig.upsert({
     where: { clinicianId: mayaClinician.clinicianProfile!.id },
-    update: {},
+    update: { setupCompleted: true },
     create: {
       clinicianId: mayaClinician.clinicianProfile!.id,
       providerType: "THERAPIST",
@@ -2735,7 +2735,7 @@ Here's the truth about ADHD management: it's not a destination. There will be gr
 
   await prisma.clinicianConfig.upsert({
     where: { clinicianId: priyaClinician.clinicianProfile!.id },
-    update: {},
+    update: { setupCompleted: true },
     create: {
       clinicianId: priyaClinician.clinicianProfile!.id,
       providerType: "THERAPIST",
