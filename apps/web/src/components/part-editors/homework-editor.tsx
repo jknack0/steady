@@ -34,6 +34,7 @@ import {
   Timer,
   Smile,
   CalendarCheck,
+  Smartphone,
 } from "lucide-react";
 import { FileUpload } from "@/components/file-upload";
 import { useParseHomeworkPdf } from "@/hooks/use-parse-homework-pdf";
@@ -54,7 +55,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import dynamic from "next/dynamic";
 import type { HomeworkItem, HomeworkContent } from "@steady/shared";
+
+const MobilePreviewModal = dynamic(
+  () => import("@/components/mobile-preview/MobilePreviewModal").then((m) => m.MobilePreviewModal),
+  { ssr: false }
+);
 
 // Extract specific item variants from the discriminated union
 type ActionItem = Extract<HomeworkItem, { type: "ACTION" }>;
@@ -1367,6 +1374,7 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
   } as HomeworkContent;
 
   const [showPreview, setShowPreview] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showPdfImport, setShowPdfImport] = useState(false);
   const [pdfKey, setPdfKey] = useState<string | null>(null);
@@ -1500,24 +1508,35 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
         <h4 className="text-sm font-semibold">
           Homework Items ({content.items.length})
         </h4>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowPreview(!showPreview)}
-        >
-          {showPreview ? (
-            <>
-              <EyeOff className="mr-1 h-4 w-4" />
-              Hide Preview
-            </>
-          ) : (
-            <>
-              <Eye className="mr-1 h-4 w-4" />
-              Preview
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMobilePreview(true)}
+          >
+            <Smartphone className="mr-1 h-4 w-4" />
+            Mobile Preview
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPreview(!showPreview)}
+          >
+            {showPreview ? (
+              <>
+                <EyeOff className="mr-1 h-4 w-4" />
+                Hide Preview
+              </>
+            ) : (
+              <>
+                <Eye className="mr-1 h-4 w-4" />
+                Preview
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Preview Panel */}
@@ -1626,6 +1645,14 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Preview Modal (RN Web) */}
+      <MobilePreviewModal
+        open={showMobilePreview}
+        onOpenChange={setShowMobilePreview}
+        content={content}
+        title="Homework"
+      />
     </div>
   );
 }

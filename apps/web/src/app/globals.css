@@ -1,6 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Map Expo font family names used by React Native components to the web font */
+@layer base {
+  * {
+    --font-jakarta: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+@font-face { font-family: 'PlusJakartaSans_400Regular'; src: local('Plus Jakarta Sans'); font-weight: 400; }
+@font-face { font-family: 'PlusJakartaSans_500Medium'; src: local('Plus Jakarta Sans'); font-weight: 500; }
+@font-face { font-family: 'PlusJakartaSans_600SemiBold'; src: local('Plus Jakarta Sans'); font-weight: 600; }
+@font-face { font-family: 'PlusJakartaSans_700Bold'; src: local('Plus Jakarta Sans'); font-weight: 700; }
 
 @layer base {
   :root {
