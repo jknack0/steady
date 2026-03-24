@@ -143,9 +143,9 @@ const TextContentSchema = z.object({
 
 const VideoContentSchema = z.object({
   type: z.literal("VIDEO"),
-  url: z.string().url(),
+  url: z.string().url().or(z.literal("")),
   provider: z.enum(["youtube", "vimeo", "loom"]),
-  transcriptUrl: z.string().url().optional(),
+  transcriptUrl: z.string().url().or(z.literal("")).optional(),
 });
 
 const StrategyCardsContentSchema = z.object({
