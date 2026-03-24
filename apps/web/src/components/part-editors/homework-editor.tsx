@@ -1149,6 +1149,12 @@ function ParticipantPreview({ content }: { content: HomeworkContent }) {
         Client Preview
       </h4>
       <div className="mx-auto max-w-[375px] rounded-xl border bg-white p-4 shadow-sm">
+        {/* Interactive badge */}
+        <div className="mb-3 flex items-center gap-1.5 rounded-md bg-teal-50 px-2.5 py-1.5">
+          <svg className="h-3.5 w-3.5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span className="text-[11px] font-medium text-teal-700">Participants complete this homework interactively in the app</span>
+        </div>
+
         {/* Due timing */}
         <div className="mb-3 text-xs text-gray-500">
           Due:{" "}
@@ -1186,20 +1192,26 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
 
   return (
     <div className="rounded-lg bg-amber-50 p-3">
-      <div className="mb-1 text-[10px] font-semibold uppercase text-amber-600">
+      <div className="mb-2 text-[10px] font-semibold uppercase text-amber-600">
         {typeConfig?.label}
       </div>
       {item.type === "ACTION" && (
-        <>
-          <p className="text-sm text-gray-800">{item.description || "..."}</p>
+        <div>
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
+            <p className="text-sm text-gray-800">{item.description || "..."}</p>
+          </div>
           {(item.subSteps || []).length > 0 && (
-            <ul className="mt-1 ml-4 list-disc text-xs text-gray-600">
+            <div className="mt-2 ml-6 space-y-1.5">
               {item.subSteps!.map((s, i) => (
-                <li key={i}>{s || "..."}</li>
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-3.5 w-3.5 shrink-0 rounded border border-gray-300" />
+                  <span className="text-xs text-gray-600">{s || "..."}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-        </>
+        </div>
       )}
       {item.type === "RESOURCE_REVIEW" && (
         <div>
@@ -1215,47 +1227,75 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
           {item.resourceType === "audio" && item.audioDescription ? (
             <p className="text-xs text-gray-500 mt-0.5 italic">{item.audioDescription}</p>
           ) : null}
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
+            <span className="text-xs text-gray-500">Mark as reviewed</span>
+          </div>
         </div>
       )}
       {item.type === "JOURNAL_PROMPT" && (
-        <div className="space-y-1">
+        <div className="space-y-2">
           {(item.prompts || []).map((p, i) => (
-            <p key={i} className="text-sm text-gray-800">
-              {p || "..."}
-            </p>
+            <div key={i}>
+              <p className="text-sm text-gray-800 mb-1">{p || "..."}</p>
+              <div className="rounded-md border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-300 min-h-[40px]">
+                Write your response...
+              </div>
+            </div>
           ))}
         </div>
       )}
       {item.type === "BRING_TO_SESSION" && (
-        <p className="text-sm text-gray-800">{item.reminderText || "..."}</p>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
+          <p className="text-sm text-gray-800">{item.reminderText || "..."}</p>
+        </div>
       )}
       {item.type === "FREE_TEXT_NOTE" && (
-        <p className="text-sm text-gray-800">{item.content || "..."}</p>
+        <div>
+          <p className="text-sm text-gray-800">{item.content || "..."}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
+            <span className="text-xs text-gray-500">Got it</span>
+          </div>
+        </div>
+      )}
+      {item.type === "CHOICE" && (
+        <div>
+          {item.description && <p className="text-sm text-gray-800 mb-2">{item.description}</p>}
+          <div className="space-y-1.5">
+            {(item.options || []).map((opt, i) => (
+              <div key={i} className="flex items-center gap-2.5 rounded-md border border-gray-200 bg-white px-3 py-2">
+                <div className="h-4 w-4 shrink-0 rounded-full border-2 border-gray-300" />
+                <div>
+                  <span className="text-sm text-gray-800">{opt.label}</span>
+                  {opt.detail && <p className="text-[10px] text-gray-500">{opt.detail}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
       {item.type === "WORKSHEET" && (
         <div>
           {item.instructions && <p className="text-xs text-gray-600 mb-2">{item.instructions}</p>}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr>
-                  <th className="border border-gray-200 bg-gray-50 px-2 py-1 text-left font-medium">#</th>
-                  {item.columns.map((col, i) => (
-                    <th key={i} className="border border-gray-200 bg-gray-50 px-2 py-1 text-left font-medium">{col.label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: item.rowCount }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="border border-gray-200 px-2 py-1 text-gray-400">{i + 1}</td>
-                    {item.columns.map((_, j) => (
-                      <td key={j} className="border border-gray-200 px-2 py-1 text-gray-300">___</td>
-                    ))}
-                  </tr>
+          <div className="space-y-2">
+            {Array.from({ length: Math.min(item.rowCount, 2) }).map((_, ri) => (
+              <div key={ri} className="rounded-md border border-gray-200 bg-white p-2">
+                <p className="text-[10px] font-medium text-gray-400 mb-1">Row {ri + 1}</p>
+                {item.columns.map((col, ci) => (
+                  <div key={ci} className="mb-1.5">
+                    <p className="text-[10px] font-medium text-gray-500">{col.label}</p>
+                    <div className="mt-0.5 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] text-gray-300">
+                      Enter {col.label.toLowerCase()}...
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            ))}
+            {item.rowCount > 2 && (
+              <p className="text-[10px] text-gray-400 text-center">+ {item.rowCount - 2} more rows</p>
+            )}
           </div>
           {item.tips && <p className="text-xs text-gray-500 mt-2 italic">{item.tips}</p>}
         </div>
@@ -1263,22 +1303,25 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
       {item.type === "RATING_SCALE" && (
         <div>
           <p className="text-sm text-gray-800">{item.description || "..."}</p>
-          <div className="mt-2 flex items-center gap-1">
-            {item.minLabel && <span className="text-xs text-gray-500 mr-1">{item.minLabel}</span>}
+          <div className="mt-2 flex items-center gap-1 flex-wrap justify-center">
+            {item.minLabel && <span className="text-[10px] text-gray-400 mr-1">{item.minLabel}</span>}
             {Array.from({ length: (item.max ?? 10) - (item.min ?? 1) + 1 }).map((_, i) => (
-              <div key={i} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-xs text-gray-500">
+              <div key={i} className="w-7 h-7 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center text-xs text-gray-500 hover:border-teal-400 transition-colors">
                 {(item.min ?? 1) + i}
               </div>
             ))}
-            {item.maxLabel && <span className="text-xs text-gray-500 ml-1">{item.maxLabel}</span>}
+            {item.maxLabel && <span className="text-[10px] text-gray-400 ml-1">{item.maxLabel}</span>}
           </div>
         </div>
       )}
       {item.type === "TIMER" && (
-        <div>
-          <p className="text-sm text-gray-800">{item.description || "..."}</p>
-          <div className="mt-2 text-center text-lg font-mono text-gray-600">
+        <div className="text-center">
+          <p className="text-sm text-gray-800 mb-2">{item.description || "..."}</p>
+          <div className="text-2xl font-mono text-gray-700 mb-2">
             {formatDuration(item.durationSeconds)}
+          </div>
+          <div className="inline-block rounded-lg bg-teal-600 px-5 py-1.5 text-xs font-semibold text-white">
+            Start
           </div>
         </div>
       )}
@@ -1287,13 +1330,17 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
           {item.description && <p className="text-sm text-gray-800 mb-2">{item.description}</p>}
           <div className="flex gap-2 justify-center">
             {(item.moods || []).map((mood, i) => (
-              <div key={i} className="flex flex-col items-center gap-0.5">
+              <div key={i} className="flex flex-col items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-2.5 py-2 hover:border-teal-400 transition-colors">
                 <span className="text-xl">{mood.emoji}</span>
                 <span className="text-[10px] text-gray-500">{mood.label}</span>
               </div>
             ))}
           </div>
-          {item.includeNote && <p className="text-xs text-gray-400 mt-2 text-center italic">+ optional note</p>}
+          {item.includeNote && (
+            <div className="mt-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-300">
+              Add a note (optional)...
+            </div>
+          )}
         </div>
       )}
       {item.type === "HABIT_TRACKER" && (
@@ -1301,8 +1348,8 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
           <p className="text-sm font-medium text-gray-800">{item.habitLabel || "..."}</p>
           {item.description && <p className="text-xs text-gray-600 mt-1">{item.description}</p>}
           <div className="mt-2 flex gap-2">
-            <div className="rounded-lg border border-gray-300 px-4 py-1.5 text-xs text-gray-500">Yes</div>
-            <div className="rounded-lg border border-gray-300 px-4 py-1.5 text-xs text-gray-500">No</div>
+            <div className="flex-1 rounded-lg border-2 border-gray-200 bg-white py-2 text-center text-xs font-medium text-gray-500 hover:border-teal-400 transition-colors">Yes</div>
+            <div className="flex-1 rounded-lg border-2 border-gray-200 bg-white py-2 text-center text-xs font-medium text-gray-500 hover:border-red-300 transition-colors">No</div>
           </div>
         </div>
       )}

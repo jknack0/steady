@@ -78,7 +78,7 @@ export function FileUpload({
         {label && (
           <p className="text-sm font-medium mb-1.5">{label}</p>
         )}
-        <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+        <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30 min-w-0">
           {isImage(value) ? (
             <img
               src={value}
@@ -90,7 +90,7 @@ export function FileUpload({
           ) : (
             <FileText className="h-8 w-8 text-muted-foreground" />
           )}
-          <span className="text-sm text-muted-foreground truncate flex-1">
+          <span className="text-sm text-muted-foreground truncate flex-1 min-w-0">
             {value.split("/").pop()?.split("?")[0] || "Uploaded file"}
           </span>
           <Button
