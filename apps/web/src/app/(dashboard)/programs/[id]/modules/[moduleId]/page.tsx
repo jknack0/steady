@@ -26,13 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { SaveIndicator } from "@/components/save-indicator";
 import { PartCard, PART_TYPE_CONFIG } from "@/components/part-card";
 import {
@@ -60,47 +53,8 @@ import {
 } from "@dnd-kit/sortable";
 import type { Module } from "@/hooks/use-programs";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
+import { CreatePartModal } from "@/components/create-part-modal";
 
-// Default content for each part type
-const DEFAULT_CONTENT: Record<string, any> = {
-  TEXT: { type: "TEXT", body: "", sections: [] },
-  VIDEO: { type: "VIDEO", url: "", provider: "youtube" },
-  STRATEGY_CARDS: { type: "STRATEGY_CARDS", deckName: "", cards: [] },
-  JOURNAL_PROMPT: { type: "JOURNAL_PROMPT", prompts: [""], spaceSizeHint: "medium" },
-  CHECKLIST: { type: "CHECKLIST", items: [{ text: "", sortOrder: 0 }] },
-  RESOURCE_LINK: { type: "RESOURCE_LINK", url: "", description: "" },
-  DIVIDER: { type: "DIVIDER", label: "" },
-  HOMEWORK: {
-    type: "HOMEWORK",
-    dueTimingType: "BEFORE_NEXT_SESSION",
-    dueTimingValue: null,
-    completionRule: "ALL",
-    completionMinimum: null,
-    reminderCadence: "DAILY",
-    items: [],
-  },
-  ASSESSMENT: { type: "ASSESSMENT", title: "", instructions: "", scoringEnabled: false, questions: [] },
-  INTAKE_FORM: { type: "INTAKE_FORM", title: "", instructions: "", sections: ["General"], fields: [] },
-  SMART_GOALS: { type: "SMART_GOALS", instructions: "", maxGoals: 3, categories: ["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"], goals: [] },
-  STYLED_CONTENT: { type: "STYLED_CONTENT", rawContent: "", styledHtml: "" },
-  PDF: { type: "PDF", fileKey: "", url: "", fileName: "" },
-};
-
-const CREATABLE_TYPES = [
-  "TEXT",
-  "VIDEO",
-  "STRATEGY_CARDS",
-  "JOURNAL_PROMPT",
-  "CHECKLIST",
-  "RESOURCE_LINK",
-  "DIVIDER",
-  "HOMEWORK",
-  "ASSESSMENT",
-  "INTAKE_FORM",
-  "SMART_GOALS",
-  "STYLED_CONTENT",
-  "PDF",
-];
 
 export default function ModuleEditorPage() {
   const params = useParams();
@@ -172,13 +126,12 @@ export default function ModuleEditorPage() {
     }
   };
 
-  const handleAddPart = async (type: string) => {
-    const config = PART_TYPE_CONFIG[type];
+  const handleCreatePart = async (data: { type: string; title: string; isRequired: boolean; content: any }) => {
     await createPart.mutateAsync({
-      type: type as any,
-      title: `New ${config?.label || type}`,
-      isRequired: true,
-      content: DEFAULT_CONTENT[type],
+      type: data.type as any,
+      title: data.title,
+      isRequired: data.isRequired,
+      content: data.content,
     });
   };
 
@@ -432,36 +385,12 @@ export default function ModuleEditorPage() {
       </div>
 
       {/* Add Part Modal */}
-      <Dialog open={addPartOpen} onOpenChange={setAddPartOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Part</DialogTitle>
-            <DialogDescription>
-              Choose a content type to add to this module.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
-            {CREATABLE_TYPES.map((type) => {
-              const config = PART_TYPE_CONFIG[type];
-              if (!config) return null;
-              const Icon = config.icon;
-              return (
-                <button
-                  key={type}
-                  onClick={() => {
-                    handleAddPart(type);
-                    setAddPartOpen(false);
-                  }}
-                  className="flex flex-col items-center gap-2 rounded-lg border p-4 hover:bg-accent hover:border-primary/30 transition-colors text-center"
-                >
-                  <Icon className={`h-6 w-6 ${config.color}`} />
-                  <span className="text-sm font-medium">{config.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CreatePartModal
+        open={addPartOpen}
+        onOpenChange={setAddPartOpen}
+        onCreate={handleCreatePart}
+        isPending={createPart.isPending}
+      />
 
       <PhonePreviewModal
         programId={programId}
