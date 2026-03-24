@@ -34,6 +34,14 @@ export interface PrepareSessionData {
   recentJournal: Array<{ id: string; entryDate: string; regulationScore: number | null; freeformContent: string | null }>;
   lastSession: { notes: string | null; date: string; moduleCompletedId: string | null } | null;
   quickStats: { tasksCompleted: number; tasksTotal: number; journalEntries: number; taskCompletionRate: number };
+  trackerSummaries: Array<{
+    id: string;
+    name: string;
+    fields: Array<{ id: string; label: string; fieldType: string; options: any }>;
+    fieldTrends: Record<string, Array<{ date: string; value: number }>>;
+    recentEntries: Array<{ date: string; responses: Record<string, any> }>;
+    entryCount: number;
+  }>;
 }
 
 export function useSessions(params?: {

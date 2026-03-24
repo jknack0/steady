@@ -568,6 +568,85 @@ export async function getSessionPrepData(sessionId: string) {
     })),
   }));
 
+  // Check-in / Daily Tracker data
+  const participantProfileId = session.enrollment.participant.id;
+  const userId = session.enrollment.participant.user.id;
+  const programIds = [enrollment.programId];
+  const enrollmentIds = [enrollment.id];
+
+  const trackers = await prisma.dailyTracker.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { programId: { in: programIds } },
+        { enrollmentId: { in: enrollmentIds } },
+        { participantId: participantProfileId },
+      ],
+    },
+    include: {
+      fields: { orderBy: { sortOrder: "asc" } },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 10,
+  });
+
+  // Get last 14 days of entries for each tracker
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+  const trackerSummaries = await Promise.all(
+    trackers.map(async (tracker) => {
+      const entries = await prisma.dailyTrackerEntry.findMany({
+        where: {
+          trackerId: tracker.id,
+          userId,
+          date: { gte: twoWeeksAgo },
+        },
+        orderBy: { date: "desc" },
+        take: 14,
+      });
+
+      // Quick trends for scale/number fields
+      const chartableFields = tracker.fields.filter(
+        (f) => f.fieldType === "SCALE" || f.fieldType === "NUMBER"
+      );
+
+      const fieldTrends: Record<string, Array<{ date: string; value: number }>> = {};
+      for (const field of chartableFields) {
+        fieldTrends[field.id] = [];
+      }
+      for (const entry of [...entries].reverse()) {
+        const responses = entry.responses as Record<string, unknown>;
+        for (const field of chartableFields) {
+          const value = responses[field.id];
+          if (typeof value === "number") {
+            fieldTrends[field.id].push({
+              date: entry.date.toISOString().split("T")[0],
+              value,
+            });
+          }
+        }
+      }
+
+      return {
+        id: tracker.id,
+        name: tracker.name,
+        fields: tracker.fields.map((f) => ({
+          id: f.id,
+          label: f.label,
+          fieldType: f.fieldType,
+          options: f.options,
+        })),
+        fieldTrends,
+        recentEntries: entries.slice(0, 3).map((e) => ({
+          date: e.date.toISOString().split("T")[0],
+          responses: e.responses,
+        })),
+        entryCount: entries.length,
+      };
+    })
+  );
+
   return {
     session: {
       id: session.id,
@@ -575,7 +654,7 @@ export async function getSessionPrepData(sessionId: string) {
       status: session.status,
     },
     participant: {
-      id: session.enrollment.participant.user.id,
+      id: userId,
       name: `${session.enrollment.participant.user.firstName} ${session.enrollment.participant.user.lastName}`.trim(),
     },
     program: { title: enrollment.program.title },
@@ -601,5 +680,6 @@ export async function getSessionPrepData(sessionId: string) {
       journalEntries: journalCount,
       taskCompletionRate: taskCount > 0 ? Math.round((completedTaskCount / taskCount) * 100) : 0,
     },
+    trackerSummaries,
   };
 }

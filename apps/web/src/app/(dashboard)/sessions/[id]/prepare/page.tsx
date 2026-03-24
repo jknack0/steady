@@ -27,7 +27,18 @@ import {
   Plus,
   Trash2,
   Send,
+  Activity,
+  Flame,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import Link from "next/link";
 
 export default function PrepareSessionPage() {
@@ -252,6 +263,106 @@ export default function PrepareSessionPage() {
           </div>
         </div>
       </div>
+
+      {/* Check-in Summary */}
+      {data.trackerSummaries && data.trackerSummaries.length > 0 && (
+        <div className="rounded-lg border p-5 mt-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Check-in Data (Last 2 Weeks)
+          </h3>
+          <div className="space-y-5">
+            {data.trackerSummaries.map((tracker) => (
+              <div key={tracker.id}>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium">{tracker.name}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {tracker.entryCount} entries
+                  </Badge>
+                </div>
+
+                {/* Mini trend charts for scale/number fields */}
+                {tracker.fields
+                  .filter((f) => (f.fieldType === "SCALE" || f.fieldType === "NUMBER") && (tracker.fieldTrends[f.id]?.length ?? 0) >= 2)
+                  .map((field, i) => {
+                    const trendData = tracker.fieldTrends[field.id] || [];
+                    const opts = field.options as any;
+                    const min = opts?.min ?? 0;
+                    const max = opts?.max ?? Math.max(...trendData.map((d) => d.value), 10);
+                    const latest = trendData[trendData.length - 1]?.value;
+                    const prev = trendData.length >= 2 ? trendData[trendData.length - 2]?.value : null;
+                    const delta = prev != null && latest != null ? latest - prev : null;
+                    const colors = ["#5B8A8A", "#E8783A", "#8FAE8B", "#D4A0A0", "#89B4C8"];
+
+                    return (
+                      <div key={field.id} className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">{field.label}</span>
+                          <div className="flex items-center gap-1.5">
+                            {latest != null && (
+                              <span className="text-xs font-semibold">{latest}{opts?.max ? `/${max}` : ""}</span>
+                            )}
+                            {delta != null && delta !== 0 && (
+                              <span className={cn("text-[10px] font-medium", delta > 0 ? "text-green-600" : "text-red-500")}>
+                                {delta > 0 ? "+" : ""}{delta}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <ResponsiveContainer width="100%" height={80}>
+                          <LineChart data={trendData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#F0EDE8" vertical={false} />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 9, fill: "#8A8A8A" }}
+                              tickFormatter={(d) => { const dt = new Date(d + "T00:00:00"); return `${dt.getMonth() + 1}/${dt.getDate()}`; }}
+                              interval="preserveStartEnd"
+                            />
+                            <YAxis domain={[min, max]} hide />
+                            <Tooltip
+                              labelFormatter={(d) => new Date(d + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                              formatter={(v: any) => [v, field.label]}
+                              contentStyle={{ fontSize: 11, borderRadius: 6, border: "1px solid #F0EDE8" }}
+                            />
+                            <Line type="monotone" dataKey="value" stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 2 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    );
+                  })}
+
+                {/* Recent entries summary for non-chartable fields */}
+                {tracker.recentEntries.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+                    {tracker.recentEntries.map((entry, ei) => (
+                      <div key={ei} className="rounded-md border p-2 text-xs">
+                        <span className="text-[10px] font-semibold text-muted-foreground block mb-1">
+                          {new Date(entry.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                        {tracker.fields.map((field) => {
+                          const val = entry.responses[field.id];
+                          if (val === undefined || val === null) return null;
+                          if (field.fieldType === "SCALE" || field.fieldType === "NUMBER") return null; // shown in chart
+                          return (
+                            <div key={field.id} className="flex items-center justify-between py-0.5">
+                              <span className="text-muted-foreground">{field.label}</span>
+                              <span className="font-medium">
+                                {field.fieldType === "YES_NO" ? (val ? "Yes" : "No") :
+                                 Array.isArray(val) ? val.join(", ") :
+                                 typeof val === "string" && val.length > 30 ? val.slice(0, 30) + "..." :
+                                 String(val)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Homework Status */}
       <div className="rounded-lg border p-5 mt-6">
