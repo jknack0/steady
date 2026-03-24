@@ -122,6 +122,87 @@ router.post("/style-content", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/ai/generate-tracker — Generate daily tracker fields from description
+router.post("/generate-tracker", async (req: Request, res: Response) => {
+  try {
+    const { description } = req.body;
+
+    if (!description || typeof description !== "string" || description.trim().length === 0) {
+      res.status(400).json({ success: false, error: "description is required" });
+      return;
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ success: false, error: "AI service not configured" });
+      return;
+    }
+
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
+      system: `You are a clinical tracker designer for Steady, a healthcare app for ADHD treatment. Generate daily tracker configurations from clinician descriptions.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "name": "<short tracker name, max 60 chars>",
+  "description": "<1-2 sentence description for the participant>",
+  "fields": [
+    {
+      "label": "<field label>",
+      "fieldType": "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME",
+      "options": <null for YES_NO/FREE_TEXT/TIME/NUMBER, or {"min": N, "max": N, "minLabel": "...", "maxLabel": "..."} for SCALE, or {"choices": ["..."]} for MULTI_CHECK>,
+      "sortOrder": <0-based index>,
+      "isRequired": true
+    }
+  ]
+}
+
+Field type guidelines:
+- SCALE: Rating scales (mood 1-10, pain 1-10, energy 1-5). Always include min, max, minLabel, maxLabel.
+- NUMBER: Numeric values (hours slept, steps walked, glasses of water).
+- YES_NO: Binary questions (took medication? exercised today?).
+- MULTI_CHECK: Multiple-selection checkboxes (which symptoms today?, which coping skills used?).
+- FREE_TEXT: Open text (notes, reflections, triggers).
+- TIME: Time values (bedtime, wake time, medication time).
+
+Design guidelines:
+- Keep trackers focused: 4-8 fields max.
+- Start with the most important metric.
+- Use SCALE for subjective ratings, NUMBER for countable things.
+- Include at least one FREE_TEXT for notes/reflections when appropriate.
+- Use clinical best practices for the condition described.
+- Write labels in plain, patient-friendly language.`,
+      messages: [
+        {
+          role: "user",
+          content: `Design a daily tracker for: ${description}`,
+        },
+      ],
+    });
+
+    const textBlock = message.content.find((block) => block.type === "text");
+    let rawJson = textBlock?.text || "";
+    rawJson = rawJson.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+
+    let result: any;
+    try {
+      result = JSON.parse(rawJson);
+    } catch {
+      logger.error("AI generate-tracker returned invalid JSON", new Error(rawJson.slice(0, 200)));
+      res.status(500).json({ success: false, error: "AI returned invalid content. Try again." });
+      return;
+    }
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    logger.error("AI generate-tracker error", err);
+    res.status(500).json({ success: false, error: "Failed to generate tracker" });
+  }
+});
+
 // POST /api/ai/generate-part — Generate structured part content from raw text
 router.post("/generate-part", async (req: Request, res: Response) => {
   try {

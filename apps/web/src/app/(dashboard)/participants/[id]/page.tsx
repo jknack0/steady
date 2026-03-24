@@ -57,6 +57,7 @@ import {
   Search,
   X,
   Plus,
+  Sparkles,
 } from "lucide-react";
 
 type Tab = "overview" | "trackers" | "rtm";
@@ -1286,9 +1287,19 @@ interface TemplateData {
   fields: Array<{ label: string; fieldType: string }>;
 }
 
+type TrackerDialogMode = "pick" | "ai" | "review";
+
+const FIELD_TYPE_LABELS: Record<string, string> = {
+  SCALE: "Scale", NUMBER: "Number", YES_NO: "Yes/No",
+  MULTI_CHECK: "Multi-Check", FREE_TEXT: "Free Text", TIME: "Time",
+};
+
 function TrackersTab({ participantProfileId, participantUserId }: { participantProfileId: string; participantUserId: string }) {
   const queryClient = useQueryClient();
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<TrackerDialogMode>("pick");
+  const [aiInput, setAiInput] = useState("");
+  const [generated, setGenerated] = useState<{ name: string; description: string; fields: any[] } | null>(null);
 
   const { data: trackers, isLoading } = useQuery<TrackerData[]>({
     queryKey: ["participant-trackers", participantProfileId],
@@ -1298,18 +1309,33 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
   const { data: templates } = useQuery<TemplateData[]>({
     queryKey: ["tracker-templates"],
     queryFn: () => api.get("/api/daily-trackers/templates"),
-    enabled: showTemplates,
+    enabled: dialogOpen,
   });
 
   const createFromTemplate = useMutation({
     mutationFn: (templateKey: string) =>
-      api.post("/api/daily-trackers/from-template", {
-        templateKey,
-        participantId: participantProfileId,
-      }),
+      api.post("/api/daily-trackers/from-template", { templateKey, participantId: participantProfileId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
-      setShowTemplates(false);
+      closeDialog();
+    },
+  });
+
+  const createCustom = useMutation({
+    mutationFn: (data: { name: string; description: string; fields: any[] }) =>
+      api.post("/api/daily-trackers", { ...data, participantId: participantProfileId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
+      closeDialog();
+    },
+  });
+
+  const generateTracker = useMutation({
+    mutationFn: (description: string) =>
+      api.post<{ name: string; description: string; fields: any[] }>("/api/ai/generate-tracker", { description }),
+    onSuccess: (data) => {
+      setGenerated(data);
+      setDialogMode("review");
     },
   });
 
@@ -1328,6 +1354,16 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     },
   });
 
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setTimeout(() => {
+      setDialogMode("pick");
+      setAiInput("");
+      setGenerated(null);
+      generateTracker.reset();
+    }, 200);
+  };
+
   if (isLoading) return <LoadingState />;
 
   return (
@@ -1339,7 +1375,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
             Assign daily trackers for this client to complete in the app.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowTemplates(true)}>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Tracker
         </Button>
@@ -1349,10 +1385,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         <div className="rounded-lg border border-dashed py-12 text-center">
           <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">No trackers assigned yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            Add a tracker from a template to get started
-          </p>
-          <Button size="sm" variant="outline" className="mt-4" onClick={() => setShowTemplates(true)}>
+          <Button size="sm" variant="outline" className="mt-4" onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Tracker
           </Button>
@@ -1362,10 +1395,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
           {trackers.map((tracker) => (
             <div
               key={tracker.id}
-              className={cn(
-                "rounded-lg border p-4 transition-colors",
-                !tracker.isActive && "opacity-60"
-              )}
+              className={cn("rounded-lg border p-4 transition-colors", !tracker.isActive && "opacity-60")}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -1386,22 +1416,13 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleActive.mutate({ id: tracker.id, isActive: !tracker.isActive })}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => toggleActive.mutate({ id: tracker.id, isActive: !tracker.isActive })}>
                     {tracker.isActive ? "Pause" : "Resume"}
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="ghost" size="sm"
                     className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm("Delete this tracker? All entries will be lost.")) {
-                        deleteTracker.mutate(tracker.id);
-                      }
-                    }}
+                    onClick={() => { if (confirm("Delete this tracker? All entries will be lost.")) deleteTracker.mutate(tracker.id); }}
                   >
                     Delete
                   </Button>
@@ -1412,43 +1433,157 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         </div>
       )}
 
-      {/* Template picker dialog */}
-      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Daily Tracker</DialogTitle>
-            <DialogDescription>
-              Choose a tracker template to assign to this client.
-            </DialogDescription>
+      {/* Add Tracker Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={closeDialog}>
+        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
+            <DialogTitle>
+              {dialogMode === "review" ? "Review Tracker" : "Add Daily Tracker"}
+            </DialogTitle>
+            {dialogMode === "pick" && (
+              <DialogDescription>
+                Generate with AI, pick a template, or build from scratch.
+              </DialogDescription>
+            )}
           </DialogHeader>
-          <div className="space-y-2 py-2 max-h-[60vh] overflow-y-auto">
-            {templates?.map((template) => (
-              <button
-                key={template.key}
-                onClick={() => createFromTemplate.mutate(template.key)}
-                disabled={createFromTemplate.isPending}
-                className="w-full text-left rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all"
-              >
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-teal shrink-0" />
-                  <span className="text-sm font-semibold">{template.name}</span>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {dialogMode === "pick" && (
+              <div className="space-y-4">
+                {/* AI Generate */}
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    <h4 className="text-sm font-semibold">Generate with AI</h4>
+                  </div>
+                  <textarea
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    placeholder="e.g., Track ADHD medication side effects — monitor sleep quality, appetite, mood, focus level, and any headaches or stomach issues"
+                    className="w-full rounded-md border bg-background p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px] resize-y"
+                  />
+                  <Button
+                    onClick={() => generateTracker.mutate(aiInput.trim())}
+                    disabled={generateTracker.isPending || !aiInput.trim()}
+                    className="w-full"
+                    size="sm"
+                  >
+                    {generateTracker.isPending ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>
+                    ) : (
+                      <><Sparkles className="mr-2 h-4 w-4" />Generate Tracker</>
+                    )}
+                  </Button>
+                  {generateTracker.isError && (
+                    <p className="text-xs text-destructive">Failed to generate. Try again.</p>
+                  )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 ml-6">{template.description}</p>
-                <div className="flex flex-wrap gap-1 mt-2 ml-6">
-                  {template.fields.map((f, i) => (
-                    <Badge key={i} variant="secondary" className="text-[10px]">
-                      {f.label}
-                    </Badge>
+
+                {/* Separator */}
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground">or pick a template</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+
+                {/* Templates */}
+                <div className="space-y-2">
+                  {templates?.map((template) => (
+                    <button
+                      key={template.key}
+                      onClick={() => createFromTemplate.mutate(template.key)}
+                      disabled={createFromTemplate.isPending}
+                      className="w-full text-left rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-teal shrink-0" />
+                        <span className="text-sm font-semibold">{template.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 ml-6">{template.description}</p>
+                      <div className="flex flex-wrap gap-1 mt-2 ml-6">
+                        {template.fields.map((f, i) => (
+                          <Badge key={i} variant="secondary" className="text-[10px]">
+                            {f.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </button>
                   ))}
+                  {!templates && (
+                    <div className="py-4 text-center">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
-              </button>
-            ))}
-            {!templates && (
-              <div className="py-8 text-center">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+              </div>
+            )}
+
+            {dialogMode === "review" && generated && (
+              <div className="space-y-4">
+                {/* Editable name */}
+                <div className="space-y-1.5">
+                  <Label>Tracker Name</Label>
+                  <Input
+                    value={generated.name}
+                    onChange={(e) => setGenerated({ ...generated, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Description</Label>
+                  <Input
+                    value={generated.description}
+                    onChange={(e) => setGenerated({ ...generated, description: e.target.value })}
+                  />
+                </div>
+
+                {/* Fields preview */}
+                <div className="space-y-1.5">
+                  <Label>Fields ({generated.fields.length})</Label>
+                  <div className="space-y-2">
+                    {generated.fields.map((field, i) => (
+                      <div key={i} className="flex items-center gap-3 rounded-md border p-3">
+                        <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{field.label}</p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          {FIELD_TYPE_LABELS[field.fieldType] || field.fieldType}
+                        </Badge>
+                        <button
+                          onClick={() => setGenerated({
+                            ...generated,
+                            fields: generated.fields.filter((_, j) => j !== i),
+                          })}
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
+
+          {/* Footer */}
+          {dialogMode === "review" && generated && (
+            <div className="flex items-center justify-between border-t px-6 py-4 shrink-0">
+              <Button variant="ghost" size="sm" onClick={() => setDialogMode("pick")}>
+                Back
+              </Button>
+              <Button
+                onClick={() => createCustom.mutate(generated)}
+                disabled={createCustom.isPending || !generated.name.trim() || generated.fields.length === 0}
+              >
+                {createCustom.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+                ) : (
+                  "Create Tracker"
+                )}
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
