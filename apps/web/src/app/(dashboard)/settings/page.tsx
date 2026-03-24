@@ -321,7 +321,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="trackerPreset">Default Daily Pulse Preset</Label>
+              <Label htmlFor="trackerPreset">Default Check-in Preset</Label>
               <Select
                 value={defaultTrackerPreset}
                 onValueChange={setDefaultTrackerPreset}

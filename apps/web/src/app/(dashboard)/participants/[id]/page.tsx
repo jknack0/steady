@@ -101,7 +101,7 @@ export default function ParticipantDetailPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
         {(["overview", "trackers", "rtm"] as const).map((t) => {
-          const labels: Record<Tab, string> = { overview: "Overview", trackers: "Daily Pulse", rtm: "RTM" };
+          const labels: Record<Tab, string> = { overview: "Overview", trackers: "Check-in", rtm: "RTM" };
           return (
             <button
               key={t}
@@ -1494,24 +1494,24 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Daily Pulse</h3>
+          <h3 className="text-lg font-semibold">Check-in</h3>
           <p className="text-sm text-muted-foreground">
-            Assign daily pulse trackers for this client to complete in the app.
+            Assign check-in trackers for this client to complete in the app.
           </p>
         </div>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Tracker
+          Add Check-in
         </Button>
       </div>
 
       {(!trackers || trackers.length === 0) ? (
         <div className="rounded-lg border border-dashed py-12 text-center">
           <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No trackers assigned yet</p>
+          <p className="text-sm text-muted-foreground">No check-ins assigned yet</p>
           <Button size="sm" variant="outline" className="mt-4" onClick={() => setDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Tracker
+            Add Check-in
           </Button>
         </div>
       ) : (
@@ -1557,12 +1557,12 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         </div>
       )}
 
-      {/* Add Tracker Dialog */}
+      {/* Add Check-in Dialog */}
       <Dialog open={dialogOpen} onOpenChange={closeDialog}>
         <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
             <DialogTitle>
-              {dialogMode === "review" ? "Review Pulse Tracker" : "Add Daily Pulse"}
+              {dialogMode === "review" ? "Review Check-in" : "Add Check-in"}
             </DialogTitle>
             {dialogMode === "pick" && (
               <DialogDescription>
