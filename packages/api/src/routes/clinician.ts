@@ -1,5 +1,6 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
+import { prisma } from "@steady/db";
 import { z } from "zod";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
@@ -108,6 +109,39 @@ router.get("/participants/:id", async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ success: false, error: "Failed to get participant details" });
+  }
+});
+
+// GET /api/clinician/participants/:id/homework — Get homework instances with responses
+router.get("/participants/:id/homework", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+
+    // Verify this participant belongs to the clinician
+    const detail = await getParticipantDetail(clinicianProfileId, id);
+    if (!detail || "notFound" in detail) {
+      res.status(404).json({ success: false, error: "Participant not found" });
+      return;
+    }
+
+    const enrollmentIds = detail.enrollments.map((e: any) => e.id);
+
+    const instances = await prisma.homeworkInstance.findMany({
+      where: { enrollmentId: { in: enrollmentIds } },
+      include: {
+        part: {
+          select: { id: true, title: true, content: true, moduleId: true },
+        },
+      },
+      orderBy: { dueDate: "desc" },
+      take: 100,
+    });
+
+    res.json({ success: true, data: instances });
+  } catch (err) {
+    logger.error("Get participant homework error", err);
+    res.status(500).json({ success: false, error: "Failed to get homework data" });
   }
 });
 

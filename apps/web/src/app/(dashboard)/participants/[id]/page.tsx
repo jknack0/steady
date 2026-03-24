@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { TrackerDataView } from "@/components/tracker-data-view";
+import { HomeworkResponseViewer } from "@/components/homework-response-viewer";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
 import {
@@ -59,6 +60,7 @@ import {
   X,
   Plus,
   Sparkles,
+  ChevronRight,
 } from "lucide-react";
 
 type Tab = "overview" | "trackers" | "rtm";
@@ -140,6 +142,7 @@ function OverviewTab({
   data: ParticipantDetail;
   participantId: string;
 }) {
+  const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const enrollment = data.enrollments[0];
   if (!enrollment) {
     return <p className="text-muted-foreground">No active enrollment found.</p>;
@@ -162,6 +165,7 @@ function OverviewTab({
         <HomeworkDetail
           homeworkProgress={enrollment.homeworkProgress}
           currentModuleId={enrollment.currentModuleId}
+          onViewResponses={() => setHwViewerOpen(true)}
         />
 
         {/* Session History */}
@@ -188,6 +192,13 @@ function OverviewTab({
         {/* Shared Journal Entries */}
         <SharedJournal entries={data.journalEntries} />
       </div>
+
+      {/* Homework Response Viewer */}
+      <HomeworkResponseViewer
+        participantId={participantId}
+        open={hwViewerOpen}
+        onOpenChange={setHwViewerOpen}
+      />
     </div>
   );
 }
@@ -324,9 +335,11 @@ function ModuleTimeline({
 function HomeworkDetail({
   homeworkProgress,
   currentModuleId,
+  onViewResponses,
 }: {
   homeworkProgress: ParticipantDetail["enrollments"][0]["homeworkProgress"];
   currentModuleId: string | null;
+  onViewResponses?: () => void;
 }) {
   const currentModuleHomework = currentModuleId
     ? homeworkProgress.filter((h) => h.moduleId === currentModuleId)
@@ -347,9 +360,17 @@ function HomeworkDetail({
 
   return (
     <div className="rounded-lg border p-5">
-      <h3 className="font-semibold mb-4 flex items-center gap-2">
-        <BookOpen className="h-4 w-4" /> Homework (Current Module)
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold flex items-center gap-2">
+          <BookOpen className="h-4 w-4" /> Homework (Current Module)
+        </h3>
+        {onViewResponses && (
+          <Button variant="ghost" size="sm" onClick={onViewResponses} className="text-xs">
+            View All Responses
+            <ChevronRight className="h-3 w-3 ml-1" />
+          </Button>
+        )}
+      </div>
       <div className="space-y-2">
         {currentModuleHomework.map((hw) => (
           <div
