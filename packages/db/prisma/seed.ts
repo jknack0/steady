@@ -233,11 +233,12 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "Welcome to Steady with ADHD",
         content: {
-          type: "TEXT",
-          body: "Welcome to the Steady with ADHD program! This program is designed specifically for adults living with ADHD who want to build sustainable strategies for managing their symptoms and thriving in daily life.\n\nOver the next 8 weeks, you'll work through modules covering focus, emotional regulation, time management, productivity, and more. Each module includes educational content, practical strategies, and homework to help you apply what you learn.\n\nHere's what you can expect:\n\n• **Weekly modules** with bite-sized content you can complete at your own pace\n• **Strategy cards** with practical techniques you can use right away\n• **Journal prompts** to reflect on your progress\n• **Homework assignments** to practice new skills\n• **Regular check-ins** with your clinician\n\nTake your time with each module — there's no rush. The goal is sustainable change, not perfection.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Welcome to the Steady with ADHD program! This program is designed specifically for adults living with ADHD who want to build sustainable strategies for managing their symptoms and thriving in daily life.</p><p style="margin-bottom: 12px; line-height: 1.6;">Over the next 8 weeks, you'll work through modules covering focus, emotional regulation, time management, productivity, and more. Each module includes educational content, practical strategies, and homework to help you apply what you learn.</p><p style="margin-bottom: 12px; line-height: 1.6;">Here's what you can expect:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Weekly modules</strong> with bite-sized content you can complete at your own pace</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Strategy cards</strong> with practical techniques you can use right away</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Journal prompts</strong> to reflect on your progress</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Homework assignments</strong> to practice new skills</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Regular check-ins</strong> with your clinician</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">Take your time with each module — there's no rush. The goal is sustainable change, not perfection.</p>`,
         },
       },
       {
@@ -307,11 +308,15 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "How the ADHD Brain Works",
         content: {
-          type: "TEXT",
-          body: "ADHD is fundamentally a difference in how the brain regulates attention, motivation, and executive function. Understanding this is the foundation for everything else in this program.\n\n**The Dopamine Connection**\nThe ADHD brain has differences in dopamine regulation — the neurotransmitter responsible for motivation, reward, and focus. This isn't a character flaw; it's neurobiology. When a task doesn't provide enough stimulation, the ADHD brain struggles to engage — not because you're lazy, but because the neurochemical reward system works differently.\n\n**Executive Function Challenges**\nExecutive functions are the brain's management system. They include:\n• **Working memory** — holding information in mind while using it\n• **Cognitive flexibility** — shifting between tasks or perspectives\n• **Inhibitory control** — stopping impulses and filtering distractions\n• **Planning & organization** — breaking goals into steps\n• **Time perception** — estimating and tracking time\n\nWith ADHD, these functions are inconsistent — not absent. You might excel at planning a vacation but struggle to plan your workday. This inconsistency is a hallmark of ADHD.\n\n**Interest-Based Nervous System**\nDr. William Dodson describes the ADHD motivation system as \"interest-based\" rather than \"importance-based.\" You're motivated by:\n• **Novelty** — new and stimulating things\n• **Challenge** — competitive or urgent situations\n• **Interest** — things that genuinely fascinate you\n• **Urgency** — deadlines and time pressure\n\nUnderstanding this helps explain why you can hyperfocus on a hobby for 6 hours but can't start a 15-minute work task.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">ADHD is fundamentally a difference in how the brain regulates attention, motivation, and executive function. Understanding this is the foundation for everything else in this program.</p><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The Dopamine Connection</strong>
+The ADHD brain has differences in dopamine regulation — the neurotransmitter responsible for motivation, reward, and focus. This isn't a character flaw; it's neurobiology. When a task doesn't provide enough stimulation, the ADHD brain struggles to engage — not because you're lazy, but because the neurochemical reward system works differently.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Executive Function Challenges</strong>
+Executive functions are the brain's management system. They include:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Working memory</strong> — holding information in mind while using it</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Cognitive flexibility</strong> — shifting between tasks or perspectives</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Inhibitory control</strong> — stopping impulses and filtering distractions</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Planning & organization</strong> — breaking goals into steps</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Time perception</strong> — estimating and tracking time</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">With ADHD, these functions are inconsistent — not absent. You might excel at planning a vacation but struggle to plan your workday. This inconsistency is a hallmark of ADHD.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Interest-Based Nervous System</strong>
+Dr. William Dodson describes the ADHD motivation system as "interest-based" rather than "importance-based." You're motivated by:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Novelty</strong> — new and stimulating things</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Challenge</strong> — competitive or urgent situations</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Interest</strong> — things that genuinely fascinate you</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Urgency</strong> — deadlines and time pressure</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">Understanding this helps explain why you can hyperfocus on a hobby for 6 hours but can't start a 15-minute work task.</p>`,
         },
       },
       {
@@ -374,11 +379,14 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "Working With Your Attention",
         content: {
-          type: "TEXT",
-          body: "Attention in ADHD isn't broken — it's dysregulated. You have plenty of attention; the challenge is directing it intentionally. This module gives you concrete strategies to work with your brain's natural patterns.\n\n**The Attention Spectrum**\nADHD attention isn't binary (focused vs. unfocused). It exists on a spectrum:\n• **Hyperfocus** — deep, consuming engagement (hard to stop)\n• **Flow state** — engaged, productive, time flies\n• **Normal attention** — adequate focus with some drift\n• **Scattered attention** — jumping between things, restless\n• **Attention shutdown** — unable to engage at all, foggy\n\nYour goal isn't to be in hyperfocus all the time — it's to spend more time in the flow-to-normal range and have tools for when you're scattered.\n\n**Your Peak Performance Windows**\nUsing last week's energy tracking data, you likely noticed patterns. Most people with ADHD have 2-3 hours of peak cognitive performance per day. The key insight: **protect those hours ruthlessly** for your most important work.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Attention in ADHD isn't broken — it's dysregulated. You have plenty of attention; the challenge is directing it intentionally. This module gives you concrete strategies to work with your brain's natural patterns.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The Attention Spectrum</strong>
+ADHD attention isn't binary (focused vs. unfocused). It exists on a spectrum:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Hyperfocus</strong> — deep, consuming engagement (hard to stop)</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Flow state</strong> — engaged, productive, time flies</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Normal attention</strong> — adequate focus with some drift</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Scattered attention</strong> — jumping between things, restless</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Attention shutdown</strong> — unable to engage at all, foggy</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">Your goal isn't to be in hyperfocus all the time — it's to spend more time in the flow-to-normal range and have tools for when you're scattered.</p><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Your Peak Performance Windows</strong>
+Using last week's energy tracking data, you likely noticed patterns. Most people with ADHD have 2-3 hours of peak cognitive performance per day. The key insight: <strong style="color: var(--steady-teal);">protect those hours ruthlessly</strong> for your most important work.</p>`,
         },
       },
       {
@@ -448,11 +456,20 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "The Emotional Side of ADHD",
         content: {
-          type: "TEXT",
-          body: "Emotional dysregulation is one of the most impactful — and least talked about — aspects of ADHD. Research shows that up to 70% of adults with ADHD experience significant emotional regulation challenges.\n\n**Why Emotions Hit Harder with ADHD**\nThe same executive function differences that affect attention also affect emotional processing:\n• **Intensity** — Emotions are felt more strongly and rapidly\n• **Impulsivity** — Less time between feeling and reacting\n• **Rumination** — Difficulty letting go of negative emotions\n• **Rejection Sensitive Dysphoria (RSD)** — Extreme emotional pain from perceived rejection or criticism\n\n**The Emotional Flooding Cycle**\n1. A trigger occurs (criticism, failure, perceived rejection)\n2. Emotion hits at full intensity within seconds\n3. Executive function goes offline — can't think clearly\n4. Reactive behavior (snapping, withdrawing, spiraling)\n5. Shame and self-criticism follow\n6. The cycle reinforces itself\n\n**Breaking the Cycle**\nThe goal isn't to stop feeling emotions — it's to create a gap between the feeling and your response. Even a 10-second pause can be transformative.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Emotional dysregulation is one of the most impactful — and least talked about — aspects of ADHD. Research shows that up to 70% of adults with ADHD experience significant emotional regulation challenges.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Why Emotions Hit Harder with ADHD</strong>
+The same executive function differences that affect attention also affect emotional processing:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Intensity</strong> — Emotions are felt more strongly and rapidly</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Impulsivity</strong> — Less time between feeling and reacting</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Rumination</strong> — Difficulty letting go of negative emotions</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Rejection Sensitive Dysphoria (RSD)</strong> — Extreme emotional pain from perceived rejection or criticism</li></ul><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The Emotional Flooding Cycle</strong>
+1. A trigger occurs (criticism, failure, perceived rejection)
+2. Emotion hits at full intensity within seconds
+3. Executive function goes offline — can't think clearly
+4. Reactive behavior (snapping, withdrawing, spiraling)
+5. Shame and self-criticism follow
+6. The cycle reinforces itself</p><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Breaking the Cycle</strong>
+The goal isn't to stop feeling emotions — it's to create a gap between the feeling and your response. Even a 10-second pause can be transformative.</p>`,
         },
       },
       {
@@ -513,11 +530,15 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "ADHD & Time Blindness",
         content: {
-          type: "TEXT",
-          body: "Time blindness is one of ADHD's most disruptive symptoms. It's not that you don't care about being on time — it's that your brain processes time differently.\n\n**What Time Blindness Looks Like**\n• Consistently underestimating how long things take\n• Losing track of time during engaging activities\n• The 'just one more thing' trap before leaving\n• Difficulty sensing the passage of time without external cues\n• Living in 'now' and 'not now' — no in-between\n\n**The ADHD Time Horizon**\nNeurotypical brains can hold the future in mind while acting in the present. The ADHD brain lives primarily in the present moment. This makes long-term planning feel abstract and deadlines feel unreal until they're imminent.\n\n**Making Time Visible**\nThe key strategy for time blindness is making time *visible and external*:\n• Analog clocks (you can see time moving)\n• Visual timers (Time Timer, hourglass)\n• Calendar blocking (time has a physical space)\n• Transition alarms (not just one — a sequence)\n\n**The Planning Paradox**\nPeople with ADHD often avoid planning because rigid plans feel suffocating and inevitably fail. The solution isn't more planning — it's *flexible structure*. Think guardrails, not train tracks.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Time blindness is one of ADHD's most disruptive symptoms. It's not that you don't care about being on time — it's that your brain processes time differently.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">What Time Blindness Looks Like</strong></p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Consistently underestimating how long things take</li><li style="margin-bottom: 6px;">Losing track of time during engaging activities</li><li style="margin-bottom: 6px;">The 'just one more thing' trap before leaving</li><li style="margin-bottom: 6px;">Difficulty sensing the passage of time without external cues</li><li style="margin-bottom: 6px;">Living in 'now' and 'not now' — no in-between</li></ul><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The ADHD Time Horizon</strong>
+Neurotypical brains can hold the future in mind while acting in the present. The ADHD brain lives primarily in the present moment. This makes long-term planning feel abstract and deadlines feel unreal until they're imminent.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Making Time Visible</strong>
+The key strategy for time blindness is making time *visible and external*:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Analog clocks (you can see time moving)</li><li style="margin-bottom: 6px;">Visual timers (Time Timer, hourglass)</li><li style="margin-bottom: 6px;">Calendar blocking (time has a physical space)</li><li style="margin-bottom: 6px;">Transition alarms (not just one — a sequence)</li></ul><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The Planning Paradox</strong>
+People with ADHD often avoid planning because rigid plans feel suffocating and inevitably fail. The solution isn't more planning — it's *flexible structure*. Think guardrails, not train tracks.</p>`,
         },
       },
       {
@@ -582,11 +603,17 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "ADHD-Friendly Routines",
         content: {
-          type: "TEXT",
-          body: "Routines are the scaffolding that holds daily life together — and they're especially important for ADHD brains that struggle with executive function. But here's the catch: traditional habit advice often fails for ADHD.\n\n**Why Standard Habit Advice Fails**\n• \"Just do it every day at the same time\" — requires consistent time perception and self-initiation\n• \"It takes 21 days to form a habit\" — ADHD brains may need 60-90 days, and the habit can still break\n• \"Use willpower\" — ADHD is literally an executive function deficit; willpower is executive function\n• \"Start with one small habit\" — ADHD brains often need a cluster of habits that form a chain\n\n**The ADHD Routine Principles**\n1. **Chain, don't isolate** — Link habits in a sequence so each one triggers the next\n2. **Externalize the cue** — Use alarms, visual reminders, and physical placement instead of relying on memory\n3. **Reduce decisions** — The fewer choices in your routine, the better (lay out clothes, prep coffee, pre-plan meals)\n4. **Allow imperfection** — A 70% routine done consistently beats a 100% routine abandoned after a week\n5. **Build in dopamine** — Pair boring routine steps with something enjoyable (podcast while making lunch, music while cleaning up)",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Routines are the scaffolding that holds daily life together — and they're especially important for ADHD brains that struggle with executive function. But here's the catch: traditional habit advice often fails for ADHD.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Why Standard Habit Advice Fails</strong></p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">"Just do it every day at the same time" — requires consistent time perception and self-initiation</li><li style="margin-bottom: 6px;">"It takes 21 days to form a habit" — ADHD brains may need 60-90 days, and the habit can still break</li><li style="margin-bottom: 6px;">"Use willpower" — ADHD is literally an executive function deficit; willpower is executive function</li><li style="margin-bottom: 6px;">"Start with one small habit" — ADHD brains often need a cluster of habits that form a chain</li></ul><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The ADHD Routine Principles</strong>
+1. <strong style="color: var(--steady-teal);">Chain, don't isolate</strong> — Link habits in a sequence so each one triggers the next
+2. <strong style="color: var(--steady-teal);">Externalize the cue</strong> — Use alarms, visual reminders, and physical placement instead of relying on memory
+3. <strong style="color: var(--steady-teal);">Reduce decisions</strong> — The fewer choices in your routine, the better (lay out clothes, prep coffee, pre-plan meals)
+4. <strong style="color: var(--steady-teal);">Allow imperfection</strong> — A 70% routine done consistently beats a 100% routine abandoned after a week
+5. <strong style="color: var(--steady-teal);">Build in dopamine</strong> — Pair boring routine steps with something enjoyable (podcast while making lunch, music while cleaning up)</p>`,
         },
       },
       {
@@ -652,11 +679,18 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "The ADHD Productivity Paradox",
         content: {
-          type: "TEXT",
-          body: "Adults with ADHD are often incredibly productive — in bursts. The challenge isn't a lack of capability; it's *sustaining* output and managing the space between bursts.\n\n**Common ADHD Productivity Traps**\n• **The Perfectionism Trap** — Can't start because it won't be perfect\n• **The Overwhelm Spiral** — So much to do that you do nothing\n• **The Shiny Object Problem** — Starting many projects, finishing few\n• **The All-or-Nothing Pattern** — Hyperfocused sprint → burnout → avoidance → guilt → repeat\n\n**The ADHD Task Management System**\nForget complex apps with tags, contexts, and due dates on everything. ADHD-friendly task management is:\n1. **Visible** — If it's out of sight, it's gone. Use physical whiteboards, sticky notes, or a single-page dashboard.\n2. **Simple** — One list, one place. Not 5 apps syncing across devices.\n3. **Forgiving** — Uncompleted tasks roll forward without judgment.\n4. **Dopamine-aware** — Mix hard and easy tasks. Start with a quick win to build momentum.\n5. **Time-anchored** — Don't just list tasks; estimate time and assign to specific time blocks.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Adults with ADHD are often incredibly productive — in bursts. The challenge isn't a lack of capability; it's *sustaining* output and managing the space between bursts.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Common ADHD Productivity Traps</strong></p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">The Perfectionism Trap</strong> — Can't start because it won't be perfect</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">The Overwhelm Spiral</strong> — So much to do that you do nothing</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">The Shiny Object Problem</strong> — Starting many projects, finishing few</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">The All-or-Nothing Pattern</strong> — Hyperfocused sprint → burnout → avoidance → guilt → repeat</li></ul><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The ADHD Task Management System</strong>
+Forget complex apps with tags, contexts, and due dates on everything. ADHD-friendly task management is:
+1. <strong style="color: var(--steady-teal);">Visible</strong> — If it's out of sight, it's gone. Use physical whiteboards, sticky notes, or a single-page dashboard.
+2. <strong style="color: var(--steady-teal);">Simple</strong> — One list, one place. Not 5 apps syncing across devices.
+3. <strong style="color: var(--steady-teal);">Forgiving</strong> — Uncompleted tasks roll forward without judgment.
+4. <strong style="color: var(--steady-teal);">Dopamine-aware</strong> — Mix hard and easy tasks. Start with a quick win to build momentum.
+5. <strong style="color: var(--steady-teal);">Time-anchored</strong> — Don't just list tasks; estimate time and assign to specific time blocks.</p>`,
         },
       },
       {
@@ -704,11 +738,12 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "ADHD in Relationships",
         content: {
-          type: "TEXT",
-          body: "ADHD doesn't just affect you — it affects everyone around you. Understanding how ADHD shows up in relationships is key to building stronger connections.\n\n**Common Relationship Challenges**\n• **Forgetting commitments** — Not because you don't care, but because working memory failed\n• **Emotional reactivity** — Snapping under stress, then feeling terrible about it\n• **Conversational tangents** — Interrupting, losing track of the topic, or zoning out\n• **Inconsistent follow-through** — Enthusiastic promises that fade when the novelty wears off\n• **The 'parent-child dynamic'** — Partners who take on a managing/reminding role\n\n**Communication Strategies**\n• **Admit the pattern, not just the incident** — Instead of \"Sorry I forgot,\" try \"I know I have a pattern of forgetting things. Here's what I'm doing about it.\"\n• **Use external systems, not promises** — \"I'll remember\" is unreliable. \"I've set a reminder\" is a system.\n• **Ask for direct communication** — Hints and subtext are hard for ADHD brains processing at full speed. Ask people to be direct with you.\n• **Schedule important conversations** — Don't ambush yourself or others with big talks. Pick a time when you have energy and focus.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">ADHD doesn't just affect you — it affects everyone around you. Understanding how ADHD shows up in relationships is key to building stronger connections.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Common Relationship Challenges</strong></p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Forgetting commitments</strong> — Not because you don't care, but because working memory failed</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Emotional reactivity</strong> — Snapping under stress, then feeling terrible about it</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Conversational tangents</strong> — Interrupting, losing track of the topic, or zoning out</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Inconsistent follow-through</strong> — Enthusiastic promises that fade when the novelty wears off</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">The 'parent-child dynamic'</strong> — Partners who take on a managing/reminding role</li></ul><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">Communication Strategies</strong></p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Admit the pattern, not just the incident</strong> — Instead of "Sorry I forgot," try "I know I have a pattern of forgetting things. Here's what I'm doing about it."</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Use external systems, not promises</strong> — "I'll remember" is unreliable. "I've set a reminder" is a system.</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Ask for direct communication</strong> — Hints and subtext are hard for ADHD brains processing at full speed. Ask people to be direct with you.</li><li style="margin-bottom: 6px;"><strong style="color: var(--steady-teal);">Schedule important conversations</strong> — Don't ambush yourself or others with big talks. Pick a time when you have energy and focus.</li></ul>`,
         },
       },
       {
@@ -754,11 +789,17 @@ async function main() {
     },
     [
       {
-        type: "TEXT",
+        type: "STYLED_CONTENT",
         title: "Looking Back, Moving Forward",
         content: {
-          type: "TEXT",
-          body: "Congratulations — you've made it through 8 weeks of dedicated work on understanding and managing your ADHD. That takes real commitment, especially for a brain that thrives on novelty and struggles with sustained effort.\n\n**What You've Built**\nOver these weeks, you've developed:\n• A deeper understanding of your ADHD brain and its patterns\n• A personal toolkit of focus, emotional regulation, and time management strategies\n• Morning and evening routines that support your daily functioning\n• A task management system that works with your brain\n• Communication strategies for your relationships\n• Self-compassion and reframing skills\n\n**The Maintenance Mindset**\nHere's the truth about ADHD management: it's not a destination. There will be great weeks and hard weeks. Strategies that work now may need refreshing in 6 months. The skills you've learned aren't a cure — they're tools. And tools need maintenance.\n\n**The Three Pillars of Long-Term Success**\n1. **Self-awareness** — Keep noticing your patterns. Journal, reflect, check in with yourself.\n2. **External structure** — Keep using your systems. When they break (and they will), rebuild them without judgment.\n3. **Support** — Stay connected to your clinician, support groups, or accountability partners. ADHD management is easier with others.",
+          type: "STYLED_CONTENT",
+          rawContent: "",
+          styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Congratulations — you've made it through 8 weeks of dedicated work on understanding and managing your ADHD. That takes real commitment, especially for a brain that thrives on novelty and struggles with sustained effort.</p><p style="margin-bottom: 8px; line-height: 1.6;"><strong style="color: var(--steady-teal);">What You've Built</strong>
+Over these weeks, you've developed:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">A deeper understanding of your ADHD brain and its patterns</li><li style="margin-bottom: 6px;">A personal toolkit of focus, emotional regulation, and time management strategies</li><li style="margin-bottom: 6px;">Morning and evening routines that support your daily functioning</li><li style="margin-bottom: 6px;">A task management system that works with your brain</li><li style="margin-bottom: 6px;">Communication strategies for your relationships</li><li style="margin-bottom: 6px;">Self-compassion and reframing skills</li></ul><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The Maintenance Mindset</strong>
+Here's the truth about ADHD management: it's not a destination. There will be great weeks and hard weeks. Strategies that work now may need refreshing in 6 months. The skills you've learned aren't a cure — they're tools. And tools need maintenance.</p><p style="margin-bottom: 12px; line-height: 1.6;"><strong style="color: var(--steady-teal);">The Three Pillars of Long-Term Success</strong>
+1. <strong style="color: var(--steady-teal);">Self-awareness</strong> — Keep noticing your patterns. Journal, reflect, check in with yourself.
+2. <strong style="color: var(--steady-teal);">External structure</strong> — Keep using your systems. When they break (and they will), rebuild them without judgment.
+3. <strong style="color: var(--steady-teal);">Support</strong> — Stay connected to your clinician, support groups, or accountability partners. ADHD management is easier with others.</p>`,
         },
       },
       {
@@ -900,11 +941,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "This week we talked about how your current study habits are working (and not working). You mentioned studying in bed with your phone nearby, and that you often lose 45+ minutes to social media before realizing it.\n\nThis week we're going to set up a better study environment and start tracking your focus so we can see patterns.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">This week we talked about how your current study habits are working (and not working). You mentioned studying in bed with your phone nearby, and that you often lose 45+ minutes to social media before realizing it.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week we're going to set up a better study environment and start tracking your focus so we can see patterns.</p>`,
       },
     },
     {
@@ -945,11 +987,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your focus tracking showed you concentrate best between 10am-12pm and again around 7-9pm. Afternoons are tough. We're going to use those peak windows for your hardest work.\n\nYou also mentioned that big papers paralyze you — you don't know where to start so you don't start at all. This week we'll practice breaking assignments into tiny steps.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Your focus tracking showed you concentrate best between 10am-12pm and again around 7-9pm. Afternoons are tough. We're going to use those peak windows for your hardest work.</p><p style="margin-bottom: 12px; line-height: 1.6;">You also mentioned that big papers paralyze you — you don't know where to start so you don't start at all. This week we'll practice breaking assignments into tiny steps.</p>`,
       },
     },
     {
@@ -992,11 +1035,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Great progress on breaking down your English paper — you got through the brain dump and outline steps without procrastinating. The phone blocker helped a lot.\n\nMidterms are in 2 weeks and you're already feeling the anxiety. This week we're going to build a realistic study plan and give you tools for the anxiety itself.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Great progress on breaking down your English paper — you got through the brain dump and outline steps without procrastinating. The phone blocker helped a lot.</p><p style="margin-bottom: 12px; line-height: 1.6;">Midterms are in 2 weeks and you're already feeling the anxiety. This week we're going to build a realistic study plan and give you tools for the anxiety itself.</p>`,
       },
     },
     {
@@ -1038,11 +1082,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Midterms went better than expected — you used the breathing technique before your psych exam and said it really helped. Your study schedule kept you from cramming, which is a huge win.\n\nNow let's build a weekly routine you can sustain for the rest of the semester. The key is not filling every hour — it's protecting your focus windows and building in recovery time.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Midterms went better than expected — you used the breathing technique before your psych exam and said it really helped. Your study schedule kept you from cramming, which is a huge win.</p><p style="margin-bottom: 12px; line-height: 1.6;">Now let's build a weekly routine you can sustain for the rest of the semester. The key is not filling every hour — it's protecting your focus windows and building in recovery time.</p>`,
       },
     },
     {
@@ -1084,11 +1129,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Today we talked about the incident in last week's sprint review where you snapped at your PM. You recognized afterward that you weren't actually angry about the feedback — you were already frustrated from context-switching all morning and the criticism hit different because of it.\n\nThis week is about noticing the buildup before the eruption. Most emotional blowups at work aren't about the trigger — they're about what happened in the hours before.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Today we talked about the incident in last week's sprint review where you snapped at your PM. You recognized afterward that you weren't actually angry about the feedback — you were already frustrated from context-switching all morning and the criticism hit different because of it.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week is about noticing the buildup before the eruption. Most emotional blowups at work aren't about the trigger — they're about what happened in the hours before.</p>`,
       },
     },
     {
@@ -1116,11 +1162,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your stress tracking showed a clear pattern: mornings start around 3-4 but spike to 7-8 after back-to-back meetings or Slack interruptions. By afternoon you have almost no buffer left.\n\nThis week we're going to practice the Pause Protocol — a simple routine to create space between feeling triggered and responding. The goal isn't to suppress emotions. It's to buy yourself 30 seconds of clarity.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Your stress tracking showed a clear pattern: mornings start around 3-4 but spike to 7-8 after back-to-back meetings or Slack interruptions. By afternoon you have almost no buffer left.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week we're going to practice the Pause Protocol — a simple routine to create space between feeling triggered and responding. The goal isn't to suppress emotions. It's to buy yourself 30 seconds of clarity.</p>`,
       },
     },
     {
@@ -1162,11 +1209,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "You used the Pause Protocol 4 times this week — twice in meetings and twice over Slack. The bridge phrase ('Let me think about that') worked really well for you.\n\nNow let's tackle the other big issue: you're on 3 projects and context-switching is destroying your productivity and draining your emotional battery. Research shows it takes 23 minutes to refocus after an interruption — with ADHD it can be even longer.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">You used the Pause Protocol 4 times this week — twice in meetings and twice over Slack. The bridge phrase ('Let me think about that') worked really well for you.</p><p style="margin-bottom: 12px; line-height: 1.6;">Now let's tackle the other big issue: you're on 3 projects and context-switching is destroying your productivity and draining your emotional battery. Research shows it takes 23 minutes to refocus after an interruption — with ADHD it can be even longer.</p>`,
       },
     },
     {
@@ -1207,11 +1255,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Deep work blocks were a game-changer — you said you got more done in those 2-hour blocks than in full scattered days. Your PM even noticed.\n\nLet's now tackle the lateness. You've been 5-15 minutes late to standup 3 out of 5 days. It's not about not caring — it's time blindness plus 'one more thing' syndrome. Every morning you think you have more time than you do.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Deep work blocks were a game-changer — you said you got more done in those 2-hour blocks than in full scattered days. Your PM even noticed.</p><p style="margin-bottom: 12px; line-height: 1.6;">Let's now tackle the lateness. You've been 5-15 minutes late to standup 3 out of 5 days. It's not about not caring — it's time blindness plus 'one more thing' syndrome. Every morning you think you have more time than you do.</p>`,
       },
     },
     {
@@ -1253,11 +1302,12 @@ async function main() {
     estimatedMinutes: 30,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Today was your first session after getting your diagnosis. You said it was a mix of relief ('so that's why everything has been so hard') and grief ('I could have known 20 years ago'). Both of those feelings are completely valid and very common in late-diagnosed adults.\n\nThis week isn't about fixing anything. It's about noticing. Now that you have a name for the pattern, you'll start seeing it everywhere — and that's a good thing. Awareness is the first tool.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Today was your first session after getting your diagnosis. You said it was a mix of relief ('so that's why everything has been so hard') and grief ('I could have known 20 years ago'). Both of those feelings are completely valid and very common in late-diagnosed adults.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week isn't about fixing anything. It's about noticing. Now that you have a name for the pattern, you'll start seeing it everywhere — and that's a good thing. Awareness is the first tool.</p>`,
       },
     },
     {
@@ -1297,11 +1347,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "You noticed ADHD showing up a lot more than 3 times — you said 'it's like I can't unsee it now.' That's normal and it does settle down.\n\nYou mentioned the house is a huge source of stress. Dishes pile up, laundry never gets folded, mail stacks up for weeks. Your wife is frustrated and you feel ashamed. Let's start with small, concrete systems — not a total house overhaul.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">You noticed ADHD showing up a lot more than 3 times — you said 'it's like I can't unsee it now.' That's normal and it does settle down.</p><p style="margin-bottom: 12px; line-height: 1.6;">You mentioned the house is a huge source of stress. Dishes pile up, laundry never gets folded, mail stacks up for weeks. Your wife is frustrated and you feel ashamed. Let's start with small, concrete systems — not a total house overhaul.</p>`,
       },
     },
     {
@@ -1342,11 +1393,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "The 10-minute tidy is working well — you said it's actually become almost automatic. Your wife noticed and it reduced tension at home.\n\nNow let's talk about work. You have 4 active client projects and no system for tracking them. You said you missed a deadline last week because you 'forgot the project existed' once a newer one came in. That's classic ADHD — out of sight, out of mind. We need to make all your projects visible at all times.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">The 10-minute tidy is working well — you said it's actually become almost automatic. Your wife noticed and it reduced tension at home.</p><p style="margin-bottom: 12px; line-height: 1.6;">Now let's talk about work. You have 4 active client projects and no system for tracking them. You said you missed a deadline last week because you 'forgot the project existed' once a newer one came in. That's classic ADHD — out of sight, out of mind. We need to make all your projects visible at all times.</p>`,
       },
     },
     {
@@ -1375,11 +1427,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your project dashboard is up and you haven't missed a deadline this week. You said having everything visible made a huge difference — 'I can't ignore it when it's staring at me.'\n\nWe also talked about medication. You have a lot of questions and some hesitation, which is totally normal. I've included some structured thinking below to help you prepare for the conversation with your prescriber. This is your decision — I just want you to go in informed.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Your project dashboard is up and you haven't missed a deadline this week. You said having everything visible made a huge difference — 'I can't ignore it when it's staring at me.'</p><p style="margin-bottom: 12px; line-height: 1.6;">We also talked about medication. You have a lot of questions and some hesitation, which is totally normal. I've included some structured thinking below to help you prepare for the conversation with your prescriber. This is your decision — I just want you to go in informed.</p>`,
       },
     },
     {
@@ -1495,11 +1548,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Good session today — your incision is healing well and swelling is mild. Your quad is still having trouble firing, which is completely normal at this stage. We measured your ROM at 5° extension / 95° flexion. Our goal for this phase is to get full extension (0°) and reach 120° flexion.\n\nYour homework this week is all about ice, elevation, and getting that quad to wake up. Do these exercises daily — consistency matters more than intensity right now.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Good session today — your incision is healing well and swelling is mild. Your quad is still having trouble firing, which is completely normal at this stage. We measured your ROM at 5° extension / 95° flexion. Our goal for this phase is to get full extension (0°) and reach 120° flexion.</p><p style="margin-bottom: 12px; line-height: 1.6;">Your homework this week is all about ice, elevation, and getting that quad to wake up. Do these exercises daily — consistency matters more than intensity right now.</p>`,
       },
     },
     {
@@ -1545,11 +1599,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Great progress — swelling is down and your quad is firing better. ROM improved to 2° extension / 105° flexion. We started some gait training today and your walking pattern is compensating (you're leaning away from the surgical leg). This week we'll work on normalizing that.\n\nWe're adding standing exercises and bike work. Remember: push into mild discomfort on ROM but never sharp pain.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Great progress — swelling is down and your quad is firing better. ROM improved to 2° extension / 105° flexion. We started some gait training today and your walking pattern is compensating (you're leaning away from the surgical leg). This week we'll work on normalizing that.</p><p style="margin-bottom: 12px; line-height: 1.6;">We're adding standing exercises and bike work. Remember: push into mild discomfort on ROM but never sharp pain.</p>`,
       },
     },
     {
@@ -1596,11 +1651,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "ROM is looking great — 0° extension (full!) and 115° flexion. Quad is activating well. Gait pattern is much improved, only slight hesitation on stairs.\n\nWe're moving into strengthening now. These exercises will be harder and your knee will be sore after. That's expected. Keep icing after workouts. The goal this week is to build a base of strength that will carry you through the next few months.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">ROM is looking great — 0° extension (full!) and 115° flexion. Quad is activating well. Gait pattern is much improved, only slight hesitation on stairs.</p><p style="margin-bottom: 12px; line-height: 1.6;">We're moving into strengthening now. These exercises will be harder and your knee will be sore after. That's expected. Keep icing after workouts. The goal this week is to build a base of strength that will carry you through the next few months.</p>`,
       },
     },
     {
@@ -1634,11 +1690,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Strength is coming along nicely. Your single-leg squat form is solid and you handled lateral band walks well in the clinic today. No increased swelling after last week's exercises, which is a great sign.\n\nThis week we're introducing agility work. These drills are the first step toward getting back on the soccer field. Start slow — the goal is control and confidence, not speed.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Strength is coming along nicely. Your single-leg squat form is solid and you handled lateral band walks well in the clinic today. No increased swelling after last week's exercises, which is a great sign.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week we're introducing agility work. These drills are the first step toward getting back on the soccer field. Start slow — the goal is control and confidence, not speed.</p>`,
       },
     },
     {
@@ -1685,11 +1742,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Thanks for being open about your pain history today, Tom. I know 3 years of back pain is exhausting. Here's the key takeaway from our session: your MRI shows normal age-related changes, not damage. The disc degeneration at L4-L5 is found in most people over 40, including people with zero pain.\n\nYour pain is real — but it's driven more by muscle deconditioning, prolonged postures, and your nervous system being on high alert than by structural damage. That's actually great news because it means we can change it.\n\nThis week is about gentle movement and starting to retrain your brain that movement is safe.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Thanks for being open about your pain history today, Tom. I know 3 years of back pain is exhausting. Here's the key takeaway from our session: your MRI shows normal age-related changes, not damage. The disc degeneration at L4-L5 is found in most people over 40, including people with zero pain.</p><p style="margin-bottom: 12px; line-height: 1.6;">Your pain is real — but it's driven more by muscle deconditioning, prolonged postures, and your nervous system being on high alert than by structural damage. That's actually great news because it means we can change it.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week is about gentle movement and starting to retrain your brain that movement is safe.</p>`,
       },
     },
     {
@@ -1736,11 +1794,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your pain log showed a clear pattern — worst in the afternoon after 3+ hours at the desk, better on days you walked. That's textbook for deconditioning-driven back pain. Your morning pain went from 7/10 to 5/10 just from the gentle exercises. Great start.\n\nToday we worked on core activation. Your transverse abdominis (deep core) is very weak — it's not supporting your spine during sitting. We're going to fix that. We also looked at photos of your desk setup and there are some quick wins there.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Your pain log showed a clear pattern — worst in the afternoon after 3+ hours at the desk, better on days you walked. That's textbook for deconditioning-driven back pain. Your morning pain went from 7/10 to 5/10 just from the gentle exercises. Great start.</p><p style="margin-bottom: 12px; line-height: 1.6;">Today we worked on core activation. Your transverse abdominis (deep core) is very weak — it's not supporting your spine during sitting. We're going to fix that. We also looked at photos of your desk setup and there are some quick wins there.</p>`,
       },
     },
     {
@@ -1788,11 +1847,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Afternoon pain is down to 3-4/10 and you walked 5 out of 7 days. The desk changes helped a lot. Your dead bug form is solid — core is waking up.\n\nToday we started adding load. I know this feels scary — picking things up off the floor has been a big fear for you. But your back is strong enough. We practiced hip hinge mechanics and your form was good. The goal this week is to build confidence with bending and lifting using proper patterns.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Afternoon pain is down to 3-4/10 and you walked 5 out of 7 days. The desk changes helped a lot. Your dead bug form is solid — core is waking up.</p><p style="margin-bottom: 12px; line-height: 1.6;">Today we started adding load. I know this feels scary — picking things up off the floor has been a big fear for you. But your back is strong enough. We practiced hip hinge mechanics and your form was good. The goal this week is to build confidence with bending and lifting using proper patterns.</p>`,
       },
     },
     {
@@ -1825,11 +1885,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Tom, you're doing amazing. Morning pain is consistently 2-3/10, afternoon pain is 3/10 even after a full workday. You deadlifted 50 lbs in the clinic today with perfect form and zero pain. That's a huge win for someone who was afraid to bend over a month ago.\n\nThis week is about building your long-term maintenance routine. We want to make sure you have a plan you can stick to 3x per week after we reduce session frequency.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Tom, you're doing amazing. Morning pain is consistently 2-3/10, afternoon pain is 3/10 even after a full workday. You deadlifted 50 lbs in the clinic today with perfect form and zero pain. That's a huge win for someone who was afraid to bend over a month ago.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week is about building your long-term maintenance routine. We want to make sure you have a plan you can stick to 3x per week after we reduce session frequency.</p>`,
       },
     },
     {
@@ -1889,11 +1950,12 @@ async function main() {
     estimatedMinutes: 15,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Linda, thank you for your patience — frozen shoulder is a frustrating condition but you're in the thawing phase now, which means your range of motion will start improving. Today we measured 90° flexion, 60° abduction, and internal rotation to your lower back.\n\nThe biggest complaint right now is the nighttime pain waking you up. We talked about sleeping positions (pillow under the arm, sleeping on your good side) and I want you to try the ice routine below before bed.\n\nThis week's exercises are all about gentle, pain-free range of motion. Do NOT push into sharp pain — gentle stretching sensation only.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Linda, thank you for your patience — frozen shoulder is a frustrating condition but you're in the thawing phase now, which means your range of motion will start improving. Today we measured 90° flexion, 60° abduction, and internal rotation to your lower back.</p><p style="margin-bottom: 12px; line-height: 1.6;">The biggest complaint right now is the nighttime pain waking you up. We talked about sleeping positions (pillow under the arm, sleeping on your good side) and I want you to try the ice routine below before bed.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week's exercises are all about gentle, pain-free range of motion. Do NOT push into sharp pain — gentle stretching sensation only.</p>`,
       },
     },
     {
@@ -1927,11 +1989,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Good news — your flexion improved to 105° and abduction to 75°. That's solid progress in one week. Night pain is better with the sleeping position changes (down to 1 wake-up from 3-4).\n\nWe're going to start active range of motion and light resistance this week. Your muscles have weakened from months of limited use, so we need to rebuild strength alongside mobility. Use the lightest resistance band (yellow) for all band exercises.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Good news — your flexion improved to 105° and abduction to 75°. That's solid progress in one week. Night pain is better with the sleeping position changes (down to 1 wake-up from 3-4).</p><p style="margin-bottom: 12px; line-height: 1.6;">We're going to start active range of motion and light resistance this week. Your muscles have weakened from months of limited use, so we need to rebuild strength alongside mobility. Use the lightest resistance band (yellow) for all band exercises.</p>`,
       },
     },
     {
@@ -1965,11 +2028,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Flexion is up to 130° and abduction to 95°! You mentioned you could reach the second shelf of your kitchen cabinet this week for the first time in months. That's exactly the kind of progress we want.\n\nThis week we're going to focus on functional movements — the things you actually need to do in daily life. We'll also push your strength work up a notch.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Flexion is up to 130° and abduction to 95°! You mentioned you could reach the second shelf of your kitchen cabinet this week for the first time in months. That's exactly the kind of progress we want.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week we're going to focus on functional movements — the things you actually need to do in daily life. We'll also push your strength work up a notch.</p>`,
       },
     },
     {
@@ -2003,11 +2067,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Linda, your range of motion is dramatically better — 155° flexion, 130° abduction, and you can reach your mid-back with internal rotation. Night pain is gone. You're sleeping through the night for the first time in 6 months.\n\nYou're ready to start easing back into gardening and normal overhead activities. The key is to build up gradually — start with 15-minute gardening sessions and increase from there. Your shoulder will be stiff in the morning for a while — that's normal. Do your pendulums and stretches first thing.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Linda, your range of motion is dramatically better — 155° flexion, 130° abduction, and you can reach your mid-back with internal rotation. Night pain is gone. You're sleeping through the night for the first time in 6 months.</p><p style="margin-bottom: 12px; line-height: 1.6;">You're ready to start easing back into gardening and normal overhead activities. The key is to build up gradually — start with 15-minute gardening sessions and increase from there. Your shoulder will be stiff in the morning for a while — that's normal. Do your pendulums and stretches first thing.</p>`,
       },
     },
     {
@@ -2138,11 +2203,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Angela, great first session! I know a new diabetes diagnosis feels overwhelming, but I want you to know — this is very manageable with the right habits, and you don't have to be perfect.\n\nKey takeaways:\n- Not all carbs are equal. We want to focus on complex carbs (whole grains, beans, vegetables) over simple carbs (white bread, sugary drinks, candy)\n- The goal is not zero carbs — it's the right amount at the right times\n- Pairing carbs with protein or fat slows the blood sugar spike\n- Eating consistently (not skipping meals) keeps your blood sugar more stable than one big meal\n\nThis week is just about awareness — no major diet changes yet. I want you to see your own patterns before we start adjusting.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Angela, great first session! I know a new diabetes diagnosis feels overwhelming, but I want you to know — this is very manageable with the right habits, and you don't have to be perfect.</p><p style="margin-bottom: 8px; line-height: 1.6;">Key takeaways:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Not all carbs are equal. We want to focus on complex carbs (whole grains, beans, vegetables) over simple carbs (white bread, sugary drinks, candy)</li><li style="margin-bottom: 6px;">The goal is not zero carbs — it's the right amount at the right times</li><li style="margin-bottom: 6px;">Pairing carbs with protein or fat slows the blood sugar spike</li><li style="margin-bottom: 6px;">Eating consistently (not skipping meals) keeps your blood sugar more stable than one big meal</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">This week is just about awareness — no major diet changes yet. I want you to see your own patterns before we start adjusting.</p>`,
       },
     },
     {
@@ -2190,11 +2256,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your food log was really eye-opening! Here's what we found:\n- Skipping breakfast → blood sugar crash by 11am → vending machine run → post-lunch spike to 210\n- Your dinner portions are large but not terrible — the issue is that dinner is your only real meal\n- Fast food lunches are driving most of your spikes. A Wendy's Baconator combo with soda clocked in at 120g of carbs\n\nThe good news: your fasting morning numbers were actually decent (110-125). That tells me your metformin is working and your body responds well when you eat consistently.\n\nThis week we're building a simple meal prep routine so you have food ready and don't need to hit the drive-through.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 8px; line-height: 1.6;">Your food log was really eye-opening! Here's what we found:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Skipping breakfast → blood sugar crash by 11am → vending machine run → post-lunch spike to 210</li><li style="margin-bottom: 6px;">Your dinner portions are large but not terrible — the issue is that dinner is your only real meal</li><li style="margin-bottom: 6px;">Fast food lunches are driving most of your spikes. A Wendy's Baconator combo with soda clocked in at 120g of carbs</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">The good news: your fasting morning numbers were actually decent (110-125). That tells me your metformin is working and your body responds well when you eat consistently.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week we're building a simple meal prep routine so you have food ready and don't need to hit the drive-through.</p>`,
       },
     },
     {
@@ -2243,11 +2310,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Fantastic work with the meal prep — your post-lunch blood sugar dropped from 200+ to 140-160 on prepped meal days. That's a huge difference from one change.\n\nYou mentioned you're worried about a work dinner coming up and your sister's birthday party. Totally valid concern. You can't meal prep your way through every social situation, so this week we're talking about how to navigate restaurants and events without stressing or feeling deprived.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Fantastic work with the meal prep — your post-lunch blood sugar dropped from 200+ to 140-160 on prepped meal days. That's a huge difference from one change.</p><p style="margin-bottom: 12px; line-height: 1.6;">You mentioned you're worried about a work dinner coming up and your sister's birthday party. Totally valid concern. You can't meal prep your way through every social situation, so this week we're talking about how to navigate restaurants and events without stressing or feeling deprived.</p>`,
       },
     },
     {
@@ -2295,11 +2363,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Angela, let's take stock. In 6 weeks you've gone from skipping breakfast and eating fast food daily to consistent meal prepping, eating 3 balanced meals, and navigating social events confidently. Your post-meal blood sugars are averaging 145 (down from 200+). We'll recheck your A1C in 2 months but I expect a significant drop.\n\nThis week is about making this sustainable long-term. We'll fine-tune your carb targets based on your blood sugar data and talk about what happens when motivation dips.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Angela, let's take stock. In 6 weeks you've gone from skipping breakfast and eating fast food daily to consistent meal prepping, eating 3 balanced meals, and navigating social events confidently. Your post-meal blood sugars are averaging 145 (down from 200+). We'll recheck your A1C in 2 months but I expect a significant drop.</p><p style="margin-bottom: 12px; line-height: 1.6;">This week is about making this sustainable long-term. We'll fine-tune your carb targets based on your blood sugar data and talk about what happens when motivation dips.</p>`,
       },
     },
     {
@@ -2346,11 +2415,12 @@ async function main() {
     estimatedMinutes: 15,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Kevin, thanks for being so detailed about your symptoms. Here's what stood out:\n- Flare-ups happen most on weekday mornings (before stand-up meetings) and after lunch\n- You eliminated dairy for 2 weeks with no change — that's actually useful info, it likely isn't lactose\n- Your diet is heavy on common IBS triggers: coffee on an empty stomach, large sandwiches with wheat bread, energy drinks, and late-night snacking\n\nBefore we start eliminating foods, I need a clearer picture. The food-symptom connection in IBS is tricky because stress, sleep, and meal timing all play a role too. This week is about collecting data.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 8px; line-height: 1.6;">Kevin, thanks for being so detailed about your symptoms. Here's what stood out:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Flare-ups happen most on weekday mornings (before stand-up meetings) and after lunch</li><li style="margin-bottom: 6px;">You eliminated dairy for 2 weeks with no change — that's actually useful info, it likely isn't lactose</li><li style="margin-bottom: 6px;">Your diet is heavy on common IBS triggers: coffee on an empty stomach, large sandwiches with wheat bread, energy drinks, and late-night snacking</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">Before we start eliminating foods, I need a clearer picture. The food-symptom connection in IBS is tricky because stress, sleep, and meal timing all play a role too. This week is about collecting data.</p>`,
       },
     },
     {
@@ -2383,11 +2453,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your diary showed clear patterns:\n- Morning coffee on empty stomach → urgency within 30 min (every single day)\n- Wheat-heavy lunches (sandwich + chips) → bloating + pain by 2pm\n- Onion and garlic are in almost every meal — these are high-FODMAP and a very common IBS trigger\n- Stress amplifies everything, but even on calm days the wheat/onion pattern held\n\nWe're going to start a low-FODMAP elimination. This is NOT a forever diet — it's a 2-3 week reset to calm your gut, then we reintroduce foods one at a time to find your specific triggers. Most people only need to avoid 2-3 specific FODMAPs long-term.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 8px; line-height: 1.6;">Your diary showed clear patterns:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Morning coffee on empty stomach → urgency within 30 min (every single day)</li><li style="margin-bottom: 6px;">Wheat-heavy lunches (sandwich + chips) → bloating + pain by 2pm</li><li style="margin-bottom: 6px;">Onion and garlic are in almost every meal — these are high-FODMAP and a very common IBS trigger</li><li style="margin-bottom: 6px;">Stress amplifies everything, but even on calm days the wheat/onion pattern held</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">We're going to start a low-FODMAP elimination. This is NOT a forever diet — it's a 2-3 week reset to calm your gut, then we reintroduce foods one at a time to find your specific triggers. Most people only need to avoid 2-3 specific FODMAPs long-term.</p>`,
       },
     },
     {
@@ -2435,11 +2506,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Your symptoms improved dramatically — gut comfort went from 3/10 to 7/10, urgency episodes dropped from daily to twice this week, and bloating is down significantly. This confirms FODMAPs are a major driver.\n\nNow comes the important part: reintroduction. We're going to test one FODMAP group at a time over 3 days. You stay low-FODMAP for everything else. If you react, that group is a trigger. If you don't, it's safe to add back permanently.\n\nWe're starting with fructans (wheat/onion/garlic) since that was the strongest signal in your diary.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Your symptoms improved dramatically — gut comfort went from 3/10 to 7/10, urgency episodes dropped from daily to twice this week, and bloating is down significantly. This confirms FODMAPs are a major driver.</p><p style="margin-bottom: 12px; line-height: 1.6;">Now comes the important part: reintroduction. We're going to test one FODMAP group at a time over 3 days. You stay low-FODMAP for everything else. If you react, that group is a trigger. If you don't, it's safe to add back permanently.</p><p style="margin-bottom: 12px; line-height: 1.6;">We're starting with fructans (wheat/onion/garlic) since that was the strongest signal in your diary.</p>`,
       },
     },
     {
@@ -2473,11 +2545,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Great news from reintroduction:\n- Wheat: MILD trigger — small amounts are fine (1 slice bread), but large portions cause bloating. You can eat wheat in moderation.\n- Onion: STRONG trigger — even 1 tablespoon caused pain and urgency within 2 hours. Avoid onion, keep using green onion tops as your substitute.\n- Garlic (tested briefly): Similar to onion. Stick with garlic-infused oil.\n\nWe still need to test lactose and fructose, but we have enough to build your personalized plan. The big win here: you now know WHY you were reacting, and it's a specific, manageable list — not 'everything.'",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 8px; line-height: 1.6;">Great news from reintroduction:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Wheat: MILD trigger — small amounts are fine (1 slice bread), but large portions cause bloating. You can eat wheat in moderation.</li><li style="margin-bottom: 6px;">Onion: STRONG trigger — even 1 tablespoon caused pain and urgency within 2 hours. Avoid onion, keep using green onion tops as your substitute.</li><li style="margin-bottom: 6px;">Garlic (tested briefly): Similar to onion. Stick with garlic-infused oil.</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">We still need to test lactose and fructose, but we have enough to build your personalized plan. The big win here: you now know WHY you were reacting, and it's a specific, manageable list — not 'everything.'</p>`,
       },
     },
     {
@@ -2537,11 +2610,12 @@ async function main() {
     estimatedMinutes: 15,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Diane, 40 lbs in 3 months is strong progress. The main concern right now is protein — at 40g/day you're at risk for muscle loss, hair thinning, and fatigue. Your surgeon's goal is 80g minimum.\n\nThe challenge: your stomach holds about 4-6 oz per meal now. So every bite counts — protein has to come first, before you fill up on carbs or vegetables.\n\nWe also talked about the dumping episode you had after eating a coworker's birthday cake. That nausea, sweating, and dizziness is dumping syndrome — your body's reaction to concentrated sugar hitting your small intestine too fast. It's unpleasant but it's actually your body's built-in guardrail. We'll talk about how to handle sweets without triggering it.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Diane, 40 lbs in 3 months is strong progress. The main concern right now is protein — at 40g/day you're at risk for muscle loss, hair thinning, and fatigue. Your surgeon's goal is 80g minimum.</p><p style="margin-bottom: 12px; line-height: 1.6;">The challenge: your stomach holds about 4-6 oz per meal now. So every bite counts — protein has to come first, before you fill up on carbs or vegetables.</p><p style="margin-bottom: 12px; line-height: 1.6;">We also talked about the dumping episode you had after eating a coworker's birthday cake. That nausea, sweating, and dizziness is dumping syndrome — your body's reaction to concentrated sugar hitting your small intestine too fast. It's unpleasant but it's actually your body's built-in guardrail. We'll talk about how to handle sweets without triggering it.</p>`,
       },
     },
     {
@@ -2589,11 +2663,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Session Recap",
       content: {
-        type: "TEXT",
-        body: "Protein improved to 60-65g/day — big jump! The morning shake is doing heavy lifting. We need to close the gap to 80g by adding more protein at lunch and dinner.\n\nThe bigger conversation today was about emotional eating. You shared that evenings are hardest — after a stressful workday, you used to decompress with snacking on the couch. Now your stomach can't handle the volume, but the urge is still there. You mentioned eating slider foods (crackers, chips, ice cream) that go down easy and bypass the fullness signal.\n\nThis is extremely common after bariatric surgery. The surgery changed your stomach, not the emotional wiring. Let's work on both.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Protein improved to 60-65g/day — big jump! The morning shake is doing heavy lifting. We need to close the gap to 80g by adding more protein at lunch and dinner.</p><p style="margin-bottom: 12px; line-height: 1.6;">The bigger conversation today was about emotional eating. You shared that evenings are hardest — after a stressful workday, you used to decompress with snacking on the couch. Now your stomach can't handle the volume, but the urge is still there. You mentioned eating slider foods (crackers, chips, ice cream) that go down easy and bypass the fullness signal.</p><p style="margin-bottom: 12px; line-height: 1.6;">This is extremely common after bariatric surgery. The surgery changed your stomach, not the emotional wiring. Let's work on both.</p>`,
       },
     },
     {
@@ -2725,11 +2800,12 @@ async function main() {
     estimatedMinutes: 25,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Visit Recap",
       content: {
-        type: "TEXT",
-        body: "Robert, your cardiac rehab team says you did great in Phase II — you're tolerating exercise well and your BP is controlled on current meds. Your EF improved from 40% to 45%, which is encouraging.\n\nHere's where we are:\n- Your stent is holding well. The LAD blockage was fixed, but we need to prevent new blockages from forming in other arteries\n- Your LDL cholesterol is still 110 — we want it under 70 for someone with your history\n- You've been smoke-free for 8 weeks. This is the most important thing you've done for your heart. The next 3 months are the highest risk for relapse\n\nThis week I want you to understand your medications, know your numbers, and start building your home exercise habit.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Robert, your cardiac rehab team says you did great in Phase II — you're tolerating exercise well and your BP is controlled on current meds. Your EF improved from 40% to 45%, which is encouraging.</p><p style="margin-bottom: 8px; line-height: 1.6;">Here's where we are:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">Your stent is holding well. The LAD blockage was fixed, but we need to prevent new blockages from forming in other arteries</li><li style="margin-bottom: 6px;">Your LDL cholesterol is still 110 — we want it under 70 for someone with your history</li><li style="margin-bottom: 6px;">You've been smoke-free for 8 weeks. This is the most important thing you've done for your heart. The next 3 months are the highest risk for relapse</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">This week I want you to understand your medications, know your numbers, and start building your home exercise habit.</p>`,
       },
     },
     {
@@ -2776,11 +2852,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Visit Recap",
       content: {
-        type: "TEXT",
-        body: "BP has been averaging 128/78 — right on target. Heart rate is steady at 68. Good. Walking is going well — you did 5 out of 7 days.\n\nSmoking: you had 4 cravings this week, all in the evening after dinner. You used the gum 3 times and white-knuckled it once. That's great. Evening is your highest-risk window — we need a plan for that.\n\nNow let's talk food. Your LDL is 110 and we need it under 70. The statin is doing its job but diet can drop it another 15-20 points. I'm not asking you to eat salad every day — I'm asking for specific swaps that target cholesterol directly.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">BP has been averaging 128/78 — right on target. Heart rate is steady at 68. Good. Walking is going well — you did 5 out of 7 days.</p><p style="margin-bottom: 12px; line-height: 1.6;">Smoking: you had 4 cravings this week, all in the evening after dinner. You used the gum 3 times and white-knuckled it once. That's great. Evening is your highest-risk window — we need a plan for that.</p><p style="margin-bottom: 12px; line-height: 1.6;">Now let's talk food. Your LDL is 110 and we need it under 70. The statin is doing its job but diet can drop it another 15-20 points. I'm not asking you to eat salad every day — I'm asking for specific swaps that target cholesterol directly.</p>`,
       },
     },
     {
@@ -2829,11 +2906,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Visit Recap",
       content: {
-        type: "TEXT",
-        body: "Everything is trending well. BP averaging 125/76, HR stable. You've been walking 35-40 minutes consistently. No chest symptoms.\n\nYou're asking about returning to work. Construction is demanding — lifting, climbing, bending all day. Here's the plan:\n- This week we add resistance training to build your work capacity back up\n- Week 4 we'll do a simulated work assessment — lifting, carrying, climbing stairs with load\n- If that goes well, you can return to light duty in Week 5 with restrictions (no lifting >30 lbs for 2 more weeks)\n\nThe goal is to return strong and confident, not just 'allowed.'",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Everything is trending well. BP averaging 125/76, HR stable. You've been walking 35-40 minutes consistently. No chest symptoms.</p><p style="margin-bottom: 8px; line-height: 1.6;">You're asking about returning to work. Construction is demanding — lifting, climbing, bending all day. Here's the plan:</p><ul style="margin: 8px 0; padding-left: 20px;"><li style="margin-bottom: 6px;">This week we add resistance training to build your work capacity back up</li><li style="margin-bottom: 6px;">Week 4 we'll do a simulated work assessment — lifting, carrying, climbing stairs with load</li><li style="margin-bottom: 6px;">If that goes well, you can return to light duty in Week 5 with restrictions (no lifting >30 lbs for 2 more weeks)</li></ul><p style="margin-bottom: 12px; line-height: 1.6;">The goal is to return strong and confident, not just 'allowed.'</p>`,
       },
     },
     {
@@ -2868,11 +2946,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Visit Recap",
       content: {
-        type: "TEXT",
-        body: "Robert, you passed the work capacity assessment with flying colors. Carried 30 lbs up 2 flights, heart rate peaked at 118, recovered to baseline in 3 minutes, no symptoms. I'm clearing you for light duty starting next week with a 30-lb lifting restriction for 2 more weeks, then full duty.\n\nYou're now 10 weeks smoke-free. Cravings are down to 1-2 per week. Your risk of another MI has already dropped significantly.\n\nLet's build your long-term plan. Heart disease is a lifelong management situation, but with what you're doing now, the odds are strongly in your favor.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Robert, you passed the work capacity assessment with flying colors. Carried 30 lbs up 2 flights, heart rate peaked at 118, recovered to baseline in 3 minutes, no symptoms. I'm clearing you for light duty starting next week with a 30-lb lifting restriction for 2 more weeks, then full duty.</p><p style="margin-bottom: 12px; line-height: 1.6;">You're now 10 weeks smoke-free. Cravings are down to 1-2 per week. Your risk of another MI has already dropped significantly.</p><p style="margin-bottom: 12px; line-height: 1.6;">Let's build your long-term plan. Heart disease is a lifelong management situation, but with what you're doing now, the odds are strongly in your favor.</p>`,
       },
     },
     {
@@ -2933,11 +3012,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Visit Recap",
       content: {
-        type: "TEXT",
-        body: "Maria, I hear you — you don't want a third medication. Let's see what lifestyle changes can do first. But I need to be honest: if BP stays above 150/90 after 8 weeks of real effort, we'll need to revisit medication. Your family history of stroke makes this serious.\n\nThe good news: lifestyle changes can lower systolic BP by 10-15 points. That could be the difference between needing more meds and not.\n\nToday's game plan: start home monitoring (office readings aren't enough), and figure out where all the sodium in your diet is coming from. I know your cooking is important to you — we're not going to ruin your recipes. We're going to make smart adjustments.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Maria, I hear you — you don't want a third medication. Let's see what lifestyle changes can do first. But I need to be honest: if BP stays above 150/90 after 8 weeks of real effort, we'll need to revisit medication. Your family history of stroke makes this serious.</p><p style="margin-bottom: 12px; line-height: 1.6;">The good news: lifestyle changes can lower systolic BP by 10-15 points. That could be the difference between needing more meds and not.</p><p style="margin-bottom: 12px; line-height: 1.6;">Today's game plan: start home monitoring (office readings aren't enough), and figure out where all the sodium in your diet is coming from. I know your cooking is important to you — we're not going to ruin your recipes. We're going to make smart adjustments.</p>`,
       },
     },
     {
@@ -2985,11 +3065,12 @@ async function main() {
     estimatedMinutes: 20,
   }, [
     {
-      type: "TEXT",
+      type: "STYLED_CONTENT",
       title: "Visit Recap",
       content: {
-        type: "TEXT",
-        body: "Your home BP readings averaged 152/92 — that's lower than the office reading (white coat effect is real!). But still too high.\n\nYour sodium diary was eye-opening: you're averaging about 3,800mg/day. The biggest offenders: commercial sazón (2 dishes), canned beans (3 meals), bread (adds up fast), and cheese. The homemade sazón worked great though — your husband said the arroz con pollo tasted the same!\n\nWe're going to follow the DASH diet approach — it's the most evidence-based eating pattern for lowering blood pressure. It's not a restrictive diet. It's about adding more of the good stuff (potassium, calcium, magnesium) while reducing sodium.",
+        type: "STYLED_CONTENT",
+        rawContent: "",
+        styledHtml: `<p style="margin-bottom: 12px; line-height: 1.6;">Your home BP readings averaged 152/92 — that's lower than the office reading (white coat effect is real!). But still too high.</p><p style="margin-bottom: 12px; line-height: 1.6;">Your sodium diary was eye-opening: you're averaging about 3,800mg/day. The biggest offenders: commercial sazón (2 dishes), canned beans (3 meals), bread (adds up fast), and cheese. The homemade sazón worked great though — your husband said the arroz con pollo tasted the same!</p><p style="margin-bottom: 12px; line-height: 1.6;">We're going to follow the DASH diet approach — it's the most evidence-based eating pattern for lowering blood pressure. It's not a restrictive diet. It's about adding more of the good stuff (potassium, calcium, magnesium) while reducing sodium.</p>`,
       },
     },
     {
