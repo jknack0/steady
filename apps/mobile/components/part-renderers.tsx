@@ -515,35 +515,42 @@ export function PdfRenderer({
 }: {
   content: { fileKey: string; url: string; fileName: string; description?: string; pageCount?: number };
 }) {
+  const WebView = require("react-native-webview").default;
+  const googleViewerUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(content.url)}`;
+
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       {content.url ? (
-        <TouchableOpacity
-          style={{ backgroundColor: "#F7F5F2", borderRadius: 12, padding: 16, flexDirection: "row", alignItems: "center" }}
-          onPress={() => Linking.openURL(content.url)}
-        >
-          <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="document-text-outline" size={18} color="#C0392B" />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 2 }} numberOfLines={2}>
-              {content.fileName || "PDF Document"}
-            </Text>
-            {content.description ? (
-              <Text style={{ fontSize: 13, color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular", marginBottom: 2 }} numberOfLines={2}>
-                {content.description}
+        <>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="document-text-outline" size={16} color="#C0392B" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={{ fontSize: 15, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D" }} numberOfLines={1}>
+                {content.fileName || "PDF Document"}
               </Text>
-            ) : null}
-            {content.pageCount ? (
-              <Text style={{ fontSize: 12, color: "#AAAAAA", fontFamily: "PlusJakartaSans_400Regular" }}>
-                {content.pageCount} page{content.pageCount > 1 ? "s" : ""}
-              </Text>
-            ) : null}
+              {content.description ? (
+                <Text style={{ fontSize: 13, color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }} numberOfLines={1}>
+                  {content.description}
+                </Text>
+              ) : null}
+            </View>
+            <TouchableOpacity onPress={() => Linking.openURL(content.url)}>
+              <View style={{ backgroundColor: "#C0392B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
+                <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 12 }}>Open</Text>
+              </View>
+            </TouchableOpacity>
           </View>
-          <View style={{ backgroundColor: "#C0392B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, marginLeft: 8 }}>
-            <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 13 }}>Open</Text>
+          <View style={{ height: 500, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#E0E0E0" }}>
+            <WebView
+              source={{ uri: googleViewerUrl }}
+              style={{ flex: 1 }}
+              startInLoadingState
+              scalesPageToFit
+            />
           </View>
-        </TouchableOpacity>
+        </>
       ) : (
         <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No PDF uploaded</Text>
       )}

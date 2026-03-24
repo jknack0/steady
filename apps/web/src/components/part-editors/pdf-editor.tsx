@@ -39,7 +39,7 @@ export function PdfPartEditor({ content, onChange }: PdfEditorProps) {
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline"
             >
-              View
+              Open
             </a>
             <button
               type="button"
@@ -49,6 +49,12 @@ export function PdfPartEditor({ content, onChange }: PdfEditorProps) {
               Remove
             </button>
           </div>
+          <iframe
+            src={content.url}
+            className="w-full rounded-lg border"
+            style={{ height: "600px" }}
+            title={content.fileName || "PDF Preview"}
+          />
         ) : (
           <FileUpload
             context="pdf"

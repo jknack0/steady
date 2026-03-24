@@ -62,12 +62,14 @@ const PART_ICONS: Record<string, React.ElementType> = {
   TEXT: FileText, VIDEO: Video, STRATEGY_CARDS: Layers, JOURNAL_PROMPT: BookOpen,
   CHECKLIST: CheckSquare, RESOURCE_LINK: LinkIcon, DIVIDER: Minus, HOMEWORK: ClipboardList,
   ASSESSMENT: FileQuestion, INTAKE_FORM: FormInput, SMART_GOALS: Target, STYLED_CONTENT: Sparkles,
+  PDF: FileText,
 };
 
 const PART_LABELS: Record<string, string> = {
   TEXT: "Reading", VIDEO: "Video", STRATEGY_CARDS: "Strategy Cards", JOURNAL_PROMPT: "Journal",
   CHECKLIST: "Checklist", RESOURCE_LINK: "Resource", DIVIDER: "Section Break", HOMEWORK: "Homework",
   ASSESSMENT: "Assessment", INTAKE_FORM: "Intake Form", SMART_GOALS: "SMART Goals", STYLED_CONTENT: "Content",
+  PDF: "PDF Document",
 };
 
 // ── Helpers ────────────────────────────────────────
@@ -91,6 +93,7 @@ function getPartPreview(part: PreviewPart): string {
     case "ASSESSMENT": return `${c.questions?.length || 0} questions`;
     case "INTAKE_FORM": return `${c.fields?.length || 0} fields`;
     case "SMART_GOALS": return `Up to ${c.maxGoals || 3} goals`;
+    case "PDF": return c.fileName || "PDF Document";
     default: return "";
   }
 }
@@ -328,6 +331,30 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
           </div>
         )}
       </div>
+    );
+  }
+
+  if (part.type === "PDF") {
+    return c.url ? (
+      <div className="space-y-3">
+        <div className="rounded-lg bg-[#F7F5F2] p-3 flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FDEAEA]">
+            <FileText className="h-4 w-4 text-red-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-[#2D2D2D] truncate">{c.fileName || "PDF Document"}</p>
+            {c.description && <p className="text-xs text-[#8A8A8A] truncate">{c.description}</p>}
+          </div>
+        </div>
+        <iframe
+          src={c.url}
+          className="w-full rounded-lg border border-[#E0E0E0]"
+          style={{ height: 350 }}
+          title={c.fileName || "PDF"}
+        />
+      </div>
+    ) : (
+      <p className="text-sm text-[#8A8A8A] italic">No PDF uploaded</p>
     );
   }
 
