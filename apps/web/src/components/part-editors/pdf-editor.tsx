@@ -33,6 +33,14 @@ export function PdfPartEditor({ content, onChange }: PdfEditorProps) {
                 <p className="text-xs text-muted-foreground">{content.pageCount} page{content.pageCount > 1 ? "s" : ""}</p>
               )}
             </div>
+            <a
+              href={content.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline"
+            >
+              View
+            </a>
             <button
               type="button"
               className="text-sm text-muted-foreground hover:text-foreground underline"
