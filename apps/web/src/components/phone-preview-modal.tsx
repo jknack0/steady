@@ -98,6 +98,181 @@ function getPartPreview(part: PreviewPart): string {
   }
 }
 
+// ── Homework Item Preview (interactive-looking) ────
+
+function HomeworkItemPreview({ item }: { item: any }) {
+  const TYPE_LABELS: Record<string, string> = {
+    ACTION: "Action Item", RESOURCE_REVIEW: "Resource Review", JOURNAL_PROMPT: "Journal Prompt",
+    BRING_TO_SESSION: "Bring to Session", FREE_TEXT_NOTE: "Note", CHOICE: "Choice",
+    WORKSHEET: "Worksheet", RATING_SCALE: "Rating Scale", TIMER: "Timer",
+    MOOD_CHECK: "Mood Check", HABIT_TRACKER: "Habit Tracker",
+  };
+
+  return (
+    <div className="rounded-lg bg-[#F5ECD7] p-3">
+      <span className="text-[10px] font-semibold uppercase text-[#8A7A5A] tracking-wider">
+        {TYPE_LABELS[item.type] || item.type?.replace(/_/g, " ")}
+      </span>
+
+      {item.type === "ACTION" && (
+        <div className="mt-1.5">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-[#D4D0CB]" />
+            <p className="text-sm text-[#2D2D2D]">{item.description || "..."}</p>
+          </div>
+          {(item.subSteps || []).length > 0 && (
+            <div className="mt-1.5 ml-6 space-y-1">
+              {item.subSteps.map((s: string, si: number) => (
+                <div key={si} className="flex items-center gap-2">
+                  <div className="h-3.5 w-3.5 shrink-0 rounded border border-[#D4D0CB]" />
+                  <span className="text-xs text-[#5A5A5A]">{s || "..."}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {item.type === "RESOURCE_REVIEW" && (
+        <div className="mt-1.5">
+          <p className="text-sm text-[#5B8A8A]">{item.resourceTitle || "Untitled"}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-4 w-4 shrink-0 rounded border-2 border-[#D4D0CB]" />
+            <span className="text-xs text-[#8A8A8A]">Mark as reviewed</span>
+          </div>
+        </div>
+      )}
+
+      {item.type === "JOURNAL_PROMPT" && (
+        <div className="mt-1.5 space-y-2">
+          {(item.prompts || []).map((p: string, pi: number) => (
+            <div key={pi}>
+              <p className="text-sm text-[#2D2D2D] mb-1">{p || "..."}</p>
+              <div className="rounded-md border border-[#E8DCC2] bg-white px-2.5 py-2 text-xs text-[#D4D0CB] min-h-[36px]">
+                Write your response...
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {item.type === "BRING_TO_SESSION" && (
+        <div className="mt-1.5 flex items-center gap-2">
+          <div className="h-4 w-4 shrink-0 rounded border-2 border-[#D4D0CB]" />
+          <p className="text-sm text-[#2D2D2D]">{item.reminderText || "..."}</p>
+        </div>
+      )}
+
+      {item.type === "FREE_TEXT_NOTE" && (
+        <div className="mt-1.5">
+          <p className="text-sm text-[#2D2D2D]">{item.content || "..."}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-4 w-4 shrink-0 rounded border-2 border-[#D4D0CB]" />
+            <span className="text-xs text-[#8A8A8A]">Got it</span>
+          </div>
+        </div>
+      )}
+
+      {item.type === "CHOICE" && (
+        <div className="mt-1.5">
+          {item.description && <p className="text-sm text-[#2D2D2D] mb-2">{item.description}</p>}
+          <div className="space-y-1.5">
+            {(item.options || []).map((opt: any, oi: number) => (
+              <div key={oi} className="flex items-center gap-2 rounded-md border border-[#E8DCC2] bg-[#FAF6ED] px-3 py-2">
+                <div className="h-4 w-4 shrink-0 rounded-full border-2 border-[#D4D0CB]" />
+                <div>
+                  <span className="text-sm text-[#2D2D2D]">{opt.label}</span>
+                  {opt.detail && <p className="text-[10px] text-[#8A8A8A]">{opt.detail}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {item.type === "WORKSHEET" && item.columns?.length > 0 && (
+        <div className="mt-1.5">
+          {item.instructions && <p className="text-xs text-[#5A5A5A] mb-2">{item.instructions}</p>}
+          {Array.from({ length: Math.min(item.rowCount || 5, 2) }).map((_: any, ri: number) => (
+            <div key={ri} className="mb-2 rounded-md border border-[#E8DCC2] bg-[#FAF6ED] p-2">
+              <p className="text-[10px] font-medium text-[#8A7A5A] mb-1">Row {ri + 1}</p>
+              {item.columns.map((col: any, ci: number) => (
+                <div key={ci} className="mb-1">
+                  <p className="text-[10px] font-medium text-[#5A5A5A]">{col.label}</p>
+                  <div className="mt-0.5 rounded border border-[#E8DCC2] bg-white px-2 py-1 text-[10px] text-[#D4D0CB]">
+                    Enter {col.label.toLowerCase()}...
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+          {(item.rowCount || 5) > 2 && (
+            <p className="text-[10px] text-[#8A8A8A] text-center">+ {(item.rowCount || 5) - 2} more rows</p>
+          )}
+          {item.tips && <p className="text-xs text-[#8A8A8A] mt-2 italic">{item.tips}</p>}
+        </div>
+      )}
+
+      {item.type === "RATING_SCALE" && (
+        <div className="mt-1.5">
+          <p className="text-sm text-[#2D2D2D]">{item.description || "..."}</p>
+          <div className="mt-2 flex items-center gap-1 flex-wrap justify-center">
+            {item.minLabel && <span className="text-[10px] text-[#8A8A8A] mr-0.5">{item.minLabel}</span>}
+            {Array.from({ length: (item.max ?? 10) - (item.min ?? 1) + 1 }).map((_: any, j: number) => (
+              <div key={j} className="w-6 h-6 rounded-full border-2 border-[#D4D0CB] bg-white flex items-center justify-center text-[10px] text-[#5A5A5A]">
+                {(item.min ?? 1) + j}
+              </div>
+            ))}
+            {item.maxLabel && <span className="text-[10px] text-[#8A8A8A] ml-0.5">{item.maxLabel}</span>}
+          </div>
+        </div>
+      )}
+
+      {item.type === "TIMER" && (
+        <div className="mt-1.5 text-center">
+          <p className="text-sm text-[#2D2D2D] mb-2">{item.description || "..."}</p>
+          <div className="text-xl font-mono text-[#2D2D2D] mb-2">
+            {Math.floor(item.durationSeconds / 60)}:{(item.durationSeconds % 60).toString().padStart(2, "0")}
+          </div>
+          <div className="inline-block rounded-lg bg-[#5B8A8A] px-5 py-1.5 text-xs font-semibold text-white">
+            Start
+          </div>
+        </div>
+      )}
+
+      {item.type === "MOOD_CHECK" && (
+        <div className="mt-1.5">
+          {item.description && <p className="text-sm text-[#2D2D2D] mb-2">{item.description}</p>}
+          <div className="flex gap-1.5 justify-center flex-wrap">
+            {(item.moods || []).map((mood: any, mi: number) => (
+              <div key={mi} className="flex flex-col items-center gap-0.5 rounded-lg border border-[#E8DCC2] bg-[#FAF6ED] px-2 py-1.5">
+                <span className="text-lg">{mood.emoji}</span>
+                <span className="text-[9px] text-[#8A8A8A]">{mood.label}</span>
+              </div>
+            ))}
+          </div>
+          {item.includeNote && (
+            <div className="mt-2 rounded-md border border-[#E8DCC2] bg-white px-2.5 py-2 text-xs text-[#D4D0CB]">
+              Add a note (optional)...
+            </div>
+          )}
+        </div>
+      )}
+
+      {item.type === "HABIT_TRACKER" && (
+        <div className="mt-1.5">
+          <p className="text-sm font-medium text-[#2D2D2D]">{item.habitLabel || "..."}</p>
+          {item.description && <p className="text-xs text-[#5A5A5A] mt-0.5">{item.description}</p>}
+          <div className="mt-2 flex gap-2">
+            <div className="flex-1 rounded-lg border-2 border-[#D4D0CB] bg-white py-2 text-center text-xs font-medium text-[#5A5A5A]">Yes</div>
+            <div className="flex-1 rounded-lg border-2 border-[#D4D0CB] bg-white py-2 text-center text-xs font-medium text-[#5A5A5A]">No</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Part Content Renderers ─────────────────────────
 
 function PartContentPreview({ part }: { part: PreviewPart }) {
@@ -176,40 +351,19 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
   if (part.type === "HOMEWORK") {
     return (
       <div className="space-y-2">
+        {/* Interactive badge */}
+        <div className="flex items-center gap-1.5 rounded-md bg-[#E3EDED] px-2.5 py-1.5">
+          <CheckCircle2 className="h-3.5 w-3.5 text-[#5B8A8A]" />
+          <span className="text-[11px] font-medium text-[#5B8A8A]">Interactive — completed in-app</span>
+        </div>
+        {/* Completion info */}
+        <div className="text-[11px] text-[#8A8A8A]">
+          {c.completionRule === "ALL"
+            ? `Complete all ${c.items?.length || 0} items`
+            : `Complete at least ${c.completionMinimum || "?"} of ${c.items?.length || 0} items`}
+        </div>
         {(c.items || []).map((item: any, i: number) => (
-          <div key={i} className="rounded-lg bg-[#F5ECD7] p-3">
-            <span className="text-[10px] font-semibold uppercase text-[#8A8A8A] tracking-wider">{item.type?.replace(/_/g, " ")}</span>
-            {item.type === "WORKSHEET" && item.columns?.length > 0 ? (
-              <div className="mt-1">
-                {item.instructions && <p className="text-xs text-[#5A5A5A] mb-2">{item.instructions}</p>}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="border border-[#E8DCC2] bg-[#EDE5CF] px-2 py-1 text-left font-medium text-[#8A7A5A]">#</th>
-                        {item.columns.map((col: any, ci: number) => (
-                          <th key={ci} className="border border-[#E8DCC2] bg-[#EDE5CF] px-2 py-1 text-left font-medium text-[#8A7A5A]">{col.label}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: item.rowCount || 5 }).map((_: any, ri: number) => (
-                        <tr key={ri}>
-                          <td className="border border-[#E8DCC2] px-2 py-1 text-[#8A8A8A]">{ri + 1}</td>
-                          {item.columns.map((_: any, cj: number) => (
-                            <td key={cj} className="border border-[#E8DCC2] px-2 py-1 text-[#D4D0CB]">___</td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {item.tips && <p className="text-xs text-[#8A8A8A] mt-2 italic">{item.tips}</p>}
-              </div>
-            ) : (
-              <p className="text-sm text-[#2D2D2D] mt-1">{item.description || item.reminderText || item.content || item.resourceTitle || "..."}</p>
-            )}
-          </div>
+          <HomeworkItemPreview key={i} item={item} />
         ))}
       </div>
     );
@@ -465,9 +619,21 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
         <PartContentPreview part={part} />
       </div>
       <div className="bg-white border-t border-[#F0EDE8] px-4 py-3 shrink-0">
-        <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
-          <span className="text-sm font-semibold text-white">Mark as Complete</span>
-        </div>
+        {part.type === "HOMEWORK" ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[#8A8A8A]">0/{part.content?.items?.length || 0} items</span>
+              <span className="text-[10px] text-[#5B8A8A]">Auto-saving</span>
+            </div>
+            <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
+              <span className="text-sm font-semibold text-white">Mark Complete</span>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full rounded-xl bg-[#5B8A8A] py-3 text-center">
+            <span className="text-sm font-semibold text-white">Mark as Complete</span>
+          </div>
+        )}
       </div>
     </div>
   );
