@@ -103,7 +103,7 @@ export default function ParticipantDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
-        {(["overview", "trackers", "rtm"] as const).map((t) => {
+        {(["overview", "homework", "trackers", "rtm"] as const).map((t) => {
           const labels: Record<Tab, string> = { overview: "Overview", homework: "Homework", trackers: "Check-in", rtm: "RTM" };
           return (
             <button
