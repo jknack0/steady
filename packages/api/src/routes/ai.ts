@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express";
 import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
+import { getFileBuffer } from "../services/s3";
 
 const router = Router();
 
@@ -118,6 +119,118 @@ router.post("/style-content", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("AI style-content error", err);
     res.status(500).json({ success: false, error: "Failed to style content" });
+  }
+});
+
+// POST /api/ai/parse-homework-pdf — Extract homework items from a PDF
+router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
+  try {
+    const { fileKey } = req.body;
+
+    if (!fileKey || typeof fileKey !== "string") {
+      res.status(400).json({ success: false, error: "fileKey is required" });
+      return;
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ success: false, error: "AI service not configured" });
+      return;
+    }
+
+    // Download PDF from S3
+    const pdfBuffer = await getFileBuffer(fileKey);
+    const pdfBase64 = pdfBuffer.toString("base64");
+
+    const client = new Anthropic({ apiKey });
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 8192,
+      system: `You are a clinical content parser for a healthcare app called Steady. Your job is to analyze PDF worksheets and homework assignments used by clinicians (typically CBT, DBT, or other therapeutic exercises) and convert them into structured homework items.
+
+You MUST output ONLY a valid JSON array of homework items. No markdown, no explanation, no code fences — just the JSON array.
+
+Each item must have a "type" field and a "sortOrder" field (0-indexed, sequential). Use these types:
+
+1. ACTION — A task the participant should do. Fields:
+   { "type": "ACTION", "sortOrder": N, "description": "what to do", "subSteps": ["step 1", "step 2"], "addToSteadySystem": false, "dueDateOffsetDays": null }
+   Use when: the PDF describes a specific action, exercise, or activity to perform.
+
+2. JOURNAL_PROMPT — Reflective writing prompts. Fields:
+   { "type": "JOURNAL_PROMPT", "sortOrder": N, "prompts": ["prompt 1", "prompt 2"], "spaceSizeHint": "medium" }
+   Use when: the PDF asks questions for reflection, self-examination, or journaling. Use "large" spaceSizeHint for prompts that need extended writing.
+
+3. WORKSHEET — A structured table for tracking/recording. Fields:
+   { "type": "WORKSHEET", "sortOrder": N, "instructions": "what to fill in", "columns": [{ "label": "Column Name", "description": "what goes here" }], "rowCount": 5, "tips": "optional tips" }
+   Use when: the PDF has a table, grid, or fill-in-the-blank structure with repeated rows.
+
+4. FREE_TEXT_NOTE — Informational text or instructions from the clinician. Fields:
+   { "type": "FREE_TEXT_NOTE", "sortOrder": N, "content": "the text" }
+   Use when: the PDF has instructional text, tips, explanations, or context that isn't an action or prompt. Good for section introductions, tips, and psychoeducation content.
+
+5. BRING_TO_SESSION — Reminder to bring something to next session. Fields:
+   { "type": "BRING_TO_SESSION", "sortOrder": N, "reminderText": "what to bring" }
+   Use when: the PDF explicitly mentions bringing something to a session or discussing results with a therapist.
+
+6. CHOICE — Multiple choice selection. Fields:
+   { "type": "CHOICE", "sortOrder": N, "description": "the question", "options": [{ "label": "Option A", "detail": "optional detail" }, { "label": "Option B" }] }
+   Use when: the PDF has a multiple-choice question or selection exercise.
+
+GUIDELINES:
+- Break the PDF into logical sections, each becoming one or more items.
+- Use FREE_TEXT_NOTE for section titles, tips, and explanatory content — keep them concise.
+- Preserve the clinical intent and language of the original.
+- For numbered exercises with sub-questions, use ACTION for the main task and JOURNAL_PROMPT for the reflection questions, OR combine into a single JOURNAL_PROMPT if they're all reflective.
+- For fill-in-the-blank sections with repeated structure, use WORKSHEET.
+- If the PDF mentions reviewing results with a therapist, add a BRING_TO_SESSION item.
+- Keep descriptions under 2000 characters. Keep prompts under 2000 characters each.
+- Tips text should be under 2000 characters.`,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: pdfBase64,
+              },
+            },
+            {
+              type: "text",
+              text: "Parse this PDF into structured homework items. Output ONLY the JSON array.",
+            },
+          ],
+        },
+      ],
+    });
+
+    const textBlock = message.content.find((block) => block.type === "text");
+    const rawJson = textBlock ? textBlock.text.trim() : "[]";
+
+    // Parse and validate the JSON
+    let items: unknown[];
+    try {
+      const parsed = JSON.parse(rawJson);
+      if (!Array.isArray(parsed)) {
+        throw new Error("Expected an array");
+      }
+      items = parsed;
+    } catch {
+      logger.error("AI returned invalid JSON for homework PDF parse", rawJson.slice(0, 200));
+      res.status(500).json({ success: false, error: "Failed to parse PDF content" });
+      return;
+    }
+
+    // Re-index sortOrder to be sequential
+    items = items.map((item: any, i: number) => ({ ...item, sortOrder: i }));
+
+    res.json({ success: true, data: { items } });
+  } catch (err) {
+    logger.error("AI parse-homework-pdf error", err);
+    res.status(500).json({ success: false, error: "Failed to parse PDF" });
   }
 });
 

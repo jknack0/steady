@@ -78,6 +78,47 @@ const HomeworkWorksheetSchema = z.object({
   tips: z.string().max(2000).optional(),
 });
 
+const HomeworkRatingScaleSchema = z.object({
+  type: z.literal("RATING_SCALE"),
+  description: z.string().max(2000),
+  min: z.number().int().min(0).max(10).default(1),
+  max: z.number().int().min(1).max(10).default(10),
+  minLabel: z.string().max(200).optional(),
+  maxLabel: z.string().max(200).optional(),
+  sortOrder: z.number().int(),
+});
+
+const HomeworkTimerSchema = z.object({
+  type: z.literal("TIMER"),
+  description: z.string().max(2000),
+  durationSeconds: z.number().int().min(10).max(7200),
+  sortOrder: z.number().int(),
+});
+
+const HomeworkMoodCheckSchema = z.object({
+  type: z.literal("MOOD_CHECK"),
+  description: z.string().max(2000).optional(),
+  moods: z.array(z.object({
+    emoji: z.string().max(10),
+    label: z.string().max(200),
+  })).min(2).max(10).default([
+    { emoji: "\ud83d\ude0a", label: "Great" },
+    { emoji: "\ud83d\ude42", label: "Good" },
+    { emoji: "\ud83d\ude10", label: "Okay" },
+    { emoji: "\ud83d\ude14", label: "Low" },
+    { emoji: "\ud83d\ude22", label: "Struggling" },
+  ]),
+  includeNote: z.boolean().default(false),
+  sortOrder: z.number().int(),
+});
+
+const HomeworkHabitTrackerSchema = z.object({
+  type: z.literal("HABIT_TRACKER"),
+  description: z.string().max(2000),
+  habitLabel: z.string().max(200),
+  sortOrder: z.number().int(),
+});
+
 export const HomeworkItemSchema = z.discriminatedUnion("type", [
   HomeworkActionSchema,
   HomeworkResourceReviewSchema,
@@ -86,6 +127,10 @@ export const HomeworkItemSchema = z.discriminatedUnion("type", [
   HomeworkFreeTextNoteSchema,
   HomeworkChoiceSchema,
   HomeworkWorksheetSchema,
+  HomeworkRatingScaleSchema,
+  HomeworkTimerSchema,
+  HomeworkMoodCheckSchema,
+  HomeworkHabitTrackerSchema,
 ]);
 
 // ── Part Content Schemas (discriminated union) ─────────
@@ -149,8 +194,88 @@ export const RecurrenceTypeEnum = z.enum(["NONE", "DAILY", "WEEKLY", "CUSTOM"]);
 
 export const HomeworkInstanceStatusEnum = z.enum(["PENDING", "COMPLETED", "SKIPPED", "MISSED"]);
 
+// ── Homework Response Schemas ─────────────────────────
+
+const ActionResponseSchema = z.object({
+  type: z.literal("ACTION"),
+  completed: z.boolean(),
+  subStepsDone: z.array(z.boolean()).default([]),
+});
+
+const JournalPromptResponseSchema = z.object({
+  type: z.literal("JOURNAL_PROMPT"),
+  entries: z.array(z.string().max(50000)),
+});
+
+const WorksheetResponseSchema = z.object({
+  type: z.literal("WORKSHEET"),
+  rows: z.array(z.record(z.string(), z.string().max(5000))),
+});
+
+const ChoiceResponseSchema = z.object({
+  type: z.literal("CHOICE"),
+  selectedIndex: z.number().int().min(0),
+});
+
+const ResourceReviewResponseSchema = z.object({
+  type: z.literal("RESOURCE_REVIEW"),
+  reviewed: z.boolean(),
+});
+
+const RatingScaleResponseSchema = z.object({
+  type: z.literal("RATING_SCALE"),
+  value: z.number().int(),
+});
+
+const TimerResponseSchema = z.object({
+  type: z.literal("TIMER"),
+  elapsedSeconds: z.number().int().min(0),
+  completed: z.boolean(),
+});
+
+const MoodCheckResponseSchema = z.object({
+  type: z.literal("MOOD_CHECK"),
+  mood: z.string().max(200),
+  note: z.string().max(5000).optional(),
+});
+
+const HabitTrackerResponseSchema = z.object({
+  type: z.literal("HABIT_TRACKER"),
+  done: z.boolean(),
+});
+
+const BringToSessionResponseSchema = z.object({
+  type: z.literal("BRING_TO_SESSION"),
+  acknowledged: z.boolean(),
+});
+
+const FreeTextNoteResponseSchema = z.object({
+  type: z.literal("FREE_TEXT_NOTE"),
+  acknowledged: z.boolean(),
+});
+
+export const HomeworkItemResponseSchema = z.discriminatedUnion("type", [
+  ActionResponseSchema,
+  JournalPromptResponseSchema,
+  WorksheetResponseSchema,
+  ChoiceResponseSchema,
+  ResourceReviewResponseSchema,
+  RatingScaleResponseSchema,
+  TimerResponseSchema,
+  MoodCheckResponseSchema,
+  HabitTrackerResponseSchema,
+  BringToSessionResponseSchema,
+  FreeTextNoteResponseSchema,
+]);
+
+export const HomeworkResponseSchema = z.record(z.string(), HomeworkItemResponseSchema);
+
+export const SaveHomeworkResponseSchema = z.object({
+  responses: HomeworkResponseSchema,
+});
+
 export const CompleteHomeworkInstanceSchema = z.object({
-  response: z.any().nullable().optional(),
+  response: HomeworkResponseSchema.nullable().optional(),
 });
 
 // Base object used in discriminatedUnion (must remain ZodObject, not ZodEffects)
@@ -319,6 +444,8 @@ export type PartContent = z.infer<typeof PartContentSchema>;
 export type HomeworkItem = z.infer<typeof HomeworkItemSchema>;
 export type WorksheetHomeworkItem = z.infer<typeof HomeworkWorksheetSchema>;
 export type HomeworkContent = z.infer<typeof HomeworkContentSchema>;
+export type HomeworkItemResponse = z.infer<typeof HomeworkItemResponseSchema>;
+export type HomeworkResponse = z.infer<typeof HomeworkResponseSchema>;
 export type RecurrenceType = z.infer<typeof RecurrenceTypeEnum>;
 export type HomeworkInstanceStatus = z.infer<typeof HomeworkInstanceStatusEnum>;
 export type CreatePartInput = z.input<typeof CreatePartSchema>;

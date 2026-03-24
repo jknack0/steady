@@ -141,6 +141,12 @@ export const api = {
       body: JSON.stringify({ response: response ?? null }),
     }),
 
+  saveHomeworkResponse: (instanceId: string, responses: Record<string, any>) =>
+    apiFetch(`/api/participant/homework-instances/${instanceId}/response`, {
+      method: "PATCH",
+      body: JSON.stringify({ responses }),
+    }),
+
   skipHomeworkInstance: (instanceId: string) =>
     apiFetch(`/api/participant/homework-instances/${instanceId}/skip`, {
       method: "POST",

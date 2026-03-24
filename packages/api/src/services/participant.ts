@@ -5,7 +5,7 @@ import {
   generateInstancesForEnrollment,
   getStreakData,
 } from "./homework-instances";
-import { CompleteHomeworkInstanceSchema } from "@steady/shared";
+import { CompleteHomeworkInstanceSchema, SaveHomeworkResponseSchema } from "@steady/shared";
 import { logRtmEngagement } from "./rtm";
 
 // ── Error types ──────────────────────────────────────
@@ -363,7 +363,51 @@ export async function getHomeworkInstances(
   return instances;
 }
 
-// ── 5. Complete Homework Instance ────────────────────
+// ── 5a. Save Homework Response (Auto-save) ──────────
+
+export async function saveHomeworkResponse(
+  instanceId: string,
+  participantProfileId: string,
+  body: unknown
+) {
+  const instance = await prisma.homeworkInstance.findUnique({
+    where: { id: instanceId },
+    include: {
+      enrollment: {
+        select: { participantId: true },
+      },
+    },
+  });
+
+  if (!instance || instance.enrollment.participantId !== participantProfileId) {
+    throw new NotFoundError("Instance not found");
+  }
+
+  if (instance.status !== "PENDING") {
+    throw new ConflictError("Can only save responses for pending instances");
+  }
+
+  const parsed = SaveHomeworkResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    throw new ValidationError("Invalid response data", parsed.error.errors.map((e) => ({
+      path: e.path.join("."),
+      message: e.message,
+    })));
+  }
+
+  // Deep-merge at the item-key level: incoming responses overwrite per-key
+  const existing = (instance.response as Record<string, unknown>) || {};
+  const merged = { ...existing, ...parsed.data.responses };
+
+  const updated = await prisma.homeworkInstance.update({
+    where: { id: instanceId },
+    data: { response: merged as any },
+  });
+
+  return updated;
+}
+
+// ── 5b. Complete Homework Instance ────────────────────
 
 export async function completeHomeworkInstance(
   instanceId: string,

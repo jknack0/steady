@@ -28,8 +28,15 @@ import {
   Repeat,
   Music,
   Table2,
+  Upload,
+  Loader2,
+  Gauge,
+  Timer,
+  Smile,
+  CalendarCheck,
 } from "lucide-react";
 import { FileUpload } from "@/components/file-upload";
+import { useParseHomeworkPdf } from "@/hooks/use-parse-homework-pdf";
 import {
   DndContext,
   closestCenter,
@@ -56,6 +63,10 @@ type JournalPromptItem = Extract<HomeworkItem, { type: "JOURNAL_PROMPT" }>;
 type BringToSessionItem = Extract<HomeworkItem, { type: "BRING_TO_SESSION" }>;
 type FreeTextNoteItem = Extract<HomeworkItem, { type: "FREE_TEXT_NOTE" }>;
 type WorksheetItem = Extract<HomeworkItem, { type: "WORKSHEET" }>;
+type RatingScaleItem = Extract<HomeworkItem, { type: "RATING_SCALE" }>;
+type TimerItem = Extract<HomeworkItem, { type: "TIMER" }>;
+type MoodCheckItem = Extract<HomeworkItem, { type: "MOOD_CHECK" }>;
+type HabitTrackerItem = Extract<HomeworkItem, { type: "HABIT_TRACKER" }>;
 
 interface HomeworkEditorProps {
   content: HomeworkContent;
@@ -69,6 +80,10 @@ const ITEM_TYPES: { type: HomeworkItem["type"]; label: string; icon: React.Eleme
   { type: "BRING_TO_SESSION", label: "Bring-to-Session", icon: Bell },
   { type: "FREE_TEXT_NOTE", label: "Free Text Note", icon: StickyNote },
   { type: "WORKSHEET", label: "Worksheet", icon: Table2 },
+  { type: "RATING_SCALE", label: "Rating Scale", icon: Gauge },
+  { type: "TIMER", label: "Timer", icon: Timer },
+  { type: "MOOD_CHECK", label: "Mood Check", icon: Smile },
+  { type: "HABIT_TRACKER", label: "Habit Tracker", icon: CalendarCheck },
 ];
 
 // ── Homework Settings ────────────────────────────────
@@ -805,6 +820,231 @@ function WorksheetItemEditor({
   );
 }
 
+function RatingScaleItemEditor({
+  item,
+  onUpdate,
+}: {
+  item: RatingScaleItem;
+  onUpdate: (item: RatingScaleItem) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Description</Label>
+        <textarea
+          value={item.description || ""}
+          onChange={(e) => onUpdate({ ...item, description: e.target.value })}
+          placeholder="What should the participant rate?"
+          className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+        />
+      </div>
+      <div className="flex items-center gap-4">
+        <div>
+          <Label className="text-xs">Min</Label>
+          <Input
+            type="number"
+            min={0}
+            max={9}
+            value={item.min ?? 1}
+            onChange={(e) => onUpdate({ ...item, min: parseInt(e.target.value) || 0 })}
+            className="mt-1 w-20"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Max</Label>
+          <Input
+            type="number"
+            min={1}
+            max={10}
+            value={item.max ?? 10}
+            onChange={(e) => onUpdate({ ...item, max: parseInt(e.target.value) || 10 })}
+            className="mt-1 w-20"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
+          <Label className="text-xs">Min Label (optional)</Label>
+          <Input
+            value={item.minLabel || ""}
+            onChange={(e) => onUpdate({ ...item, minLabel: e.target.value || undefined })}
+            placeholder="e.g., Not at all"
+            className="mt-1"
+          />
+        </div>
+        <div className="flex-1">
+          <Label className="text-xs">Max Label (optional)</Label>
+          <Input
+            value={item.maxLabel || ""}
+            onChange={(e) => onUpdate({ ...item, maxLabel: e.target.value || undefined })}
+            placeholder="e.g., Extremely"
+            className="mt-1"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TimerItemEditor({
+  item,
+  onUpdate,
+}: {
+  item: TimerItem;
+  onUpdate: (item: TimerItem) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Description</Label>
+        <textarea
+          value={item.description || ""}
+          onChange={(e) => onUpdate({ ...item, description: e.target.value })}
+          placeholder="What should the participant do during the timer?"
+          className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+        />
+      </div>
+      <div>
+        <Label className="text-xs">Duration (MM:SS)</Label>
+        <Input
+          value={item.durationSeconds ? formatDuration(item.durationSeconds) : ""}
+          onChange={(e) => {
+            const secs = parseDuration(e.target.value);
+            if (secs !== undefined) {
+              onUpdate({ ...item, durationSeconds: Math.max(10, Math.min(7200, secs)) });
+            }
+          }}
+          placeholder="5:00"
+          className="mt-1 w-32"
+        />
+        <p className="text-xs text-muted-foreground mt-1">Min 0:10, max 120:00</p>
+      </div>
+    </div>
+  );
+}
+
+function MoodCheckItemEditor({
+  item,
+  onUpdate,
+}: {
+  item: MoodCheckItem;
+  onUpdate: (item: MoodCheckItem) => void;
+}) {
+  const moods = item.moods || [
+    { emoji: "\ud83d\ude0a", label: "Great" },
+    { emoji: "\ud83d\ude42", label: "Good" },
+    { emoji: "\ud83d\ude10", label: "Okay" },
+    { emoji: "\ud83d\ude14", label: "Low" },
+    { emoji: "\ud83d\ude22", label: "Struggling" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Description (optional)</Label>
+        <Input
+          value={item.description || ""}
+          onChange={(e) => onUpdate({ ...item, description: e.target.value || undefined })}
+          placeholder="e.g., How are you feeling right now?"
+          className="mt-1"
+        />
+      </div>
+      <div>
+        <Label className="text-xs">Mood Options</Label>
+        <div className="mt-1 space-y-1.5">
+          {moods.map((mood, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                value={mood.emoji}
+                onChange={(e) => {
+                  const updated = [...moods];
+                  updated[i] = { ...updated[i], emoji: e.target.value };
+                  onUpdate({ ...item, moods: updated });
+                }}
+                className="w-16 text-center"
+                maxLength={4}
+              />
+              <Input
+                value={mood.label}
+                onChange={(e) => {
+                  const updated = [...moods];
+                  updated[i] = { ...updated[i], label: e.target.value };
+                  onUpdate({ ...item, moods: updated });
+                }}
+                placeholder="Label"
+                className="flex-1"
+              />
+              {moods.length > 2 && (
+                <button
+                  onClick={() => {
+                    const updated = moods.filter((_, idx) => idx !== i);
+                    onUpdate({ ...item, moods: updated });
+                  }}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {moods.length < 10 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onUpdate({ ...item, moods: [...moods, { emoji: "\ud83d\ude36", label: "" }] })}
+            className="mt-1"
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add mood
+          </Button>
+        )}
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={item.includeNote || false}
+          onChange={(e) => onUpdate({ ...item, includeNote: e.target.checked })}
+          className="accent-primary"
+        />
+        Include optional note field
+      </label>
+    </div>
+  );
+}
+
+function HabitTrackerItemEditor({
+  item,
+  onUpdate,
+}: {
+  item: HabitTrackerItem;
+  onUpdate: (item: HabitTrackerItem) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Habit Label</Label>
+        <Input
+          value={item.habitLabel || ""}
+          onChange={(e) => onUpdate({ ...item, habitLabel: e.target.value })}
+          placeholder="e.g., Did you take your medication?"
+          className="mt-1"
+        />
+      </div>
+      <div>
+        <Label className="text-xs">Description</Label>
+        <textarea
+          value={item.description || ""}
+          onChange={(e) => onUpdate({ ...item, description: e.target.value })}
+          placeholder="Additional context about this habit..."
+          className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+        />
+      </div>
+    </div>
+  );
+}
+
 // ── Sortable Homework Item ───────────────────────────
 
 function SortableHomeworkItem({
@@ -852,6 +1092,14 @@ function SortableHomeworkItem({
         );
       case "WORKSHEET":
         return <WorksheetItemEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />;
+      case "RATING_SCALE":
+        return <RatingScaleItemEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />;
+      case "TIMER":
+        return <TimerItemEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />;
+      case "MOOD_CHECK":
+        return <MoodCheckItemEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />;
+      case "HABIT_TRACKER":
+        return <HabitTrackerItemEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />;
       default:
         return null;
     }
@@ -1012,6 +1260,52 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
           {item.tips && <p className="text-xs text-gray-500 mt-2 italic">{item.tips}</p>}
         </div>
       )}
+      {item.type === "RATING_SCALE" && (
+        <div>
+          <p className="text-sm text-gray-800">{item.description || "..."}</p>
+          <div className="mt-2 flex items-center gap-1">
+            {item.minLabel && <span className="text-xs text-gray-500 mr-1">{item.minLabel}</span>}
+            {Array.from({ length: (item.max ?? 10) - (item.min ?? 1) + 1 }).map((_, i) => (
+              <div key={i} className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-xs text-gray-500">
+                {(item.min ?? 1) + i}
+              </div>
+            ))}
+            {item.maxLabel && <span className="text-xs text-gray-500 ml-1">{item.maxLabel}</span>}
+          </div>
+        </div>
+      )}
+      {item.type === "TIMER" && (
+        <div>
+          <p className="text-sm text-gray-800">{item.description || "..."}</p>
+          <div className="mt-2 text-center text-lg font-mono text-gray-600">
+            {formatDuration(item.durationSeconds)}
+          </div>
+        </div>
+      )}
+      {item.type === "MOOD_CHECK" && (
+        <div>
+          {item.description && <p className="text-sm text-gray-800 mb-2">{item.description}</p>}
+          <div className="flex gap-2 justify-center">
+            {(item.moods || []).map((mood, i) => (
+              <div key={i} className="flex flex-col items-center gap-0.5">
+                <span className="text-xl">{mood.emoji}</span>
+                <span className="text-[10px] text-gray-500">{mood.label}</span>
+              </div>
+            ))}
+          </div>
+          {item.includeNote && <p className="text-xs text-gray-400 mt-2 text-center italic">+ optional note</p>}
+        </div>
+      )}
+      {item.type === "HABIT_TRACKER" && (
+        <div>
+          <p className="text-sm font-medium text-gray-800">{item.habitLabel || "..."}</p>
+          {item.description && <p className="text-xs text-gray-600 mt-1">{item.description}</p>}
+          <div className="mt-2 flex gap-2">
+            <div className="rounded-lg border border-gray-300 px-4 py-1.5 text-xs text-gray-500">Yes</div>
+            <div className="rounded-lg border border-gray-300 px-4 py-1.5 text-xs text-gray-500">No</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1027,6 +1321,9 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
 
   const [showPreview, setShowPreview] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showPdfImport, setShowPdfImport] = useState(false);
+  const [pdfKey, setPdfKey] = useState<string | null>(null);
+  const parsePdf = useParseHomeworkPdf();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1082,10 +1379,54 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
           tips: "",
         };
         break;
+      case "RATING_SCALE":
+        newItem = { type, sortOrder, description: "", min: 1, max: 10 };
+        break;
+      case "TIMER":
+        newItem = { type, sortOrder, description: "", durationSeconds: 300 };
+        break;
+      case "MOOD_CHECK":
+        newItem = {
+          type,
+          sortOrder,
+          moods: [
+            { emoji: "\ud83d\ude0a", label: "Great" },
+            { emoji: "\ud83d\ude42", label: "Good" },
+            { emoji: "\ud83d\ude10", label: "Okay" },
+            { emoji: "\ud83d\ude14", label: "Low" },
+            { emoji: "\ud83d\ude22", label: "Struggling" },
+          ],
+          includeNote: false,
+        };
+        break;
+      case "HABIT_TRACKER":
+        newItem = { type, sortOrder, description: "", habitLabel: "" };
+        break;
     }
 
     onChange({ ...content, items: [...content.items, newItem] });
     setShowAddMenu(false);
+  };
+
+  const handlePdfImport = async () => {
+    if (!pdfKey) return;
+    try {
+      const result = await parsePdf.mutateAsync(pdfKey);
+      // Re-index all items: existing + new
+      const existingCount = content.items.length;
+      const newItems = result.items.map((item, i) => ({
+        ...item,
+        sortOrder: existingCount + i,
+      }));
+      onChange({
+        ...content,
+        items: [...content.items, ...newItems] as HomeworkContent["items"],
+      });
+      setShowPdfImport(false);
+      setPdfKey(null);
+    } catch {
+      // error shown via parsePdf.error
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -1155,16 +1496,66 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
         </SortableContext>
       </DndContext>
 
-      {/* Add Item */}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setShowAddMenu(true)}
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        Add Item
-      </Button>
+      {/* Add Item / Import */}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowAddMenu(true)}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Item
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowPdfImport(true)}
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          Import from PDF
+        </Button>
+      </div>
+
+      {/* PDF Import Dialog */}
+      <Dialog open={showPdfImport} onOpenChange={(open) => { setShowPdfImport(open); if (!open) { setPdfKey(null); parsePdf.reset(); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Homework from PDF</DialogTitle>
+            <DialogDescription>
+              Upload a PDF worksheet and AI will convert it into structured homework items.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <FileUpload
+              context="pdf"
+              value={pdfKey}
+              onChange={(key) => { setPdfKey(key); parsePdf.reset(); }}
+            />
+            {parsePdf.error && (
+              <p className="text-sm text-destructive">
+                {parsePdf.error.message || "Failed to parse PDF. Please try again."}
+              </p>
+            )}
+            <Button
+              type="button"
+              onClick={handlePdfImport}
+              disabled={!pdfKey || parsePdf.isPending}
+              className="w-full"
+            >
+              {parsePdf.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing PDF...
+                </>
+              ) : (
+                "Generate Homework Items"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showAddMenu} onOpenChange={setShowAddMenu}>
         <DialogContent className="sm:max-w-md">

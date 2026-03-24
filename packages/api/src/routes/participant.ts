@@ -9,6 +9,7 @@ import {
   getProgramWithProgress,
   markPartComplete,
   getHomeworkInstances,
+  saveHomeworkResponse,
   completeHomeworkInstance,
   skipHomeworkInstance,
   getAssignedTrackers,
@@ -154,6 +155,16 @@ router.get("/homework-instances/:id/streak", async (req: Request, res: Response)
   } catch (err) {
     logger.error("Get streak error", err);
     res.status(500).json({ success: false, error: "Failed to get streak data" });
+  }
+});
+
+// PATCH /api/participant/homework-instances/:id/response — Auto-save responses
+router.patch("/homework-instances/:id/response", async (req: Request, res: Response) => {
+  try {
+    const data = await saveHomeworkResponse(req.params.id, req.user!.participantProfileId!, req.body);
+    res.json({ success: true, data });
+  } catch (err) {
+    handleServiceError(res, err, "Failed to save homework response");
   }
 });
 

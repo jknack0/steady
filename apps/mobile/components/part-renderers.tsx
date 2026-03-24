@@ -606,107 +606,39 @@ function PdfOpenButton({ resourceKey }: { resourceKey: string }) {
 // ── HOMEWORK ─────────────────────────────────────────
 export function HomeworkRenderer({
   content,
+  responses,
+  onResponseChange,
+  readOnly = true,
 }: {
-  content: { items: Array<{ type: string; description?: string; subSteps?: string[]; prompts?: string[]; reminderText?: string; content?: string; resourceTitle?: string; resourceType?: string; resourceUrl?: string; resourceKey?: string; audioDurationSecs?: number; audioDescription?: string; options?: Array<{ label: string; detail?: string }>; instructions?: string; columns?: Array<{ label: string; description?: string }>; rowCount?: number; tips?: string }> };
+  content: { items: Array<any> };
+  responses?: Record<string, any>;
+  onResponseChange?: (key: string, response: any) => void;
+  readOnly?: boolean;
 }) {
+  const { HomeworkItemRenderer } = require("./homework-item-renderers");
+
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      {(content.items || []).map((item, index) => (
-        <View key={index} style={{ marginBottom: 16, backgroundColor: "#F5ECD7", borderRadius: 12, padding: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-            <View style={{ backgroundColor: "#E8DCC2", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.type.replace(/_/g, " ")}</Text>
-            </View>
-          </View>
-          {item.description ? (
-            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D" }}>{item.description}</Text>
-          ) : null}
-          {item.resourceTitle ? (
-            <View style={{ marginTop: 4 }}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name={item.resourceType === "video" ? "videocam-outline" : item.resourceType === "audio" ? "musical-notes-outline" : item.resourceType === "link" ? "link-outline" : item.resourceType === "pdf" ? "document-attach-outline" : "document-text-outline"} size={14} color="#5B8A8A" />
-                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A", marginLeft: 6 }}>{item.resourceTitle}</Text>
+      {(content.items || []).map((item: any, index: number) => {
+        const key = String(item.sortOrder ?? index);
+        const itemResponse = responses?.[key] || null;
+
+        return (
+          <View key={index} style={{ marginBottom: 16, backgroundColor: "#F5ECD7", borderRadius: 12, padding: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+              <View style={{ backgroundColor: "#E8DCC2", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.type.replace(/_/g, " ")}</Text>
               </View>
-              {item.resourceType === "audio" && item.resourceKey ? (
-                <View style={{ marginTop: 8 }}>
-                  <AudioPlayer audioKey={item.resourceKey} durationSecs={item.audioDurationSecs} />
-                </View>
-              ) : null}
-              {item.resourceType === "pdf" && item.resourceKey ? (
-                <PdfOpenButton resourceKey={item.resourceKey} />
-              ) : null}
-              {item.audioDescription ? (
-                <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_400Regular", color: "#7A7A7A", marginTop: 4, fontStyle: "italic" }}>{item.audioDescription}</Text>
-              ) : null}
             </View>
-          ) : null}
-          {item.subSteps && item.subSteps.length > 0 ? (
-            <View style={{ marginTop: 8, marginLeft: 4 }}>
-              {item.subSteps.map((step, si) => (
-                <View key={si} style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 4 }}>
-                  <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: "#E8DCC2", alignItems: "center", justifyContent: "center", marginRight: 8, marginTop: 1 }}>
-                    <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A" }}>{si + 1}</Text>
-                  </View>
-                  <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", flex: 1 }}>{step}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          {item.prompts?.map((p, i) => (
-            <Text key={i} style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginTop: 4 }}>{p}</Text>
-          ))}
-          {item.reminderText ? (
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-              <Ionicons name="alert-circle-outline" size={14} color="#D4A0A0" />
-              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5A5A5A", marginLeft: 6 }}>{item.reminderText}</Text>
-            </View>
-          ) : null}
-          {item.content ? (
-            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginTop: 4 }}>{item.content}</Text>
-          ) : null}
-          {item.options && item.options.length > 0 ? (
-            <View style={{ marginTop: 8 }}>
-              {item.options.map((opt, oi) => (
-                <View key={oi} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8, paddingHorizontal: 10, borderWidth: 1, borderColor: "#E8DCC2", backgroundColor: "#FAF6ED", borderRadius: 8, marginBottom: 6 }}>
-                  <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: "#D4D0CB", marginRight: 10 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D" }}>{opt.label}</Text>
-                    {opt.detail ? <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 1 }}>{opt.detail}</Text> : null}
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          {item.type === "WORKSHEET" && item.columns && item.columns.length > 0 ? (
-            <View style={{ marginTop: 8 }}>
-              {item.instructions ? (
-                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 8 }}>{item.instructions}</Text>
-              ) : null}
-              {Array.from({ length: item.rowCount || 5 }).map((_, ri) => (
-                <View key={ri} style={{ marginBottom: 12, backgroundColor: "#FAF6ED", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E8DCC2" }}>
-                  <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", marginBottom: 6 }}>Row {ri + 1}</Text>
-                  {item.columns!.map((col, ci) => (
-                    <View key={ci} style={{ marginBottom: 8 }}>
-                      <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 4 }}>{col.label}</Text>
-                      {col.description ? (
-                        <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginBottom: 4 }}>{col.description}</Text>
-                      ) : null}
-                      <TextInput
-                        style={{ borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", backgroundColor: "#FFFFFF" }}
-                        placeholder={`Enter ${col.label.toLowerCase()}...`}
-                        placeholderTextColor="#D4D0CB"
-                      />
-                    </View>
-                  ))}
-                </View>
-              ))}
-              {item.tips ? (
-                <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", fontStyle: "italic", marginTop: 4 }}>{item.tips}</Text>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
-      ))}
+            <HomeworkItemRenderer
+              item={item}
+              response={itemResponse}
+              onResponseChange={(resp: any) => onResponseChange?.(key, resp)}
+              readOnly={readOnly}
+            />
+          </View>
+        );
+      })}
     </View>
   );
 }

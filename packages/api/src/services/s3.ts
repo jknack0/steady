@@ -40,6 +40,20 @@ export async function generateUploadUrl(opts: {
   return { uploadUrl, key, publicUrl };
 }
 
+export async function getFileBuffer(key: string): Promise<Buffer> {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+  });
+  const response = await s3.send(command);
+  const stream = response.Body as NodeJS.ReadableStream;
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
 export async function generateDownloadUrl(key: string): Promise<string> {
   const command = new GetObjectCommand({
     Bucket: BUCKET,
