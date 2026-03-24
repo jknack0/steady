@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api-client";
 
-type UploadContext = "program-cover" | "handout" | "attachment" | "audio";
+type UploadContext = "program-cover" | "handout" | "attachment" | "audio" | "pdf";
 
 interface PresignResponse {
   uploadUrl: string;
