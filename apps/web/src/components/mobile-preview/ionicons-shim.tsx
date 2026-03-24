@@ -9,6 +9,14 @@ import {
   AlertCircle,
   Repeat,
   Flame,
+  Play,
+  PlayCircle,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  CheckCircle,
+  PlusCircle,
+  Link,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -21,7 +29,14 @@ const ICON_MAP: Record<string, React.ElementType> = {
   "alert-circle-outline": AlertCircle,
   "repeat-outline": Repeat,
   flame: Flame,
-  "link-outline": FileText,
+  "link-outline": Link,
+  play: Play,
+  "play-circle-outline": PlayCircle,
+  "chevron-back": ChevronLeft,
+  "chevron-forward": ChevronRight,
+  checkmark: Check,
+  "checkmark-circle": CheckCircle,
+  "add-circle-outline": PlusCircle,
 };
 
 interface IoniconsProps {
