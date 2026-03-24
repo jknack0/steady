@@ -23,8 +23,6 @@ import {
   BookOpen,
   Bell,
   StickyNote,
-  Eye,
-  EyeOff,
   Repeat,
   Music,
   Table2,
@@ -1147,223 +1145,6 @@ function SortableHomeworkItem({
   );
 }
 
-// ── Participant Preview ──────────────────────────────
-
-function ParticipantPreview({ content }: { content: HomeworkContent }) {
-  return (
-    <div className="rounded-lg border bg-muted/20 p-4">
-      <h4 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">
-        Client Preview
-      </h4>
-      <div className="mx-auto max-w-[375px] rounded-xl border bg-white p-4 shadow-sm">
-        {/* Interactive badge */}
-        <div className="mb-3 flex items-center gap-1.5 rounded-md bg-teal-50 px-2.5 py-1.5">
-          <svg className="h-3.5 w-3.5 text-teal-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-          <span className="text-[11px] font-medium text-teal-700">Participants complete this homework interactively in the app</span>
-        </div>
-
-        {/* Due timing */}
-        <div className="mb-3 text-xs text-gray-500">
-          Due:{" "}
-          {content.dueTimingType === "BEFORE_NEXT_SESSION"
-            ? "Before next session"
-            : content.dueTimingType === "SPECIFIC_DATE"
-              ? content.dueTimingValue || "Date TBD"
-              : `${content.dueTimingValue || "?"} days after unlock`}
-        </div>
-
-        {/* Completion rule */}
-        <div className="mb-4 text-xs text-gray-500">
-          {content.completionRule === "ALL"
-            ? "Complete all items"
-            : `Complete at least ${content.completionMinimum || "?"} of ${content.items.length} items`}
-        </div>
-
-        {/* Items */}
-        {content.items.length === 0 ? (
-          <p className="text-center text-sm text-gray-400 py-4">No items yet</p>
-        ) : (
-          <div className="space-y-3">
-            {content.items.map((item, i) => (
-              <PreviewItem key={i} item={item} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PreviewItem({ item }: { item: HomeworkItem }) {
-  const typeConfig = ITEM_TYPES.find((t) => t.type === item.type);
-
-  return (
-    <div className="rounded-lg bg-amber-50 p-3">
-      <div className="mb-2 text-[10px] font-semibold uppercase text-amber-600">
-        {typeConfig?.label}
-      </div>
-      {item.type === "ACTION" && (
-        <div>
-          <div className="flex items-start gap-2">
-            <div className="mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
-            <p className="text-sm text-gray-800">{item.description || "..."}</p>
-          </div>
-          {(item.subSteps || []).length > 0 && (
-            <div className="mt-2 ml-6 space-y-1.5">
-              {item.subSteps!.map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <div className="h-3.5 w-3.5 shrink-0 rounded border border-gray-300" />
-                  <span className="text-xs text-gray-600">{s || "..."}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      {item.type === "RESOURCE_REVIEW" && (
-        <div>
-          <p className="text-sm text-gray-800">
-            {item.resourceTitle || "Untitled"}{" "}
-            <span className="text-xs text-gray-500">({item.resourceType})</span>
-          </p>
-          {item.resourceType === "audio" && item.audioDurationSecs ? (
-            <p className="text-xs text-gray-500 mt-0.5">
-              Duration: {formatDuration(item.audioDurationSecs)}
-            </p>
-          ) : null}
-          {item.resourceType === "audio" && item.audioDescription ? (
-            <p className="text-xs text-gray-500 mt-0.5 italic">{item.audioDescription}</p>
-          ) : null}
-          <div className="mt-2 flex items-center gap-2">
-            <div className="h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
-            <span className="text-xs text-gray-500">Mark as reviewed</span>
-          </div>
-        </div>
-      )}
-      {item.type === "JOURNAL_PROMPT" && (
-        <div className="space-y-2">
-          {(item.prompts || []).map((p, i) => (
-            <div key={i}>
-              <p className="text-sm text-gray-800 mb-1">{p || "..."}</p>
-              <div className="rounded-md border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-300 min-h-[40px]">
-                Write your response...
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {item.type === "BRING_TO_SESSION" && (
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
-          <p className="text-sm text-gray-800">{item.reminderText || "..."}</p>
-        </div>
-      )}
-      {item.type === "FREE_TEXT_NOTE" && (
-        <div>
-          <p className="text-sm text-gray-800">{item.content || "..."}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <div className="h-4 w-4 shrink-0 rounded border-2 border-gray-300" />
-            <span className="text-xs text-gray-500">Got it</span>
-          </div>
-        </div>
-      )}
-      {item.type === "CHOICE" && (
-        <div>
-          {item.description && <p className="text-sm text-gray-800 mb-2">{item.description}</p>}
-          <div className="space-y-1.5">
-            {(item.options || []).map((opt, i) => (
-              <div key={i} className="flex items-center gap-2.5 rounded-md border border-gray-200 bg-white px-3 py-2">
-                <div className="h-4 w-4 shrink-0 rounded-full border-2 border-gray-300" />
-                <div>
-                  <span className="text-sm text-gray-800">{opt.label}</span>
-                  {opt.detail && <p className="text-[10px] text-gray-500">{opt.detail}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {item.type === "WORKSHEET" && (
-        <div>
-          {item.instructions && <p className="text-xs text-gray-600 mb-2">{item.instructions}</p>}
-          <div className="space-y-2">
-            {Array.from({ length: Math.min(item.rowCount, 2) }).map((_, ri) => (
-              <div key={ri} className="rounded-md border border-gray-200 bg-white p-2">
-                <p className="text-[10px] font-medium text-gray-400 mb-1">Row {ri + 1}</p>
-                {item.columns.map((col, ci) => (
-                  <div key={ci} className="mb-1.5">
-                    <p className="text-[10px] font-medium text-gray-500">{col.label}</p>
-                    <div className="mt-0.5 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] text-gray-300">
-                      Enter {col.label.toLowerCase()}...
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-            {item.rowCount > 2 && (
-              <p className="text-[10px] text-gray-400 text-center">+ {item.rowCount - 2} more rows</p>
-            )}
-          </div>
-          {item.tips && <p className="text-xs text-gray-500 mt-2 italic">{item.tips}</p>}
-        </div>
-      )}
-      {item.type === "RATING_SCALE" && (
-        <div>
-          <p className="text-sm text-gray-800">{item.description || "..."}</p>
-          <div className="mt-2 flex items-center gap-1 flex-wrap justify-center">
-            {item.minLabel && <span className="text-[10px] text-gray-400 mr-1">{item.minLabel}</span>}
-            {Array.from({ length: (item.max ?? 10) - (item.min ?? 1) + 1 }).map((_, i) => (
-              <div key={i} className="w-7 h-7 rounded-full border-2 border-gray-200 bg-white flex items-center justify-center text-xs text-gray-500 hover:border-teal-400 transition-colors">
-                {(item.min ?? 1) + i}
-              </div>
-            ))}
-            {item.maxLabel && <span className="text-[10px] text-gray-400 ml-1">{item.maxLabel}</span>}
-          </div>
-        </div>
-      )}
-      {item.type === "TIMER" && (
-        <div className="text-center">
-          <p className="text-sm text-gray-800 mb-2">{item.description || "..."}</p>
-          <div className="text-2xl font-mono text-gray-700 mb-2">
-            {formatDuration(item.durationSeconds)}
-          </div>
-          <div className="inline-block rounded-lg bg-teal-600 px-5 py-1.5 text-xs font-semibold text-white">
-            Start
-          </div>
-        </div>
-      )}
-      {item.type === "MOOD_CHECK" && (
-        <div>
-          {item.description && <p className="text-sm text-gray-800 mb-2">{item.description}</p>}
-          <div className="flex gap-2 justify-center">
-            {(item.moods || []).map((mood, i) => (
-              <div key={i} className="flex flex-col items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-2.5 py-2 hover:border-teal-400 transition-colors">
-                <span className="text-xl">{mood.emoji}</span>
-                <span className="text-[10px] text-gray-500">{mood.label}</span>
-              </div>
-            ))}
-          </div>
-          {item.includeNote && (
-            <div className="mt-2 rounded-md border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-300">
-              Add a note (optional)...
-            </div>
-          )}
-        </div>
-      )}
-      {item.type === "HABIT_TRACKER" && (
-        <div>
-          <p className="text-sm font-medium text-gray-800">{item.habitLabel || "..."}</p>
-          {item.description && <p className="text-xs text-gray-600 mt-1">{item.description}</p>}
-          <div className="mt-2 flex gap-2">
-            <div className="flex-1 rounded-lg border-2 border-gray-200 bg-white py-2 text-center text-xs font-medium text-gray-500 hover:border-teal-400 transition-colors">Yes</div>
-            <div className="flex-1 rounded-lg border-2 border-gray-200 bg-white py-2 text-center text-xs font-medium text-gray-500 hover:border-red-300 transition-colors">No</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main Homework Editor ─────────────────────────────
 
 export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEditorProps) {
@@ -1373,7 +1154,6 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
     items: rawContent.items.map((item, i) => ({ ...item, sortOrder: item.sortOrder ?? i })),
   } as HomeworkContent;
 
-  const [showPreview, setShowPreview] = useState(false);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showPdfImport, setShowPdfImport] = useState(false);
@@ -1508,39 +1288,16 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
         <h4 className="text-sm font-semibold">
           Homework Items ({content.items.length})
         </h4>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowMobilePreview(true)}
-          >
-            <Smartphone className="mr-1 h-4 w-4" />
-            Mobile Preview
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPreview(!showPreview)}
-          >
-            {showPreview ? (
-              <>
-                <EyeOff className="mr-1 h-4 w-4" />
-                Hide Preview
-              </>
-            ) : (
-              <>
-                <Eye className="mr-1 h-4 w-4" />
-                Preview
-              </>
-            )}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowMobilePreview(true)}
+        >
+          <Smartphone className="mr-1 h-4 w-4" />
+          Mobile Preview
+        </Button>
       </div>
-
-      {/* Preview Panel */}
-      {showPreview && <ParticipantPreview content={content} />}
 
       {/* Sortable Items */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

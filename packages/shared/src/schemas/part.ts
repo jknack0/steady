@@ -399,7 +399,7 @@ const StyledContentSchema = z.object({
 const PdfContentSchema = z.object({
   type: z.literal("PDF"),
   fileKey: z.string(),
-  url: z.string().url(),
+  url: z.string().url().or(z.literal("")),
   fileName: z.string().max(200),
   description: z.string().max(2000).optional(),
   pageCount: z.number().int().min(1).optional(),
