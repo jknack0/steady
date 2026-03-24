@@ -66,6 +66,18 @@ const HomeworkChoiceSchema = z.object({
   sortOrder: z.number().int(),
 });
 
+const HomeworkWorksheetSchema = z.object({
+  type: z.literal("WORKSHEET"),
+  sortOrder: z.number(),
+  instructions: z.string().max(2000).optional(),
+  columns: z.array(z.object({
+    label: z.string().max(200),
+    description: z.string().max(500).optional(),
+  })).min(1).max(10),
+  rowCount: z.number().int().min(1).max(20).default(5),
+  tips: z.string().max(2000).optional(),
+});
+
 export const HomeworkItemSchema = z.discriminatedUnion("type", [
   HomeworkActionSchema,
   HomeworkResourceReviewSchema,
@@ -73,6 +85,7 @@ export const HomeworkItemSchema = z.discriminatedUnion("type", [
   HomeworkBringToSessionSchema,
   HomeworkFreeTextNoteSchema,
   HomeworkChoiceSchema,
+  HomeworkWorksheetSchema,
 ]);
 
 // ── Part Content Schemas (discriminated union) ─────────
@@ -304,6 +317,7 @@ export const ReorderPartsSchema = z.object({
 
 export type PartContent = z.infer<typeof PartContentSchema>;
 export type HomeworkItem = z.infer<typeof HomeworkItemSchema>;
+export type WorksheetHomeworkItem = z.infer<typeof HomeworkWorksheetSchema>;
 export type HomeworkContent = z.infer<typeof HomeworkContentSchema>;
 export type RecurrenceType = z.infer<typeof RecurrenceTypeEnum>;
 export type HomeworkInstanceStatus = z.infer<typeof HomeworkInstanceStatusEnum>;

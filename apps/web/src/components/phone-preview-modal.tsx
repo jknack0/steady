@@ -179,7 +179,36 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
         {(c.items || []).map((item: any, i: number) => (
           <div key={i} className="rounded-lg bg-[#F5ECD7] p-3">
             <span className="text-[10px] font-semibold uppercase text-[#8A8A8A] tracking-wider">{item.type?.replace(/_/g, " ")}</span>
-            <p className="text-sm text-[#2D2D2D] mt-1">{item.description || item.reminderText || item.content || item.resourceTitle || "..."}</p>
+            {item.type === "WORKSHEET" && item.columns?.length > 0 ? (
+              <div className="mt-1">
+                {item.instructions && <p className="text-xs text-[#5A5A5A] mb-2">{item.instructions}</p>}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="border border-[#E8DCC2] bg-[#EDE5CF] px-2 py-1 text-left font-medium text-[#8A7A5A]">#</th>
+                        {item.columns.map((col: any, ci: number) => (
+                          <th key={ci} className="border border-[#E8DCC2] bg-[#EDE5CF] px-2 py-1 text-left font-medium text-[#8A7A5A]">{col.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: item.rowCount || 5 }).map((_: any, ri: number) => (
+                        <tr key={ri}>
+                          <td className="border border-[#E8DCC2] px-2 py-1 text-[#8A8A8A]">{ri + 1}</td>
+                          {item.columns.map((_: any, cj: number) => (
+                            <td key={cj} className="border border-[#E8DCC2] px-2 py-1 text-[#D4D0CB]">___</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {item.tips && <p className="text-xs text-[#8A8A8A] mt-2 italic">{item.tips}</p>}
+              </div>
+            ) : (
+              <p className="text-sm text-[#2D2D2D] mt-1">{item.description || item.reminderText || item.content || item.resourceTitle || "..."}</p>
+            )}
           </div>
         ))}
       </div>

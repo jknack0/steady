@@ -27,6 +27,7 @@ import {
   EyeOff,
   Repeat,
   Music,
+  Table2,
 } from "lucide-react";
 import { FileUpload } from "@/components/file-upload";
 import {
@@ -54,6 +55,7 @@ type ResourceReviewItem = Extract<HomeworkItem, { type: "RESOURCE_REVIEW" }>;
 type JournalPromptItem = Extract<HomeworkItem, { type: "JOURNAL_PROMPT" }>;
 type BringToSessionItem = Extract<HomeworkItem, { type: "BRING_TO_SESSION" }>;
 type FreeTextNoteItem = Extract<HomeworkItem, { type: "FREE_TEXT_NOTE" }>;
+type WorksheetItem = Extract<HomeworkItem, { type: "WORKSHEET" }>;
 
 interface HomeworkEditorProps {
   content: HomeworkContent;
@@ -66,6 +68,7 @@ const ITEM_TYPES: { type: HomeworkItem["type"]; label: string; icon: React.Eleme
   { type: "JOURNAL_PROMPT", label: "Journal Prompt", icon: BookOpen },
   { type: "BRING_TO_SESSION", label: "Bring-to-Session", icon: Bell },
   { type: "FREE_TEXT_NOTE", label: "Free Text Note", icon: StickyNote },
+  { type: "WORKSHEET", label: "Worksheet", icon: Table2 },
 ];
 
 // ── Homework Settings ────────────────────────────────
@@ -679,6 +682,107 @@ function FreeTextNoteEditor({
   );
 }
 
+function WorksheetItemEditor({
+  item,
+  onUpdate,
+}: {
+  item: WorksheetItem;
+  onUpdate: (item: WorksheetItem) => void;
+}) {
+  const addColumn = () => {
+    const columns = [...item.columns, { label: `Column ${item.columns.length + 1}`, description: "" }];
+    onUpdate({ ...item, columns });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Instructions (optional)</Label>
+        <textarea
+          value={item.instructions || ""}
+          onChange={(e) => onUpdate({ ...item, instructions: e.target.value })}
+          placeholder="Explain how to fill in the worksheet..."
+          className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+        />
+      </div>
+
+      {/* Columns */}
+      <div>
+        <Label className="text-xs">Columns</Label>
+        <div className="mt-1 space-y-2">
+          {item.columns.map((col, i) => (
+            <div key={i} className="flex items-start gap-2 rounded-md border bg-muted/20 p-2">
+              <div className="flex-1 space-y-1">
+                <Input
+                  value={col.label}
+                  onChange={(e) => {
+                    const columns = [...item.columns];
+                    columns[i] = { ...columns[i], label: e.target.value };
+                    onUpdate({ ...item, columns });
+                  }}
+                  placeholder={`Column ${i + 1} label`}
+                />
+                <Input
+                  value={col.description || ""}
+                  onChange={(e) => {
+                    const columns = [...item.columns];
+                    columns[i] = { ...columns[i], description: e.target.value };
+                    onUpdate({ ...item, columns });
+                  }}
+                  placeholder="Description (optional)"
+                  className="text-xs"
+                />
+              </div>
+              {item.columns.length > 1 && (
+                <button
+                  onClick={() => {
+                    const columns = item.columns.filter((_, idx) => idx !== i);
+                    onUpdate({ ...item, columns });
+                  }}
+                  className="mt-1 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {item.columns.length < 10 && (
+          <Button type="button" variant="ghost" size="sm" onClick={addColumn} className="mt-1">
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add column
+          </Button>
+        )}
+      </div>
+
+      {/* Row count */}
+      <div className="flex items-center gap-2">
+        <Label className="text-xs">Number of rows</Label>
+        <Input
+          type="number"
+          min={1}
+          max={20}
+          value={item.rowCount}
+          onChange={(e) =>
+            onUpdate({ ...item, rowCount: Math.max(1, Math.min(20, parseInt(e.target.value) || 1)) })
+          }
+          className="w-20"
+        />
+      </div>
+
+      <div>
+        <Label className="text-xs">Tips (optional)</Label>
+        <textarea
+          value={item.tips || ""}
+          onChange={(e) => onUpdate({ ...item, tips: e.target.value })}
+          placeholder="Any tips or guidance for completing the worksheet..."
+          className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
+        />
+      </div>
+    </div>
+  );
+}
+
 // ── Sortable Homework Item ───────────────────────────
 
 function SortableHomeworkItem({
@@ -724,6 +828,8 @@ function SortableHomeworkItem({
         return (
           <FreeTextNoteEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />
         );
+      case "WORKSHEET":
+        return <WorksheetItemEditor item={item} onUpdate={(updated) => onUpdate(index, updated)} />;
       default:
         return null;
     }
@@ -856,6 +962,34 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
       {item.type === "FREE_TEXT_NOTE" && (
         <p className="text-sm text-gray-800">{item.content || "..."}</p>
       )}
+      {item.type === "WORKSHEET" && (
+        <div>
+          {item.instructions && <p className="text-xs text-gray-600 mb-2">{item.instructions}</p>}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr>
+                  <th className="border border-gray-200 bg-gray-50 px-2 py-1 text-left font-medium">#</th>
+                  {item.columns.map((col, i) => (
+                    <th key={i} className="border border-gray-200 bg-gray-50 px-2 py-1 text-left font-medium">{col.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: item.rowCount }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="border border-gray-200 px-2 py-1 text-gray-400">{i + 1}</td>
+                    {item.columns.map((_, j) => (
+                      <td key={j} className="border border-gray-200 px-2 py-1 text-gray-300">___</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {item.tips && <p className="text-xs text-gray-500 mt-2 italic">{item.tips}</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -905,6 +1039,20 @@ export function HomeworkPartEditor({ content, onChange }: HomeworkEditorProps) {
         break;
       case "CHOICE":
         newItem = { type, sortOrder, description: "", options: [{ label: "" }, { label: "" }] };
+        break;
+      case "WORKSHEET":
+        newItem = {
+          type,
+          sortOrder,
+          instructions: "",
+          columns: [
+            { label: "Column 1", description: "" },
+            { label: "Column 2", description: "" },
+            { label: "Column 3", description: "" },
+          ],
+          rowCount: 5,
+          tips: "",
+        };
         break;
     }
 

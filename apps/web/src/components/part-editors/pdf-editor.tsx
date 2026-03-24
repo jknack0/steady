@@ -25,36 +25,38 @@ export function PdfPartEditor({ content, onChange }: PdfEditorProps) {
       <div className="grid gap-2">
         <Label>PDF File</Label>
         {content.fileKey ? (
-          <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
-            <FileText className="h-8 w-8 text-red-500 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{content.fileName || "Uploaded PDF"}</p>
-              {content.pageCount && (
-                <p className="text-xs text-muted-foreground">{content.pageCount} page{content.pageCount > 1 ? "s" : ""}</p>
-              )}
+          <>
+            <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+              <FileText className="h-8 w-8 text-red-500 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{content.fileName || "Uploaded PDF"}</p>
+                {content.pageCount && (
+                  <p className="text-xs text-muted-foreground">{content.pageCount} page{content.pageCount > 1 ? "s" : ""}</p>
+                )}
+              </div>
+              <a
+                href={content.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline"
+              >
+                Open
+              </a>
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground underline"
+                onClick={() => onChange({ ...content, fileKey: "", url: "", fileName: "" })}
+              >
+                Remove
+              </button>
             </div>
-            <a
-              href={content.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline"
-            >
-              Open
-            </a>
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-foreground underline"
-              onClick={() => onChange({ ...content, fileKey: "", url: "", fileName: "" })}
-            >
-              Remove
-            </button>
-          </div>
-          <iframe
-            src={content.url}
-            className="w-full rounded-lg border"
-            style={{ height: "600px" }}
-            title={content.fileName || "PDF Preview"}
-          />
+            <iframe
+              src={content.url}
+              className="w-full rounded-lg border"
+              style={{ height: "600px" }}
+              title={content.fileName || "PDF Preview"}
+            />
+          </>
         ) : (
           <FileUpload
             context="pdf"

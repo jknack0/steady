@@ -577,7 +577,7 @@ export function DividerRenderer({ content }: { content: { label: string } }) {
 export function HomeworkRenderer({
   content,
 }: {
-  content: { items: Array<{ type: string; description?: string; subSteps?: string[]; prompts?: string[]; reminderText?: string; content?: string; resourceTitle?: string; resourceType?: string; resourceUrl?: string; resourceKey?: string; audioDurationSecs?: number; audioDescription?: string; options?: Array<{ label: string; detail?: string }> }> };
+  content: { items: Array<{ type: string; description?: string; subSteps?: string[]; prompts?: string[]; reminderText?: string; content?: string; resourceTitle?: string; resourceType?: string; resourceUrl?: string; resourceKey?: string; audioDurationSecs?: number; audioDescription?: string; options?: Array<{ label: string; detail?: string }>; instructions?: string; columns?: Array<{ label: string; description?: string }>; rowCount?: number; tips?: string }> };
 }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -642,6 +642,34 @@ export function HomeworkRenderer({
                   </View>
                 </View>
               ))}
+            </View>
+          ) : null}
+          {item.type === "WORKSHEET" && item.columns && item.columns.length > 0 ? (
+            <View style={{ marginTop: 8 }}>
+              {item.instructions ? (
+                <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 8 }}>{item.instructions}</Text>
+              ) : null}
+              {Array.from({ length: item.rowCount || 5 }).map((_, ri) => (
+                <View key={ri} style={{ marginBottom: 12, backgroundColor: "#FAF6ED", borderRadius: 8, padding: 12, borderWidth: 1, borderColor: "#E8DCC2" }}>
+                  <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", marginBottom: 6 }}>Row {ri + 1}</Text>
+                  {item.columns!.map((col, ci) => (
+                    <View key={ci} style={{ marginBottom: 8 }}>
+                      <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 4 }}>{col.label}</Text>
+                      {col.description ? (
+                        <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginBottom: 4 }}>{col.description}</Text>
+                      ) : null}
+                      <TextInput
+                        style={{ borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 6, paddingHorizontal: 10, paddingVertical: 8, fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", backgroundColor: "#FFFFFF" }}
+                        placeholder={`Enter ${col.label.toLowerCase()}...`}
+                        placeholderTextColor="#D4D0CB"
+                      />
+                    </View>
+                  ))}
+                </View>
+              ))}
+              {item.tips ? (
+                <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", fontStyle: "italic", marginTop: 4 }}>{item.tips}</Text>
+              ) : null}
             </View>
           ) : null}
         </View>
