@@ -6,6 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Plus,
   Trash2,
   GripVertical,
@@ -973,31 +980,38 @@ export function HomeworkPartEditor({ content, onChange }: HomeworkEditorProps) {
       </DndContext>
 
       {/* Add Item */}
-      <div className="relative">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAddMenu(!showAddMenu)}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Item
-        </Button>
-        {showAddMenu && (
-          <div className="absolute left-0 top-full z-10 mt-1 w-56 rounded-md border bg-popover p-1 shadow-md">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setShowAddMenu(true)}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Add Item
+      </Button>
+
+      <Dialog open={showAddMenu} onOpenChange={setShowAddMenu}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Homework Item</DialogTitle>
+            <DialogDescription>
+              Choose an item type to add to this homework assignment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 py-2">
             {ITEM_TYPES.map(({ type, label, icon: ItemIcon }) => (
               <button
                 key={type}
                 onClick={() => handleAddItem(type)}
-                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+                className="flex flex-col items-center gap-2 rounded-lg border p-4 hover:bg-accent hover:border-primary/30 transition-colors text-center"
               >
-                <ItemIcon className="h-4 w-4 text-orange-600" />
-                {label}
+                <ItemIcon className="h-6 w-6 text-orange-600" />
+                <span className="text-sm font-medium">{label}</span>
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
