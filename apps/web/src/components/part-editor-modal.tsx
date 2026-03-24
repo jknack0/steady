@@ -252,13 +252,13 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={step === "editor" ? "sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0" : "sm:max-w-lg"}>
+      <DialogContent className="sm:max-w-3xl w-full max-h-[85vh] h-[85vh] overflow-hidden flex flex-col p-0">
         {step === "type" ? (
-          <>
+          <div className="flex-1 overflow-y-auto p-6">
             <DialogHeader>
               <DialogTitle>Add Part</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-4">
               {CREATABLE_TYPES.map((type) => {
                 const tc = PART_TYPE_CONFIG[type];
                 if (!tc) return null;
@@ -278,7 +278,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
                 );
               })}
             </div>
-          </>
+          </div>
         ) : (
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
