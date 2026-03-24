@@ -319,27 +319,16 @@ export function AssessmentPartEditor({ content, onChange }: AssessmentEditorProp
   return (
     <div className="space-y-4">
       {/* Settings */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label className="text-xs">Assessment Title</Label>
-          <Input
-            value={safeContent.title}
-            onChange={(e) => updateField({ title: e.target.value })}
-            placeholder="e.g., ADHD Symptom Checklist"
-            className="mt-1"
+      <div className="flex items-center gap-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={safeContent.scoringEnabled}
+            onChange={(e) => updateField({ scoringEnabled: e.target.checked })}
+            className="accent-primary"
           />
-        </div>
-        <div className="flex items-end">
-          <label className="flex items-center gap-2 text-sm pb-2">
-            <input
-              type="checkbox"
-              checked={safeContent.scoringEnabled}
-              onChange={(e) => updateField({ scoringEnabled: e.target.checked })}
-              className="accent-primary"
-            />
-            Enable scoring
-          </label>
-        </div>
+          Enable scoring
+        </label>
       </div>
 
       <div>
