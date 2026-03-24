@@ -174,7 +174,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={step === "editor" ? "sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" : "sm:max-w-lg"}>
+      <DialogContent className={step === "editor" ? "sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0" : "sm:max-w-lg"}>
         {step === "type" ? (
           <>
             <DialogHeader>
@@ -203,7 +203,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
           </>
         ) : (
           <>
-            <DialogHeader className="shrink-0">
+            <DialogHeader className="shrink-0 px-6 pt-6">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setStep("type")}
@@ -216,7 +216,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto space-y-4 py-2">
+            <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
               {/* Title + Required */}
               <div className="flex items-end gap-3">
                 <div className="flex-1 space-y-1.5">
@@ -253,7 +253,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-2 border-t pt-3 shrink-0">
+            <div className="flex justify-end gap-2 border-t px-6 py-4 shrink-0">
               <Button variant="outline" onClick={handleClose}>Cancel</Button>
               <Button onClick={handleCreate} disabled={!title.trim() || isPending}>
                 {isPending ? (
@@ -365,8 +365,8 @@ export function EditPartModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Icon className={`h-5 w-5 ${typeConfig.color}`} />
@@ -392,7 +392,7 @@ export function EditPartModal({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 py-2">
+        <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
           {/* Title + Required */}
           <div className="flex items-end gap-3">
             <div className="flex-1 space-y-1.5">
@@ -426,7 +426,7 @@ export function EditPartModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t pt-3 shrink-0">
+        <div className="flex justify-end border-t px-6 py-4 shrink-0">
           <Button onClick={handleClose}>Done</Button>
         </div>
       </DialogContent>
