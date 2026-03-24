@@ -34,6 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
 import {
   Loader2,
@@ -57,7 +59,7 @@ import {
   Plus,
 } from "lucide-react";
 
-type Tab = "overview" | "rtm";
+type Tab = "overview" | "trackers" | "rtm";
 
 export default function ParticipantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -97,24 +99,29 @@ export default function ParticipantDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
-        {(["overview", "rtm"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px",
-              tab === t
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t === "rtm" ? "RTM" : t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
+        {(["overview", "trackers", "rtm"] as const).map((t) => {
+          const labels: Record<Tab, string> = { overview: "Overview", trackers: "Daily Trackers", rtm: "RTM" };
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px",
+                tab === t
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {labels[t]}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "overview" ? (
         <OverviewTab data={data} participantId={id} />
+      ) : tab === "trackers" ? (
+        <TrackersTab participantProfileId={data.participantProfileId} participantUserId={data.participant.id} />
       ) : (
         <RtmTabWrapper participantId={id} />
       )}
@@ -1255,6 +1262,195 @@ function CalendarHeatmap({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── Trackers Tab ────────────────────────────────────────────
+
+interface TrackerData {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  reminderTime: string;
+  createdAt: string;
+  fields: Array<{ id: string; label: string; fieldType: string; options: any; sortOrder: number; isRequired: boolean }>;
+  _count: { entries: number };
+}
+
+interface TemplateData {
+  key: string;
+  name: string;
+  description: string;
+  fields: Array<{ label: string; fieldType: string }>;
+}
+
+function TrackersTab({ participantProfileId, participantUserId }: { participantProfileId: string; participantUserId: string }) {
+  const queryClient = useQueryClient();
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const { data: trackers, isLoading } = useQuery<TrackerData[]>({
+    queryKey: ["participant-trackers", participantProfileId],
+    queryFn: () => api.get(`/api/daily-trackers?participantId=${participantProfileId}`),
+  });
+
+  const { data: templates } = useQuery<TemplateData[]>({
+    queryKey: ["tracker-templates"],
+    queryFn: () => api.get("/api/daily-trackers/templates"),
+    enabled: showTemplates,
+  });
+
+  const createFromTemplate = useMutation({
+    mutationFn: (templateKey: string) =>
+      api.post("/api/daily-trackers/from-template", {
+        templateKey,
+        participantId: participantProfileId,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
+      setShowTemplates(false);
+    },
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      api.put(`/api/daily-trackers/${id}`, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
+    },
+  });
+
+  const deleteTracker = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/daily-trackers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
+    },
+  });
+
+  if (isLoading) return <LoadingState />;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Daily Trackers</h3>
+          <p className="text-sm text-muted-foreground">
+            Assign daily trackers for this client to complete in the app.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => setShowTemplates(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Tracker
+        </Button>
+      </div>
+
+      {(!trackers || trackers.length === 0) ? (
+        <div className="rounded-lg border border-dashed py-12 text-center">
+          <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No trackers assigned yet</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            Add a tracker from a template to get started
+          </p>
+          <Button size="sm" variant="outline" className="mt-4" onClick={() => setShowTemplates(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Tracker
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {trackers.map((tracker) => (
+            <div
+              key={tracker.id}
+              className={cn(
+                "rounded-lg border p-4 transition-colors",
+                !tracker.isActive && "opacity-60"
+              )}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-teal shrink-0" />
+                    <h4 className="text-sm font-semibold truncate">{tracker.name}</h4>
+                    <Badge variant={tracker.isActive ? "default" : "secondary"} className="text-xs shrink-0">
+                      {tracker.isActive ? "Active" : "Paused"}
+                    </Badge>
+                  </div>
+                  {tracker.description && (
+                    <p className="text-xs text-muted-foreground mt-1 ml-6">{tracker.description}</p>
+                  )}
+                  <div className="flex items-center gap-4 mt-2 ml-6 text-xs text-muted-foreground">
+                    <span>{tracker.fields.length} fields</span>
+                    <span>{tracker._count.entries} entries</span>
+                    <span>Reminder: {tracker.reminderTime}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleActive.mutate({ id: tracker.id, isActive: !tracker.isActive })}
+                  >
+                    {tracker.isActive ? "Pause" : "Resume"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (confirm("Delete this tracker? All entries will be lost.")) {
+                        deleteTracker.mutate(tracker.id);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Template picker dialog */}
+      <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Daily Tracker</DialogTitle>
+            <DialogDescription>
+              Choose a tracker template to assign to this client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2 max-h-[60vh] overflow-y-auto">
+            {templates?.map((template) => (
+              <button
+                key={template.key}
+                onClick={() => createFromTemplate.mutate(template.key)}
+                disabled={createFromTemplate.isPending}
+                className="w-full text-left rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-teal shrink-0" />
+                  <span className="text-sm font-semibold">{template.name}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 ml-6">{template.description}</p>
+                <div className="flex flex-wrap gap-1 mt-2 ml-6">
+                  {template.fields.map((f, i) => (
+                    <Badge key={i} variant="secondary" className="text-[10px]">
+                      {f.label}
+                    </Badge>
+                  ))}
+                </div>
+              </button>
+            ))}
+            {!templates && (
+              <div className="py-8 text-center">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

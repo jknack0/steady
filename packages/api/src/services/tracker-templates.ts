@@ -124,7 +124,8 @@ export async function createTrackerFromTemplate(
   templateKey: string,
   createdById: string,
   programId?: string,
-  enrollmentId?: string
+  enrollmentId?: string,
+  participantId?: string
 ): Promise<string> {
   const template = TEMPLATES.find((t) => t.key === templateKey);
   if (!template) {
@@ -138,6 +139,7 @@ export async function createTrackerFromTemplate(
       createdById,
       programId: programId || null,
       enrollmentId: enrollmentId || null,
+      participantId: participantId || null,
       fields: {
         create: template.fields.map((field, index) => ({
           label: field.label,

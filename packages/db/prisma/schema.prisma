@@ -254,6 +254,7 @@ model ParticipantProfile {
   tasks          Task[]
   calendarEvents CalendarEvent[]
   journalEntries JournalEntry[]
+  dailyTrackers  DailyTracker[]
 
   @@map("participant_profiles")
 }
@@ -513,24 +514,27 @@ model HomeworkInstance {
 // ── Daily Trackers ────────────────────────────────────
 
 model DailyTracker {
-  id           String       @id @default(cuid())
-  programId    String?
-  program      Program?     @relation(fields: [programId], references: [id], onDelete: Cascade)
-  enrollmentId String?
-  enrollment   Enrollment?  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  createdById  String
-  name         String
-  description  String?
-  reminderTime String       @default("20:00")
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id            String              @id @default(cuid())
+  programId     String?
+  program       Program?            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  enrollmentId  String?
+  enrollment    Enrollment?         @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   ParticipantProfile? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  createdById   String
+  name          String
+  description   String?
+  reminderTime  String              @default("20:00")
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   fields  DailyTrackerField[]
   entries DailyTrackerEntry[]
 
   @@index([programId])
   @@index([enrollmentId])
+  @@index([participantId])
   @@map("daily_trackers")
 }
 

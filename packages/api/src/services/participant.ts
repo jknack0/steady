@@ -506,6 +506,7 @@ export async function getAssignedTrackers(
       OR: [
         { programId: { in: programIds } },
         { enrollmentId: { in: enrollmentIds } },
+        { participantId: participantProfileId },
       ],
     },
     include: {

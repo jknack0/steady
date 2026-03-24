@@ -32,7 +32,7 @@ router.get("/templates", (_req: Request, res: Response) => {
 // POST /api/daily-trackers — Create tracker with fields
 router.post("/", validate(CreateDailyTrackerSchema), async (req: Request, res: Response) => {
   try {
-    const { name, description, programId, enrollmentId, reminderTime, fields } = req.body;
+    const { name, description, programId, enrollmentId, participantId, reminderTime, fields } = req.body;
 
     // Verify ownership if programId provided
     if (programId) {
@@ -49,6 +49,7 @@ router.post("/", validate(CreateDailyTrackerSchema), async (req: Request, res: R
         description: description || null,
         programId: programId || null,
         enrollmentId: enrollmentId || null,
+        participantId: participantId || null,
         reminderTime: reminderTime || "20:00",
         createdById: req.user!.userId,
         fields: {
@@ -77,7 +78,7 @@ router.post(
   validate(CreateTrackerFromTemplateSchema),
   async (req: Request, res: Response) => {
     try {
-      const { templateKey, programId, enrollmentId } = req.body;
+      const { templateKey, programId, enrollmentId, participantId } = req.body;
 
       if (programId) {
         const program = await verifyProgramOwnership(programId, req.user!.clinicianProfileId!);
@@ -91,7 +92,8 @@ router.post(
         templateKey,
         req.user!.userId,
         programId,
-        enrollmentId
+        enrollmentId,
+        participantId
       );
 
       const tracker = await prisma.dailyTracker.findUnique({
@@ -111,30 +113,39 @@ router.post(
   }
 );
 
-// GET /api/daily-trackers?programId=X — List trackers for a program
+// GET /api/daily-trackers?programId=X or ?participantId=X — List trackers
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { programId } = req.query;
+    const { programId, participantId } = req.query;
 
-    if (!programId) {
-      res.status(400).json({ success: false, error: "programId is required" });
+    if (!programId && !participantId) {
+      res.status(400).json({ success: false, error: "programId or participantId is required" });
       return;
     }
 
-    const program = await verifyProgramOwnership(programId as string, req.user!.clinicianProfileId!);
-    if (!program) {
-      res.status(404).json({ success: false, error: "Program not found" });
-      return;
+    const where: any = {};
+
+    if (programId) {
+      const program = await verifyProgramOwnership(programId as string, req.user!.clinicianProfileId!);
+      if (!program) {
+        res.status(404).json({ success: false, error: "Program not found" });
+        return;
+      }
+      where.programId = programId as string;
+    }
+
+    if (participantId) {
+      where.participantId = participantId as string;
     }
 
     const trackers = await prisma.dailyTracker.findMany({
-      where: { programId: programId as string },
+      where,
       include: {
         fields: { orderBy: { sortOrder: "asc" } },
         _count: { select: { entries: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 100, // Cap at 100 trackers per program
+      take: 100,
     });
 
     res.json({ success: true, data: trackers });
