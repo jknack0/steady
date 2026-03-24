@@ -14,6 +14,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from "react-native";
 import { Ionicons } from "./ionicons-shim";
 import { theme } from "@steady/shared";
+import { RNHomeworkPreview } from "./RNHomeworkPreview";
 
 // ── TEXT ──────────────────────────────────────────────
 // For web preview, we render HTML with dangerouslySetInnerHTML since we have a browser.
@@ -1384,8 +1385,7 @@ export function RNPartContentRenderer({ part }: { part: { type: string; content:
       return <DividerRenderer content={part.content} />;
 
     case "HOMEWORK":
-      // Homework is handled separately by RNHomeworkPreview
-      return null;
+      return <RNHomeworkPreview content={part.content} />;
 
     case "ASSESSMENT":
       return (
