@@ -398,7 +398,6 @@ export default function ModuleEditorPage() {
         onSave={(data) => handlePartUpdate(editPartId!, data)}
         onDelete={() => { handlePartDelete(editPartId!); setEditPartId(null); }}
         onDuplicate={() => { handlePartDuplicate(editPartId!); setEditPartId(null); }}
-        onPreview={() => { setPreviewPartId(editPartId); setPreviewOpen(true); }}
       />
 
       <PhonePreviewModal
