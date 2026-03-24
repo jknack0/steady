@@ -1,8 +1,9 @@
 import { View, Text, ScrollView, TouchableOpacity, Linking, TextInput } from "react-native";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "@steady/shared";
 import { AudioPlayer } from "./audio-player";
+import { api } from "../lib/api";
 
 // ── Rich Text Parser ─────────────────────────────────
 // Converts HTML from Tiptap editor into React Native Text elements
@@ -573,6 +574,35 @@ export function DividerRenderer({ content }: { content: { label: string } }) {
   );
 }
 
+// ── PDF Open Button ──────────────────────────────────
+function PdfOpenButton({ resourceKey }: { resourceKey: string }) {
+  const [loading, setLoading] = useState(false);
+  const handlePress = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.getPresignedDownloadUrl(resourceKey);
+      await Linking.openURL(res.downloadUrl);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setLoading(false);
+    }
+  }, [resourceKey]);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      disabled={loading}
+      style={{ flexDirection: "row", alignItems: "center", marginTop: 8, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: "#F0EDE6", borderRadius: 8 }}
+    >
+      <Ionicons name="document-attach-outline" size={16} color="#5B8A8A" />
+      <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A", marginLeft: 6 }}>
+        {loading ? "Opening..." : "View PDF"}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 // ── HOMEWORK ─────────────────────────────────────────
 export function HomeworkRenderer({
   content,
@@ -594,13 +624,16 @@ export function HomeworkRenderer({
           {item.resourceTitle ? (
             <View style={{ marginTop: 4 }}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name={item.resourceType === "video" ? "videocam-outline" : item.resourceType === "audio" ? "musical-notes-outline" : item.resourceType === "link" ? "link-outline" : "document-text-outline"} size={14} color="#5B8A8A" />
+                <Ionicons name={item.resourceType === "video" ? "videocam-outline" : item.resourceType === "audio" ? "musical-notes-outline" : item.resourceType === "link" ? "link-outline" : item.resourceType === "pdf" ? "document-attach-outline" : "document-text-outline"} size={14} color="#5B8A8A" />
                 <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A", marginLeft: 6 }}>{item.resourceTitle}</Text>
               </View>
               {item.resourceType === "audio" && item.resourceKey ? (
                 <View style={{ marginTop: 8 }}>
                   <AudioPlayer audioKey={item.resourceKey} durationSecs={item.audioDurationSecs} />
                 </View>
+              ) : null}
+              {item.resourceType === "pdf" && item.resourceKey ? (
+                <PdfOpenButton resourceKey={item.resourceKey} />
               ) : null}
               {item.audioDescription ? (
                 <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_400Regular", color: "#7A7A7A", marginTop: 4, fontStyle: "italic" }}>{item.audioDescription}</Text>

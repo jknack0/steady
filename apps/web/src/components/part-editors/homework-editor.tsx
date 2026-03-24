@@ -503,12 +503,15 @@ function ResourceReviewEditor({
           onChange={(e) => {
             const newType = e.target.value as ResourceReviewItem["resourceType"];
             const updates: Partial<ResourceReviewItem> = { resourceType: newType };
-            if (newType === "audio") {
+            if (newType === "audio" || newType === "pdf") {
               updates.resourceUrl = "";
-            } else {
-              updates.resourceKey = undefined;
+            }
+            if (newType !== "audio") {
               updates.audioDurationSecs = undefined;
               updates.audioDescription = undefined;
+            }
+            if (newType !== "audio" && newType !== "pdf") {
+              updates.resourceKey = undefined;
             }
             onUpdate({ ...item, ...updates });
           }}
@@ -518,10 +521,29 @@ function ResourceReviewEditor({
           <option value="video">Video</option>
           <option value="link">Link</option>
           <option value="audio">Audio</option>
+          <option value="pdf">PDF</option>
         </select>
       </div>
 
-      {isAudio ? (
+      {item.resourceType === "pdf" ? (
+        <div>
+          <Label className="text-xs">PDF File</Label>
+          <FileUpload
+            context="pdf"
+            value={item.resourceKey || null}
+            onChange={(key, publicUrl) => {
+              if (key) {
+                onUpdate({ ...item, resourceKey: key, resourceUrl: publicUrl || "" });
+              } else {
+                onUpdate({ ...item, resourceKey: undefined, resourceUrl: "" });
+              }
+            }}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Accepts .pdf
+          </p>
+        </div>
+      ) : isAudio ? (
         <>
           <div>
             <Label className="text-xs">Audio File</Label>
@@ -996,7 +1018,13 @@ function PreviewItem({ item }: { item: HomeworkItem }) {
 
 // ── Main Homework Editor ─────────────────────────────
 
-export function HomeworkPartEditor({ content, onChange }: HomeworkEditorProps) {
+export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEditorProps) {
+  // Ensure all items have sortOrder (may be missing from DB)
+  const content = {
+    ...rawContent,
+    items: rawContent.items.map((item, i) => ({ ...item, sortOrder: item.sortOrder ?? i })),
+  } as HomeworkContent;
+
   const [showPreview, setShowPreview] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
 
@@ -1006,7 +1034,7 @@ export function HomeworkPartEditor({ content, onChange }: HomeworkEditorProps) {
   );
 
   const handleUpdateItem = (index: number, updated: HomeworkItem) => {
-    const items = content.items.map((item, i) => (i === index ? updated : item));
+    const items = content.items.map((item, i) => (i === index ? { ...updated, sortOrder: updated.sortOrder ?? i } : { ...item, sortOrder: item.sortOrder ?? i }));
     onChange({ ...content, items });
   };
 

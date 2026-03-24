@@ -32,7 +32,7 @@ const HomeworkActionSchema = z.object({
 const HomeworkResourceReviewSchema = z.object({
   type: z.literal("RESOURCE_REVIEW"),
   resourceTitle: z.string().min(1),
-  resourceType: z.enum(["handout", "video", "link", "audio"]),
+  resourceType: z.enum(["handout", "video", "link", "audio", "pdf"]),
   resourceUrl: z.string().url().or(z.literal("")), // Empty string allowed for audio (file-only resources)
   resourceKey: z.string().optional(), // S3 key for uploaded files — use presign-download to get URL
   audioDurationSecs: z.number().int().min(0).optional(), // Duration in seconds for audio files
@@ -68,13 +68,13 @@ const HomeworkChoiceSchema = z.object({
 
 const HomeworkWorksheetSchema = z.object({
   type: z.literal("WORKSHEET"),
-  sortOrder: z.number(),
+  sortOrder: z.number().int(),
   instructions: z.string().max(2000).optional(),
   columns: z.array(z.object({
     label: z.string().max(200),
     description: z.string().max(500).optional(),
   })).min(1).max(10),
-  rowCount: z.number().int().min(1).max(20).default(5),
+  rowCount: z.number().int().min(1).max(20),
   tips: z.string().max(2000).optional(),
 });
 
