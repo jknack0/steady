@@ -58,6 +58,7 @@ enum PartType {
   INTAKE_FORM
   SMART_GOALS
   STYLED_CONTENT
+  PDF
 }
 
 enum EnrollmentStatus {

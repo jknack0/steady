@@ -2,10 +2,14 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 
-const BUCKET = process.env.S3_BUCKET || "steady-uploads";
-const REGION = process.env.AWS_REGION || "us-east-1";
+const BUCKET = process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET || "steady-uploads";
+const REGION = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || "us-east-1";
+const ENDPOINT = process.env.AWS_ENDPOINT_URL || undefined;
 
-const s3 = new S3Client({ region: REGION });
+const s3 = new S3Client({
+  region: REGION,
+  ...(ENDPOINT ? { endpoint: ENDPOINT, forcePathStyle: true } : {}),
+});
 
 const UPLOAD_EXPIRY = 300; // 5 minutes
 const DOWNLOAD_EXPIRY = 3600; // 1 hour
@@ -24,11 +28,14 @@ export async function generateUploadUrl(opts: {
     Bucket: BUCKET,
     Key: key,
     ContentType: opts.fileType,
-    ServerSideEncryption: "AES256",
   });
 
   const uploadUrl = await getSignedUrl(s3, command, { expiresIn: UPLOAD_EXPIRY });
-  const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
+
+  // Build public URL based on endpoint
+  const publicUrl = ENDPOINT
+    ? `${ENDPOINT}/${BUCKET}/${key}`
+    : `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
 
   return { uploadUrl, key, publicUrl };
 }

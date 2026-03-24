@@ -10,3 +10,4 @@ export { AssessmentPartEditor } from "./assessment-editor";
 export { IntakeFormPartEditor } from "./intake-form-editor";
 export { SmartGoalsPartEditor } from "./smart-goals-editor";
 export { StyledContentPartEditor } from "./styled-content-editor";
+export { PdfPartEditor } from "./pdf-editor";

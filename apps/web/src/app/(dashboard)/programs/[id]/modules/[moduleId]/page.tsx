@@ -83,6 +83,7 @@ const DEFAULT_CONTENT: Record<string, any> = {
   INTAKE_FORM: { type: "INTAKE_FORM", title: "", instructions: "", sections: ["General"], fields: [] },
   SMART_GOALS: { type: "SMART_GOALS", instructions: "", maxGoals: 3, categories: ["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"], goals: [] },
   STYLED_CONTENT: { type: "STYLED_CONTENT", rawContent: "", styledHtml: "" },
+  PDF: { type: "PDF", fileKey: "", url: "", fileName: "" },
 };
 
 const CREATABLE_TYPES = [
@@ -98,6 +99,7 @@ const CREATABLE_TYPES = [
   "INTAKE_FORM",
   "SMART_GOALS",
   "STYLED_CONTENT",
+  "PDF",
 ];
 
 export default function ModuleEditorPage() {

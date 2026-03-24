@@ -18,6 +18,7 @@ import {
   IntakeFormRenderer,
   SmartGoalsRenderer,
   StyledContentRenderer,
+  PdfRenderer,
 } from "../../../components/part-renderers";
 
 interface PartData {
@@ -281,6 +282,8 @@ function renderContent(
       );
     case "STYLED_CONTENT":
       return <StyledContentRenderer content={content} />;
+    case "PDF":
+      return <PdfRenderer content={content} />;
     default:
       return (
         <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: "center" }}>
@@ -304,6 +307,7 @@ function partTypeLabel(type: string): string {
     INTAKE_FORM: "Intake Form",
     SMART_GOALS: "SMART Goals",
     STYLED_CONTENT: "Content",
+    PDF: "PDF",
   };
   return labels[type] || type;
 }

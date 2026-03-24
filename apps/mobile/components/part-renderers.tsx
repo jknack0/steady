@@ -509,6 +509,48 @@ export function ResourceLinkRenderer({
   );
 }
 
+// ── PDF ─────────────────────────────────────────────
+export function PdfRenderer({
+  content,
+}: {
+  content: { fileKey: string; url: string; fileName: string; description?: string; pageCount?: number };
+}) {
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      {content.url ? (
+        <TouchableOpacity
+          style={{ backgroundColor: "#F7F5F2", borderRadius: 12, padding: 16, flexDirection: "row", alignItems: "center" }}
+          onPress={() => Linking.openURL(content.url)}
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#FDEAEA", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="document-text-outline" size={18} color="#C0392B" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_500Medium", color: "#2D2D2D", marginBottom: 2 }} numberOfLines={2}>
+              {content.fileName || "PDF Document"}
+            </Text>
+            {content.description ? (
+              <Text style={{ fontSize: 13, color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular", marginBottom: 2 }} numberOfLines={2}>
+                {content.description}
+              </Text>
+            ) : null}
+            {content.pageCount ? (
+              <Text style={{ fontSize: 12, color: "#AAAAAA", fontFamily: "PlusJakartaSans_400Regular" }}>
+                {content.pageCount} page{content.pageCount > 1 ? "s" : ""}
+              </Text>
+            ) : null}
+          </View>
+          <View style={{ backgroundColor: "#C0392B", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, marginLeft: 8 }}>
+            <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 13 }}>Open</Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <Text style={{ color: "#8A8A8A", fontFamily: "PlusJakartaSans_400Regular" }}>No PDF uploaded</Text>
+      )}
+    </View>
+  );
+}
+
 // ── DIVIDER ──────────────────────────────────────────
 export function DividerRenderer({ content }: { content: { label: string } }) {
   return (

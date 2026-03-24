@@ -7,7 +7,7 @@ import { Upload, X, FileText, Image, Loader2, CheckCircle, Music } from "lucide-
 import { cn } from "@/lib/utils";
 
 interface FileUploadProps {
-  context: "program-cover" | "handout" | "attachment" | "audio";
+  context: "program-cover" | "handout" | "attachment" | "audio" | "pdf";
   accept?: string;
   value?: string | null;
   onChange: (key: string | null, publicUrl: string | null) => void;
@@ -20,6 +20,7 @@ const ACCEPT_MAP: Record<string, string> = {
   handout: "application/pdf,image/png,image/jpeg",
   attachment: "application/pdf,image/png,image/jpeg,image/webp",
   audio: "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/aac,audio/ogg,.mp3,.m4a,.wav,.aac,.ogg",
+  pdf: "application/pdf",
 };
 
 function isImage(url: string): boolean {

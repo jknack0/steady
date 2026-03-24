@@ -15,6 +15,7 @@ export const PartTypeEnum = z.enum([
   "INTAKE_FORM",
   "SMART_GOALS",
   "STYLED_CONTENT",
+  "PDF",
 ]);
 
 // ── Homework Item Schemas ──────────────────────────────
@@ -257,6 +258,15 @@ const StyledContentSchema = z.object({
   styledHtml: z.string().max(200000).default(""),
 });
 
+const PdfContentSchema = z.object({
+  type: z.literal("PDF"),
+  fileKey: z.string(),
+  url: z.string().url(),
+  fileName: z.string().max(200),
+  description: z.string().max(2000).optional(),
+  pageCount: z.number().int().min(1).optional(),
+});
+
 export const PartContentSchema = z.discriminatedUnion("type", [
   TextContentSchema,
   VideoContentSchema,
@@ -270,6 +280,7 @@ export const PartContentSchema = z.discriminatedUnion("type", [
   IntakeFormContentSchema,
   SmartGoalsContentSchema,
   StyledContentSchema,
+  PdfContentSchema,
 ]);
 
 // ── Part CRUD Schemas ──────────────────────────────────

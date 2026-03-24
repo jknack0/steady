@@ -27,6 +27,7 @@ import {
   IntakeFormPartEditor,
   SmartGoalsPartEditor,
   StyledContentPartEditor,
+  PdfPartEditor,
 } from "@/components/part-editors";
 import type { Part } from "@/hooks/use-parts";
 import {
@@ -66,6 +67,7 @@ const PART_TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string;
   INTAKE_FORM: { icon: FormInput, label: "Intake Form", color: "text-pink-400" },
   SMART_GOALS: { icon: Target, label: "SMART Goals", color: "text-sage" },
   STYLED_CONTENT: { icon: Sparkles, label: "Styled Content", color: "text-violet-400" },
+  PDF: { icon: FileText, label: "PDF Document", color: "text-red-400" },
 };
 
 interface PartCardProps {
@@ -164,6 +166,8 @@ export function PartCard({ part, onUpdate, onDelete, onDuplicate, onPreview }: P
         return <SmartGoalsPartEditor content={content} onChange={handleContentChange} />;
       case "STYLED_CONTENT":
         return <StyledContentPartEditor content={content} onChange={handleContentChange} />;
+      case "PDF":
+        return <PdfPartEditor content={content} onChange={handleContentChange} />;
       default:
         return (
           <div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground">
