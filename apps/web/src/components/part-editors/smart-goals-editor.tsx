@@ -180,7 +180,7 @@ export function SmartGoalsPartEditor({ content, onChange }: SmartGoalsEditorProp
       {/* Settings */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label className="text-xs">Max Goals (participant can set up to)</Label>
+          <Label className="text-xs">Max Goals (client can set up to)</Label>
           <Input
             type="number"
             min={1}
@@ -208,7 +208,7 @@ export function SmartGoalsPartEditor({ content, onChange }: SmartGoalsEditorProp
         <Label className="text-xs mb-2 block">
           Pre-filled Goals ({safeContent.goals.length})
           <span className="font-normal text-muted-foreground ml-1">
-            — optional templates the participant starts with
+            — optional templates the client starts with
           </span>
         </Label>
         <div className="space-y-2">

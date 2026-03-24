@@ -343,7 +343,7 @@ export function AssessmentPartEditor({ content, onChange }: AssessmentEditorProp
       </div>
 
       <div>
-        <Label className="text-xs">Instructions (shown to participant)</Label>
+        <Label className="text-xs">Instructions (shown to client)</Label>
         <Textarea
           value={safeContent.instructions}
           onChange={(e) => updateField({ instructions: e.target.value })}

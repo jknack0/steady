@@ -66,18 +66,18 @@ const BULK_ACTIONS: Record<
     label: "Unlock Next Module",
     icon: <Unlock className="h-4 w-4" />,
     description:
-      "Unlock the next locked module for each selected participant's active enrollment.",
+      "Unlock the next locked module for each selected client's active enrollment.",
   },
   "send-nudge": {
     label: "Send Nudge",
     icon: <Bell className="h-4 w-4" />,
     description:
-      "Send a gentle check-in nudge to each selected participant.",
+      "Send a gentle check-in nudge to each selected client.",
   },
   "push-task": {
     label: "Push Task",
     icon: <Send className="h-4 w-4" />,
-    description: "Push a task to each selected participant.",
+    description: "Push a task to each selected client.",
   },
 };
 
@@ -212,11 +212,11 @@ export default function ParticipantsPage() {
       ) : participants.length === 0 ? (
         <EmptyState
           icon={Users}
-          title={search ? "No results" : "No participants yet"}
+          title={search ? "No results" : "No clients yet"}
           description={
             search
-              ? "No participants match your search."
-              : "No participants enrolled yet. Publish a program and invite participants to get started."
+              ? "No clients match your search."
+              : "No clients enrolled yet. Publish a program and invite clients to get started."
           }
         />
       ) : (
@@ -228,7 +228,7 @@ export default function ParticipantsPage() {
                   <Checkbox
                     checked={allSelected ? true : someSelected ? "indeterminate" : false}
                     onCheckedChange={toggleAll}
-                    aria-label="Select all participants"
+                    aria-label="Select all clients"
                   />
                 </th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
@@ -380,7 +380,7 @@ export default function ParticipantsPage() {
             </DialogTitle>
             <DialogDescription>
               {confirmAction && BULK_ACTIONS[confirmAction].description}
-              {" "}This will apply to {selectedIds.size} participant
+              {" "}This will apply to {selectedIds.size} client
               {selectedIds.size !== 1 ? "s" : ""}.
             </DialogDescription>
           </DialogHeader>

@@ -36,7 +36,7 @@ function RtmBadge() {
 
 const navItems = [
   { href: "/programs", label: "My Programs", icon: BookOpen },
-  { href: "/participants", label: "Participants", icon: Users },
+  { href: "/participants", label: "Clients", icon: Users },
   { href: "/sessions", label: "Sessions", icon: Calendar },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

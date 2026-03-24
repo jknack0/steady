@@ -149,7 +149,7 @@ function PartContentPreview({ part }: { part: PreviewPart }) {
           <div key={i}>
             <p className="text-sm text-[#2D2D2D] mb-1">{prompt}</p>
             <div className="rounded-lg border border-[#D4D0CB] bg-white p-3 min-h-[60px]">
-              <span className="text-xs text-[#D4D0CB]">Participant writes here...</span>
+              <span className="text-xs text-[#D4D0CB]">Client writes here...</span>
             </div>
           </div>
         ))}

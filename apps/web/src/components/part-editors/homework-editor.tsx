@@ -379,7 +379,7 @@ function ActionItemEditor({
         <textarea
           value={item.description || ""}
           onChange={(e) => onUpdate({ ...item, description: e.target.value })}
-          placeholder="What does the participant need to do?"
+          placeholder="What does the client need to do?"
           className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[60px] resize-y"
         />
       </div>
@@ -427,7 +427,7 @@ function ActionItemEditor({
             onChange={(e) => onUpdate({ ...item, addToSteadySystem: e.target.checked })}
             className="accent-primary"
           />
-          Add to participant&apos;s Steady System
+          Add to client&apos;s Steady System
         </label>
       </div>
 
@@ -665,7 +665,7 @@ function FreeTextNoteEditor({
       <textarea
         value={item.content || ""}
         onChange={(e) => onUpdate({ ...item, content: e.target.value })}
-        placeholder="Additional notes or instructions for the participant..."
+        placeholder="Additional notes or instructions for the client..."
         className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm min-h-[80px] resize-y"
       />
     </div>
@@ -763,7 +763,7 @@ function ParticipantPreview({ content }: { content: HomeworkContent }) {
   return (
     <div className="rounded-lg border bg-muted/20 p-4">
       <h4 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">
-        Participant Preview
+        Client Preview
       </h4>
       <div className="mx-auto max-w-[375px] rounded-xl border bg-white p-4 shadow-sm">
         {/* Due timing */}

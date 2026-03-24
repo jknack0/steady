@@ -146,7 +146,7 @@ export function EnrollmentSection({
       setLastName("");
       setAdding(false);
     } catch (err: any) {
-      setError(err.message || "Failed to invite participant");
+      setError(err.message || "Failed to invite client");
     }
   };
 
@@ -171,7 +171,7 @@ export function EnrollmentSection({
         {!adding && programStatus === "PUBLISHED" && (
           <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Invite Participant
+            Invite Client
           </Button>
         )}
       </div>
@@ -179,7 +179,7 @@ export function EnrollmentSection({
       {programStatus !== "PUBLISHED" && !enrollments?.length && (
         <div className="rounded-lg border border-dashed py-8 text-center">
           <p className="text-muted-foreground">
-            Publish this program to start enrolling participants
+            Publish this program to start enrolling clients
           </p>
         </div>
       )}
@@ -187,10 +187,10 @@ export function EnrollmentSection({
       {adding && (
         <form onSubmit={handleInvite} className="mb-4 rounded-lg border p-4 space-y-3">
           <div className="space-y-2">
-            <Label>Participant Email</Label>
+            <Label>Client Email</Label>
             <Input
               type="email"
-              placeholder="participant@example.com"
+              placeholder="client@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -300,7 +300,7 @@ export function EnrollmentSection({
       ) : programStatus === "PUBLISHED" ? (
         <div className="rounded-lg border border-dashed py-8 text-center">
           <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-muted-foreground">No participants enrolled yet</p>
+          <p className="text-muted-foreground">No clients enrolled yet</p>
         </div>
       ) : null}
     </div>

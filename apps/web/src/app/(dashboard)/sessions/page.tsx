@@ -75,7 +75,7 @@ export default function SessionsPage() {
         <div>
           <h1 className="text-3xl font-bold mb-1">Sessions</h1>
           <p className="text-muted-foreground">
-            Manage sessions across all participants.
+            Manage sessions across all clients.
           </p>
         </div>
         <div className="flex gap-2">
@@ -118,7 +118,7 @@ export default function SessionsPage() {
         <div className="rounded-lg border border-dashed py-16 text-center">
           <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="text-muted-foreground">
-            No sessions yet. Schedule sessions from a participant's detail page.
+            No sessions yet. Schedule sessions from a client's detail page.
           </p>
         </div>
       ) : view === "list" ? (
@@ -137,7 +137,7 @@ function ListView({ sessions }: { sessions: Session[] }) {
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Date & Time</th>
-            <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Participant</th>
+            <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Client</th>
             <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Program</th>
             <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
             <th className="text-center text-xs font-medium text-muted-foreground px-4 py-3">Link</th>

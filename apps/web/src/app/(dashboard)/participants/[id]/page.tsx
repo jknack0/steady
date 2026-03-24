@@ -71,7 +71,7 @@ export default function ParticipantDetailPage() {
   if (isError || !data) {
     return (
       <div className="rounded-lg border border-dashed py-12 text-center">
-        <p className="text-muted-foreground">Failed to load participant data.</p>
+        <p className="text-muted-foreground">Failed to load client data.</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export default function ParticipantDetailPage() {
         href="/participants"
         className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-3"
       >
-        <ArrowLeft className="h-3 w-3" /> Back to Participants
+        <ArrowLeft className="h-3 w-3" /> Back to Clients
       </Link>
 
       <div className="flex items-center justify-between mb-6">
@@ -1007,7 +1007,7 @@ function EnrollmentManagement({
     const confirmMessages: Record<string, string> = {
       pause: "Pause this enrollment?",
       resume: "Resume this enrollment?",
-      drop: "Drop this participant from the program? This cannot be undone easily.",
+      drop: "Drop this client from the program? This cannot be undone easily.",
       "reset-progress":
         "Reset all module progress? This will clear all part completions and restart from Module 1.",
     };

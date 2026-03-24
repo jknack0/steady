@@ -792,7 +792,7 @@ export function RtmDashboardContent() {
               action={
                 <Link href="/participants">
                   <Button variant="outline" className="gap-1.5">
-                    Go to Participants
+                    Go to Clients
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Button>
                 </Link>

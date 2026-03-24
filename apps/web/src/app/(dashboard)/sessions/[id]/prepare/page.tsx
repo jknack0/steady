@@ -115,10 +115,10 @@ export default function PrepareSessionPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium block mb-1">Participant Summary</label>
+            <label className="text-sm font-medium block mb-1">Client Summary</label>
             <textarea
               className="w-full rounded-md border px-3 py-2 text-sm min-h-[60px] resize-y"
-              placeholder="Summary shared with participant..."
+              placeholder="Summary shared with client..."
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
             />
