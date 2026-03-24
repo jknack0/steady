@@ -133,30 +133,40 @@ function ContentEditor({ type, content, onChange }: { type: string; content: any
 
 // ── Inline Phone Preview ────────────────────────────
 
-const previewDevice = DEVICES["iphone-15"];
+const previewDevice = DEVICES["iphone-se"]; // Smaller device fits better in modal
+const PREVIEW_SCALE = 0.65;
+const bezel = 8;
+const phoneW = previewDevice.width + bezel * 2;
+const phoneH = previewDevice.height + bezel * 2;
 
 function InlinePhonePreview({ type, title, content }: { type: string; title: string; content: any }) {
   return (
-    <div className="flex justify-center py-4">
+    <div className="flex justify-center">
+      {/* Outer wrapper sets the layout size to the scaled dimensions */}
       <div
-        className="relative origin-top"
         style={{
-          width: previewDevice.width + 16,
-          height: Math.min(previewDevice.height + 16, 600),
-          transform: "scale(0.85)",
-          transformOrigin: "top center",
+          width: phoneW * PREVIEW_SCALE,
+          height: phoneH * PREVIEW_SCALE,
         }}
       >
-        <DeviceFrame device={previewDevice}>
-          {/* App header */}
-          <div className="bg-white px-4 py-3 border-b border-[#F0EDE8]">
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#2D2D2D", fontFamily: "PlusJakartaSans_700Bold, system-ui, sans-serif" }}>
-              {title || "Untitled"}
-            </h3>
-          </div>
-          {/* Part content */}
-          <RNPartContentRenderer part={{ type, content }} />
-        </DeviceFrame>
+        {/* Inner wrapper renders at full size then scales down */}
+        <div
+          style={{
+            width: phoneW,
+            height: phoneH,
+            transform: `scale(${PREVIEW_SCALE})`,
+            transformOrigin: "top left",
+          }}
+        >
+          <DeviceFrame device={previewDevice}>
+            <div className="bg-white px-4 py-3 border-b border-[#F0EDE8]">
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#2D2D2D", fontFamily: "PlusJakartaSans_700Bold, system-ui, sans-serif" }}>
+                {title || "Untitled"}
+              </h3>
+            </div>
+            <RNPartContentRenderer part={{ type, content }} />
+          </DeviceFrame>
+        </div>
       </div>
     </div>
   );
