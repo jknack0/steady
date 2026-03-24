@@ -1,4 +1,5 @@
-import type { ModuleId, ProviderType } from "./modules";
+import type { ModuleId } from "./modules";
+import type { ProviderType } from "../schemas/config";
 import type { DashboardWidgetId } from "./dashboard-widgets";
 
 export interface ProviderPreset {

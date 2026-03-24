@@ -21,7 +21,8 @@ import { useState } from "react";
 import { useRtmDashboard } from "@/hooks/use-rtm";
 
 function RtmBadge() {
-  const { data } = useRtmDashboard();
+  const { isAuthenticated } = useAuth();
+  const { data } = useRtmDashboard(isAuthenticated);
   const count =
     (data?.summary.clientsApproaching ?? 0) +
     (data?.summary.clientsAtRisk ?? 0);

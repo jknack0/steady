@@ -97,10 +97,11 @@ export interface BillingProfile {
 
 // ── Query hooks ─────────────────────────────────────────────────────────────
 
-export function useRtmDashboard() {
+export function useRtmDashboard(enabled = true) {
   return useQuery<RtmDashboardData>({
     queryKey: ["rtm-dashboard"],
     queryFn: () => api.get("/api/rtm/dashboard"),
+    enabled,
   });
 }
 

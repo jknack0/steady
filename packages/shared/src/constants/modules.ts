@@ -1,11 +1,4 @@
-export type ProviderType =
-  | "THERAPIST"
-  | "PSYCHIATRIST"
-  | "PSYCHOLOGIST"
-  | "COUNSELOR"
-  | "PSYCH_NP"
-  | "COACH"
-  | "OTHER";
+import type { ProviderType } from "../schemas/config";
 
 export type ModuleCategory =
   | "MONITORING"

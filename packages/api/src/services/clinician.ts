@@ -478,7 +478,28 @@ export async function getParticipantDetail(
   });
 
   if (enrollments.length === 0) {
-    return { notFound: "No enrollments found for this participant in your programs" as const };
+    // Check if this is a direct client (ClinicianClient relationship)
+    const isDirectClient = await prisma.clinicianClient.findFirst({
+      where: {
+        clinicianId: clinicianProfileId,
+        clientId: participantProfile.user.id,
+        status: { not: "DISCHARGED" },
+      },
+    });
+
+    if (!isDirectClient) {
+      return { notFound: "No enrollments found for this participant in your programs" as const };
+    }
+
+    // Return basic profile for unenrolled clients
+    return {
+      participant: participantProfile.user,
+      participantProfileId: participantProfile.id,
+      enrollments: [],
+      journalEntries: [],
+      smartGoals: [],
+      clinicianTasks: [],
+    };
   }
 
   // Recent shared journal entries
