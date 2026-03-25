@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -269,9 +271,9 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl w-full max-h-[85vh] h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent size="lg">
         {step === "type" ? (
-          <div className="flex-1 overflow-y-auto p-6">
+          <DialogBody className="p-6">
             <DialogHeader>
               <DialogTitle>Add Part</DialogTitle>
             </DialogHeader>
@@ -295,7 +297,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                 );
               })}
             </div>
-          </div>
+          </DialogBody>
         ) : (
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
@@ -355,7 +357,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
+            <DialogBody className="space-y-4">
               {mode === "preview" ? (
                 <InlinePhonePreview type={selectedType!} title={title} content={content} />
               ) : mode === "ai" && canUseAI ? (
@@ -427,11 +429,11 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                   )}
                 </>
               )}
-            </div>
+            </DialogBody>
 
             {/* Footer */}
             {(mode === "manual" || mode === "preview") && (
-              <div className="flex justify-end gap-2 border-t px-6 py-4 shrink-0">
+              <DialogFooter className="shrink-0 px-6 py-4 border-t">
                 <Button variant="outline" onClick={handleClose}>Cancel</Button>
                 <Button onClick={handleCreate} disabled={!title.trim() || isPending}>
                   {isPending ? (
@@ -440,7 +442,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                     "Create Part"
                   )}
                 </Button>
-              </div>
+              </DialogFooter>
             )}
           </>
         )}
@@ -543,7 +545,7 @@ export function EditPartModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent size="lg">
         <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -595,7 +597,7 @@ export function EditPartModal({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
+        <DialogBody className="space-y-4">
           {editMode === "preview" ? (
             <InlinePhonePreview type={part.type} title={title} content={content} />
           ) : (
@@ -631,12 +633,12 @@ export function EditPartModal({
               <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
             </>
           )}
-        </div>
+        </DialogBody>
 
         {/* Footer */}
-        <div className="flex justify-end border-t px-6 py-4 shrink-0">
+        <DialogFooter className="shrink-0 px-6 py-4 border-t">
           <Button onClick={handleClose}>Done</Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
