@@ -36,7 +36,7 @@ const DialogContent = React.forwardRef<
 
   const sizeClasses = {
     sm: "max-w-lg grid gap-4 p-6",
-    md: "max-w-lg h-[65vh] flex flex-col overflow-hidden p-0",
+    md: "max-w-[640px] h-[65vh] flex flex-col overflow-hidden p-0",
     lg: "max-w-3xl h-[68vh] flex flex-col overflow-hidden p-0",
   };
 
