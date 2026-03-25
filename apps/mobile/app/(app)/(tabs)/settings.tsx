@@ -1,4 +1,4 @@
-import { Redirect } from "expo-router";
-export default function SettingsRedirect() {
-  return <Redirect href="/settings" />;
+import { View } from "react-native";
+export default function SettingsPlaceholder() {
+  return <View />;
 }

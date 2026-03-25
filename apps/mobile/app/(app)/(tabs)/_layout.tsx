@@ -54,7 +54,7 @@ export default function TabsLayout() {
           color: "#2D2D2D",
         },
         headerRight: () => (
-          <TouchableOpacity onPress={() => router.push("/(app)/settings")} style={{ marginRight: 16 }}>
+          <TouchableOpacity onPress={() => router.push("/(app)/app-settings")} style={{ marginRight: 16 }}>
             <Ionicons name="settings-outline" size={22} color="#2D2D2D" />
           </TouchableOpacity>
         ),
