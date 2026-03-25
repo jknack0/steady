@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { X, Search, Settings2, GripVertical, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -30,7 +30,7 @@ interface CustomizePanelProps {
   layout: DashboardLayoutItem[];
   enabledModules: string[];
   onSave: (layout: DashboardLayoutItem[]) => void;
-  onCancel: () => void;
+  onClose: () => void;
   isSaving: boolean;
   page?: "dashboard" | "client_overview";
   clientName?: string;
@@ -182,7 +182,7 @@ export function CustomizePanel({
   layout,
   enabledModules,
   onSave,
-  onCancel,
+  onClose,
   isSaving,
   page = "dashboard",
   clientName,
@@ -193,6 +193,25 @@ export function CustomizePanel({
   );
   const [search, setSearch] = useState("");
   const [expandedSettings, setExpandedSettings] = useState<string | null>(null);
+
+  // Auto-save with debounce when layout changes
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLayoutRef = useRef(JSON.stringify(layout));
+
+  useEffect(() => {
+    const currentStr = JSON.stringify(localLayout);
+    if (currentStr === initialLayoutRef.current) return;
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      onSave(localLayout);
+      initialLayoutRef.current = currentStr;
+    }, 1000);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [localLayout, onSave]);
 
   // Get available widget definitions for this page, filtered by enabled modules
   const availableWidgets = useMemo(() => {
@@ -363,23 +382,18 @@ export function CustomizePanel({
     );
   }, [layout]);
 
-  // Save
-  const handleSave = useCallback(() => {
-    onSave(localLayout);
-  }, [localLayout, onSave]);
-
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black/30"
-        onClick={onCancel}
+        onClick={onClose}
       />
 
-      {/* Panel */}
+      {/* Panel — offset by header height (h-16 = 64px) */}
       <div
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-full sm:w-80 bg-background border-l shadow-xl",
+          "fixed top-16 right-0 z-50 h-[calc(100vh-4rem)] w-full sm:w-80 bg-background border-l shadow-xl",
           "flex flex-col animate-in slide-in-from-right duration-200"
         )}
       >
@@ -388,7 +402,7 @@ export function CustomizePanel({
           <h2 className="text-lg font-semibold">Customize</h2>
           <button
             type="button"
-            onClick={onCancel}
+            onClick={onClose}
             className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
           >
             <X className="h-5 w-5" />
@@ -495,31 +509,13 @@ export function CustomizePanel({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center gap-2 px-4 py-3 border-t bg-background">
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            className="flex-1"
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="flex-1"
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save"
-            )}
-          </Button>
-        </div>
+        {/* Footer — auto-save status */}
+        {isSaving && (
+          <div className="flex items-center justify-center gap-2 px-4 py-2 border-t text-sm text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Saving...
+          </div>
+        )}
       </div>
     </>
   );

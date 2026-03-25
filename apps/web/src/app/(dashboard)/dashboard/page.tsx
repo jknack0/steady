@@ -79,11 +79,9 @@ export default function DashboardPage() {
 
   const handleSave = useCallback(async (newLayout: DashboardLayoutItem[]) => {
     await saveLayout.mutateAsync({ dashboardLayout: newLayout });
-    setIsCustomizing(false);
-    setEditingLayout(null);
   }, [saveLayout]);
 
-  const handleCancel = useCallback(() => {
+  const handleClose = useCallback(() => {
     setIsCustomizing(false);
     setEditingLayout(null);
   }, []);
@@ -127,7 +125,7 @@ export default function DashboardPage() {
           layout={editingLayout}
           enabledModules={enabledModules}
           onSave={handleSave}
-          onCancel={handleCancel}
+          onClose={handleClose}
           isSaving={saveLayout.isPending}
         />
       )}
