@@ -12,7 +12,20 @@ export interface ClinicianConfigData {
   presetId: string | null;
   primaryModality: string | null;
   enabledModules: string[];
-  dashboardLayout: Array<{ widgetId: string; visible: boolean }>;
+  dashboardLayout: Array<{
+    widgetId: string;
+    visible: boolean;
+    column?: string;
+    order?: number;
+    settings?: Record<string, unknown>;
+  }>;
+  clientOverviewLayout?: Array<{
+    widgetId: string;
+    visible: boolean;
+    column?: string;
+    order?: number;
+    settings?: Record<string, unknown>;
+  }> | null;
   defaultTrackerPreset: string | null;
   defaultAssessments: Array<{ instrumentId: string; frequency: string }> | null;
   practiceName: string | null;
@@ -41,12 +54,43 @@ export function useSaveClinicianConfig() {
       providerType: string;
       primaryModality?: string;
       enabledModules: string[];
-      dashboardLayout: Array<{ widgetId: string; visible: boolean }>;
+      dashboardLayout: Array<{
+        widgetId: string;
+        visible: boolean;
+        column?: string;
+        order?: number;
+        settings?: Record<string, unknown>;
+      }>;
       defaultTrackerPreset?: string;
       defaultAssessments?: Array<{ instrumentId: string; frequency: string }>;
       practiceName?: string;
       brandColor?: string;
     }) => api.put("/api/config", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
+    },
+  });
+}
+
+export function useSaveDashboardLayout() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      dashboardLayout?: Array<{
+        widgetId: string;
+        visible: boolean;
+        column: string;
+        order: number;
+        settings: Record<string, unknown>;
+      }>;
+      clientOverviewLayout?: Array<{
+        widgetId: string;
+        visible: boolean;
+        column: string;
+        order: number;
+        settings: Record<string, unknown>;
+      }>;
+    }) => api.patch("/api/config/dashboard-layout", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
     },
