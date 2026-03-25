@@ -31,15 +31,15 @@ Split into two concerns:
 
 Settings accessed via gear icon in the header (all screens).
 
-### Tab bar icons
+### Tab bar icons (Ionicons — the app uses `@expo/vector-icons`)
 
-| Tab | Icon | Label |
+| Tab | Icon (Ionicons) | Label |
 |---|---|---|
-| Today | `Sun` or `CalendarCheck` | Today |
-| Program | `BookOpen` | Program |
-| Tasks | `CheckSquare` | Tasks |
-| Calendar | `Calendar` | Calendar |
-| Journal | `BookOpen` or `PenLine` | Journal |
+| Today | `today-outline` / `today` | Today |
+| Program | `book-outline` / `book` | Program |
+| Tasks | `checkbox-outline` / `checkbox` | Tasks |
+| Calendar | `calendar-outline` / `calendar` | Calendar |
+| Journal | `journal-outline` / `journal` | Journal |
 
 ## Today View
 
@@ -51,13 +51,15 @@ One line: "Hi, {firstName}" + today's date on the right. No banner, no backgroun
 
 ### Section 2: Check-in Card
 
-The single daily check-in tracker card. Shows:
-- "Daily Check-in" title
+The participant's single daily tracker (the one `DailyTracker` record where `participantId` matches this user's `ParticipantProfile.id`). Since we now enforce one tracker per participant (via the single check-in model from the earlier spec), the app fetches trackers and renders the first (only) result.
+
+Shows:
+- "Daily Check-in" title (use the tracker's `name` field)
 - Completion status (checkmark if done today, prompt if not)
 - Streak count (flame icon) if > 0
 - Tap to open check-in form
 
-If no check-in is configured, this section is hidden.
+If no tracker exists for this participant, this section is hidden.
 
 ### Section 3: Upcoming Session (conditional)
 
@@ -88,9 +90,21 @@ A single compact card showing:
 
 If not enrolled in any program, shows "No program yet" with a subtle message.
 
-### Empty state
+### Rendering logic
 
-If the user has nothing due today (no check-in, no session, no homework), show a friendly message: "All caught up for today!" with the program progress card below.
+Section 5 (Program Progress Card) is **always rendered** — it's the anchor of the page.
+
+Sections 2-4 are conditional — each is hidden when there's no data.
+
+If all of sections 2-4 are hidden (no check-in, no session, no homework), show a friendly "All caught up for today!" message above the Program Progress Card.
+
+### Insights entry point
+
+The current `GreetingBanner` has a "My Insights" link to `/(app)/insights`. This entry point moves to the greeting row — a small chart icon next to the date that navigates to insights. If insights is not a priority, it can be omitted entirely.
+
+### Pull-to-refresh
+
+The Today view uses `RefreshControl` on its `ScrollView`. On pull, invalidate all relevant query keys: `["participant-sessions"]`, `["homework-instances"]`, `["daily-trackers"]`, `["enrollments"]`.
 
 ## Program Tab
 
@@ -129,8 +143,9 @@ The settings screen content stays the same — just the navigation entry point c
 |---|---|---|
 | `app/(app)/(tabs)/programs.tsx` | **Rewrite** → rename to `today.tsx` | Today view with 5 sections |
 | `app/(app)/(tabs)/program.tsx` | **Create** | Dedicated program tab |
-| `app/(app)/(tabs)/_layout.tsx` | **Modify** | Update tab bar: rename Programs→Today, add Program tab, remove Settings tab, reorder |
+| `app/(app)/(tabs)/_layout.tsx` | **Modify** | Update tab bar: rename Programs→Today, add Program tab, remove Settings tab, reorder. Remove the `programLabel` enrollment-count query (always label "Program"). |
 | `app/(app)/(tabs)/settings.tsx` | **Remove** from tabs | Move to stack navigation |
+| `app/(app)/_layout.tsx` | **Modify** | Add `Stack.Screen name="settings"` entry so `router.push("/settings")` works from the gear icon |
 | `app/(app)/settings.tsx` | **Create** or **Move** | Settings as a stack screen instead of tab |
 | `components/daily-tracker-card.tsx` | **Minor** | Ensure single check-in card works standalone |
 | `components/homework-instances.tsx` | **Minor** | Compact card variant for Today view |
@@ -138,21 +153,26 @@ The settings screen content stays the same — just the navigation entry point c
 
 ### Header gear icon
 
-Add to the tab layout's header configuration:
+Add to the tab layout's header configuration (using Ionicons, not Lucide):
 ```tsx
 headerRight: () => (
   <TouchableOpacity onPress={() => router.push("/settings")}>
-    <Settings className="h-5 w-5" />
+    <Ionicons name="settings-outline" size={22} color="#2D2D2D" />
   </TouchableOpacity>
 )
 ```
+
+### Sign-out
+
+The inline sign-out button in the old `GreetingBanner` is removed. Sign-out remains accessible via Settings (gear icon → Settings screen → Sign Out button). No replacement needed on the Today view.
 
 ## Migration Notes
 
 - The URL `/programs` in the tab bar changes to `/today` — Expo Router handles this via filename
 - Deep links to `/programs` should redirect to `/today`
 - The program detail screen at `app/(app)/program/[enrollmentId].tsx` stays as-is — it's used when navigating from multi-enrollment list
-- Milestone celebrations move to the Program tab (they're about module completion, not daily tasks)
+- `MilestoneCelebration` moves to the Program tab. Its state (`lastCelebratedMilestone` stored via `MILESTONE_STORAGE_KEY` in AsyncStorage) and `useEffect` initialization move with the component to `app/(app)/(tabs)/program.tsx`.
+- Audit push notification payloads in `packages/api/src/services/notification-copy.ts` for hardcoded `/programs` paths — update to `/today` if found.
 
 ## Testing Strategy
 
