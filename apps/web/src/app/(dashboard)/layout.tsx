@@ -300,7 +300,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar — swap for panel content when customizing */}
       {panelContent ? (
-        <div className="hidden w-80 lg:flex flex-col border-r bg-background">
+        <div className="hidden w-64 lg:flex flex-col border-r bg-background">
           {panelContent}
         </div>
       ) : (
