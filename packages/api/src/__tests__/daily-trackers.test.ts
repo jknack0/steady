@@ -97,6 +97,7 @@ describe("POST /api/daily-trackers", () => {
     name: "My Tracker",
     description: "Daily mood tracking",
     programId: "program-1",
+    participantId: "participant-1",
     fields: [
       { label: "Mood", fieldType: "SCALE", options: { min: 0, max: 10 }, sortOrder: 0, isRequired: true },
       { label: "Notes", fieldType: "FREE_TEXT", sortOrder: 1, isRequired: false },
@@ -136,6 +137,7 @@ describe("POST /api/daily-trackers", () => {
   it("creates a tracker without programId", async () => {
     const payload = {
       name: "Standalone Tracker",
+      participantId: "participant-2",
       fields: [
         { label: "Rating", fieldType: "NUMBER", sortOrder: 0, isRequired: true },
       ],
@@ -248,7 +250,7 @@ describe("POST /api/daily-trackers/from-template", () => {
     const res = await request(app)
       .post("/api/daily-trackers/from-template")
       .set(...authHeader())
-      .send({ templateKey: "mood-log", programId: "program-1" });
+      .send({ templateKey: "mood-log", programId: "program-1", participantId: "participant-1" });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -271,7 +273,7 @@ describe("POST /api/daily-trackers/from-template", () => {
     const res = await request(app)
       .post("/api/daily-trackers/from-template")
       .set(...authHeader())
-      .send({ templateKey: "sleep-diary" });
+      .send({ templateKey: "sleep-diary", participantId: "participant-2" });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -284,7 +286,7 @@ describe("POST /api/daily-trackers/from-template", () => {
     const res = await request(app)
       .post("/api/daily-trackers/from-template")
       .set(...authHeader())
-      .send({ templateKey: "nonexistent", programId: "program-1" });
+      .send({ templateKey: "nonexistent", programId: "program-1", participantId: "participant-1" });
 
     // The route checks for template not found error from the service
     expect(res.status).toBe(400);
@@ -307,7 +309,7 @@ describe("POST /api/daily-trackers/from-template", () => {
     const res = await request(app)
       .post("/api/daily-trackers/from-template")
       .set(...authHeader())
-      .send({ templateKey: "mood-log", programId: "other-program" });
+      .send({ templateKey: "mood-log", programId: "other-program", participantId: "participant-1" });
 
     expect(res.status).toBe(404);
     expect(res.body.error).toBe("Program not found");
@@ -364,7 +366,7 @@ describe("GET /api/daily-trackers", () => {
       .set(...authHeader());
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("programId is required");
+    expect(res.body.error).toBe("programId or participantId is required");
   });
 
   it("returns 404 if program not owned by clinician", async () => {
@@ -383,6 +385,84 @@ describe("GET /api/daily-trackers", () => {
       .get("/api/daily-trackers?programId=program-1");
 
     expect(res.status).toBe(401);
+  });
+});
+
+// ── Single check-in constraint ───────────────────────
+
+describe("Single check-in constraint", () => {
+  it("returns 409 when creating second tracker for same participant", async () => {
+    (prisma as any).dailyTracker.findFirst.mockResolvedValue({ id: "existing-tracker" });
+
+    const res = await request(app)
+      .post("/api/daily-trackers")
+      .set(...authHeader())
+      .send({
+        name: "Second Check-in",
+        participantId: "participant-1",
+        fields: [
+          { label: "Mood", fieldType: "SCALE", options: { min: 0, max: 10 }, sortOrder: 0, isRequired: true },
+        ],
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain("already exists");
+  });
+
+  it("returns 409 when creating from template for participant with existing tracker", async () => {
+    (prisma as any).dailyTracker.findFirst.mockResolvedValue({ id: "existing-tracker" });
+
+    const res = await request(app)
+      .post("/api/daily-trackers/from-template")
+      .set(...authHeader())
+      .send({
+        templateKey: "mood-log",
+        participantId: "participant-1",
+      });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+// ── GET /api/daily-trackers/participant/:participantId ──
+
+describe("GET /api/daily-trackers/participant/:participantId", () => {
+  it("returns the single check-in for a participant", async () => {
+    (prisma as any).enrollment.findFirst.mockResolvedValue({ id: "enrollment-1" });
+    (prisma as any).dailyTracker.findFirst.mockResolvedValue({
+      id: "tracker-1",
+      name: "Daily Check-in",
+      fields: [{ id: "f1", label: "Mood", fieldType: "SCALE" }],
+      _count: { entries: 5 },
+    });
+
+    const res = await request(app)
+      .get("/api/daily-trackers/participant/participant-1")
+      .set(...authHeader());
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.id).toBe("tracker-1");
+  });
+
+  it("returns 404 when no check-in exists", async () => {
+    (prisma as any).enrollment.findFirst.mockResolvedValue({ id: "enrollment-1" });
+    (prisma as any).dailyTracker.findFirst.mockResolvedValue(null);
+
+    const res = await request(app)
+      .get("/api/daily-trackers/participant/participant-1")
+      .set(...authHeader());
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 403 for unrelated clinician", async () => {
+    (prisma as any).enrollment.findFirst.mockResolvedValue(null);
+
+    const res = await request(app)
+      .get("/api/daily-trackers/participant/participant-1")
+      .set(...authHeader());
+
+    expect(res.status).toBe(403);
   });
 });
 
@@ -511,13 +591,20 @@ describe("PUT /api/daily-trackers/:id", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 400 for empty fields array", async () => {
+  it("allows empty fields array (replaces all fields with none)", async () => {
+    db.dailyTracker.findUnique
+      .mockResolvedValueOnce(mockTracker() as any) // existence check
+      .mockResolvedValueOnce(mockTracker({ fields: [] }) as any); // re-fetch
+
+    db.dailyTrackerField.deleteMany.mockResolvedValue({ count: 1 } as any);
+    db.dailyTrackerField.createMany.mockResolvedValue({ count: 0 } as any);
+
     const res = await request(app)
       .put("/api/daily-trackers/tracker-1")
       .set(...authHeader())
       .send({ fields: [] });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
   });
 
   it("returns 401 without auth", async () => {

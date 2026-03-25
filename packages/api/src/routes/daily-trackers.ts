@@ -43,6 +43,15 @@ router.post("/", validate(CreateDailyTrackerSchema), async (req: Request, res: R
       }
     }
 
+    // Single check-in constraint
+    const existing = await prisma.dailyTracker.findFirst({
+      where: { participantId },
+    });
+    if (existing) {
+      res.status(409).json({ success: false, error: "Check-in already exists for this participant" });
+      return;
+    }
+
     const tracker = await prisma.dailyTracker.create({
       data: {
         name,
@@ -86,6 +95,15 @@ router.post(
           res.status(404).json({ success: false, error: "Program not found" });
           return;
         }
+      }
+
+      // Single check-in constraint
+      const existing = await prisma.dailyTracker.findFirst({
+        where: { participantId },
+      });
+      if (existing) {
+        res.status(409).json({ success: false, error: "Check-in already exists for this participant" });
+        return;
       }
 
       const trackerId = await createTrackerFromTemplate(
@@ -152,6 +170,46 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("List daily trackers error", err);
     res.status(500).json({ success: false, error: "Failed to list trackers" });
+  }
+});
+
+// GET /api/daily-trackers/participant/:participantId — Get single check-in
+router.get("/participant/:participantId", async (req: Request, res: Response) => {
+  try {
+    const { participantId } = req.params;
+    const clinicianId = req.user!.clinicianProfileId!;
+
+    // Verify clinician has relationship with participant
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        participant: { userId: participantId },
+        program: { clinicianId },
+      },
+      select: { id: true },
+    });
+
+    if (!enrollment) {
+      res.status(403).json({ success: false, error: "Not authorized to view this participant" });
+      return;
+    }
+
+    const tracker = await prisma.dailyTracker.findFirst({
+      where: { participantId },
+      include: {
+        fields: { orderBy: { sortOrder: "asc" } },
+        _count: { select: { entries: true } },
+      },
+    });
+
+    if (!tracker) {
+      res.status(404).json({ success: false, error: "No check-in found for this participant" });
+      return;
+    }
+
+    res.json({ success: true, data: tracker });
+  } catch (err) {
+    logger.error("Get participant check-in error", err);
+    res.status(500).json({ success: false, error: "Failed to get check-in" });
   }
 });
 
