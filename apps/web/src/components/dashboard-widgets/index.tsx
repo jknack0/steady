@@ -6,6 +6,13 @@ import { CheckinAlertsWidget } from "./checkin-alerts";
 import { OverdueHomeworkWidget } from "./overdue-homework";
 import { RecentSubmissionsWidget } from "./recent-submissions";
 import { QuickActionsWidget } from "./quick-actions";
+import { TrackerSummaryWidget } from "./tracker-summary";
+import { HomeworkStatusWidget } from "./homework-status";
+import { JournalActivityWidget } from "./journal-activity";
+import { ProgramProgressWidget } from "./program-progress";
+import { PreVisitSummaryWidget } from "./pre-visit-summary";
+import { RtmOverviewWidget } from "./rtm-overview";
+import { TodoProgressWidget } from "./todo-progress";
 
 function PlaceholderWidget({ column }: WidgetProps) {
   return (
@@ -27,17 +34,17 @@ export const WIDGET_COMPONENTS: Record<string, ComponentType<any>> = {
   overdue_homework: OverdueHomeworkWidget,
   recent_submissions: RecentSubmissionsWidget,
   quick_actions: QuickActionsWidget,
-  tracker_summary: PlaceholderWidget,
-  homework_status: PlaceholderWidget,
-  journal_activity: PlaceholderWidget,
+  tracker_summary: TrackerSummaryWidget,
+  homework_status: HomeworkStatusWidget,
+  journal_activity: JournalActivityWidget,
   assessment_scores: PlaceholderWidget,
   medication_adherence: PlaceholderWidget,
   side_effects_report: PlaceholderWidget,
-  program_progress: PlaceholderWidget,
-  pre_visit: PlaceholderWidget,
+  program_progress: ProgramProgressWidget,
+  pre_visit: PreVisitSummaryWidget,
   recent_messages: PlaceholderWidget,
-  rtm_overview: PlaceholderWidget,
-  todo_progress: PlaceholderWidget,
+  rtm_overview: RtmOverviewWidget,
+  todo_progress: TodoProgressWidget,
 };
 
 export { WidgetShell, type WidgetProps } from "./widget-shell";
