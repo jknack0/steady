@@ -135,8 +135,8 @@ function ContentEditor({ type, content, onChange }: { type: string; content: any
 
 // ── Inline Phone Preview ────────────────────────────
 
-const previewDevice = DEVICES["iphone-se"];
-const PREVIEW_SCALE = 0.55;
+const previewDevice = DEVICES["iphone-15"];
+const PREVIEW_SCALE = 0.7;
 const bezel = 8;
 const phoneW = previewDevice.width + bezel * 2;
 const phoneH = previewDevice.height + bezel * 2;
