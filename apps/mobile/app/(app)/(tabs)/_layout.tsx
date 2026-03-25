@@ -87,7 +87,7 @@ export default function TabsLayout() {
             headerTitle: () => <BrandHeader />,
             title: "Tasks",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="checkbox-outline" size={size} color={color} />
+              <Ionicons name="list-outline" size={size} color={color} />
             ),
           }}
         />
