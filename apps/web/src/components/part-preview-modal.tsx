@@ -48,8 +48,12 @@ export function PartPreviewModal({ open, onClose, part }: PartPreviewModalProps)
         onClick={onClose}
       />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center gap-4 cursor-default">
+      {/* Content — stop wheel/touch events from reaching backdrop */}
+      <div
+        className="relative z-10 flex flex-col items-center gap-4 cursor-default"
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         {/* Device selector */}
         <div className="flex items-center gap-2">
           {deviceEntries.map(([key, cfg]) => (
@@ -69,14 +73,16 @@ export function PartPreviewModal({ open, onClose, part }: PartPreviewModalProps)
 
         {/* Phone frame with part content */}
         <ScaledDeviceFrame device={device}>
-          {/* Part header */}
-          <div className="bg-white px-4 pt-3 pb-4 border-b border-[#F0EDE8]">
-            <h3 className="text-lg font-bold text-[#2D2D2D]">{part.title}</h3>
-          </div>
+          <div className="bg-white min-h-full">
+            {/* Part header */}
+            <div className="px-4 pt-3 pb-4 border-b border-[#F0EDE8]">
+              <h3 className="text-lg font-bold text-[#2D2D2D]">{part.title}</h3>
+            </div>
 
-          {/* Part content */}
-          <div className="bg-white flex-1">
-            <RNPartContentRenderer part={part} />
+            {/* Part content */}
+            <div className="px-4 py-3">
+              <RNPartContentRenderer part={part} />
+            </div>
           </div>
         </ScaledDeviceFrame>
       </div>
