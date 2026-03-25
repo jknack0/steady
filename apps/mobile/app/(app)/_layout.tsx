@@ -57,6 +57,10 @@ export default function AppLayout() {
         name="insights"
         options={{ title: "My Insights", headerBackTitle: "Back" }}
       />
+      <Stack.Screen
+        name="settings"
+        options={{ title: "Settings", headerBackTitle: "Back" }}
+      />
     </Stack>
     </ConfigProvider>
   );
