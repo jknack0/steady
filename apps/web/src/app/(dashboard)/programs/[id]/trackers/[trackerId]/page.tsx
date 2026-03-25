@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useDailyTracker, useUpdateDailyTracker } from "@/hooks/use-daily-trackers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { LoadingState } from "@/components/loading-state";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft,
   GripVertical,
   Loader2,
   Plus,
@@ -273,9 +272,7 @@ function SortableFieldEditor({
 
 export default function TrackerEditorPage() {
   const params = useParams();
-  const router = useRouter();
   const trackerId = params.trackerId as string;
-  const programId = params.id as string;
 
   const { data: tracker, isLoading } = useDailyTracker(trackerId);
   const updateTracker = useUpdateDailyTracker(trackerId);
@@ -381,15 +378,7 @@ export default function TrackerEditorPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push(`/programs/${programId}`)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Program
-        </Button>
+      <div className="flex items-center justify-end mb-6">
         <Button
           size="sm"
           onClick={handleSave}

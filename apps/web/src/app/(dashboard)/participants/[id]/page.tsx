@@ -42,7 +42,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
 import {
   Loader2,
-  ArrowLeft,
   CheckCircle2,
   Circle,
   Lock,
@@ -63,6 +62,7 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 
 type Tab = "overview" | "homework" | "trackers" | "rtm";
 
@@ -88,19 +88,7 @@ export default function ParticipantDetailPage() {
 
   return (
     <div>
-      <Link
-        href="/participants"
-        className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-3"
-      >
-        <ArrowLeft className="h-3 w-3" /> Back to Clients
-      </Link>
-
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{name}</h1>
-          <p className="text-sm text-muted-foreground">{participant.email}</p>
-        </div>
-      </div>
+      <PageHeader title={name} subtitle={participant.email} />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">

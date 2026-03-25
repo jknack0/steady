@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Users, Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/loading-state";
 import { CreateProgramDialog } from "./create-program-dialog";
+import { PageHeader } from "@/components/page-header";
 
 const statusColors: Record<string, string> = {
   DRAFT: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -22,18 +23,16 @@ export default function ProgramsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">My Programs</h1>
-          <p className="text-muted-foreground mt-1">
-            Create and manage your clinical programs
-          </p>
-        </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Program
-        </Button>
-      </div>
+      <PageHeader
+        title="My Programs"
+        subtitle={programs ? `${programs.length} programs` : undefined}
+        actions={
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Program
+          </Button>
+        }
+      />
 
       {isLoading && <LoadingState />}
 

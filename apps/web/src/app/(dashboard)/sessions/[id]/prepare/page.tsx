@@ -17,7 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 import {
   Loader2,
-  ArrowLeft,
   CheckCircle2,
   Circle,
   Clock,
@@ -30,6 +29,7 @@ import {
   Activity,
   Flame,
 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import {
   LineChart,
   Line,
@@ -39,7 +39,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import Link from "next/link";
 
 export default function PrepareSessionPage() {
   const { id } = useParams<{ id: string }>();
@@ -84,31 +83,15 @@ export default function PrepareSessionPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <Link
-        href="/sessions"
-        className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-3"
-      >
-        <ArrowLeft className="h-3 w-3" /> Back to Sessions
-      </Link>
-
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Prepare for Session</h1>
-          <p className="text-sm text-muted-foreground">
-            {data.participant.name} · {data.program.title} ·{" "}
-            {new Date(data.session.scheduledAt).toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
-        <Button onClick={() => setShowComplete(true)}>
-          <CheckCircle2 className="h-4 w-4 mr-2" /> Complete Session
-        </Button>
-      </div>
+      <PageHeader
+        title="Prepare for Session"
+        subtitle={`${data.participant.name} · ${data.program.title} · ${new Date(data.session.scheduledAt).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" })}`}
+        actions={
+          <Button onClick={() => setShowComplete(true)}>
+            <CheckCircle2 className="h-4 w-4 mr-2" /> Complete Session
+          </Button>
+        }
+      />
 
       {/* Complete Session Dialog */}
       {showComplete && (

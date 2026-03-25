@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/select";
 import {
   Loader2,
-  ArrowLeft,
   Timer,
   Check,
   X,
@@ -56,6 +55,7 @@ import { cn } from "@/lib/utils";
 import { formatDate, formatShortDate, formatMoney } from "@/lib/format";
 import { ACTIVITY_TYPES, ACTIVITY_LABELS, QUICK_LOG_PRESETS } from "@/lib/rtm-constants";
 import { LoadingState } from "@/components/loading-state";
+import { PageHeader } from "@/components/page-header";
 
 const CPT_INFO: Record<string, { description: string; rate: number }> = CPT_CODES;
 
@@ -449,49 +449,19 @@ export function RtmClientDetailContent({ enrollmentId, hideHeader = false }: { e
   return (
     <div className="max-w-5xl">
       {!hideHeader && (
-        <>
-          {/* ── Back link ──────────────────────────────────────────────── */}
-          <Link
-            href="/rtm"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to RTM Dashboard
-          </Link>
-
-          {/* ── Header ─────────────────────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold">{data.clientName}</h1>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "text-xs",
-                    data.enrollmentStatus === "ACTIVE"
-                      ? "bg-green-100 text-green-800 border-green-200"
-                      : "bg-amber-100 text-amber-800 border-amber-200"
-                  )}
-                >
-                  {statusLabel}
-                </Badge>
-              </div>
-              {p && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Period: {formatShortDate(p.periodStart)} &ndash;{" "}
-                  {formatShortDate(p.periodEnd)} ({p.daysRemaining} days left)
-                </p>
-              )}
-            </div>
+        <PageHeader
+          title={data.clientName}
+          subtitle="RTM Enrollment"
+          actions={
             <div className="flex gap-2 shrink-0">
               <Button onClick={() => setLogDialogOpen(true)}>
                 <Timer className="h-4 w-4 mr-2" />
                 Log Time
-          </Button>
-          {renderSecondaryAction()}
-        </div>
-      </div>
-        </>
+              </Button>
+              {renderSecondaryAction()}
+            </div>
+          }
+        />
       )}
 
       {p ? (

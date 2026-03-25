@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
-  ArrowLeft,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -266,17 +265,6 @@ export default function ProgramEditorPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* Back button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4"
-        onClick={() => router.push("/programs")}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Programs
-      </Button>
-
       {/* Program Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">

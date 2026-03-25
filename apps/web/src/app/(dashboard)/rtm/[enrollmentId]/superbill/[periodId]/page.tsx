@@ -1,14 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { useSuperbillData } from "@/hooks/use-rtm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Printer, ArrowLeft } from "lucide-react";
+import { Printer } from "lucide-react";
 import { LoadingState } from "@/components/loading-state";
+import { PageHeader } from "@/components/page-header";
 
 export default function SuperbillPage() {
   const params = useParams<{ enrollmentId: string; periodId: string }>();
@@ -21,12 +21,7 @@ export default function SuperbillPage() {
   if (error || !data) {
     return (
       <div className="space-y-4">
-        <Link href={`/rtm/${params.enrollmentId}`}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to enrollment
-          </Button>
-        </Link>
+        <PageHeader title="Superbill" />
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">
@@ -43,17 +38,17 @@ export default function SuperbillPage() {
   return (
     <div className="space-y-4">
       {/* Action bar — hidden when printing */}
-      <div className="flex items-center justify-between print:hidden">
-        <Link href={`/rtm/${params.enrollmentId}`}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to enrollment
-          </Button>
-        </Link>
-        <Button onClick={() => window.print()}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print Superbill
-        </Button>
+      <div className="print:hidden">
+        <PageHeader
+          title="Superbill"
+          subtitle={data.client.name}
+          actions={
+            <Button onClick={() => window.print()}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print Superbill
+            </Button>
+          }
+        />
       </div>
 
       {/* Superbill content */}

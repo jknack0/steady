@@ -21,6 +21,7 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/page-header";
 
 interface DashboardData {
   stats: {
@@ -75,15 +76,10 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">
-          {greeting}, {user?.firstName}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Here&apos;s what&apos;s happening with your clients today.
-        </p>
-      </div>
+      <PageHeader
+        title={`${greeting}, ${user?.firstName}`}
+        subtitle={`${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${data.stats.todaySessionCount} sessions today`}
+      />
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

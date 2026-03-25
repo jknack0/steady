@@ -30,7 +30,6 @@ import { SaveIndicator } from "@/components/save-indicator";
 import { PartCard, PART_TYPE_CONFIG } from "@/components/part-card";
 import { CreatePartModal, EditPartModal } from "@/components/part-editor-modal";
 import {
-  ArrowLeft,
   ChevronDown,
   ChevronUp,
   Eye,
@@ -183,17 +182,6 @@ export default function ModuleEditorPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      {/* Back */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="mb-4"
-        onClick={() => router.push(`/programs/${programId}`)}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Program
-      </Button>
-
       {/* Module Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">

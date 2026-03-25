@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { formatLastActive } from "@/lib/format";
 import { LoadingState } from "@/components/loading-state";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 
 const HOMEWORK_BADGE: Record<string, string> = {
   COMPLETE: "bg-green-100 text-green-800 border-green-200",
@@ -174,6 +175,16 @@ export default function ParticipantsPage() {
 
   return (
     <div>
+      <PageHeader
+        title="Clients"
+        actions={
+          <Button onClick={() => setAddClientOpen(true)} className="gap-1.5">
+            <UserPlus className="h-4 w-4" />
+            Add Client
+          </Button>
+        }
+      />
+
       {/* Search + Filter bar */}
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
@@ -200,10 +211,6 @@ export default function ParticipantsPage() {
             </SelectContent>
           </Select>
         )}
-        <Button onClick={() => setAddClientOpen(true)} className="gap-1.5">
-          <UserPlus className="h-4 w-4" />
-          Add Client
-        </Button>
       </div>
 
       {/* Table */}

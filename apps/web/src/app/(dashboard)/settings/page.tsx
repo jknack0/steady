@@ -22,6 +22,7 @@ import {
 } from "@steady/shared";
 import type { ModuleId, ModuleCategory } from "@steady/shared";
 import { Check, Loader2, Plus, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -175,10 +176,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div>
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground mb-8">
-          Practice configuration and preferences.
-        </p>
+        <PageHeader title="Settings" subtitle="Practice configuration and preferences." />
         <LoadingState />
       </div>
     );
@@ -187,7 +185,7 @@ export default function SettingsPage() {
   if (isError) {
     return (
       <div>
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
+        <PageHeader title="Settings" />
         <p className="text-destructive">
           Failed to load configuration. Please try refreshing.
         </p>
@@ -197,10 +195,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-3xl font-bold mb-2">Settings</h1>
-      <p className="text-muted-foreground mb-8">
-        Practice configuration and preferences.
-      </p>
+      <PageHeader title="Settings" subtitle="Practice configuration and preferences." />
 
       <div className="space-y-6">
         {/* ── Provider Profile ───────────────────────────────── */}

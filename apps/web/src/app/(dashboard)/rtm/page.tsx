@@ -51,6 +51,7 @@ import { daysAgoLabel, formatCurrency } from "@/lib/format";
 import { ACTIVITY_TYPES, TIME_PRESETS, type TimePreset } from "@/lib/rtm-constants";
 import { LoadingState } from "@/components/loading-state";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -721,6 +722,8 @@ export function RtmDashboardContent() {
 
   return (
     <div>
+      <PageHeader title="Remote Therapeutic Monitoring" />
+
       {/* Loading */}
       {isLoading && <LoadingState />}
 

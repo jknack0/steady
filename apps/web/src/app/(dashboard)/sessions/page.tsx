@@ -24,6 +24,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 
 type ViewMode = "list" | "calendar";
 
@@ -71,30 +72,28 @@ export default function SessionsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Sessions</h1>
-          <p className="text-muted-foreground">
-            Manage sessions across all clients.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={view === "list" ? "default" : "outline"}
-            size="icon"
-            onClick={() => setView("list")}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={view === "calendar" ? "default" : "outline"}
-            size="icon"
-            onClick={() => setView("calendar")}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Sessions"
+        subtitle="Manage sessions across all clients."
+        actions={
+          <div className="flex gap-2">
+            <Button
+              variant={view === "list" ? "default" : "outline"}
+              size="icon"
+              onClick={() => setView("list")}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={view === "calendar" ? "default" : "outline"}
+              size="icon"
+              onClick={() => setView("calendar")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
 
       {/* Filters */}
       <div className="flex gap-3 mb-4">
