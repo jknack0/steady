@@ -83,7 +83,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="tasks"
         options={{
-          href: isModuleEnabled("todo_list") ? undefined : null,
           headerTitle: () => <BrandHeader />,
           title: "Tasks",
           tabBarIcon: ({ color, size }) => (
@@ -94,7 +93,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          href: isModuleEnabled("calendar") ? undefined : null,
           headerTitle: () => <BrandHeader />,
           title: "Calendar",
           tabBarIcon: ({ color, size }) => (
@@ -105,7 +103,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="journal"
         options={{
-          href: isModuleEnabled("journal") ? undefined : null,
           headerTitle: () => <BrandHeader />,
           title: "Journal",
           tabBarIcon: ({ color, size }) => (
