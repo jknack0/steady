@@ -145,7 +145,7 @@ const scaledH = Math.round(phoneH * PREVIEW_SCALE);
 
 function InlinePhonePreview({ type, title, content }: { type: string; title: string; content: any }) {
   return (
-    <div className="flex justify-center">
+    <div className="flex items-center justify-center flex-1 min-h-0">
       <div style={{ width: scaledW, height: scaledH, flexShrink: 0, overflow: "hidden" }}>
         <div style={{ width: phoneW, height: phoneH, transform: `scale(${PREVIEW_SCALE})`, transformOrigin: "top left" }}>
           <DeviceFrame device={previewDevice}>
@@ -273,11 +273,11 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent size="lg">
         {step === "type" ? (
-          <DialogBody className="p-6">
+          <DialogBody className="p-6 flex flex-col">
             <DialogHeader>
               <DialogTitle>Add Part</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 py-4 flex-1 auto-rows-fr">
               {CREATABLE_TYPES.map((type) => {
                 const tc = PART_TYPE_CONFIG[type];
                 if (!tc) return null;
@@ -286,7 +286,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                   <button
                     key={type}
                     onClick={() => handleSelectType(type)}
-                    className="flex flex-col items-center gap-1.5 rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all text-center"
+                    className="flex flex-col items-center justify-center gap-1.5 rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all text-center"
                   >
                     <TIcon className={`h-5 w-5 ${tc.color}`} />
                     <span className="text-sm font-medium">{tc.label}</span>
