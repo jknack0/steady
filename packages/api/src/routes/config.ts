@@ -4,12 +4,16 @@ import { prisma } from "@steady/db";
 import {
   SaveClinicianConfigSchema,
   SaveClientConfigSchema,
+  SaveDashboardLayoutSchema,
+  SaveClientOverviewLayoutSchema,
 } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
   getClinicianConfig,
   saveClinicianConfig,
+  saveDashboardLayout,
+  saveClientOverviewLayout,
   getClientConfig,
   saveClientConfig,
   createDefaultConfig,
@@ -53,6 +57,24 @@ router.put(
       res
         .status(500)
         .json({ success: false, error: "Failed to save clinician config" });
+    }
+  }
+);
+
+// PATCH /api/config/dashboard-layout — Save layout only
+router.patch(
+  "/dashboard-layout",
+  validate(SaveDashboardLayoutSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const clinicianId = req.user!.clinicianProfileId!;
+      const config = await saveDashboardLayout(clinicianId, req.body);
+      res.json({ success: true, data: config });
+    } catch (err) {
+      logger.error("Save dashboard layout error", err);
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to save dashboard layout" });
     }
   }
 );
@@ -149,6 +171,41 @@ router.put(
       res
         .status(500)
         .json({ success: false, error: "Failed to save client config" });
+    }
+  }
+);
+
+// PATCH /api/config/clients/:clientId/overview-layout — Save client overview layout
+router.patch(
+  "/clients/:clientId/overview-layout",
+  validate(SaveClientOverviewLayoutSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const clinicianId = req.user!.clinicianProfileId!;
+      const { clientId } = req.params;
+
+      const enrollment = await prisma.enrollment.findFirst({
+        where: {
+          participant: { userId: clientId },
+          program: { clinicianId },
+        },
+        select: { id: true },
+      });
+
+      if (!enrollment) {
+        res.status(404).json({ success: false, error: "Client not found" });
+        return;
+      }
+
+      const config = await saveClientOverviewLayout(
+        clientId, clinicianId, req.body.clientOverviewLayout
+      );
+      res.json({ success: true, data: config });
+    } catch (err) {
+      logger.error("Save client overview layout error", err);
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to save client overview layout" });
     }
   }
 );
