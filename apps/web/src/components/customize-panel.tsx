@@ -30,6 +30,7 @@ interface CustomizePanelProps {
   layout: DashboardLayoutItem[];
   enabledModules: string[];
   onSave: (layout: DashboardLayoutItem[]) => void;
+  onLayoutChange?: (layout: DashboardLayoutItem[]) => void;
   onClose: () => void;
   isSaving: boolean;
   page?: "dashboard" | "client_overview";
@@ -182,6 +183,7 @@ export function CustomizePanel({
   layout,
   enabledModules,
   onSave,
+  onLayoutChange,
   onClose,
   isSaving,
   page = "dashboard",
@@ -193,6 +195,11 @@ export function CustomizePanel({
   );
   const [search, setSearch] = useState("");
   const [expandedSettings, setExpandedSettings] = useState<string | null>(null);
+
+  // Notify parent of layout changes (so grid updates live)
+  useEffect(() => {
+    onLayoutChange?.(localLayout);
+  }, [localLayout, onLayoutChange]);
 
   // Auto-save with debounce when layout changes
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
