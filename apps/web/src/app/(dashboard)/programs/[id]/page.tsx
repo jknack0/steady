@@ -257,7 +257,7 @@ export default function ProgramEditorPage() {
       <div className="text-center py-12">
         <p className="text-muted-foreground">Program not found</p>
         <Button variant="link" onClick={() => router.push("/programs")}>
-          Back to programs
+          View all programs
         </Button>
       </div>
     );

@@ -177,6 +177,7 @@ export default function ParticipantsPage() {
     <div>
       <PageHeader
         title="Clients"
+        subtitle={participants.length > 0 ? `${participants.length} active clients` : undefined}
         actions={
           <Button onClick={() => setAddClientOpen(true)} className="gap-1.5">
             <UserPlus className="h-4 w-4" />

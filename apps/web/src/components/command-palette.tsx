@@ -74,7 +74,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     // Programs (client-side filter)
     if (programs) {
       const filteredPrograms = q
-        ? programs.filter((p: any) => p.title.toLowerCase().includes(q))
+        ? programs.filter((p) => p.title.toLowerCase().includes(q))
         : programs.slice(0, 5);
       for (const p of filteredPrograms.slice(0, 5)) {
         items.push({
