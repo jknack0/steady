@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ComponentType } from "react";
 import {
   DndContext,
   closestCenter,
@@ -28,17 +28,22 @@ interface WidgetGridProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dashboardData: any;
   onLayoutChange?: (layout: DashboardLayoutItem[]) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  componentRegistry?: Record<string, ComponentType<any>>;
 }
 
 function SortableWidget({
   item,
   isEditing,
   dashboardData,
+  registry,
 }: {
   item: DashboardLayoutItem;
   isEditing: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dashboardData: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  registry: Record<string, ComponentType<any>>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({
@@ -51,7 +56,7 @@ function SortableWidget({
     transition,
   };
 
-  const Component = WIDGET_COMPONENTS[item.widgetId];
+  const Component = registry[item.widgetId];
   if (!Component) return null;
 
   return (
@@ -74,7 +79,9 @@ export function WidgetGrid({
   isEditing,
   dashboardData,
   onLayoutChange,
+  componentRegistry,
 }: WidgetGridProps) {
+  const resolvedRegistry = componentRegistry ?? WIDGET_COMPONENTS;
   const registry = useMemo(() => Object.values(WIDGET_REGISTRY), []);
   const normalized = useMemo(
     () => normalizeDashboardLayout(layout, registry),
@@ -143,6 +150,7 @@ export function WidgetGrid({
                   item={widget}
                   isEditing={isEditing}
                   dashboardData={dashboardData}
+                  registry={resolvedRegistry}
                 />
               ))}
             </SortableContext>
@@ -158,6 +166,7 @@ export function WidgetGrid({
               item={widget}
               isEditing={isEditing}
               dashboardData={dashboardData}
+              registry={resolvedRegistry}
             />
           ))}
         </SortableContext>
@@ -174,6 +183,7 @@ export function WidgetGrid({
               item={widget}
               isEditing={isEditing}
               dashboardData={dashboardData}
+              registry={resolvedRegistry}
             />
           ))}
         </SortableContext>

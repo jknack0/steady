@@ -22,7 +22,7 @@ export interface ClinicianConfigData {
   clientOverviewLayout?: Array<{
     widgetId: string;
     visible: boolean;
-    column?: string;
+    column?: "main" | "sidebar";
     order?: number;
     settings?: Record<string, unknown>;
   }> | null;
@@ -93,6 +93,18 @@ export function useSaveDashboardLayout() {
     }) => api.patch("/api/config/dashboard-layout", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
+    },
+  });
+}
+
+export function useSaveClientOverviewLayout(clientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (layout: Array<{ widgetId: string; visible: boolean; column: string; order: number; settings: Record<string, unknown> }>) =>
+      api.patch(`/api/config/clients/${clientId}/overview-layout`, { clientOverviewLayout: layout }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
+      queryClient.invalidateQueries({ queryKey: ["client-config", clientId] });
     },
   });
 }

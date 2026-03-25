@@ -61,8 +61,14 @@ import {
   Plus,
   Sparkles,
   ChevronRight,
+  Settings2,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { WidgetGrid } from "@/components/widget-grid";
+import { CustomizePanel } from "@/components/customize-panel";
+import { CLIENT_WIDGET_COMPONENTS } from "@/components/client-widgets";
+import { normalizeDashboardLayout, getClientOverviewWidgets } from "@steady/shared";
+import { useClinicianConfig, useSaveClientOverviewLayout } from "@/hooks/use-config";
 
 type Tab = "overview" | "homework" | "trackers" | "rtm";
 
@@ -207,6 +213,36 @@ function OverviewTab({
 }) {
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+
+  const { data: clinicianConfig } = useClinicianConfig();
+
+  // Fetch per-client config (may have a custom clientOverviewLayout)
+  const { data: clientConfig } = useQuery<{
+    clientOverviewLayout?: Array<{
+      widgetId: string;
+      visible: boolean;
+      column?: "main" | "sidebar";
+      order?: number;
+      settings?: Record<string, unknown>;
+    }> | null;
+  } | null>({
+    queryKey: ["client-config", participantId],
+    queryFn: () => api.get(`/api/config/clients/${participantId}`),
+  });
+
+  const saveLayout = useSaveClientOverviewLayout(participantId);
+
+  // Resolve layout: per-client -> clinician default -> empty
+  const clientOverviewWidgets = useMemo(() => getClientOverviewWidgets(), []);
+  const resolvedLayout = useMemo(() => {
+    const raw =
+      clientConfig?.clientOverviewLayout ??
+      clinicianConfig?.clientOverviewLayout ??
+      [];
+    return normalizeDashboardLayout(raw, clientOverviewWidgets);
+  }, [clientConfig, clinicianConfig, clientOverviewWidgets]);
+
   const enrollment = data.enrollments[0];
   if (!enrollment) {
     return (
@@ -232,50 +268,56 @@ function OverviewTab({
     );
   }
 
+  const participantName = `${data.participant.firstName} ${data.participant.lastName}`.trim();
+
+  // Dashboard data passed to widgets
+  const dashboardData = {
+    participant: data.participant,
+    enrollment,
+    enrollments: data.enrollments,
+    smartGoals: data.smartGoals,
+    journalEntries: data.journalEntries,
+    participantId,
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Left Column (2/3) */}
-      <div className="lg:col-span-2 space-y-6">
-        {/* Enrollment Info */}
-        <EnrollmentCard enrollment={enrollment} />
-
-        {/* Module Progress Timeline */}
-        <ModuleTimeline
-          moduleProgress={enrollment.moduleProgress}
-          currentModuleId={enrollment.currentModuleId}
-        />
-
-        {/* Homework Detail */}
-        <HomeworkDetail
-          homeworkProgress={enrollment.homeworkProgress}
-          currentModuleId={enrollment.currentModuleId}
-          onViewResponses={() => setHwViewerOpen(true)}
-        />
-
-        {/* Session History */}
-        <SessionHistory sessions={enrollment.sessions} />
+    <div className="space-y-6">
+      {/* Customize toggle */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsCustomizing(true)}
+        >
+          <Settings2 className="mr-2 h-4 w-4" />
+          Customize
+        </Button>
       </div>
 
-      {/* Right Column (1/3) */}
-      <div className="space-y-6">
-        {/* Quick Actions */}
-        <QuickActions
-          participantId={participantId}
-          enrollment={enrollment}
+      {/* Widget Grid */}
+      <WidgetGrid
+        layout={resolvedLayout}
+        isEditing={false}
+        dashboardData={dashboardData}
+        componentRegistry={CLIENT_WIDGET_COMPONENTS}
+      />
+
+      {/* Customize Panel */}
+      {isCustomizing && (
+        <CustomizePanel
+          layout={resolvedLayout}
+          enabledModules={clinicianConfig?.enabledModules ?? []}
+          onSave={(newLayout) => {
+            saveLayout.mutate(newLayout, {
+              onSuccess: () => setIsCustomizing(false),
+            });
+          }}
+          onCancel={() => setIsCustomizing(false)}
+          isSaving={saveLayout.isPending}
+          page="client_overview"
+          clientName={participantName}
         />
-
-        {/* Enrollment Management */}
-        <EnrollmentManagement
-          participantId={participantId}
-          enrollment={enrollment}
-        />
-
-        {/* SMART Goals */}
-        <SmartGoals goals={data.smartGoals} />
-
-        {/* Shared Journal Entries */}
-        <SharedJournal entries={data.journalEntries} />
-      </div>
+      )}
 
       {/* Homework Response Viewer */}
       <HomeworkResponseViewer
