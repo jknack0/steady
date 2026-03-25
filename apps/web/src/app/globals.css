@@ -59,6 +59,13 @@
     --steady-warm-300: #8A8A8A;
     --steady-warm-400: #5A5A5A;
     --steady-warm-500: #2D2D2D;
+
+    /* ── Sidebar Shell ── */
+    --sidebar-gradient-from: #f8f6f3;
+    --sidebar-gradient-to: #f2efea;
+    --sidebar-section-label: #aaaaaa;
+    --sidebar-nav-text: #5A5A5A;
+    --sidebar-active-shadow: 0 1px 2px rgba(91, 138, 138, 0.2);
   }
 }
 
