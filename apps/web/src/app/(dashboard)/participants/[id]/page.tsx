@@ -308,11 +308,9 @@ function OverviewTab({
           layout={resolvedLayout}
           enabledModules={clinicianConfig?.enabledModules ?? []}
           onSave={(newLayout) => {
-            saveLayout.mutate(newLayout, {
-              onSuccess: () => setIsCustomizing(false),
-            });
+            saveLayout.mutate(newLayout);
           }}
-          onCancel={() => setIsCustomizing(false)}
+          onClose={() => setIsCustomizing(false)}
           isSaving={saveLayout.isPending}
           page="client_overview"
           clientName={participantName}
