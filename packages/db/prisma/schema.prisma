@@ -764,6 +764,7 @@ model ClinicianConfig {
   primaryModality      String?
   enabledModules       Json
   dashboardLayout      Json
+  clientOverviewLayout Json?
   defaultTrackerPreset String?
   defaultAssessments   Json?
   practiceName         String?
@@ -787,6 +788,7 @@ model ClientConfig {
   activeAssessments   Json?
   activeMedications   Json?
   customConfig        Json?
+  clientOverviewLayout Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

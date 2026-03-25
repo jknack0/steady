@@ -1,6 +1,6 @@
 import type { ModuleId } from "./modules";
 import type { ProviderType } from "../schemas/config";
-import type { DashboardWidgetId } from "./dashboard-widgets";
+import type { DashboardLayoutItem } from "../schemas/config";
 
 export interface ProviderPreset {
   readonly id: string;
@@ -9,11 +9,37 @@ export interface ProviderPreset {
   readonly providerType: ProviderType;
   readonly enabledModules: readonly ModuleId[];
   readonly defaultTrackerPreset: string;
-  readonly dashboardLayout: readonly DashboardWidgetId[];
+  readonly dashboardLayout: DashboardLayoutItem[];
+  readonly clientOverviewLayout: DashboardLayoutItem[];
   readonly defaultAssessments: readonly string[];
 }
 
-export const PROVIDER_PRESETS = {
+function layoutItems(
+  widgets: Array<{ id: string; column?: "main" | "sidebar" }>
+): DashboardLayoutItem[] {
+  return widgets.map((w, i) => ({
+    widgetId: w.id,
+    visible: true,
+    column: w.column ?? "main",
+    order: i,
+    settings: {},
+  }));
+}
+
+const DEFAULT_CLIENT_OVERVIEW = layoutItems([
+  { id: "client_demographics" },
+  { id: "client_sessions" },
+  { id: "client_homework" },
+  { id: "client_trackers" },
+  { id: "client_assessments" },
+  { id: "client_progress" },
+  { id: "client_journal", column: "sidebar" },
+  { id: "client_alerts", column: "sidebar" },
+  { id: "client_notes", column: "sidebar" },
+  { id: "client_quick_actions", column: "sidebar" },
+]);
+
+export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
   THERAPIST_CBT: {
     id: "THERAPIST_CBT",
     label: "Therapist — CBT",
@@ -25,11 +51,26 @@ export const PROVIDER_PRESETS = {
       "secure_messaging", "rtm_billing",
     ],
     defaultTrackerPreset: "cbt_standard",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PHQ-9", "GAD-7"],
   },
   THERAPIST_DBT: {
@@ -43,11 +84,26 @@ export const PROVIDER_PRESETS = {
       "secure_messaging", "rtm_billing",
     ],
     defaultTrackerPreset: "dbt_diary_card",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PHQ-9", "DERS-18"],
   },
   THERAPIST_TRAUMA: {
@@ -61,11 +117,26 @@ export const PROVIDER_PRESETS = {
       "pre_visit_summary", "secure_messaging", "rtm_billing",
     ],
     defaultTrackerPreset: "trauma_focused",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PCL-5", "PHQ-9", "GAD-7"],
   },
   THERAPIST_OCD: {
@@ -79,11 +150,26 @@ export const PROVIDER_PRESETS = {
       "secure_messaging", "rtm_billing",
     ],
     defaultTrackerPreset: "ocd_erp",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "Y-BOCS", "PHQ-9", "GAD-7"],
   },
   THERAPIST_SUBSTANCE: {
@@ -97,11 +183,26 @@ export const PROVIDER_PRESETS = {
       "secure_messaging", "rtm_billing",
     ],
     defaultTrackerPreset: "substance_use",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "AUDIT", "DAST-10", "PHQ-9"],
   },
   THERAPIST_INSOMNIA: {
@@ -115,11 +216,26 @@ export const PROVIDER_PRESETS = {
       "secure_messaging", "rtm_billing",
     ],
     defaultTrackerPreset: "cbti_sleep_diary",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "ISI", "PHQ-9", "GAD-7"],
   },
   PSYCHIATRIST_MED_MGMT: {
@@ -133,10 +249,21 @@ export const PROVIDER_PRESETS = {
       "rtm_billing",
     ],
     defaultTrackerPreset: "med_management",
-    dashboardLayout: [
-      "tracker_summary", "medication_adherence", "side_effects_report",
-      "assessment_scores", "pre_visit", "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "tracker_summary" },
+      { id: "medication_adherence" },
+      { id: "side_effects_report" },
+      { id: "assessment_scores" },
+      { id: "pre_visit" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PHQ-9", "GAD-7"],
   },
   PSYCHIATRIST_INTEGRATED: {
@@ -151,11 +278,28 @@ export const PROVIDER_PRESETS = {
       "rtm_billing",
     ],
     defaultTrackerPreset: "integrated_psych",
-    dashboardLayout: [
-      "tracker_summary", "medication_adherence", "side_effects_report",
-      "homework_status", "journal_activity", "assessment_scores",
-      "program_progress", "pre_visit", "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "medication_adherence" },
+      { id: "side_effects_report" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PHQ-9", "GAD-7"],
   },
   PSYCH_NP: {
@@ -169,10 +313,21 @@ export const PROVIDER_PRESETS = {
       "rtm_billing",
     ],
     defaultTrackerPreset: "med_management",
-    dashboardLayout: [
-      "tracker_summary", "medication_adherence", "side_effects_report",
-      "assessment_scores", "pre_visit", "recent_messages", "rtm_overview",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "tracker_summary" },
+      { id: "medication_adherence" },
+      { id: "side_effects_report" },
+      { id: "assessment_scores" },
+      { id: "pre_visit" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+      { id: "rtm_overview" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PHQ-9", "GAD-7"],
   },
   COACH_ADHD: {
@@ -185,10 +340,18 @@ export const PROVIDER_PRESETS = {
       "calendar", "secure_messaging",
     ],
     defaultTrackerPreset: "coaching_exec_function",
-    dashboardLayout: [
-      "tracker_summary", "journal_activity", "todo_progress",
-      "recent_messages",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "tracker_summary" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "todo_progress", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS"],
   },
   GENERAL: {
@@ -202,14 +365,28 @@ export const PROVIDER_PRESETS = {
       "secure_messaging",
     ],
     defaultTrackerPreset: "general",
-    dashboardLayout: [
-      "tracker_summary", "homework_status", "journal_activity",
-      "assessment_scores", "program_progress", "pre_visit",
-      "recent_messages",
-    ],
+    dashboardLayout: layoutItems([
+      { id: "stat_active_clients" },
+      { id: "stat_sessions_today" },
+      { id: "stat_homework_rate" },
+      { id: "stat_overdue_count" },
+      { id: "todays_sessions" },
+      { id: "checkin_alerts" },
+      { id: "overdue_homework" },
+      { id: "tracker_summary" },
+      { id: "homework_status" },
+      { id: "assessment_scores" },
+      { id: "program_progress" },
+      { id: "pre_visit" },
+      { id: "recent_submissions", column: "sidebar" },
+      { id: "journal_activity", column: "sidebar" },
+      { id: "recent_messages", column: "sidebar" },
+      { id: "quick_actions", column: "sidebar" },
+    ]),
+    clientOverviewLayout: DEFAULT_CLIENT_OVERVIEW,
     defaultAssessments: ["ASRS", "PHQ-9", "GAD-7"],
   },
-} as const satisfies Record<string, ProviderPreset>;
+};
 
 export type ProviderPresetId = keyof typeof PROVIDER_PRESETS;
 

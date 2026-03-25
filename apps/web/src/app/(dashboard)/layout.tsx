@@ -36,7 +36,7 @@ import { useCommandPalette } from "@/hooks/use-command-palette";
 // ── Nav Config ──────────────────────────────────────
 
 const mainNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, actionHref: "/dashboard?customize=true", actionIcon: Settings },
   { href: "/programs", label: "Programs", icon: BookOpen },
   { href: "/participants", label: "Clients", icon: Users },
   { href: "/sessions", label: "Sessions", icon: Calendar },
@@ -64,12 +64,20 @@ function RtmBadge() {
 
 // ── Nav Section ─────────────────────────────────────
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  actionHref?: string;
+  actionIcon?: React.ElementType;
+}
+
 function NavSection({
   label,
   items,
 }: {
   label: string;
-  items: typeof mainNavItems;
+  items: NavItem[];
 }) {
   const pathname = usePathname();
 
@@ -86,25 +94,40 @@ function NavSection({
       {items.map((item) => {
         const isActive = pathname.startsWith(item.href);
         return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-accent hover:text-accent-foreground"
+          <div key={item.href} className="relative group flex items-center">
+            <Link
+              href={item.href}
+              className={cn(
+                "flex flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-accent hover:text-accent-foreground"
+              )}
+              style={
+                isActive
+                  ? { boxShadow: "var(--sidebar-active-shadow)" }
+                  : { color: "var(--sidebar-nav-text)" }
+              }
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+              {item.href === "/participants" && <RtmBadge />}
+            </Link>
+            {item.actionHref && item.actionIcon && (
+              <Link
+                href={item.actionHref}
+                className={cn(
+                  "absolute right-1.5 rounded-md p-1 opacity-0 group-hover:opacity-100 transition-opacity",
+                  isActive
+                    ? "text-primary-foreground/70 hover:text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Customize dashboard"
+              >
+                <item.actionIcon className="h-3.5 w-3.5" />
+              </Link>
             )}
-            style={
-              isActive
-                ? { boxShadow: "var(--sidebar-active-shadow)" }
-                : { color: "var(--sidebar-nav-text)" }
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            {item.label}
-            {item.href === "/participants" && <RtmBadge />}
-          </Link>
+          </div>
         );
       })}
     </div>

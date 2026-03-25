@@ -2,6 +2,7 @@
 export * from "./cpt-codes";
 export * from "./modules";
 export * from "./dashboard-widgets";
+export { normalizeDashboardLayout, type PartialDashboardLayoutItem } from "../lib/normalize-layout";
 export * from "./provider-presets";
 
 export const APP_NAME = "STEADY with ADHD";
