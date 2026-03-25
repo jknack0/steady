@@ -37,6 +37,8 @@ import {
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { TrackerDataView } from "@/components/tracker-data-view";
+import { EditCheckinModal } from "@/components/edit-checkin-modal";
+import { useParticipantCheckin } from "@/hooks/use-daily-trackers";
 import { HomeworkResponseViewer } from "@/components/homework-response-viewer";
 import { CreatePartModal } from "@/components/part-editor-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1402,17 +1404,6 @@ function CalendarHeatmap({
 
 // ── Trackers Tab ────────────────────────────────────────────
 
-interface TrackerData {
-  id: string;
-  name: string;
-  description: string | null;
-  isActive: boolean;
-  reminderTime: string;
-  createdAt: string;
-  fields: Array<{ id: string; label: string; fieldType: string; options: any; sortOrder: number; isRequired: boolean }>;
-  _count: { entries: number };
-}
-
 interface TemplateData {
   key: string;
   name: string;
@@ -1755,13 +1746,10 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<TrackerDialogMode>("pick");
   const [aiInput, setAiInput] = useState("");
-  const [viewingTrackerId, setViewingTrackerId] = useState<string | null>(null);
+  const [editFieldsOpen, setEditFieldsOpen] = useState(false);
   const [generated, setGenerated] = useState<{ name: string; description: string; fields: any[] } | null>(null);
 
-  const { data: trackers, isLoading } = useQuery<TrackerData[]>({
-    queryKey: ["participant-trackers", participantProfileId],
-    queryFn: () => api.get(`/api/daily-trackers?participantId=${participantProfileId}`),
-  });
+  const { data: checkin, isLoading } = useParticipantCheckin(participantProfileId);
 
   const { data: templates } = useQuery<TemplateData[]>({
     queryKey: ["tracker-templates"],
@@ -1773,7 +1761,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     mutationFn: (data: { name: string; description: string; fields: any[] }) =>
       api.post("/api/daily-trackers", { ...data, participantId: participantProfileId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
+      queryClient.invalidateQueries({ queryKey: ["participant-checkin", participantProfileId] });
       closeDialog();
     },
   });
@@ -1784,21 +1772,6 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     onSuccess: (data) => {
       setGenerated(data);
       setDialogMode("review");
-    },
-  });
-
-  const toggleActive = useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      api.put(`/api/daily-trackers/${id}`, { isActive }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
-    },
-  });
-
-  const deleteTracker = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/daily-trackers/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participant-trackers", participantProfileId] });
     },
   });
 
@@ -1820,84 +1793,59 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         <div>
           <h3 className="text-lg font-semibold">Check-in</h3>
           <p className="text-sm text-muted-foreground">
-            Assign check-in trackers for this client to complete in the app.
+            Daily check-in tracker for this client.
           </p>
         </div>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Check-in
-        </Button>
+        {checkin && (
+          <Button size="sm" variant="outline" onClick={() => setEditFieldsOpen(true)}>
+            <Settings2 className="mr-2 h-4 w-4" />
+            Edit Fields
+          </Button>
+        )}
       </div>
 
-      {viewingTrackerId && trackers ? (
-        (() => {
-          const t = trackers.find((tr) => tr.id === viewingTrackerId);
-          if (!t) return null;
-          return (
-            <TrackerDataView
-              trackerId={t.id}
-              trackerName={t.name}
-              userId={participantUserId}
-              fields={t.fields}
-              onBack={() => setViewingTrackerId(null)}
-            />
-          );
-        })()
-      ) : (!trackers || trackers.length === 0) ? (
+      {!checkin ? (
         <div className="rounded-lg border border-dashed py-12 text-center">
           <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No check-ins assigned yet</p>
-          <Button size="sm" variant="outline" className="mt-4" onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Check-in
-          </Button>
+          <p className="text-sm text-muted-foreground">No check-in set up for this client</p>
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
+              <ClipboardList className="mr-2 h-4 w-4" />
+              Use Template
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setGenerated({ name: "", description: "", fields: [] });
+                setDialogMode("custom");
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Start Blank
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {trackers.map((tracker) => (
-            <div
-              key={tracker.id}
-              className={cn(
-                "rounded-lg border p-4 transition-all",
-                !tracker.isActive && "opacity-60",
-                tracker._count.entries > 0 && "cursor-pointer hover:shadow-md hover:border-primary/30"
-              )}
-              onClick={() => { if (tracker._count.entries > 0) setViewingTrackerId(tracker.id); }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-teal shrink-0" />
-                    <h4 className="text-sm font-semibold truncate">{tracker.name}</h4>
-                    <Badge variant={tracker.isActive ? "default" : "secondary"} className="text-xs shrink-0">
-                      {tracker.isActive ? "Active" : "Paused"}
-                    </Badge>
-                  </div>
-                  {tracker.description && (
-                    <p className="text-xs text-muted-foreground mt-1 ml-6">{tracker.description}</p>
-                  )}
-                  <div className="flex items-center gap-4 mt-2 ml-6 text-xs text-muted-foreground">
-                    <span>{tracker.fields.length} fields</span>
-                    <span>{tracker._count.entries} entries</span>
-                    <span>Reminder: {tracker.reminderTime}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" onClick={() => toggleActive.mutate({ id: tracker.id, isActive: !tracker.isActive })}>
-                    {tracker.isActive ? "Pause" : "Resume"}
-                  </Button>
-                  <Button
-                    variant="ghost" size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => { if (confirm("Delete this tracker? All entries will be lost.")) deleteTracker.mutate(tracker.id); }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <TrackerDataView
+          trackerId={checkin.id}
+          trackerName={checkin.name}
+          userId={participantUserId}
+          fields={checkin.fields}
+          onBack={() => {}}
+        />
+      )}
+
+      {/* Edit Fields Modal */}
+      {checkin && (
+        <EditCheckinModal
+          open={editFieldsOpen}
+          onOpenChange={setEditFieldsOpen}
+          trackerId={checkin.id}
+          participantId={participantProfileId}
+          fields={checkin.fields}
+        />
       )}
 
       {/* Add Check-in Dialog */}
@@ -1905,7 +1853,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         <DialogContent size="md">
           <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
             <DialogTitle>
-              {dialogMode === "review" ? "Review Check-in" : "Add Check-in"}
+              {dialogMode === "review" ? "Review Check-in" : dialogMode === "custom" ? "Build Check-in" : "Set Up Check-in"}
             </DialogTitle>
             {dialogMode === "pick" && (
               <DialogDescription>
@@ -2036,7 +1984,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                 {createCustom.isPending ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
                 ) : (
-                  "Create Tracker"
+                  "Create Check-in"
                 )}
               </Button>
             </DialogFooter>

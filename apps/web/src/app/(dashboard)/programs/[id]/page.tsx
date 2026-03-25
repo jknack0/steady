@@ -54,7 +54,6 @@ import type { Module } from "@/hooks/use-programs";
 import { EnrollmentSection } from "@/components/enrollment-section";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
 import { FileUpload } from "@/components/file-upload";
-import { DailyTrackerSection } from "@/components/daily-tracker-section";
 import Link from "next/link";
 
 function SortableModuleCard({
@@ -509,9 +508,6 @@ export default function ProgramEditorPage() {
           </div>
         )}
       </div>
-
-      {/* Daily Trackers */}
-      <DailyTrackerSection programId={programId} />
 
       {/* Enrollments */}
       <EnrollmentSection programId={programId} programStatus={program.status} />
