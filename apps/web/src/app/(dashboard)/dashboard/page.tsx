@@ -74,32 +74,31 @@ export default function DashboardPage() {
   const registry = Object.values(WIDGET_REGISTRY);
   const normalizedLayout = normalizeDashboardLayout(layout, registry);
 
-  const handleSave = useCallback(async (newLayout: DashboardLayoutItem[]) => {
-    await saveLayout.mutateAsync({ dashboardLayout: newLayout });
-  }, [saveLayout]);
+  const openPanel = useCallback(() => {
+    const editing = [...normalizedLayout];
+    setEditingLayout(editing);
+    setIsCustomizing(true);
+  }, [normalizedLayout]);
 
-  const handleClose = useCallback(() => {
+  const closePanel = useCallback(() => {
     setIsCustomizing(false);
     setEditingLayout(null);
     hidePanel();
   }, [hidePanel]);
 
-  const handleCustomizeOpen = useCallback(() => {
-    const editing = [...normalizedLayout];
-    setEditingLayout(editing);
-    setIsCustomizing(true);
-    showPanel(
-      <CustomizePanel
-        layout={editing}
-        enabledModules={enabledModules}
-        onSave={handleSave}
-        onClose={handleClose}
-        isSaving={saveLayout.isPending}
-      />
-    );
-  }, [normalizedLayout, enabledModules, handleSave, handleClose, saveLayout.isPending, showPanel]);
+  const togglePanel = useCallback(() => {
+    if (isCustomizing) {
+      closePanel();
+    } else {
+      openPanel();
+    }
+  }, [isCustomizing, openPanel, closePanel]);
 
-  // Keep panel in sync with editing layout
+  const handleSave = useCallback(async (newLayout: DashboardLayoutItem[]) => {
+    await saveLayout.mutateAsync({ dashboardLayout: newLayout });
+  }, [saveLayout]);
+
+  // Sync panel content into sidebar when customizing
   useEffect(() => {
     if (isCustomizing && editingLayout) {
       showPanel(
@@ -107,12 +106,12 @@ export default function DashboardPage() {
           layout={editingLayout}
           enabledModules={enabledModules}
           onSave={handleSave}
-          onClose={handleClose}
+          onClose={closePanel}
           isSaving={saveLayout.isPending}
         />
       );
     }
-  }, [isCustomizing, editingLayout, enabledModules, handleSave, handleClose, saveLayout.isPending, showPanel]);
+  }, [isCustomizing, editingLayout, enabledModules, handleSave, closePanel, saveLayout.isPending, showPanel]);
 
   // Hide panel on unmount
   useEffect(() => {
@@ -122,7 +121,7 @@ export default function DashboardPage() {
   // Auto-open customize panel from URL param (?customize=true)
   useEffect(() => {
     if (searchParams.get("customize") === "true" && !isCustomizing && normalizedLayout.length > 0) {
-      handleCustomizeOpen();
+      openPanel();
     }
     // Only run on mount / when search params change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,7 +138,7 @@ export default function DashboardPage() {
         title={`${greeting}, ${user?.firstName}`}
         subtitle={`${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${dashboardData.stats.todaySessionCount} sessions today`}
         actions={
-          <Button variant="ghost" size="sm" onClick={handleCustomizeOpen} className="gap-2">
+          <Button variant="ghost" size="sm" onClick={togglePanel} className="gap-2">
             <Settings className="h-4 w-4" />
             Customize
           </Button>
