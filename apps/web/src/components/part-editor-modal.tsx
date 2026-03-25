@@ -7,16 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ArrowLeft, Loader2, Sparkles, PenLine, Smartphone } from "lucide-react";
 import { PART_TYPE_CONFIG } from "@/components/part-card";
 import { useGeneratePart } from "@/hooks/use-generate-part";
-import { RNPartContentRenderer } from "@/components/mobile-preview/RNPartRenderers";
-import { DEVICES } from "@/components/mobile-preview/devices";
-import { DeviceFrame } from "@/components/mobile-preview/DeviceFrame";
+import { PartPreviewModal } from "@/components/part-preview-modal";
 import {
   TextPartEditor,
   VideoPartEditor,
@@ -131,35 +131,6 @@ function ContentEditor({ type, content, onChange }: { type: string; content: any
   }
 }
 
-// ── Inline Phone Preview ────────────────────────────
-
-const previewDevice = DEVICES["iphone-se"];
-const PREVIEW_SCALE = 0.55;
-const bezel = 8;
-const phoneW = previewDevice.width + bezel * 2;
-const phoneH = previewDevice.height + bezel * 2;
-const scaledW = Math.round(phoneW * PREVIEW_SCALE);
-const scaledH = Math.round(phoneH * PREVIEW_SCALE);
-
-function InlinePhonePreview({ type, title, content }: { type: string; title: string; content: any }) {
-  return (
-    <div className="flex justify-center">
-      <div style={{ width: scaledW, height: scaledH, flexShrink: 0, overflow: "hidden" }}>
-        <div style={{ width: phoneW, height: phoneH, transform: `scale(${PREVIEW_SCALE})`, transformOrigin: "top left" }}>
-          <DeviceFrame device={previewDevice}>
-            <div className="bg-white px-4 py-3 border-b border-[#F0EDE8]">
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#2D2D2D", fontFamily: "PlusJakartaSans_700Bold, system-ui, sans-serif" }}>
-                {title || "Untitled"}
-              </h3>
-            </div>
-            <RNPartContentRenderer part={{ type, content }} />
-          </DeviceFrame>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Create Part Modal ───────────────────────────────
 
 interface CreatePartModalProps {
@@ -192,7 +163,8 @@ const AI_PLACEHOLDERS: Record<string, string> = {
 
 export function CreatePartModal({ open, onOpenChange, onCreate, isPending, lockedType }: CreatePartModalProps) {
   const [step, setStep] = useState<"type" | "editor">(lockedType ? "editor" : "type");
-  const [mode, setMode] = useState<"ai" | "manual" | "preview">("ai");
+  const [mode, setMode] = useState<"ai" | "manual">("ai");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(lockedType || null);
   const [title, setTitle] = useState("");
   const [isRequired, setIsRequired] = useState(true);
@@ -268,10 +240,11 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
   const Icon = config?.icon;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl w-full max-h-[85vh] h-[85vh] overflow-hidden flex flex-col p-0">
+      <DialogContent size="lg">
         {step === "type" ? (
-          <div className="flex-1 overflow-y-auto p-6">
+          <DialogBody className="p-6">
             <DialogHeader>
               <DialogTitle>Add Part</DialogTitle>
             </DialogHeader>
@@ -295,7 +268,7 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                 );
               })}
             </div>
-          </div>
+          </DialogBody>
         ) : (
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
@@ -340,25 +313,11 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                   <PenLine className="h-3.5 w-3.5" />
                   {canUseAI ? "Build Manually" : "Edit"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("preview")}
-                  className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                    mode === "preview"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Smartphone className="h-3.5 w-3.5" />
-                  Preview
-                </button>
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
-              {mode === "preview" ? (
-                <InlinePhonePreview type={selectedType!} title={title} content={content} />
-              ) : mode === "ai" && canUseAI ? (
+            <DialogBody className="space-y-4">
+              {mode === "ai" && canUseAI ? (
                 <>
                   {/* AI generation mode */}
                   <div className="space-y-2">
@@ -427,11 +386,16 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                   )}
                 </>
               )}
-            </div>
+            </DialogBody>
 
             {/* Footer */}
-            {(mode === "manual" || mode === "preview") && (
-              <div className="flex justify-end gap-2 border-t px-6 py-4 shrink-0">
+            {mode === "manual" && (
+              <DialogFooter className="shrink-0 px-6 py-4 border-t">
+                <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+                <div className="flex-1" />
                 <Button variant="outline" onClick={handleClose}>Cancel</Button>
                 <Button onClick={handleCreate} disabled={!title.trim() || isPending}>
                   {isPending ? (
@@ -440,12 +404,19 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                     "Create Part"
                   )}
                 </Button>
-              </div>
+              </DialogFooter>
             )}
           </>
         )}
       </DialogContent>
     </Dialog>
+
+    <PartPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      part={{ type: selectedType || "TEXT", title, content }}
+    />
+    </>
   );
 }
 
@@ -458,7 +429,6 @@ interface EditPartModalProps {
   onSave: (data: { title?: string; isRequired?: boolean; content?: any }) => Promise<unknown>;
   onDelete: () => void;
   onDuplicate: () => void;
-  onPreview?: () => void;
   saveStatus?: "idle" | "saving" | "saved" | "error";
 }
 
@@ -470,7 +440,7 @@ export function EditPartModal({
   onDelete,
   onDuplicate,
 }: EditPartModalProps) {
-  const [editMode, setEditMode] = useState<"edit" | "preview">("edit");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [title, setTitle] = useState(part?.title || "");
   const [isRequired, setIsRequired] = useState(part?.isRequired ?? true);
   const [content, setContent] = useState<any>(part?.content);
@@ -485,7 +455,6 @@ export function EditPartModal({
       setIsRequired(part.isRequired);
       setContent(part.content);
       dirtyRef.current = false;
-      setEditMode("edit");
     }
   }, [part?.id]);
 
@@ -542,8 +511,9 @@ export function EditPartModal({
   const Icon = typeConfig.icon;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent size="lg">
         <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -566,78 +536,57 @@ export function EditPartModal({
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex border-b mt-3 -mx-6 px-6">
-            <button
-              type="button"
-              onClick={() => setEditMode("edit")}
-              className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                editMode === "edit"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <PenLine className="h-3.5 w-3.5" />
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditMode("preview")}
-              className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-                editMode === "preview"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-              Preview
-            </button>
-          </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 px-6 py-4">
-          {editMode === "preview" ? (
-            <InlinePhonePreview type={part.type} title={title} content={content} />
-          ) : (
-            <>
-              {/* Title + Required */}
-              <div className="flex items-end gap-3">
-                <div className="flex-1 space-y-1.5">
-                  <Label htmlFor="edit-title">Title</Label>
-                  <Input
-                    id="edit-title"
-                    value={title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    placeholder="Part title"
-                  />
-                </div>
-                {part.type !== "DIVIDER" && (
-                  <button
-                    type="button"
-                    onClick={handleRequiredToggle}
-                    className={`shrink-0 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
-                      isRequired
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {isRequired ? "Required" : "Optional"}
-                  </button>
-                )}
-              </div>
+        <DialogBody className="space-y-4">
+          {/* Title + Required */}
+          <div className="flex items-end gap-3">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input
+                id="edit-title"
+                value={title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Part title"
+              />
+            </div>
+            {part.type !== "DIVIDER" && (
+              <button
+                type="button"
+                onClick={handleRequiredToggle}
+                className={`shrink-0 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
+                  isRequired
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "text-muted-foreground hover:bg-accent"
+                }`}
+              >
+                {isRequired ? "Required" : "Optional"}
+              </button>
+            )}
+          </div>
 
-              <Separator />
+          <Separator />
 
-              <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
-            </>
-          )}
-        </div>
+          <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
+        </DialogBody>
 
         {/* Footer */}
-        <div className="flex justify-end border-t px-6 py-4 shrink-0">
+        <DialogFooter className="shrink-0 px-6 py-4 border-t">
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+            <Smartphone className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
+          <div className="flex-1" />
           <Button onClick={handleClose}>Done</Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <PartPreviewModal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      part={{ type: part.type, title, content }}
+    />
+    </>
   );
 }

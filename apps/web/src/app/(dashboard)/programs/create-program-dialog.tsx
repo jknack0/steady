@@ -10,6 +10,7 @@ import {
 import type { ProgramTemplate } from "@/hooks/use-programs";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -116,8 +117,8 @@ export function CreateProgramDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[650px] max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent size="md">
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
           <DialogTitle>
             {view === "templates" ? "Create Program" : (
               <button
@@ -138,7 +139,7 @@ export function CreateProgramDialog({
         </DialogHeader>
 
         {view === "templates" && (
-          <div className="overflow-y-auto -mx-6 px-6 flex-1">
+          <DialogBody>
             <div className="grid gap-2">
               {/* Blank program option */}
               <Card
@@ -221,67 +222,69 @@ export function CreateProgramDialog({
                 </Card>
               ))}
             </div>
-          </div>
+          </DialogBody>
         )}
 
         {view === "blank" && (
-          <form onSubmit={handleBlankSubmit}>
-            <div className="grid gap-4 py-2">
-              <div className="grid gap-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., ADHD Executive Function Skills"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Brief description of the program..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleBlankSubmit} className="flex flex-col flex-1 overflow-hidden">
+            <DialogBody>
+              <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label>Cadence</Label>
-                  <Select value={cadence} onValueChange={setCadence}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="WEEKLY">Weekly</SelectItem>
-                      <SelectItem value="BIWEEKLY">Biweekly</SelectItem>
-                      <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    placeholder="e.g., ADHD Executive Function Skills"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    autoFocus
+                  />
                 </div>
 
                 <div className="grid gap-2">
-                  <Label>Session Type</Label>
-                  <Select value={sessionType} onValueChange={setSessionType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ONE_ON_ONE">One-on-One</SelectItem>
-                      <SelectItem value="GROUP">Group</SelectItem>
-                      <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Brief description of the program..."
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Cadence</Label>
+                    <Select value={cadence} onValueChange={setCadence}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="WEEKLY">Weekly</SelectItem>
+                        <SelectItem value="BIWEEKLY">Biweekly</SelectItem>
+                        <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>Session Type</Label>
+                    <Select value={sessionType} onValueChange={setSessionType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ONE_ON_ONE">One-on-One</SelectItem>
+                        <SelectItem value="GROUP">Group</SelectItem>
+                        <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
+            </DialogBody>
 
-            <DialogFooter className="mt-4">
+            <DialogFooter className="shrink-0 px-6 py-4 border-t">
               <Button
                 type="button"
                 variant="outline"

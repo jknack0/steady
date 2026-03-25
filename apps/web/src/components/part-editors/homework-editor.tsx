@@ -1343,7 +1343,7 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
 
       {/* PDF Import Dialog */}
       <Dialog open={showPdfImport} onOpenChange={(open) => { setShowPdfImport(open); if (!open) { setPdfKey(null); parsePdf.reset(); } }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Import Homework from PDF</DialogTitle>
             <DialogDescription>
@@ -1381,7 +1381,7 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
       </Dialog>
 
       <Dialog open={showAddMenu} onOpenChange={setShowAddMenu}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Add Homework Item</DialogTitle>
             <DialogDescription>

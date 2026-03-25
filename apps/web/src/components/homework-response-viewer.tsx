@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -62,12 +63,12 @@ export function HomeworkResponseViewer({ participantId, open, onOpenChange }: Ho
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
+      <DialogContent size="lg">
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
           <DialogTitle>Homework Responses</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <DialogBody>
           {isLoading ? (
             <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
           ) : !instances || instances.length === 0 ? (
@@ -79,7 +80,7 @@ export function HomeworkResponseViewer({ participantId, open, onOpenChange }: Ho
               ))}
             </div>
           )}
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

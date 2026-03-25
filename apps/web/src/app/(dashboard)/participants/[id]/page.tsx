@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -164,7 +165,7 @@ function EnrollDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>Enroll in Program</DialogTitle>
           <DialogDescription>
@@ -948,9 +949,9 @@ function RtmEnrollmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
+      <DialogContent size="md">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
             <DialogTitle>Enable RTM Billing</DialogTitle>
             <DialogDescription>
               Enroll this client in Remote Therapeutic Monitoring. You can bill
@@ -959,7 +960,8 @@ function RtmEnrollmentDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <DialogBody>
+            <div className="grid gap-4">
             {/* Insurance Info */}
             <div className="grid gap-2">
               <Label>Payer / Insurance *</Label>
@@ -1114,9 +1116,10 @@ function RtmEnrollmentDialog({
                 )}
               </div>
             </div>
-          </div>
+            </div>
+          </DialogBody>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 px-6 py-4 border-t">
             <Button
               type="button"
               variant="outline"
@@ -1912,8 +1915,8 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
 
       {/* Add Check-in Dialog */}
       <Dialog open={dialogOpen} onOpenChange={closeDialog}>
-        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
-          <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
+        <DialogContent size="md">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
             <DialogTitle>
               {dialogMode === "review" ? "Review Check-in" : "Add Check-in"}
             </DialogTitle>
@@ -1924,7 +1927,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
             )}
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+          <DialogBody>
             {dialogMode === "pick" && (
               <div className="space-y-4">
                 {/* AI Generate */}
@@ -2031,11 +2034,11 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                 isCustom={dialogMode === "custom"}
               />
             )}
-          </div>
+          </DialogBody>
 
           {/* Footer */}
           {(dialogMode === "review" || dialogMode === "custom") && generated && (
-            <div className="flex items-center justify-between border-t px-6 py-4 shrink-0">
+            <DialogFooter className="shrink-0 px-6 py-4 border-t justify-between">
               <Button variant="ghost" size="sm" onClick={() => setDialogMode("pick")}>
                 Back
               </Button>
@@ -2049,7 +2052,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
                   "Create Tracker"
                 )}
               </Button>
-            </div>
+            </DialogFooter>
           )}
         </DialogContent>
       </Dialog>
