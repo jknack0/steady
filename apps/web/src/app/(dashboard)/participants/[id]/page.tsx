@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import { TrackerDataView } from "@/components/tracker-data-view";
 import { HomeworkResponseViewer } from "@/components/homework-response-viewer";
+import { CreatePartModal } from "@/components/part-editor-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
 import {
@@ -1319,38 +1320,26 @@ interface HWInstance {
 function HomeworkTab({ participantId, participantProfileId }: { participantId: string; participantProfileId: string }) {
   const queryClient = useQueryClient();
   const [showAssign, setShowAssign] = useState(false);
-  const [aiInput, setAiInput] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [assignPending, setAssignPending] = useState(false);
 
   const { data: instances, isLoading } = useQuery<HWInstance[]>({
     queryKey: ["participant-homework", participantId],
     queryFn: () => api.get(`/api/clinician/participants/${participantId}/homework`),
   });
 
-  const generateHomework = useMutation({
-    mutationFn: (rawInput: string) =>
-      api.post<{ content: any; title?: string }>("/api/ai/generate-part", { partType: "HOMEWORK", rawInput }),
-  });
-
-  const assignHomework = useMutation({
-    mutationFn: (data: { title: string; content: any; dueDate?: string }) =>
-      api.post(`/api/clinician/participants/${participantId}/homework`, data),
-    onSuccess: () => {
+  const handleCreateHomework = async (data: { type: string; title: string; isRequired: boolean; content: any }) => {
+    setAssignPending(true);
+    try {
+      await api.post(`/api/clinician/participants/${participantId}/homework`, {
+        title: data.title,
+        content: data.content,
+      });
       queryClient.invalidateQueries({ queryKey: ["participant-homework", participantId] });
       setShowAssign(false);
-      setAiInput("");
-      generateHomework.reset();
-    },
-  });
-
-  const handleGenerate = async () => {
-    if (!aiInput.trim()) return;
-    const result = await generateHomework.mutateAsync(aiInput.trim());
-    // Immediately assign it
-    await assignHomework.mutateAsync({
-      title: result.title || "Homework",
-      content: result.content,
-    });
+    } finally {
+      setAssignPending(false);
+    }
   };
 
   if (isLoading) return <LoadingState />;
@@ -1455,43 +1444,14 @@ function HomeworkTab({ participantId, participantProfileId }: { participantId: s
         </Button>
       </div>
 
-      {/* Assign Homework dialog */}
-      <Dialog open={showAssign} onOpenChange={setShowAssign}>
-        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
-          <DialogHeader className="shrink-0 px-6 pt-6 pb-3">
-            <DialogTitle>Assign Homework</DialogTitle>
-            <DialogDescription>
-              Describe the homework and AI will generate the items.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            <div className="space-y-2">
-              <Label>Describe the homework</Label>
-              <textarea
-                value={aiInput}
-                onChange={(e) => setAiInput(e.target.value)}
-                placeholder="e.g., Practice box breathing 5 min daily, journal about one trigger each day, track mood 3x daily, try one new coping strategy from the strategy cards"
-                className="w-full rounded-md border bg-background p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[120px] resize-y"
-                autoFocus
-              />
-            </div>
-            {generateHomework.isError && (
-              <p className="text-sm text-destructive">Failed to generate. Try again.</p>
-            )}
-            <Button
-              onClick={handleGenerate}
-              disabled={generateHomework.isPending || assignHomework.isPending || !aiInput.trim()}
-              className="w-full"
-            >
-              {generateHomework.isPending || assignHomework.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating & Assigning...</>
-              ) : (
-                <><Sparkles className="mr-2 h-4 w-4" />Generate & Assign Homework</>
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Assign Homework — reuses the part creation modal locked to HOMEWORK type */}
+      <CreatePartModal
+        open={showAssign}
+        onOpenChange={setShowAssign}
+        onCreate={handleCreateHomework}
+        isPending={assignPending}
+        lockedType="HOMEWORK"
+      />
 
       {/* Content */}
       {(!instances || instances.length === 0) ? (

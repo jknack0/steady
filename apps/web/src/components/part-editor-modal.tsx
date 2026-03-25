@@ -167,6 +167,8 @@ interface CreatePartModalProps {
   onOpenChange: (open: boolean) => void;
   onCreate: (data: { type: string; title: string; isRequired: boolean; content: any }) => Promise<void>;
   isPending: boolean;
+  /** If set, skip the type picker and go straight to this type's editor */
+  lockedType?: string;
 }
 
 // Types that support AI generation (excludes DIVIDER — too simple, and PDF — needs file upload)
@@ -188,17 +190,32 @@ const AI_PLACEHOLDERS: Record<string, string> = {
   RESOURCE_LINK: "e.g., Link to the ADAA anxiety toolkit: https://adaa.org/understanding-anxiety",
 };
 
-export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: CreatePartModalProps) {
-  const [step, setStep] = useState<"type" | "editor">("type");
+export function CreatePartModal({ open, onOpenChange, onCreate, isPending, lockedType }: CreatePartModalProps) {
+  const [step, setStep] = useState<"type" | "editor">(lockedType ? "editor" : "type");
   const [mode, setMode] = useState<"ai" | "manual" | "preview">("ai");
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(lockedType || null);
   const [title, setTitle] = useState("");
   const [isRequired, setIsRequired] = useState(true);
-  const [content, setContent] = useState<any>(null);
+  const [content, setContent] = useState<any>(lockedType ? DEFAULT_CONTENT[lockedType] : null);
   const [rawInput, setRawInput] = useState("");
   const generatePart = useGeneratePart();
 
   const canUseAI = selectedType ? AI_GENERABLE_TYPES.has(selectedType) : false;
+
+  // Initialize when opening with lockedType
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenRef.current && lockedType) {
+      const config = PART_TYPE_CONFIG[lockedType];
+      setSelectedType(lockedType);
+      setTitle(config?.label || lockedType);
+      setIsRequired(lockedType !== "DIVIDER");
+      setContent(DEFAULT_CONTENT[lockedType]);
+      setStep("editor");
+      setMode(AI_GENERABLE_TYPES.has(lockedType) ? "ai" : "manual");
+    }
+    prevOpenRef.current = open;
+  }, [open, lockedType]);
 
   const handleSelectType = (type: string) => {
     setSelectedType(type);
@@ -236,11 +253,11 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
   const handleClose = () => {
     onOpenChange(false);
     setTimeout(() => {
-      setStep("type");
-      setSelectedType(null);
+      setStep(lockedType ? "editor" : "type");
+      setSelectedType(lockedType || null);
       setTitle("");
       setIsRequired(true);
-      setContent(null);
+      setContent(lockedType ? DEFAULT_CONTENT[lockedType] : null);
       setRawInput("");
       setMode("ai");
       generatePart.reset();
@@ -283,14 +300,16 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending }: Cre
           <>
             <DialogHeader className="shrink-0 px-6 pt-6 pb-0">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setStep("type")}
-                  className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
+                {!lockedType && (
+                  <button
+                    onClick={() => setStep("type")}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                )}
                 {Icon && <Icon className={`h-5 w-5 ${config?.color}`} />}
-                <DialogTitle>New {config?.label}</DialogTitle>
+                <DialogTitle>{lockedType ? "Assign" : "New"} {config?.label}</DialogTitle>
               </div>
 
               {/* Mode tabs */}
