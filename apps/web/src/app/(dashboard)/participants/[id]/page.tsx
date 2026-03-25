@@ -1763,7 +1763,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
   const [editFieldsOpen, setEditFieldsOpen] = useState(false);
   const [generated, setGenerated] = useState<{ name: string; description: string; fields: any[] } | null>(null);
 
-  const { data: checkin, isLoading } = useParticipantCheckin(participantProfileId);
+  const { data: checkin, isLoading } = useParticipantCheckin(participantUserId);
 
   const { data: templates } = useQuery<TemplateData[]>({
     queryKey: ["tracker-templates"],
@@ -1775,7 +1775,7 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     mutationFn: (data: { name: string; description: string; fields: any[] }) =>
       api.post("/api/daily-trackers", { ...data, participantId: participantProfileId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["participant-checkin", participantProfileId] });
+      queryClient.invalidateQueries({ queryKey: ["participant-checkin", participantUserId] });
       closeDialog();
     },
   });
