@@ -39,15 +39,6 @@ export function WidgetShell({
       )}
     >
       <div className="flex items-center gap-2 mb-4">
-        {isEditing && (
-          <button
-            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground -ml-1"
-            {...dragAttributes}
-            {...dragListeners}
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
-        )}
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
         <h2 className="font-semibold flex-1">{title}</h2>
         {headerAction}
