@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Search, Settings2, GripVertical, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -382,7 +383,7 @@ export function CustomizePanel({
     );
   }, [layout]);
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -517,6 +518,7 @@ export function CustomizePanel({
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
