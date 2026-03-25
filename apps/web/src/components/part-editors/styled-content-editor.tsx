@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useStyleContent } from "@/hooks/use-style-content";
 import { Sparkles, RefreshCw, PenLine, Eye, Code } from "lucide-react";
 
@@ -21,10 +21,21 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
   const [activeTab, setActiveTab] = useState<Tab>(hasStyled ? "styled" : "write");
   const styleContent = useStyleContent();
   const editableRef = useRef<HTMLDivElement>(null);
+  // Track the last HTML we pushed into the div to avoid re-setting on our own edits
+  const lastSetHtml = useRef<string>(content.styledHtml);
 
-  const handleEditableInput = useCallback(() => {
+  // Sync external changes (e.g. AI restyle) into the contentEditable div
+  useEffect(() => {
+    if (editableRef.current && content.styledHtml !== lastSetHtml.current) {
+      editableRef.current.innerHTML = content.styledHtml;
+      lastSetHtml.current = content.styledHtml;
+    }
+  }, [content.styledHtml]);
+
+  const handleEditableBlur = useCallback(() => {
     if (editableRef.current) {
       const html = editableRef.current.innerHTML;
+      lastSetHtml.current = html;
       if (html !== content.styledHtml) {
         onChange({ ...content, styledHtml: html });
       }
@@ -147,13 +158,18 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
           {hasStyled ? (
             <div className="rounded-md border bg-white">
               <div
-                ref={editableRef}
+                ref={(node) => {
+                  editableRef.current = node;
+                  // Set initial content on mount
+                  if (node && !node.innerHTML) {
+                    node.innerHTML = content.styledHtml;
+                    lastSetHtml.current = content.styledHtml;
+                  }
+                }}
                 contentEditable
                 suppressContentEditableWarning
                 className="steady-styled-content prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset rounded-md"
-                dangerouslySetInnerHTML={{ __html: content.styledHtml }}
-                onBlur={handleEditableInput}
-                onInput={handleEditableInput}
+                onBlur={handleEditableBlur}
               />
             </div>
           ) : (
