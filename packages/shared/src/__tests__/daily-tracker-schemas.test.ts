@@ -181,6 +181,7 @@ describe("CreateTrackerFieldSchema", () => {
 describe("CreateDailyTrackerSchema", () => {
   const validTracker = {
     name: "Daily Mood Tracker",
+    participantId: "participant-1",
     fields: [
       { label: "Mood", fieldType: "SCALE", options: { min: 0, max: 10 }, sortOrder: 0 },
     ],
@@ -205,6 +206,7 @@ describe("CreateDailyTrackerSchema", () => {
       description: "A comprehensive daily tracker",
       programId: "prog-123",
       enrollmentId: "enroll-456",
+      participantId: "participant-1",
       reminderTime: "09:30",
       fields: [
         { label: "Sleep hours", fieldType: "NUMBER", sortOrder: 0 },
@@ -217,6 +219,7 @@ describe("CreateDailyTrackerSchema", () => {
 
   it("rejects missing name", () => {
     const result = CreateDailyTrackerSchema.safeParse({
+      participantId: "participant-1",
       fields: [{ label: "Mood", fieldType: "SCALE", sortOrder: 0 }],
     });
     expect(result.success).toBe(false);
@@ -225,6 +228,7 @@ describe("CreateDailyTrackerSchema", () => {
   it("rejects empty name", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "",
+      participantId: "participant-1",
       fields: [{ label: "Mood", fieldType: "SCALE", sortOrder: 0 }],
     });
     expect(result.success).toBe(false);
@@ -233,22 +237,25 @@ describe("CreateDailyTrackerSchema", () => {
   it("rejects name over 200 characters", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "x".repeat(201),
+      participantId: "participant-1",
       fields: [{ label: "Mood", fieldType: "SCALE", sortOrder: 0 }],
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects empty fields array", () => {
+  it("accepts empty fields array", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "Empty Tracker",
+      participantId: "participant-1",
       fields: [],
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects missing fields", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "No Fields Tracker",
+      participantId: "participant-1",
     });
     expect(result.success).toBe(false);
   });
@@ -256,6 +263,7 @@ describe("CreateDailyTrackerSchema", () => {
   it("rejects description over 1000 characters", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "Tracker",
+      participantId: "participant-1",
       description: "x".repeat(1001),
       fields: [{ label: "Mood", fieldType: "SCALE", sortOrder: 0 }],
     });
@@ -265,6 +273,7 @@ describe("CreateDailyTrackerSchema", () => {
   it("rejects invalid reminderTime format", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "Tracker",
+      participantId: "participant-1",
       reminderTime: "9:30",
       fields: [{ label: "Mood", fieldType: "SCALE", sortOrder: 0 }],
     });
@@ -274,17 +283,27 @@ describe("CreateDailyTrackerSchema", () => {
   it("rejects reminderTime with letters", () => {
     const result = CreateDailyTrackerSchema.safeParse({
       name: "Tracker",
+      participantId: "participant-1",
       reminderTime: "ab:cd",
       fields: [{ label: "Mood", fieldType: "SCALE", sortOrder: 0 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing participantId", () => {
+    const result = CreateDailyTrackerSchema.safeParse({
+      name: "Tracker",
+      fields: [{ label: "Mood", fieldType: "SCALE", options: { min: 0, max: 10 }, sortOrder: 0 }],
     });
     expect(result.success).toBe(false);
   });
 });
 
 describe("CreateTrackerFromTemplateSchema", () => {
-  it("accepts valid template key", () => {
+  it("accepts valid template key with participantId", () => {
     const result = CreateTrackerFromTemplateSchema.safeParse({
       templateKey: "adhd-daily-core",
+      participantId: "participant-1",
     });
     expect(result.success).toBe(true);
   });
@@ -294,18 +313,29 @@ describe("CreateTrackerFromTemplateSchema", () => {
       templateKey: "sleep-tracker",
       programId: "prog-123",
       enrollmentId: "enroll-456",
+      participantId: "participant-1",
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects missing templateKey", () => {
-    const result = CreateTrackerFromTemplateSchema.safeParse({});
+    const result = CreateTrackerFromTemplateSchema.safeParse({
+      participantId: "participant-1",
+    });
     expect(result.success).toBe(false);
   });
 
   it("rejects empty templateKey", () => {
     const result = CreateTrackerFromTemplateSchema.safeParse({
       templateKey: "",
+      participantId: "participant-1",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing participantId", () => {
+    const result = CreateTrackerFromTemplateSchema.safeParse({
+      templateKey: "adhd-daily-core",
     });
     expect(result.success).toBe(false);
   });
@@ -361,11 +391,11 @@ describe("UpdateDailyTrackerSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects empty fields array when provided", () => {
+  it("accepts empty fields array when provided", () => {
     const result = UpdateDailyTrackerSchema.safeParse({
       fields: [],
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects empty name when provided", () => {
@@ -380,6 +410,51 @@ describe("UpdateDailyTrackerSchema", () => {
       reminderTime: "7pm",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("CreateDailyTrackerSchema — single check-in", () => {
+  it("requires participantId", () => {
+    const result = CreateDailyTrackerSchema.safeParse({
+      name: "Check-in",
+      fields: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts empty fields array", () => {
+    const result = CreateDailyTrackerSchema.safeParse({
+      name: "Check-in",
+      participantId: "participant-1",
+      fields: [],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing participantId", () => {
+    const result = CreateDailyTrackerSchema.safeParse({
+      name: "Check-in",
+      participantId: undefined,
+      fields: [],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("CreateTrackerFromTemplateSchema — single check-in", () => {
+  it("requires participantId", () => {
+    const result = CreateTrackerFromTemplateSchema.safeParse({
+      templateKey: "mood-log",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts with participantId", () => {
+    const result = CreateTrackerFromTemplateSchema.safeParse({
+      templateKey: "mood-log",
+      participantId: "participant-1",
+    });
+    expect(result.success).toBe(true);
   });
 });
 
