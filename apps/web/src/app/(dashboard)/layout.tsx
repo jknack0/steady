@@ -32,7 +32,6 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { NotificationBell } from "@/components/notification-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { useCommandPalette } from "@/hooks/use-command-palette";
-import { SidebarPanelProvider, useSidebarPanel } from "@/hooks/use-sidebar-panel";
 
 // ── Nav Config ──────────────────────────────────────
 
@@ -280,35 +279,17 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const commandPalette = useCommandPalette();
+
   return (
     <QueryProvider>
       <ProtectedRoute>
-        <SidebarPanelProvider>
-          <DashboardLayoutInner>{children}</DashboardLayoutInner>
-        </SidebarPanelProvider>
-      </ProtectedRoute>
-    </QueryProvider>
-  );
-}
-
-function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const commandPalette = useCommandPalette();
-  const { panelContent } = useSidebarPanel();
-
-  return (
     <div className="flex h-screen overflow-hidden">
-      {/* Desktop sidebar — swap for panel content when customizing */}
-      {panelContent ? (
-        <div className="hidden w-64 lg:flex flex-col border-r bg-background">
-          {panelContent}
-        </div>
-      ) : (
-        <Sidebar
-          className="hidden w-64 lg:flex"
-          onSearchClick={commandPalette.open}
-        />
-      )}
+      <Sidebar
+        className="hidden w-64 lg:flex"
+        onSearchClick={commandPalette.open}
+      />
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
@@ -356,5 +337,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         onClose={commandPalette.close}
       />
     </div>
+      </ProtectedRoute>
+    </QueryProvider>
   );
 }

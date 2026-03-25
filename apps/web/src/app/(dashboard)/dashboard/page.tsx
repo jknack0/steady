@@ -2,19 +2,16 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { useClinicianConfig, useSaveDashboardLayout } from "@/hooks/use-config";
 import { LoadingState } from "@/components/loading-state";
 import { PageHeader } from "@/components/page-header";
 import { WidgetGrid } from "@/components/widget-grid";
-import { CustomizePanel } from "@/components/customize-panel";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { normalizeDashboardLayout, WIDGET_REGISTRY } from "@steady/shared";
 import type { DashboardLayoutItem, PartialDashboardLayoutItem } from "@steady/shared";
-import { useSidebarPanel } from "@/hooks/use-sidebar-panel";
 
 interface DashboardData {
   stats: {
@@ -65,61 +62,46 @@ export default function DashboardPage() {
   const saveLayout = useSaveDashboardLayout();
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [editingLayout, setEditingLayout] = useState<DashboardLayoutItem[] | null>(null);
-  const { showPanel, hidePanel } = useSidebarPanel();
-
-  const searchParams = useSearchParams();
 
   const layout = (config?.dashboardLayout ?? []) as PartialDashboardLayoutItem[];
   const enabledModules = config?.enabledModules ?? [];
   const registry = Object.values(WIDGET_REGISTRY);
   const normalizedLayout = normalizeDashboardLayout(layout, registry);
 
-  const handleSave = useCallback(async (newLayout: DashboardLayoutItem[]) => {
-    await saveLayout.mutateAsync({ dashboardLayout: newLayout });
-  }, [saveLayout]);
+  // Auto-save with debounce when editing layout changes
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedRef = useRef<string>("");
 
-  // Stable close ref so the panel's onClose always works
-  const closePanelRef = useRef(() => {});
-  closePanelRef.current = () => {
-    setIsCustomizing(false);
-    setEditingLayout(null);
-    hidePanel();
-  };
+  useEffect(() => {
+    if (!editingLayout) return;
+    const current = JSON.stringify(editingLayout);
+    if (current === lastSavedRef.current) return;
 
-  const togglePanel = useCallback(() => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveLayout.mutate({ dashboardLayout: editingLayout });
+      lastSavedRef.current = current;
+    }, 1000);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [editingLayout, saveLayout]);
+
+  const toggleCustomize = useCallback(() => {
     if (isCustomizing) {
-      closePanelRef.current();
+      // Save immediately on close if there are unsaved changes
+      if (editingLayout && JSON.stringify(editingLayout) !== lastSavedRef.current) {
+        saveLayout.mutate({ dashboardLayout: editingLayout });
+      }
+      setIsCustomizing(false);
+      setEditingLayout(null);
     } else {
       setEditingLayout([...normalizedLayout]);
+      lastSavedRef.current = JSON.stringify(normalizedLayout);
       setIsCustomizing(true);
     }
-  }, [isCustomizing, normalizedLayout]);
-
-  // Show/hide panel in sidebar based on isCustomizing
-  useEffect(() => {
-    if (isCustomizing && editingLayout) {
-      showPanel(
-        <CustomizePanel
-          layout={editingLayout}
-          enabledModules={enabledModules}
-          onSave={handleSave}
-          onClose={() => closePanelRef.current()}
-          isSaving={saveLayout.isPending}
-        />
-      );
-    } else {
-      hidePanel();
-    }
-  }, [isCustomizing, editingLayout, enabledModules, handleSave, saveLayout.isPending, showPanel, hidePanel]);
-
-  // Auto-open customize panel from URL param (?customize=true)
-  useEffect(() => {
-    if (searchParams.get("customize") === "true" && !isCustomizing && normalizedLayout.length > 0) {
-      setEditingLayout([...normalizedLayout]);
-      setIsCustomizing(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [isCustomizing, normalizedLayout, editingLayout, saveLayout]);
 
   if (isLoading) return <LoadingState />;
   if (!dashboardData) return null;
@@ -132,9 +114,14 @@ export default function DashboardPage() {
         title={`${greeting}, ${user?.firstName}`}
         subtitle={`${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${dashboardData.stats.todaySessionCount} sessions today`}
         actions={
-          <Button variant="ghost" size="sm" onClick={togglePanel} className="gap-2">
+          <Button
+            variant={isCustomizing ? "default" : "ghost"}
+            size="sm"
+            onClick={toggleCustomize}
+            className="gap-2"
+          >
             <Settings className="h-4 w-4" />
-            Customize
+            {isCustomizing ? "Done" : "Customize"}
           </Button>
         }
       />
@@ -144,6 +131,7 @@ export default function DashboardPage() {
         isEditing={isCustomizing}
         dashboardData={dashboardData}
         onLayoutChange={isCustomizing ? setEditingLayout : undefined}
+        enabledModules={enabledModules}
       />
     </div>
   );
