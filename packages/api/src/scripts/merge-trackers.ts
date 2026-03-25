@@ -73,7 +73,7 @@ async function mergeTrackers() {
                   trackerId: primary.id,
                   label: field.label,
                   fieldType: field.fieldType,
-                  options: field.options,
+                  options: field.options ?? undefined,
                   sortOrder: maxSortOrder,
                   isRequired: field.isRequired,
                 },
