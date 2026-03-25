@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { useStyleContent } from "@/hooks/use-style-content";
 import { Sparkles, RefreshCw, PenLine, Eye, Code } from "lucide-react";
 
@@ -15,32 +15,61 @@ interface StyledContentEditorProps {
 
 type Tab = "write" | "styled" | "html";
 
+// Isolated contentEditable component — never re-renders from parent state changes.
+// Only re-renders when externalHtml changes (e.g. AI restyle).
+const EditableHtml = memo(
+  function EditableHtml({
+    externalHtml,
+    onSave,
+  }: {
+    externalHtml: string;
+    onSave: (html: string) => void;
+  }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const lastExternalHtml = useRef(externalHtml);
+
+    // Only set innerHTML when the external source changes (AI restyle, tab switch)
+    useEffect(() => {
+      if (ref.current && externalHtml !== lastExternalHtml.current) {
+        ref.current.innerHTML = externalHtml;
+        lastExternalHtml.current = externalHtml;
+      }
+    }, [externalHtml]);
+
+    return (
+      <div
+        ref={(node) => {
+          ref.current = node;
+          if (node && node.innerHTML === "") {
+            node.innerHTML = externalHtml;
+          }
+        }}
+        contentEditable
+        suppressContentEditableWarning
+        className="steady-styled-content prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset rounded-md"
+        onBlur={() => {
+          if (ref.current) {
+            const html = ref.current.innerHTML;
+            lastExternalHtml.current = html;
+            onSave(html);
+          }
+        }}
+      />
+    );
+  },
+  (prev, next) => prev.externalHtml === next.externalHtml
+);
+
 export function StyledContentPartEditor({ content, onChange }: StyledContentEditorProps) {
   const hasRaw = content.rawContent.trim().length > 0;
   const hasStyled = content.styledHtml.trim().length > 0;
   const [activeTab, setActiveTab] = useState<Tab>(hasStyled ? "styled" : "write");
   const styleContent = useStyleContent();
-  const editableRef = useRef<HTMLDivElement>(null);
-  // Track the last HTML we pushed into the div to avoid re-setting on our own edits
-  const lastSetHtml = useRef<string>(content.styledHtml);
-
-  // Sync external changes (e.g. AI restyle) into the contentEditable div
-  useEffect(() => {
-    if (editableRef.current && content.styledHtml !== lastSetHtml.current) {
-      editableRef.current.innerHTML = content.styledHtml;
-      lastSetHtml.current = content.styledHtml;
-    }
-  }, [content.styledHtml]);
-
-  const handleEditableBlur = useCallback(() => {
-    if (editableRef.current) {
-      const html = editableRef.current.innerHTML;
-      lastSetHtml.current = html;
-      if (html !== content.styledHtml) {
-        onChange({ ...content, styledHtml: html });
-      }
-    }
-  }, [content, onChange]);
+  // Stable ref for onChange so the memoized child doesn't re-render
+  const onChangeRef = useRef(onChange);
+  const contentRef = useRef(content);
+  onChangeRef.current = onChange;
+  contentRef.current = content;
 
   const handleStyle = async () => {
     if (!content.rawContent.trim()) return;
@@ -157,19 +186,13 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
         <div className="pt-3">
           {hasStyled ? (
             <div className="rounded-md border bg-white">
-              <div
-                ref={(node) => {
-                  editableRef.current = node;
-                  // Set initial content on mount
-                  if (node && !node.innerHTML) {
-                    node.innerHTML = content.styledHtml;
-                    lastSetHtml.current = content.styledHtml;
+              <EditableHtml
+                externalHtml={content.styledHtml}
+                onSave={(html) => {
+                  if (html !== contentRef.current.styledHtml) {
+                    onChangeRef.current({ ...contentRef.current, styledHtml: html });
                   }
                 }}
-                contentEditable
-                suppressContentEditableWarning
-                className="steady-styled-content prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset rounded-md"
-                onBlur={handleEditableBlur}
               />
             </div>
           ) : (
