@@ -1,6 +1,13 @@
 import type { ComponentType } from "react";
 import type { WidgetProps } from "@/components/dashboard-widgets";
 import { ClientDemographicsWidget } from "./client-demographics";
+import { ClientSessionsWidget } from "./client-sessions";
+import { ClientHomeworkWidget } from "./client-homework";
+import { ClientTrackersWidget } from "./client-trackers";
+import { ClientProgressWidget } from "./client-progress";
+import { ClientAlertsWidget } from "./client-alerts";
+import { ClientNotesWidget } from "./client-notes";
+import { ClientQuickActionsWidget } from "./client-quick-actions";
 
 function PlaceholderWidget({ isEditing }: WidgetProps) {
   return (
@@ -13,13 +20,13 @@ function PlaceholderWidget({ isEditing }: WidgetProps) {
 // Client widget props are heterogeneous per widget type
 export const CLIENT_WIDGET_COMPONENTS: Record<string, ComponentType<any>> = {
   client_demographics: ClientDemographicsWidget,
-  client_sessions: PlaceholderWidget,
-  client_homework: PlaceholderWidget,
-  client_trackers: PlaceholderWidget,
+  client_sessions: ClientSessionsWidget,
+  client_homework: ClientHomeworkWidget,
+  client_trackers: ClientTrackersWidget,
   client_assessments: PlaceholderWidget,
   client_journal: PlaceholderWidget,
-  client_progress: PlaceholderWidget,
-  client_alerts: PlaceholderWidget,
-  client_notes: PlaceholderWidget,
-  client_quick_actions: PlaceholderWidget,
+  client_progress: ClientProgressWidget,
+  client_alerts: ClientAlertsWidget,
+  client_notes: ClientNotesWidget,
+  client_quick_actions: ClientQuickActionsWidget,
 };
