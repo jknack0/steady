@@ -136,6 +136,78 @@ export default function ParticipantDetailPage() {
   );
 }
 
+// ── Enroll Dialog ────────────────────────────────────────
+
+function EnrollDialog({
+  open,
+  onOpenChange,
+  participantEmail,
+  participantId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  participantEmail: string;
+  participantId: string;
+}) {
+  const queryClient = useQueryClient();
+
+  const { data: programs, isLoading } = useQuery<Array<{ id: string; title: string; status: string }>>({
+    queryKey: ["programs"],
+    queryFn: () => api.get("/api/programs"),
+    enabled: open,
+  });
+
+  const enrollMutation = useMutation({
+    mutationFn: (programId: string) =>
+      api.post(`/api/programs/${programId}/enrollments`, { participantEmail }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
+      onOpenChange(false);
+    },
+  });
+
+  const publishedPrograms = (programs || []).filter((p) => p.status === "PUBLISHED");
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Enroll in Program</DialogTitle>
+          <DialogDescription>
+            Choose a published program to enroll this client in.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-2">
+          {isLoading ? (
+            <div className="py-8 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
+          ) : publishedPrograms.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted-foreground">No published programs available.</p>
+              <p className="text-xs text-muted-foreground mt-1">Create and publish a program first.</p>
+            </div>
+          ) : (
+            publishedPrograms.map((program) => (
+              <button
+                key={program.id}
+                onClick={() => enrollMutation.mutate(program.id)}
+                disabled={enrollMutation.isPending}
+                className="w-full text-left rounded-lg border p-3 hover:shadow-md hover:border-primary/30 transition-all"
+              >
+                <span className="text-sm font-semibold">{program.title}</span>
+              </button>
+            ))
+          )}
+          {enrollMutation.isError && (
+            <p className="text-sm text-destructive">
+              {(enrollMutation.error as any)?.message || "Failed to enroll. They may already be enrolled in this program."}
+            </p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Overview Tab ─────────────────────────────────────────
 
 function OverviewTab({
@@ -146,9 +218,30 @@ function OverviewTab({
   participantId: string;
 }) {
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const enrollment = data.enrollments[0];
   if (!enrollment) {
-    return <p className="text-muted-foreground">No active enrollment found.</p>;
+    return (
+      <div className="space-y-6">
+        <div className="rounded-lg border border-dashed py-12 text-center">
+          <BookOpen className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+          <p className="text-sm font-medium">Not enrolled in a program</p>
+          <p className="text-xs text-muted-foreground mt-1 mb-4">
+            Enroll this client in a program to track their progress, assign modules, and schedule sessions.
+          </p>
+          <Button size="sm" onClick={() => setEnrollDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Enroll in Program
+          </Button>
+        </div>
+        <EnrollDialog
+          open={enrollDialogOpen}
+          onOpenChange={setEnrollDialogOpen}
+          participantEmail={data.participant.email}
+          participantId={participantId}
+        />
+      </div>
+    );
   }
 
   return (
@@ -201,6 +294,14 @@ function OverviewTab({
         participantId={participantId}
         open={hwViewerOpen}
         onOpenChange={setHwViewerOpen}
+      />
+
+      {/* Enroll Dialog */}
+      <EnrollDialog
+        open={enrollDialogOpen}
+        onOpenChange={setEnrollDialogOpen}
+        participantEmail={data.participant.email}
+        participantId={participantId}
       />
     </div>
   );
