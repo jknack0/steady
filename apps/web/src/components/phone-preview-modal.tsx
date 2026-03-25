@@ -186,9 +186,8 @@ function PartDetailView({ part, onBack }: { part: PreviewPart; onBack: () => voi
 
 // ── Phone Frame ────────────────────────────────────
 
-const PHONE_W = 375;
-const PHONE_H = 740;
-const PHONE_ASPECT = PHONE_W / PHONE_H; // ~0.507
+const PHONE_W = 430;
+const PHONE_H = 932;
 
 function PhoneFrame({ program, initialPartId }: { program: PreviewProgram; initialPartId?: string | null }) {
   const [activePart, setActivePart] = useState<PreviewPart | null>(null);
@@ -261,11 +260,11 @@ function ScaledPhone({ program, partId }: { program: PreviewProgram; partId?: st
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (!node) return;
     const update = () => {
-      const vh = window.innerHeight * 0.88;
+      const vh = window.innerHeight * 0.9;
       const vw = window.innerWidth * 0.9;
       const scaleH = vh / PHONE_H;
       const scaleW = vw / PHONE_W;
-      const s = Math.min(1, scaleH, scaleW);
+      const s = Math.min(scaleH, scaleW);
       node.style.transform = `scale(${s})`;
     };
     update();

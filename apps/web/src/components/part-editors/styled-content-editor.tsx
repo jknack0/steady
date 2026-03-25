@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useStyleContent } from "@/hooks/use-style-content";
 import { Sparkles, RefreshCw, PenLine, Eye, Code } from "lucide-react";
 
@@ -20,6 +20,16 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
   const hasStyled = content.styledHtml.trim().length > 0;
   const [activeTab, setActiveTab] = useState<Tab>(hasStyled ? "styled" : "write");
   const styleContent = useStyleContent();
+  const editableRef = useRef<HTMLDivElement>(null);
+
+  const handleEditableInput = useCallback(() => {
+    if (editableRef.current) {
+      const html = editableRef.current.innerHTML;
+      if (html !== content.styledHtml) {
+        onChange({ ...content, styledHtml: html });
+      }
+    }
+  }, [content, onChange]);
 
   const handleStyle = async () => {
     if (!content.rawContent.trim()) return;
@@ -137,8 +147,13 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
           {hasStyled ? (
             <div className="rounded-md border bg-white">
               <div
-                className="steady-styled-content prose prose-sm max-w-none p-4"
+                ref={editableRef}
+                contentEditable
+                suppressContentEditableWarning
+                className="steady-styled-content prose prose-sm max-w-none p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset rounded-md"
                 dangerouslySetInnerHTML={{ __html: content.styledHtml }}
+                onBlur={handleEditableInput}
+                onInput={handleEditableInput}
               />
             </div>
           ) : (
