@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import {
+  LayoutDashboard,
   BookOpen,
   Users,
   Calendar,
@@ -35,6 +36,7 @@ function RtmBadge() {
 }
 
 const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/programs", label: "My Programs", icon: BookOpen },
   { href: "/participants", label: "Clients", icon: Users },
   { href: "/sessions", label: "Sessions", icon: Calendar },

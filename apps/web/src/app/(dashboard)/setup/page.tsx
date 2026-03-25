@@ -476,7 +476,7 @@ export default function SetupPage() {
       }
 
       await refreshUser();
-      router.push("/programs");
+      router.push("/dashboard");
     } catch {
       // Errors are handled by TanStack Query — mutation state shows error
     }
