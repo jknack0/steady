@@ -22,13 +22,13 @@ A 3-tier size system (`sm`, `md`, `lg`) built into the base `DialogContent` comp
 | Height behavior | Fixed for md/lg, auto for sm | sm modals are short enough they never jump. md/lg need fixed height to prevent lurching. |
 | Internal structure | Pinned header + scrolling body + pinned footer | Buttons never move. Content scrolls predictably. |
 | Part editor preview | Remove tab, add button to open PhonePreviewModal | Full-size preview is better than cramped in-modal phone frame. |
-| Default tier | sm (backward compat) | Existing modals without `size` prop keep working. |
+| Default tier | sm (backward compat) | Existing modals without `size` prop keep exact same width (`max-w-lg`) and layout. |
 
 ## Size Tiers
 
 | Tier | Width | Height | Layout |
 |---|---|---|---|
-| `sm` | `max-w-md` (448px) | auto (shrink-to-fit) | Standard padding, no fixed structure required |
+| `sm` | `max-w-lg` (576px) | auto (shrink-to-fit) | Standard padding (`p-6`), retains existing `grid gap-4` layout |
 | `md` | `max-w-lg` (576px) | `h-[65vh]` fixed | Flex column — pinned header, scrolling body, pinned footer |
 | `lg` | `max-w-3xl` (768px) | `h-[80vh]` fixed | Same flex column structure |
 
@@ -49,7 +49,7 @@ A 3-tier size system (`sm`, `md`, `lg`) built into the base `DialogContent` comp
 | Create part | `part-editor-modal.tsx` | max-w-3xl | `lg` |
 | Edit part | `part-editor-modal.tsx` | max-w-3xl | `lg` |
 
-**Not changed:** PhonePreviewModal and MobilePreviewModal (custom portal-based, not Dialog component).
+**Not changed:** PhonePreviewModal and MobilePreviewModal — both use custom portal-based rendering (`createPortal` to `document.body`), not the `DialogContent` component. They are unaffected by `DialogContent` changes.
 
 ## DialogContent Changes
 
@@ -59,13 +59,18 @@ Add `size?: "sm" | "md" | "lg"` prop to `DialogContent` in `apps/web/src/compone
 
 ```typescript
 const sizeClasses = {
-  sm: "max-w-md",                                    // 448px, auto height
-  md: "max-w-lg h-[65vh] flex flex-col overflow-hidden p-0",   // 576px, fixed height
-  lg: "max-w-3xl h-[80vh] flex flex-col overflow-hidden p-0",  // 768px, fixed height
+  sm: "",                                            // 576px (inherits default max-w-lg), auto height, keeps grid gap-4 p-6
+  md: "max-w-lg h-[65vh] !grid-none flex flex-col overflow-hidden p-0",   // 576px, fixed height
+  lg: "max-w-3xl h-[80vh] !grid-none flex flex-col overflow-hidden p-0",  // 768px, fixed height
 };
 ```
 
-For `md` and `lg`, `DialogContent` applies `p-0` so internal components handle their own padding. This enables the pinned header/footer pattern.
+For `md` and `lg`:
+- `p-0` removes container padding — internal components (`DialogHeader`, `DialogBody`, `DialogFooter`) handle their own padding
+- `!grid-none` (or remove `grid` and `gap-4` from base classes via conditional) overrides the base `grid gap-4` layout since these tiers use `flex flex-col` instead
+- This enables the pinned header/footer pattern
+
+For `sm`: no additional classes. The existing `DialogContent` base styles (`grid gap-4 p-6 max-w-lg`) are preserved exactly as-is. No visual change for any modal that doesn't pass `size`.
 
 ### New: DialogBody Component
 
@@ -86,12 +91,45 @@ const DialogBody = React.forwardRef<
 
 ### Updated: DialogHeader and DialogFooter
 
-Update existing components to work as pinned sections:
+**No changes to existing `DialogHeader` and `DialogFooter` components.** Their current styles work fine for `sm` tier modals with the existing `grid gap-4 p-6` layout.
 
-- `DialogHeader`: add `shrink-0 px-6 pt-6 pb-4` (no flex-grow, stays at top)
-- `DialogFooter`: add `shrink-0 px-6 py-4 border-t` (no flex-grow, stays at bottom)
+For `md` and `lg` tiers, the consuming modal adds pinned-section classes via `className` on the component:
 
-These changes are additive — `sm` tier modals still use standard padding from `DialogContent` and don't need the flex structure.
+```tsx
+<DialogContent size="md">
+  <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
+    <DialogTitle>Title</DialogTitle>
+  </DialogHeader>
+  <DialogBody>
+    {/* scrollable content */}
+  </DialogBody>
+  <DialogFooter className="shrink-0 px-6 py-4 border-t">
+    <Button>Action</Button>
+  </DialogFooter>
+</DialogContent>
+```
+
+This avoids double-padding in `sm` tier modals (which keep `p-6` on the container) while giving `md`/`lg` modals the pinned structure they need (since container has `p-0`).
+
+### New Export
+
+Add `DialogBody` to the export block at the bottom of `dialog.tsx`:
+
+```typescript
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogTrigger,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogBody,      // ← new
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+};
+```
 
 ## Part Editor Preview Change
 
@@ -103,18 +141,29 @@ In `CreatePartModal` (`apps/web/src/components/part-editor-modal.tsx`):
 - Tabs go from ["AI Generate", "Build Manually", "Preview"] to ["AI Generate", "Build Manually"]
 
 In `EditPartModal`:
-- Remove the "Preview" tab
-- Tabs go from ["Edit", "Preview"] to just the editor (no tabs needed at all — simplify to plain editor)
+- Remove the "Preview" tab and the `editMode` state (`"edit" | "preview"`) — no longer needed
+- Simplify to a plain editor (no tab bar at all)
+- The existing `onPreview` prop on the interface becomes the callback that opens `PartPreviewModal`
+- Footer layout: existing "Duplicate" and "Delete" buttons stay in the header area. Footer has "Preview" button (secondary) on the left and "Done" button (primary) on the right
+- Remove the `mode === "preview"` conditional from the footer rendering logic in `CreatePartModal` as well — footer should always be visible when in manual/edit mode
 
 ### Add Preview Button
 
 In both CreatePartModal and EditPartModal:
-- Add a "Preview" button in the `DialogFooter` (or header area)
-- Clicking it opens the standalone `PhonePreviewModal` with the current part data
+- Add a "Preview" button in the `DialogFooter`
+- Clicking it opens a new `PartPreviewModal` with the current in-memory part data
 - The editor dialog stays visible underneath the preview overlay
-- The preview shows the part as it would appear on the mobile app
 
-The `PhonePreviewModal` at `apps/web/src/components/phone-preview-modal.tsx` already supports rendering individual parts — it just needs to be called with the current part data.
+### New: PartPreviewModal Component
+
+`PhonePreviewModal` requires a `programId` and fetches from the API — it cannot render an unsaved/in-progress part. Create a new lightweight `PartPreviewModal` (`apps/web/src/components/part-preview-modal.tsx`) that:
+
+- Accepts a raw part object (`{ type, title, content }`) — no API call needed
+- Renders the same portal-based fullscreen phone frame as `PhonePreviewModal` (backdrop, device selector, scaled phone)
+- Uses the existing `InlinePhonePreview` helper from `part-editor-modal.tsx` (or the mobile part renderers) to render the part content inside the phone frame
+- Supports the same device options (iPhone SE, iPhone 15) and escape-to-close behavior
+
+This is a ~50-line wrapper that reuses existing rendering infrastructure without coupling to the program API.
 
 ## Migration Strategy
 
@@ -125,12 +174,13 @@ Each modal is updated independently. The changes are:
 3. For `md`/`lg`: wrap content in `<DialogHeader>`, `<DialogBody>`, `<DialogFooter>`
 4. For `sm`: minimal changes — just add the `size` prop
 
-No breaking changes. Modals without the `size` prop default to `sm` behavior (current default `max-w-lg` becomes `max-w-md` — a slight narrowing that's acceptable for simple dialogs).
+No breaking changes. Modals without the `size` prop default to `sm` which preserves the existing `max-w-lg` width, `grid gap-4` layout, and `p-6` padding exactly as-is. Zero visual change for any modal that doesn't opt in.
 
 ## Testing Strategy
 
-- **DialogContent:** Unit test for each size tier — verify correct classes applied
+- **DialogContent:** Unit test for each size tier — verify correct classes applied (`sm` gets no extra classes, `md`/`lg` get fixed height + flex)
 - **DialogBody:** Verify overflow-y-auto behavior
-- **Part editor modals:** Verify preview tab is removed, preview button opens PhonePreviewModal
+- **PartPreviewModal:** Verify it renders a raw part object in the phone frame without API calls
+- **Part editor modals:** Verify preview tab is removed, preview button opens `PartPreviewModal`, footer always visible in edit mode
 - **Visual regression:** Manual check of each modal to verify height stability during multi-step flows
-- **Backward compat:** Modals without `size` prop still render correctly
+- **Backward compat:** Modals without `size` prop render identically to before (same width, padding, layout)
