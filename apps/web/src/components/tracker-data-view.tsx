@@ -2,18 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { Flame, CalendarCheck, TrendingUp, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TrackerCharts } from "@/components/tracker-charts";
 
 // ── Types ────────────────────────────────────────────
 
@@ -48,10 +40,6 @@ interface TrackerField {
   sortOrder: number;
 }
 
-// ── Chart colors ─────────────────────────────────────
-
-const CHART_COLORS = ["#5B8A8A", "#E8783A", "#8FAE8B", "#D4A0A0", "#89B4C8", "#C4A86B"];
-
 // ── Main Component ───────────────────────────────────
 
 interface TrackerDataViewProps {
@@ -73,8 +61,6 @@ export function TrackerDataView({ trackerId, trackerName, userId, fields, onBack
     queryFn: () => api.get(`/api/daily-trackers/${trackerId}/entries?userId=${userId}&limit=14`),
   });
 
-  const chartableFields = fields.filter((f) => f.fieldType === "SCALE" || f.fieldType === "NUMBER");
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -86,100 +72,16 @@ export function TrackerDataView({ trackerId, trackerName, userId, fields, onBack
         <h3 className="text-lg font-semibold">{trackerName}</h3>
       </div>
 
-      {/* Summary stats */}
+      {/* Charts & stats */}
       {trends && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-lg border p-4 text-center">
-            <Flame className="h-5 w-5 mx-auto mb-1 text-orange-500" />
-            <p className="text-2xl font-bold">{trends.streak}</p>
-            <p className="text-xs text-muted-foreground">Day streak</p>
-          </div>
-          <div className="rounded-lg border p-4 text-center">
-            <CalendarCheck className="h-5 w-5 mx-auto mb-1 text-teal" />
-            <p className="text-2xl font-bold">{Math.round(trends.completionRate * 100)}%</p>
-            <p className="text-xs text-muted-foreground">
-              {trends.completedDays}/{trends.totalDays} days
-            </p>
-          </div>
-          <div className="rounded-lg border p-4 text-center">
-            <TrendingUp className="h-5 w-5 mx-auto mb-1 text-blue-500" />
-            <p className="text-2xl font-bold">{chartableFields.length}</p>
-            <p className="text-xs text-muted-foreground">Tracked metrics</p>
-          </div>
-        </div>
-      )}
-
-      {/* Trend charts */}
-      {trends && chartableFields.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold">Trends (Last 30 Days)</h4>
-          {chartableFields.map((field, i) => {
-            const data = trends.fieldTrends[field.id] || [];
-            if (data.length < 2) return null;
-
-            const opts = field.options as any;
-            const min = opts?.min ?? 0;
-            const max = opts?.max ?? Math.max(...data.map((d) => d.value), 10);
-
-            return (
-              <div key={field.id} className="rounded-lg border p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium">{field.label}</span>
-                  {data.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Latest:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {data[data.length - 1].value}
-                        {opts?.maxLabel ? ` / ${max}` : ""}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-                <ResponsiveContainer width="100%" height={160}>
-                  <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F0EDE8" />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 10, fill: "#8A8A8A" }}
-                      tickFormatter={(d) => {
-                        const date = new Date(d + "T00:00:00");
-                        return `${date.getMonth() + 1}/${date.getDate()}`;
-                      }}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis
-                      domain={[min, max]}
-                      tick={{ fontSize: 10, fill: "#8A8A8A" }}
-                      width={30}
-                    />
-                    <Tooltip
-                      labelFormatter={(d) => {
-                        const date = new Date(d + "T00:00:00");
-                        return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-                      }}
-                      formatter={(value: any) => [value, field.label]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #F0EDE8" }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: CHART_COLORS[i % CHART_COLORS.length] }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-                {opts?.minLabel && opts?.maxLabel && (
-                  <div className="flex justify-between mt-1 px-8 text-[10px] text-muted-foreground">
-                    <span>{opts.minLabel}</span>
-                    <span>{opts.maxLabel}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <TrackerCharts
+          fields={fields}
+          fieldTrends={trends.fieldTrends}
+          completionRate={trends.completionRate}
+          completedDays={trends.completedDays}
+          totalDays={trends.totalDays}
+          streak={trends.streak}
+        />
       )}
 
       {/* Recent entries */}
