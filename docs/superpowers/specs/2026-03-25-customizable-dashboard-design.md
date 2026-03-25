@@ -30,6 +30,8 @@ A customizable widget system powered by a typed widget registry in `@steady/shar
 
 ### Widget Registry (`packages/shared/src/constants/dashboard-widgets.ts`)
 
+This file replaces the existing `DASHBOARD_WIDGETS` constant and its `DashboardWidget` interface. The old interface had `size: "half" | "full"` and `requiresModule: string` — these are replaced by `defaultColumn`/`supportedColumns` (which subsume `size`) and `requiresModule` (preserved).
+
 Each widget definition:
 
 ```typescript
@@ -40,10 +42,15 @@ interface WidgetDefinition {
   page: "dashboard" | "client_overview";
   defaultColumn: "main" | "sidebar";
   supportedColumns: ("main" | "sidebar")[];
+  requiresModule: string | null;  // module ID — widget hidden if module disabled
   settingsSchema: ZodSchema | null;
   defaultSettings: Record<string, unknown>;
 }
 ```
+
+**New widgets** (not in current registry): `stat_active_clients`, `stat_sessions_today`, `stat_homework_rate`, `stat_overdue_count`, `todays_sessions`, `checkin_alerts`, `overdue_homework`, `recent_submissions`, `quick_actions`. These replace the hardcoded dashboard sections.
+
+**Existing widgets** (carried over from current registry): `tracker_summary`, `homework_status`, `journal_activity`, `assessment_scores`, `medication_adherence`, `side_effects_report`, `program_progress`, `pre_visit`, `recent_messages`, `rtm_overview`, `todo_progress`.
 
 ### Dashboard Layout Shape (stored in `ClinicianConfig.dashboardLayout` JSON)
 
@@ -61,6 +68,35 @@ type DashboardLayout = DashboardLayoutItem[];
 
 Extends the existing `{ widgetId, visible }` shape with `column`, `order`, and `settings`.
 
+### Backward Compatibility & Migration
+
+The new fields (`column`, `order`, `settings`) are **optional with defaults** in the Zod schema:
+- `column` defaults to the widget's `defaultColumn` from the registry
+- `order` defaults to the widget's position in the array
+- `settings` defaults to `{}` (widget uses its `defaultSettings` when settings are empty)
+
+This means existing `{ widgetId, visible }` data in the database is valid without migration. A **runtime normalization function** (`normalizeDashboardLayout()`) in `@steady/shared` hydrates missing fields from the widget registry when loading a layout. This function runs on the frontend when reading config, not on write — so existing data is never destructively modified.
+
+```typescript
+function normalizeDashboardLayout(
+  layout: PartialDashboardLayoutItem[],
+  registry: WidgetDefinition[]
+): DashboardLayoutItem[] {
+  return layout.map((item, index) => {
+    const widget = registry.find(w => w.id === item.widgetId);
+    return {
+      widgetId: item.widgetId,
+      visible: item.visible,
+      column: item.column ?? widget?.defaultColumn ?? "main",
+      order: item.order ?? index,
+      settings: { ...(widget?.defaultSettings ?? {}), ...(item.settings ?? {}) },
+    };
+  });
+}
+```
+
+The Zod schema for `DashboardLayoutItem` uses `.optional().default()` for the new fields so the `PUT /api/config` endpoint accepts both old and new payloads without breaking.
+
 ### Dashboard Widgets (page: "dashboard")
 
 | Widget ID | Label | Default Column | Settings |
@@ -73,7 +109,7 @@ Extends the existing `{ widgetId, visible }` shape with `column`, `order`, and `
 | `checkin_alerts` | Check-in Alerts | main | `{ daysBack: 3, threshold: 30 }` |
 | `overdue_homework` | Overdue Homework | main | `{ itemCount: 10 }` |
 | `recent_submissions` | Recent Submissions | sidebar | `{ itemCount: 10, daysBack: 7 }` |
-| `quick_actions` | Quick Actions | sidebar | `{ links: [{ label, path, icon? }] }` |
+| `quick_actions` | Quick Actions | sidebar | `{ links: z.array(z.object({ label: z.string().max(50), path: z.string().max(200), icon: z.string().max(50).optional() })).max(10) }` |
 | `tracker_summary` | Tracker Summary | main | — |
 | `homework_status` | Homework Status | main | — |
 | `journal_activity` | Journal Activity | sidebar | `{ itemCount: 5 }` |
@@ -104,11 +140,13 @@ Extends the existing `{ widgetId, visible }` shape with `column`, `order`, and `
 ### Database Changes
 
 **`ClinicianConfig`** (schema.prisma):
-- `dashboardLayout` — already exists, shape extends to include `column`, `order`, `settings`
-- `clientOverviewLayout` — new JSON field, same shape as `dashboardLayout`
+- `dashboardLayout` — already exists, shape extends to include `column`, `order`, `settings` (backward compatible via optional fields)
+- `clientOverviewLayout Json?` — new nullable JSON field, same shape as `dashboardLayout`. Added as a top-level field (not inside `customConfig`) for consistency with `dashboardLayout`.
 
 **`ClientConfig`** (schema.prisma):
-- `clientOverviewLayout` — new JSON field, optional per-client override
+- `clientOverviewLayout Json?` — new nullable JSON field, optional per-client override. Top-level field, not inside `customConfig`.
+
+Both are nullable JSON fields — `prisma db push` adds them without data migration.
 
 ## Widget Component Architecture
 
@@ -205,8 +243,14 @@ Slide-out panel from the right side of the dashboard.
 ### State Management
 
 - Local state copy of layout on panel open (not TanStack Query mutation until Save)
-- `@dnd-kit` `DndContext` wraps both the panel list and the dashboard columns
+- **Two separate `DndContext` scopes:** one for the panel list (reorder only) and one for the dashboard columns (cross-column drag). Toggling a widget on in the panel adds it to the dashboard; dragging on the dashboard moves it between columns. No cross-context drag from panel to dashboard — keeps the interaction model simple.
 - Column assignment updates when widget is dragged between dashboard columns
+
+### Error Handling
+
+- **Save failure:** Panel stays open, shows inline error toast ("Failed to save layout — try again"). Layout reverts to last saved state on Cancel.
+- **Config fetch loading:** Panel shows skeleton loader until config is ready. Dashboard shows widget skeletons.
+- **Optimistic UI:** Not used — save is explicit (Save button), so the panel blocks briefly on save with a spinner on the Save button.
 
 ## Dashboard Page Refactor
 
@@ -222,6 +266,12 @@ Hardcoded widgets in `apps/web/src/app/(dashboard)/dashboard/page.tsx`. Ignores 
 5. Render main column (2/3 width) and sidebar column (1/3 width)
 6. Wrap in `@dnd-kit` `DndContext` with `SortableContext` per column
 
+### Responsive Behavior
+
+- **Desktop (lg+):** Two-column layout — main (2/3) + sidebar (1/3). Customize panel slides in from right.
+- **Tablet/mobile (<lg):** Sidebar column stacks below main column. Customize panel becomes full-width overlay.
+- Follows existing responsive pattern in the current dashboard (`grid-cols-1 lg:grid-cols-3`).
+
 ### Entry Points for Customize
 
 - **Header icon:** Pencil/gear icon next to the greeting area in the dashboard page header
@@ -229,7 +279,7 @@ Hardcoded widgets in `apps/web/src/app/(dashboard)/dashboard/page.tsx`. Ignores 
 
 ## Client Overview Page
 
-Same system as dashboard, different widget set.
+Same widget system as dashboard, applied to the existing client overview page at `apps/web/src/app/(dashboard)/participants/[id]/page.tsx` (the "Overview" tab). Different widget set, same customize panel and drag-and-drop infrastructure.
 
 ### Layout Resolution
 
@@ -245,15 +295,18 @@ When customizing per-client, a banner in the panel reads: "Customizing for [Clie
 
 ### Schema Updates (`packages/shared/src/schemas/config.ts`)
 
-- Extend `DashboardLayoutItem` schema: add `column` (enum: main/sidebar), `order` (number), `settings` (record, validated per-widget)
-- Add `clientOverviewLayout` to `SaveClinicianConfigSchema`
-- Add `clientOverviewLayout` to client config save schema
+- Extend `DashboardLayoutItem` schema: add `column` (enum: main/sidebar, optional, default "main"), `order` (number, optional), `settings` (record, optional, default `{}`)
+- Layout arrays capped at `.max(50)` to prevent unbounded growth
+- Add `clientOverviewLayout` (optional) to `SaveClinicianConfigSchema`
+- Add `clientOverviewLayout` (optional) to client config save schema
+- Add `SaveDashboardLayoutSchema` for the new `PATCH` endpoint — accepts only `{ dashboardLayout }` or `{ clientOverviewLayout }`
 
 ### API Route Changes (`packages/api/src/routes/config.ts`)
 
 - `PUT /api/config` — already saves `dashboardLayout`, now accepts richer shape + `clientOverviewLayout`
 - `PUT /api/config/clients/:clientId` — add `clientOverviewLayout` for per-client overrides
-- No new endpoints needed
+- `PATCH /api/config/dashboard-layout` — **new endpoint** for saving only the dashboard layout (avoids requiring the full config payload when customizing). Accepts `{ dashboardLayout }` or `{ clientOverviewLayout }`.
+- `PATCH /api/config/clients/:clientId/overview-layout` — **new endpoint** for saving per-client overview layout only.
 
 ### Config Service (`packages/api/src/services/config.ts`)
 
@@ -262,12 +315,22 @@ When customizing per-client, a banner in the panel reads: "Customizing for [Clie
 ### Preset Updates (`packages/shared/src/constants/provider-presets.ts`)
 
 - Update all 11 presets with richer layout shape (`column`, `order`, `settings`)
+- Update `ProviderPreset` interface: change `dashboardLayout` from `readonly DashboardWidgetId[]` to `DashboardLayoutItem[]`
+- Update `createDefaultConfig` in `services/config.ts` to use the new shape directly (remove the current mapping from flat array to `{ widgetId, visible }`)
 - Add `clientOverviewLayout` defaults to each preset
 
 ### Prisma Schema
 
 - Add `clientOverviewLayout Json?` to `ClinicianConfig` model
 - Add `clientOverviewLayout Json?` to `ClientConfig` model
+
+## Widget Data Fetching
+
+**Dashboard widgets:** The existing `GET /api/clinician/dashboard` endpoint returns all dashboard data in one call. For the initial implementation, keep this single-endpoint approach — the endpoint already returns sessions, homework rates, alerts, etc. Widgets that need data not in this endpoint (e.g., journal activity, assessment scores) get their own TanStack Query hook. Each widget component is responsible for its own data fetching via hooks.
+
+**Client overview widgets:** Each widget fetches its own data using existing API endpoints scoped to the client ID (e.g., `GET /api/enrollments?participantId=X`, `GET /api/sessions?participantId=X`). No new aggregation endpoint needed — the existing per-resource endpoints are sufficient.
+
+**Performance:** Only visible widgets fetch data. Hidden widgets (in the registry but toggled off) do not mount and do not fire queries. TanStack Query's deduplication handles the case where multiple widgets share data from the same endpoint.
 
 ## Settings Page Cleanup
 
