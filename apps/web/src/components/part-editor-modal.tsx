@@ -16,7 +16,7 @@ import {
 import { ArrowLeft, Loader2, Sparkles, PenLine, Smartphone } from "lucide-react";
 import { PART_TYPE_CONFIG } from "@/components/part-card";
 import { useGeneratePart } from "@/hooks/use-generate-part";
-import { PartPreviewModal } from "@/components/part-preview-modal";
+import { PhonePreviewModal } from "@/components/phone-preview-modal";
 import {
   TextPartEditor,
   VideoPartEditor,
@@ -411,9 +411,9 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
       </DialogContent>
     </Dialog>
 
-    <PartPreviewModal
+    <PhonePreviewModal
       open={previewOpen}
-      onClose={() => setPreviewOpen(false)}
+      onOpenChange={setPreviewOpen}
       part={{ type: selectedType || "TEXT", title, content }}
     />
     </>
@@ -582,9 +582,9 @@ export function EditPartModal({
       </DialogContent>
     </Dialog>
 
-    <PartPreviewModal
+    <PhonePreviewModal
       open={previewOpen}
-      onClose={() => setPreviewOpen(false)}
+      onOpenChange={setPreviewOpen}
       part={{ type: part.type, title, content }}
     />
     </>
