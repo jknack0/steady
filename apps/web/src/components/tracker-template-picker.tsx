@@ -15,10 +15,12 @@ const TEMPLATE_ICONS: Record<string, string> = {
 
 export function TrackerTemplatePicker({
   programId,
+  participantId,
   onCreated,
   onClose,
 }: {
-  programId: string;
+  programId?: string;
+  participantId?: string;
   onCreated: (trackerId: string) => void;
   onClose: () => void;
 }) {
@@ -28,6 +30,7 @@ export function TrackerTemplatePicker({
   const handleSelect = async (templateKey: string) => {
     const result = await createFromTemplate.mutateAsync({
       templateKey,
+      participantId: participantId || "",
       programId,
     });
     onCreated(result.id);
