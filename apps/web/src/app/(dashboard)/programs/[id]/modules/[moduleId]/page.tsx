@@ -12,6 +12,7 @@ import {
   useReorderParts,
 } from "@/hooks/use-parts";
 import { useUpdateModule } from "@/hooks/use-modules";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAutosave } from "@/hooks/use-autosave";
 import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,7 @@ export default function ModuleEditorPage() {
     },
   });
 
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPartId, setPreviewPartId] = useState<string | null>(null);
@@ -143,9 +145,12 @@ export default function ModuleEditorPage() {
   );
 
   const handlePartDelete = (partId: string) => {
-    if (confirm("Delete this part? This cannot be undone.")) {
-      deletePart.mutate(partId);
-    }
+    confirm({
+      title: "Delete part",
+      description: "Delete this part? This cannot be undone.",
+      confirmLabel: "Delete",
+      onConfirm: () => deletePart.mutate(partId),
+    });
   };
 
   const handlePartDuplicate = async (partId: string) => {
@@ -394,6 +399,7 @@ export default function ModuleEditorPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
       />
+      {confirmDialog}
     </div>
   );
 }

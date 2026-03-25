@@ -174,22 +174,23 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // GET /api/daily-trackers/participant/:participantId — Get single check-in
+// Note: participantId param is the User.id, but DailyTracker.participantId stores ParticipantProfile.id
 router.get("/participant/:participantId", async (req: Request, res: Response) => {
   try {
-    const { participantId } = req.params;
+    const userId = req.params.participantId;
     const clinicianId = req.user!.clinicianProfileId!;
 
     // Verify clinician has relationship with participant (via enrollment or ClinicianClient)
     const [enrollment, clientRelation] = await Promise.all([
       prisma.enrollment.findFirst({
         where: {
-          participant: { userId: participantId },
+          participant: { userId },
           program: { clinicianId },
         },
         select: { id: true },
       }),
       prisma.clinicianClient.findFirst({
-        where: { clientId: participantId, clinicianId },
+        where: { clientId: userId, clinicianId },
         select: { id: true },
       }),
     ]);
@@ -199,8 +200,16 @@ router.get("/participant/:participantId", async (req: Request, res: Response) =>
       return;
     }
 
+    // Resolve ParticipantProfile.id from User.id — DailyTracker stores profile ID
+    const profile = await prisma.participantProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    const profileId = profile?.id;
+
     const tracker = await prisma.dailyTracker.findFirst({
-      where: { participantId },
+      where: { participantId: profileId ?? userId },
       include: {
         fields: { orderBy: { sortOrder: "asc" } },
         _count: { select: { entries: true } },

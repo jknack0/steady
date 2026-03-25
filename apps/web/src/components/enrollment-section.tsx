@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Plus, Trash2, UserPlus, Users, Repeat, ChevronDown, ChevronRight, Flame, StopCircle } from "lucide-react";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const STATUS_COLORS: Record<string, string> = {
   INVITED: "bg-blue-100 text-blue-800 border-blue-200",
@@ -48,6 +49,7 @@ function HomeworkCompliancePanel({
 }) {
   const { data: compliance, isLoading } = useHomeworkCompliance(programId, enrollmentId);
   const stopRecurrence = useStopRecurrence(programId);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   if (isLoading) {
     return (
@@ -67,6 +69,7 @@ function HomeworkCompliancePanel({
 
   return (
     <div className="space-y-2 px-3 pb-3">
+      {confirmDialog}
       {compliance.map((item) => (
         <div key={item.partId} className="rounded-md border bg-muted/30 p-3">
           <div className="flex items-center justify-between mb-1">
@@ -82,12 +85,15 @@ function HomeworkCompliancePanel({
               size="sm"
               className="h-7 text-xs text-muted-foreground hover:text-destructive"
               onClick={() => {
-                if (confirm("Stop this recurring homework? Future instances will be removed.")) {
-                  stopRecurrence.mutate({
+                confirm({
+                  title: "Stop recurring homework",
+                  description: "Stop this recurring homework? Future instances will be removed.",
+                  confirmLabel: "Stop",
+                  onConfirm: () => stopRecurrence.mutate({
                     enrollmentId,
                     partId: item.partId,
-                  });
-                }
+                  }),
+                });
               }}
               disabled={stopRecurrence.isPending}
             >
@@ -131,6 +137,7 @@ export function EnrollmentSection({
   const [lastName, setLastName] = useState("");
   const [error, setError] = useState("");
   const [expandedCompliance, setExpandedCompliance] = useState<string | null>(null);
+  const { confirm: confirmRemove, dialog: removeDialog } = useConfirmDialog();
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,9 +158,12 @@ export function EnrollmentSection({
   };
 
   const handleRemove = (id: string) => {
-    if (confirm("Remove this enrollment?")) {
-      deleteEnrollment.mutate(id);
-    }
+    confirmRemove({
+      title: "Remove enrollment",
+      description: "Remove this enrollment?",
+      confirmLabel: "Remove",
+      onConfirm: () => deleteEnrollment.mutate(id),
+    });
   };
 
   return (
@@ -303,6 +313,7 @@ export function EnrollmentSection({
           <p className="text-muted-foreground">No clients enrolled yet</p>
         </div>
       ) : null}
+      {removeDialog}
     </div>
   );
 }

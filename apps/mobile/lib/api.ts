@@ -1,6 +1,9 @@
-import * as SecureStore from "expo-secure-store";
+import { storage } from "./storage";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:4000";
+import { Platform } from "react-native";
+
+const DEFAULT_API_URL = Platform.OS === "web" ? "http://localhost:4000" : "http://10.0.2.2:4000";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -9,21 +12,21 @@ interface ApiResponse<T = any> {
 }
 
 async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync("accessToken");
+  return storage.get("accessToken");
 }
 
 async function getRefreshToken(): Promise<string | null> {
-  return SecureStore.getItemAsync("refreshToken");
+  return storage.get("refreshToken");
 }
 
 async function setTokens(access: string, refresh: string): Promise<void> {
-  await SecureStore.setItemAsync("accessToken", access);
-  await SecureStore.setItemAsync("refreshToken", refresh);
+  await storage.set("accessToken", access);
+  await storage.set("refreshToken", refresh);
 }
 
 async function clearTokens(): Promise<void> {
-  await SecureStore.deleteItemAsync("accessToken");
-  await SecureStore.deleteItemAsync("refreshToken");
+  await storage.remove("accessToken");
+  await storage.remove("refreshToken");
 }
 
 async function refreshAccessToken(): Promise<string | null> {

@@ -19,6 +19,7 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import Link from "next/link";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function DailyTrackerSection({ programId }: { programId: string }) {
   const router = useRouter();
@@ -26,11 +27,15 @@ export function DailyTrackerSection({ programId }: { programId: string }) {
   const deleteTracker = useDeleteDailyTracker();
   const [open, setOpen] = useState(true);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const handleDelete = (trackerId: string) => {
-    if (confirm("Delete this tracker and all its entries?")) {
-      deleteTracker.mutate(trackerId);
-    }
+    confirm({
+      title: "Delete tracker",
+      description: "Delete this tracker and all its entries?",
+      confirmLabel: "Delete",
+      onConfirm: () => deleteTracker.mutate(trackerId),
+    });
   };
 
   const handleTemplateCreated = (trackerId: string) => {
@@ -149,6 +154,7 @@ export function DailyTrackerSection({ programId }: { programId: string }) {
           )}
         </>
       )}
+      {confirmDialog}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   type ParticipantDetail,
 } from "@/hooks/use-clinician-participants";
 import { useCreateSession } from "@/hooks/use-sessions";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useCreateRtmEnrollment, useRtmEnrollments } from "@/hooks/use-rtm";
 import { RtmClientDetailContent } from "@/app/(dashboard)/rtm/[enrollmentId]/page";
 import { CPT_CODES } from "@steady/shared";
@@ -1145,18 +1146,30 @@ function EnrollmentManagement({
   enrollment: ParticipantDetail["enrollments"][0];
 }) {
   const manage = useManageEnrollment(participantId);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
+
+  const confirmTitles: Record<string, string> = {
+    pause: "Pause enrollment",
+    resume: "Resume enrollment",
+    drop: "Drop client",
+    "reset-progress": "Reset progress",
+  };
+  const confirmMessages: Record<string, string> = {
+    pause: "Pause this enrollment?",
+    resume: "Resume this enrollment?",
+    drop: "Drop this client from the program? This cannot be undone easily.",
+    "reset-progress":
+      "Reset all module progress? This will clear all part completions and restart from Module 1.",
+  };
 
   const handleAction = (action: "pause" | "resume" | "drop" | "reset-progress") => {
-    const confirmMessages: Record<string, string> = {
-      pause: "Pause this enrollment?",
-      resume: "Resume this enrollment?",
-      drop: "Drop this client from the program? This cannot be undone easily.",
-      "reset-progress":
-        "Reset all module progress? This will clear all part completions and restart from Module 1.",
-    };
-    if (confirm(confirmMessages[action])) {
-      manage.mutate({ enrollmentId: enrollment.id, action });
-    }
+    confirm({
+      title: confirmTitles[action],
+      description: confirmMessages[action],
+      confirmLabel: action === "drop" ? "Drop" : "Confirm",
+      variant: action === "drop" || action === "reset-progress" ? "danger" : "default",
+      onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action }),
+    });
   };
 
   return (
@@ -1210,6 +1223,7 @@ function EnrollmentManagement({
           </Button>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

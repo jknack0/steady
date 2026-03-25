@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { LoadingState } from "@/components/loading-state";
 import {
   Select,
@@ -182,6 +183,7 @@ export default function ProgramEditorPage() {
   const deleteModule = useDeleteModule(programId);
   const reorderModules = useReorderModules(programId);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [addingModule, setAddingModule] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -473,9 +475,12 @@ export default function ProgramEditorPage() {
                     module={mod}
                     programId={programId}
                     onDelete={(id) => {
-                      if (confirm("Delete this module and all its parts?")) {
-                        deleteModule.mutate(id);
-                      }
+                      confirm({
+                        title: "Delete module",
+                        description: "Delete this module and all its parts?",
+                        confirmLabel: "Delete",
+                        onConfirm: () => deleteModule.mutate(id),
+                      });
                     }}
                   />
                 ))}
@@ -517,6 +522,7 @@ export default function ProgramEditorPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
       />
+      {confirmDialog}
     </div>
   );
 }

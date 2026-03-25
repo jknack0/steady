@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Plus, Trash2, GripVertical } from "lucide-react";
 import {
   DndContext,
@@ -93,6 +94,7 @@ function SortableCard({
 }
 
 export function StrategyCardsPartEditor({ content, onChange }: StrategyCardsEditorProps) {
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -105,9 +107,15 @@ export function StrategyCardsPartEditor({ content, onChange }: StrategyCardsEdit
   };
 
   const handleCardDelete = (index: number) => {
-    if (!confirm("Delete this card?")) return;
-    const cards = content.cards.filter((_, i) => i !== index);
-    onChange({ ...content, cards });
+    confirm({
+      title: "Delete card",
+      description: "Delete this card?",
+      confirmLabel: "Delete",
+      onConfirm: () => {
+        const cards = content.cards.filter((_, i) => i !== index);
+        onChange({ ...content, cards });
+      },
+    });
   };
 
   const handleAddCard = () => {
@@ -162,6 +170,7 @@ export function StrategyCardsPartEditor({ content, onChange }: StrategyCardsEdit
           Add Card
         </Button>
       </div>
+      {confirmDialog}
     </div>
   );
 }

@@ -21,6 +21,11 @@
       },
       "package": "com.steady.adhd"
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": ""
+    },
     "plugins": [
       [
         "expo-router",
