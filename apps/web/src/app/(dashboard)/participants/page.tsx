@@ -381,7 +381,7 @@ export default function ParticipantsPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>
               {confirmAction && BULK_ACTIONS[confirmAction].label}
@@ -441,7 +441,7 @@ export default function ParticipantsPage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Add Client</DialogTitle>
             <DialogDescription>

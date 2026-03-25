@@ -915,7 +915,7 @@ export function RtmClientDetailContent({ enrollmentId, hideHeader = false }: { e
           setLogDialogOpen(v);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm">
           <DialogHeader>
             <DialogTitle>Log Monitoring Time</DialogTitle>
             <DialogDescription>
