@@ -209,10 +209,7 @@ export async function createDefaultConfig(
   }
 
   const enabledModules = [...preset.enabledModules] as string[];
-  const dashboardLayout = preset.dashboardLayout.map((widgetId: string) => ({
-    widgetId,
-    visible: true,
-  }));
+  const dashboardLayout = preset.dashboardLayout;
   const defaultAssessments = preset.defaultAssessments.map(
     (instrumentId: string) => ({
       instrumentId,
