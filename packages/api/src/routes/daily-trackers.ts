@@ -179,16 +179,22 @@ router.get("/participant/:participantId", async (req: Request, res: Response) =>
     const { participantId } = req.params;
     const clinicianId = req.user!.clinicianProfileId!;
 
-    // Verify clinician has relationship with participant
-    const enrollment = await prisma.enrollment.findFirst({
-      where: {
-        participant: { userId: participantId },
-        program: { clinicianId },
-      },
-      select: { id: true },
-    });
+    // Verify clinician has relationship with participant (via enrollment or ClinicianClient)
+    const [enrollment, clientRelation] = await Promise.all([
+      prisma.enrollment.findFirst({
+        where: {
+          participant: { userId: participantId },
+          program: { clinicianId },
+        },
+        select: { id: true },
+      }),
+      prisma.clinicianClient.findFirst({
+        where: { clientId: participantId, clinicianId },
+        select: { id: true },
+      }),
+    ]);
 
-    if (!enrollment) {
+    if (!enrollment && !clientRelation) {
       res.status(403).json({ success: false, error: "Not authorized to view this participant" });
       return;
     }
