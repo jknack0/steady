@@ -110,6 +110,16 @@ router.post("/login", validate(LoginSchema), async (req: Request, res: Response)
 
     const tokens = generateTokens(authUser);
 
+    // Check setup status for clinicians
+    let hasCompletedSetup = false;
+    if (user.role === "CLINICIAN" && user.clinicianProfile?.id) {
+      const config = await prisma.clinicianConfig.findUnique({
+        where: { clinicianId: user.clinicianProfile.id },
+        select: { setupCompleted: true },
+      });
+      hasCompletedSetup = config?.setupCompleted === true;
+    }
+
     res.json({
       success: true,
       data: {
@@ -119,6 +129,7 @@ router.post("/login", validate(LoginSchema), async (req: Request, res: Response)
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          hasCompletedSetup,
         },
         ...tokens,
       },
