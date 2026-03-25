@@ -250,41 +250,10 @@ function PhoneFrame({ program, initialPartId }: { program: PreviewProgram; initi
 // ── Modal Component ────────────────────────────────
 
 interface PhonePreviewModalProps {
-  programId?: string;
+  programId: string;
   partId?: string | null;
-  /** Pass a raw part to preview without an API call (for unsaved parts in editors) */
-  part?: PreviewPart | { type: string; title: string; content: any };
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-function SinglePartFrame({ part }: { part: { type: string; title: string; content: any } }) {
-  const previewPart: PreviewPart = {
-    id: "preview",
-    type: part.type,
-    title: part.title,
-    isRequired: false,
-    content: part.content,
-    sortOrder: 0,
-  };
-
-  return (
-    <div className="relative" style={{ width: PHONE_W, height: PHONE_H }}>
-      <div className="absolute inset-0 rounded-[2.5rem] border-[8px] border-[#2D2D2D] shadow-2xl pointer-events-none z-10" />
-      <div className="absolute inset-[8px] rounded-[calc(2.5rem-8px)] overflow-hidden bg-[#F7F5F2] flex flex-col">
-        <div className="flex items-center justify-between bg-white px-6 py-2 shrink-0">
-          <span className="text-xs font-semibold text-[#2D2D2D]">9:41</span>
-          <div className="flex items-center gap-1">
-            <div className="h-2.5 w-4 rounded-sm border border-[#2D2D2D]"><div className="h-full w-3/4 rounded-sm bg-[#2D2D2D]" /></div>
-          </div>
-        </div>
-        <PartDetailView part={previewPart} onBack={() => {}} />
-        <div className="flex justify-center pb-2 pt-1 bg-[#F7F5F2] shrink-0">
-          <div className="h-1 w-32 rounded-full bg-[#2D2D2D]/20" />
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function ScaledPhone({ program, partId }: { program: PreviewProgram; partId?: string | null }) {
@@ -313,37 +282,11 @@ function ScaledPhone({ program, partId }: { program: PreviewProgram; partId?: st
   );
 }
 
-function ScaledSinglePart({ part }: { part: { type: string; title: string; content: any } }) {
-  const containerRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node) return;
-    const update = () => {
-      const vh = window.innerHeight * 0.9;
-      const vw = window.innerWidth * 0.9;
-      const scaleH = vh / PHONE_H;
-      const scaleW = vw / PHONE_W;
-      const s = Math.min(scaleH, scaleW);
-      node.style.transform = `scale(${s})`;
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  return (
-    <div
-      ref={containerRef}
-      style={{ width: PHONE_W, height: PHONE_H, transformOrigin: "center center" }}
-    >
-      <SinglePartFrame part={part} />
-    </div>
-  );
-}
-
-export function PhonePreviewModal({ programId, partId, part, open, onOpenChange }: PhonePreviewModalProps) {
+export function PhonePreviewModal({ programId, partId, open, onOpenChange }: PhonePreviewModalProps) {
   const { data: program, isLoading } = useQuery<PreviewProgram>({
     queryKey: ["programs", programId, "preview"],
     queryFn: () => api.get(`/api/programs/${programId}/preview`),
-    enabled: open && !!programId && !part,
+    enabled: open,
   });
 
   // Close on Escape
@@ -358,13 +301,8 @@ export function PhonePreviewModal({ programId, partId, part, open, onOpenChange 
 
   if (!open) return null;
 
-  // Determine what to render
-  const showPart = !!part;
-  const showProgram = !part && !!program;
-  const showLoading = !part && (isLoading || !program);
-
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop — click to close */}
       <div
         className="absolute inset-0 bg-black/80 cursor-pointer"
@@ -372,13 +310,11 @@ export function PhonePreviewModal({ programId, partId, part, open, onOpenChange 
       />
       {/* Content — cursor:default over the phone */}
       <div className="relative z-10 cursor-default">
-        {showPart ? (
-          <ScaledSinglePart part={part} />
-        ) : showProgram ? (
-          <ScaledPhone program={program} partId={partId} />
-        ) : showLoading ? (
+        {isLoading || !program ? (
           <Loader2 className="h-8 w-8 animate-spin text-white" />
-        ) : null}
+        ) : (
+          <ScaledPhone program={program} partId={partId} />
+        )}
       </div>
     </div>,
     document.body
