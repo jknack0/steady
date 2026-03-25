@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api-client";
@@ -86,13 +86,16 @@ export default function DashboardPage() {
     hidePanel();
   }, [hidePanel]);
 
+  const isCustomizingRef = useRef(isCustomizing);
+  isCustomizingRef.current = isCustomizing;
+
   const togglePanel = useCallback(() => {
-    if (isCustomizing) {
+    if (isCustomizingRef.current) {
       closePanel();
     } else {
       openPanel();
     }
-  }, [isCustomizing, openPanel, closePanel]);
+  }, [openPanel, closePanel]);
 
   const handleSave = useCallback(async (newLayout: DashboardLayoutItem[]) => {
     await saveLayout.mutateAsync({ dashboardLayout: newLayout });
