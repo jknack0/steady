@@ -32,6 +32,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { NotificationBell } from "@/components/notification-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { useCommandPalette } from "@/hooks/use-command-palette";
+import { SidebarPanelProvider, useSidebarPanel } from "@/hooks/use-sidebar-panel";
 
 // ── Nav Config ──────────────────────────────────────
 
@@ -279,66 +280,81 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const commandPalette = useCommandPalette();
-
   return (
     <QueryProvider>
       <ProtectedRoute>
-        <div className="flex h-screen overflow-hidden">
-          {/* Desktop sidebar */}
-          <Sidebar
-            className="hidden w-64 lg:flex"
-            onSearchClick={commandPalette.open}
-          />
-
-          {/* Mobile sidebar overlay */}
-          {sidebarOpen && (
-            <div className="fixed inset-0 z-50 lg:hidden">
-              <div
-                className="fixed inset-0 bg-black/50"
-                onClick={() => setSidebarOpen(false)}
-              />
-              <div className="fixed inset-y-0 left-0 z-50 w-64">
-                <Sidebar onSearchClick={() => {
-                  setSidebarOpen(false);
-                  commandPalette.open();
-                }} />
-              </div>
-            </div>
-          )}
-
-          {/* Main content */}
-          <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Header */}
-            <header className="flex h-16 items-center justify-between border-b bg-white px-6">
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden"
-                  onClick={() => setSidebarOpen(true)}
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-                <Breadcrumbs />
-              </div>
-              <div className="flex items-center gap-1">
-                <NotificationBell />
-              </div>
-            </header>
-
-            {/* Page content */}
-            <main className="flex-1 overflow-y-auto p-6">{children}</main>
-          </div>
-
-          {/* Command Palette */}
-          <CommandPalette
-            isOpen={commandPalette.isOpen}
-            onClose={commandPalette.close}
-          />
-        </div>
+        <SidebarPanelProvider>
+          <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        </SidebarPanelProvider>
       </ProtectedRoute>
     </QueryProvider>
+  );
+}
+
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const commandPalette = useCommandPalette();
+  const { panelContent } = useSidebarPanel();
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Desktop sidebar — swap for panel content when customizing */}
+      {panelContent ? (
+        <div className="hidden w-80 lg:flex flex-col border-r bg-background">
+          {panelContent}
+        </div>
+      ) : (
+        <Sidebar
+          className="hidden w-64 lg:flex"
+          onSearchClick={commandPalette.open}
+        />
+      )}
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 z-50 w-64">
+            <Sidebar onSearchClick={() => {
+              setSidebarOpen(false);
+              commandPalette.open();
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Header */}
+        <header className="flex h-16 items-center justify-between border-b bg-white px-6">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Breadcrumbs />
+          </div>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      </div>
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={commandPalette.isOpen}
+        onClose={commandPalette.close}
+      />
+    </div>
   );
 }

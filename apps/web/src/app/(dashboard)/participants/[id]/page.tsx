@@ -67,6 +67,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { WidgetGrid } from "@/components/widget-grid";
 import { CustomizePanel } from "@/components/customize-panel";
+import { useSidebarPanel } from "@/hooks/use-sidebar-panel";
 import { CLIENT_WIDGET_COMPONENTS } from "@/components/client-widgets";
 import { normalizeDashboardLayout, getClientOverviewWidgets } from "@steady/shared";
 import { useClinicianConfig, useSaveClientOverviewLayout } from "@/hooks/use-config";
@@ -215,6 +216,7 @@ function OverviewTab({
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const { showPanel, hidePanel } = useSidebarPanel();
 
   const { data: clinicianConfig } = useClinicianConfig();
 
@@ -288,7 +290,25 @@ function OverviewTab({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsCustomizing(true)}
+          onClick={() => {
+            setIsCustomizing(true);
+            showPanel(
+              <CustomizePanel
+                layout={resolvedLayout}
+                enabledModules={clinicianConfig?.enabledModules ?? []}
+                onSave={(newLayout) => {
+                  saveLayout.mutate(newLayout);
+                }}
+                onClose={() => {
+                  setIsCustomizing(false);
+                  hidePanel();
+                }}
+                isSaving={saveLayout.isPending}
+                page="client_overview"
+                clientName={participantName}
+              />
+            );
+          }}
         >
           <Settings2 className="mr-2 h-4 w-4" />
           Customize
@@ -302,21 +322,6 @@ function OverviewTab({
         dashboardData={dashboardData}
         componentRegistry={CLIENT_WIDGET_COMPONENTS}
       />
-
-      {/* Customize Panel */}
-      {isCustomizing && (
-        <CustomizePanel
-          layout={resolvedLayout}
-          enabledModules={clinicianConfig?.enabledModules ?? []}
-          onSave={(newLayout) => {
-            saveLayout.mutate(newLayout);
-          }}
-          onClose={() => setIsCustomizing(false)}
-          isSaving={saveLayout.isPending}
-          page="client_overview"
-          clientName={participantName}
-        />
-      )}
 
       {/* Homework Response Viewer */}
       <HomeworkResponseViewer
