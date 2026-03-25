@@ -101,24 +101,26 @@ export default function DashboardPage() {
   const greeting = getGreeting();
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <PageHeader
-        title={`${greeting}, ${user?.firstName}`}
-        subtitle={`${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${dashboardData.stats.todaySessionCount} sessions today`}
-        actions={
-          <Button variant="ghost" size="sm" onClick={handleCustomizeOpen} className="gap-2">
-            <Settings className="h-4 w-4" />
-            Customize
-          </Button>
-        }
-      />
+    <div className="flex gap-0">
+      <div className="flex-1 min-w-0 max-w-6xl mx-auto space-y-6">
+        <PageHeader
+          title={`${greeting}, ${user?.firstName}`}
+          subtitle={`${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · ${dashboardData.stats.todaySessionCount} sessions today`}
+          actions={
+            <Button variant="ghost" size="sm" onClick={handleCustomizeOpen} className="gap-2">
+              <Settings className="h-4 w-4" />
+              Customize
+            </Button>
+          }
+        />
 
-      <WidgetGrid
-        layout={isCustomizing && editingLayout ? editingLayout : normalizedLayout}
-        isEditing={isCustomizing}
-        dashboardData={dashboardData}
-        onLayoutChange={isCustomizing ? setEditingLayout : undefined}
-      />
+        <WidgetGrid
+          layout={isCustomizing && editingLayout ? editingLayout : normalizedLayout}
+          isEditing={isCustomizing}
+          dashboardData={dashboardData}
+          onLayoutChange={isCustomizing ? setEditingLayout : undefined}
+        />
+      </div>
 
       {isCustomizing && editingLayout && (
         <CustomizePanel

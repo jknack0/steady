@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { X, Search, Settings2, GripVertical, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -383,21 +382,13 @@ export function CustomizePanel({
     );
   }, [layout]);
 
-  return createPortal(
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40 bg-black/30"
-        onClick={onClose}
-      />
-
-      {/* Panel — offset by header height (h-16 = 64px) */}
-      <div
-        className={cn(
-          "fixed top-16 right-0 z-50 h-[calc(100vh-4rem)] w-full sm:w-80 bg-background border-l shadow-xl",
-          "flex flex-col animate-in slide-in-from-right duration-200"
-        )}
-      >
+  return (
+    <div
+      className={cn(
+        "w-80 shrink-0 border-l bg-background",
+        "flex flex-col h-[calc(100vh-4rem)] sticky top-0"
+      )}
+    >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="text-lg font-semibold">Customize</h2>
@@ -517,8 +508,6 @@ export function CustomizePanel({
             Saving...
           </div>
         )}
-      </div>
-    </>,
-    document.body
+    </div>
   );
 }
