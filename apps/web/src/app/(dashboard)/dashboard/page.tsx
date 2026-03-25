@@ -74,34 +74,28 @@ export default function DashboardPage() {
   const registry = Object.values(WIDGET_REGISTRY);
   const normalizedLayout = normalizeDashboardLayout(layout, registry);
 
-  const openPanel = useCallback(() => {
-    const editing = [...normalizedLayout];
-    setEditingLayout(editing);
-    setIsCustomizing(true);
-  }, [normalizedLayout]);
-
-  const closePanel = useCallback(() => {
-    setIsCustomizing(false);
-    setEditingLayout(null);
-    hidePanel();
-  }, [hidePanel]);
-
-  const isCustomizingRef = useRef(isCustomizing);
-  isCustomizingRef.current = isCustomizing;
-
-  const togglePanel = useCallback(() => {
-    if (isCustomizingRef.current) {
-      closePanel();
-    } else {
-      openPanel();
-    }
-  }, [openPanel, closePanel]);
-
   const handleSave = useCallback(async (newLayout: DashboardLayoutItem[]) => {
     await saveLayout.mutateAsync({ dashboardLayout: newLayout });
   }, [saveLayout]);
 
-  // Sync panel content into sidebar when customizing
+  // Stable close ref so the panel's onClose always works
+  const closePanelRef = useRef(() => {});
+  closePanelRef.current = () => {
+    setIsCustomizing(false);
+    setEditingLayout(null);
+    hidePanel();
+  };
+
+  const togglePanel = useCallback(() => {
+    if (isCustomizing) {
+      closePanelRef.current();
+    } else {
+      setEditingLayout([...normalizedLayout]);
+      setIsCustomizing(true);
+    }
+  }, [isCustomizing, normalizedLayout]);
+
+  // Show/hide panel in sidebar based on isCustomizing
   useEffect(() => {
     if (isCustomizing && editingLayout) {
       showPanel(
@@ -109,24 +103,21 @@ export default function DashboardPage() {
           layout={editingLayout}
           enabledModules={enabledModules}
           onSave={handleSave}
-          onClose={closePanel}
+          onClose={() => closePanelRef.current()}
           isSaving={saveLayout.isPending}
         />
       );
+    } else {
+      hidePanel();
     }
-  }, [isCustomizing, editingLayout, enabledModules, handleSave, closePanel, saveLayout.isPending, showPanel]);
-
-  // Hide panel on unmount
-  useEffect(() => {
-    return () => hidePanel();
-  }, [hidePanel]);
+  }, [isCustomizing, editingLayout, enabledModules, handleSave, saveLayout.isPending, showPanel, hidePanel]);
 
   // Auto-open customize panel from URL param (?customize=true)
   useEffect(() => {
     if (searchParams.get("customize") === "true" && !isCustomizing && normalizedLayout.length > 0) {
-      openPanel();
+      setEditingLayout([...normalizedLayout]);
+      setIsCustomizing(true);
     }
-    // Only run on mount / when search params change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
