@@ -80,42 +80,39 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {isModuleEnabled("todo_list") && (
-        <Tabs.Screen
-          name="tasks"
-          options={{
-            headerTitle: () => <BrandHeader />,
-            title: "Tasks",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="list-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-      {isModuleEnabled("calendar") && (
-        <Tabs.Screen
-          name="calendar"
-          options={{
-            headerTitle: () => <BrandHeader />,
-            title: "Calendar",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="calendar-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
-      {isModuleEnabled("journal") && (
-        <Tabs.Screen
-          name="journal"
-          options={{
-            headerTitle: () => <BrandHeader />,
-            title: "Journal",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="book-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          href: isModuleEnabled("todo_list") ? undefined : null,
+          headerTitle: () => <BrandHeader />,
+          title: "Tasks",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          href: isModuleEnabled("calendar") ? undefined : null,
+          headerTitle: () => <BrandHeader />,
+          title: "Calendar",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="journal"
+        options={{
+          href: isModuleEnabled("journal") ? undefined : null,
+          headerTitle: () => <BrandHeader />,
+          title: "Journal",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book-outline" size={size} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen name="programs" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
