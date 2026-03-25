@@ -1,8 +1,6 @@
-import { Tabs } from "expo-router";
-import { View, Text, Image } from "react-native";
+import { Tabs, router } from "expo-router";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "../../../lib/api";
 import { useConfig } from "../../../lib/config-context";
 
 function BrandHeader() {
@@ -19,19 +17,6 @@ function BrandHeader() {
 
 export default function TabsLayout() {
   const { isModuleEnabled } = useConfig();
-
-  // Read enrollment count to toggle "Program" vs "Programs" label
-  const { data: enrollments } = useQuery({
-    queryKey: ["enrollments"],
-    queryFn: async () => {
-      const res = await api.getEnrollments();
-      if (!res.success) throw new Error(res.error);
-      return res.data as any[];
-    },
-    staleTime: Infinity, // Don't refetch here — programs.tsx handles it
-  });
-
-  const programLabel = enrollments?.length === 1 ? "Program" : "Programs";
 
   return (
     <Tabs
@@ -68,13 +53,28 @@ export default function TabsLayout() {
           fontSize: 18,
           color: "#2D2D2D",
         },
+        headerRight: () => (
+          <TouchableOpacity onPress={() => router.push("/settings")} style={{ marginRight: 16 }}>
+            <Ionicons name="settings-outline" size={22} color="#2D2D2D" />
+          </TouchableOpacity>
+        ),
       }}
     >
       <Tabs.Screen
-        name="programs"
+        name="today"
         options={{
           headerTitle: () => <BrandHeader />,
-          title: programLabel,
+          title: "Today",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="today-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="program"
+        options={{
+          headerTitle: () => <BrandHeader />,
+          title: "Program",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="library-outline" size={size} color={color} />
           ),
@@ -116,16 +116,8 @@ export default function TabsLayout() {
           }}
         />
       )}
-      <Tabs.Screen
-        name="settings"
-        options={{
-          headerTitle: () => <BrandHeader />,
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="programs" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }
