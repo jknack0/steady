@@ -165,3 +165,11 @@ export function useTrackerTrends(trackerId: string, userId: string) {
     enabled: !!trackerId && !!userId,
   });
 }
+
+export function useParticipantCheckin(participantId: string | undefined) {
+  return useQuery<DailyTracker>({
+    queryKey: ["participant-checkin", participantId],
+    queryFn: () => api.get(`/api/daily-trackers/participant/${participantId}`),
+    enabled: !!participantId,
+  });
+}

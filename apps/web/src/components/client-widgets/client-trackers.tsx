@@ -1,24 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { WidgetShell } from "@/components/dashboard-widgets";
 import type { WidgetProps } from "@/components/dashboard-widgets";
-import { Activity } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
-
-interface TrackerField {
-  id: string;
-  label: string;
-  type: string;
-  sortOrder: number;
-}
-
-interface Tracker {
-  id: string;
-  name: string;
-  fields: TrackerField[];
-  _count?: { entries: number };
-}
+import { Activity, Settings2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useParticipantCheckin, useTrackerTrends } from "@/hooks/use-daily-trackers";
+import { TrackerCharts } from "@/components/tracker-charts";
+import { EditCheckinModal } from "@/components/edit-checkin-modal";
 
 interface ClientTrackersProps extends WidgetProps {
   widgetId: string;
@@ -38,59 +27,151 @@ export function ClientTrackersWidget({
   dragListeners,
 }: ClientTrackersProps) {
   const participantId = dashboardData?.participantId;
+  const { data: checkin, isLoading, error } = useParticipantCheckin(participantId);
+  const [editOpen, setEditOpen] = useState(false);
 
-  const { data: trackers } = useQuery<Tracker[]>({
-    queryKey: ["client-trackers", participantId],
-    queryFn: () => api.get(`/api/daily-trackers?participantId=${participantId}`),
-    enabled: !!participantId,
-  });
+  // Fetch trends if checkin exists and has entries
+  const trackerId = checkin?.id;
+  const hasEntries = (checkin?._count?.entries ?? 0) > 0;
+  const { data: trends } = useTrackerTrends(
+    hasEntries && trackerId ? trackerId : "",
+    hasEntries && participantId ? participantId : ""
+  );
 
-  const items = trackers ?? [];
-
-  if (items.length === 0) {
+  // No check-in state
+  if (!isLoading && (error || !checkin)) {
     return (
-      <WidgetShell title="Daily Trackers" icon={Activity} isEditing={isEditing} dragAttributes={dragAttributes} dragListeners={dragListeners}>
-        <p className="text-sm text-muted-foreground py-4 text-center">No trackers configured</p>
+      <WidgetShell
+        title="Daily Check-in"
+        icon={Activity}
+        isEditing={isEditing}
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+      >
+        <p className="text-sm text-muted-foreground text-center py-4">No check-in set up</p>
       </WidgetShell>
     );
   }
 
+  // Loading state
+  if (isLoading || !checkin) {
+    return (
+      <WidgetShell
+        title="Daily Check-in"
+        icon={Activity}
+        isEditing={isEditing}
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+      >
+        <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+      </WidgetShell>
+    );
+  }
+
+  // No entries state
+  if (!hasEntries) {
+    return (
+      <WidgetShell
+        title="Daily Check-in"
+        icon={Activity}
+        isEditing={isEditing}
+        headerAction={
+          <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
+            <Settings2 className="h-4 w-4" />
+          </Button>
+        }
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+      >
+        <div className="text-center py-4">
+          <p className="text-sm text-muted-foreground">Waiting for first entry</p>
+          <p className="text-xs text-muted-foreground mt-1">{checkin.fields.length} fields configured</p>
+        </div>
+        <EditCheckinModal
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          trackerId={checkin.id}
+          participantId={participantId!}
+          fields={checkin.fields}
+        />
+      </WidgetShell>
+    );
+  }
+
+  // Sidebar rendering: stats only
   if (column === "sidebar") {
     return (
-      <WidgetShell title="Daily Trackers" icon={Activity} isEditing={isEditing} dragAttributes={dragAttributes} dragListeners={dragListeners}>
-        <div className="space-y-2">
-          {items.map((t) => (
-            <div key={t.id} className="flex items-center justify-between text-sm">
-              <span className="truncate">{t.name}</span>
-              <span className="text-xs text-muted-foreground">{t._count?.entries ?? 0} entries</span>
+      <WidgetShell
+        title="Daily Check-in"
+        icon={Activity}
+        isEditing={isEditing}
+        headerAction={
+          <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
+            <Settings2 className="h-4 w-4" />
+          </Button>
+        }
+        dragAttributes={dragAttributes}
+        dragListeners={dragListeners}
+      >
+        {trends ? (
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Streak</span>
+              <span className="font-medium">{trends.streak} days</span>
             </div>
-          ))}
-        </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Completion</span>
+              <span className="font-medium">{Math.round(trends.completionRate * 100)}%</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-2">Loading trends...</p>
+        )}
+        <EditCheckinModal
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          trackerId={checkin.id}
+          participantId={participantId!}
+          fields={checkin.fields}
+        />
       </WidgetShell>
     );
   }
 
+  // Main column rendering: full charts
   return (
-    <WidgetShell title="Daily Trackers" icon={Activity} isEditing={isEditing} dragAttributes={dragAttributes} dragListeners={dragListeners}>
-      <div className="space-y-3">
-        {items.map((t) => (
-          <div key={t.id} className="rounded-md border p-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium">{t.name}</p>
-              <span className="text-xs text-muted-foreground">{t._count?.entries ?? 0} entries</span>
-            </div>
-            {t.fields.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {t.fields.map((f) => (
-                  <span key={f.id} className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    {f.label}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+    <WidgetShell
+      title="Daily Check-in"
+      icon={Activity}
+      isEditing={isEditing}
+      headerAction={
+        <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
+          <Settings2 className="h-4 w-4" />
+        </Button>
+      }
+      dragAttributes={dragAttributes}
+      dragListeners={dragListeners}
+    >
+      {trends ? (
+        <TrackerCharts
+          fields={checkin.fields}
+          fieldTrends={trends.fieldTrends}
+          completionRate={trends.completionRate}
+          completedDays={trends.completedDays}
+          totalDays={trends.totalDays}
+          streak={trends.streak}
+          compact
+        />
+      ) : (
+        <p className="text-sm text-muted-foreground text-center py-4">Loading trends...</p>
+      )}
+      <EditCheckinModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        trackerId={checkin.id}
+        participantId={participantId!}
+        fields={checkin.fields}
+      />
     </WidgetShell>
   );
 }
