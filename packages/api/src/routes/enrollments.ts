@@ -204,6 +204,7 @@ router.get("/:id/homework-compliance", async (req: Request, res: Response) => {
     const parts = await prisma.part.findMany({
       where: {
         type: "HOMEWORK",
+        deletedAt: null,
         module: { programId: req.params.programId },
       },
       select: { id: true, title: true, content: true },

@@ -116,6 +116,7 @@ export async function getProgramWithProgress(
             orderBy: { sortOrder: "asc" },
             include: {
               parts: {
+                where: { deletedAt: null },
                 orderBy: { sortOrder: "asc" },
                 select: {
                   id: true,

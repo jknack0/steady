@@ -111,7 +111,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         modules: {
           orderBy: { sortOrder: "asc" },
           include: {
-            _count: { select: { parts: true } },
+            _count: { select: { parts: { where: { deletedAt: null } } } },
           },
         },
         _count: {
@@ -164,6 +164,7 @@ router.get("/:id/preview", async (req: Request, res: Response) => {
           orderBy: { sortOrder: "asc" },
           include: {
             parts: {
+              where: { deletedAt: null },
               orderBy: { sortOrder: "asc" },
             },
           },
@@ -254,7 +255,7 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
       include: {
         modules: {
           orderBy: { sortOrder: "asc" },
-          include: { parts: { orderBy: { sortOrder: "asc" } } },
+          include: { parts: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } } },
         },
         dailyTrackers: {
           include: { fields: { orderBy: { sortOrder: "asc" } } },

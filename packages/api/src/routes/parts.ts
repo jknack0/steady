@@ -39,7 +39,7 @@ router.post("/", validate(CreatePartSchema), async (req: Request, res: Response)
     }
 
     const maxSort = await prisma.part.aggregate({
-      where: { moduleId: req.params.moduleId },
+      where: { moduleId: req.params.moduleId, deletedAt: null },
       _max: { sortOrder: true },
     });
     const nextSortOrder = (maxSort._max.sortOrder ?? -1) + 1;
@@ -72,7 +72,7 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     const parts = await prisma.part.findMany({
-      where: { moduleId: req.params.moduleId },
+      where: { moduleId: req.params.moduleId, deletedAt: null },
       orderBy: { sortOrder: "asc" },
       take: 200, // Cap at 200 parts per module
     });
@@ -97,7 +97,7 @@ router.put("/reorder", validate(ReorderPartsSchema), async (req: Request, res: R
     const { partIds } = req.body as { partIds: string[] };
 
     const existingParts = await prisma.part.findMany({
-      where: { moduleId: req.params.moduleId },
+      where: { moduleId: req.params.moduleId, deletedAt: null },
       select: { id: true },
     });
     const existingIds = new Set(existingParts.map((p) => p.id));
@@ -119,7 +119,7 @@ router.put("/reorder", validate(ReorderPartsSchema), async (req: Request, res: R
     );
 
     const parts = await prisma.part.findMany({
-      where: { moduleId: req.params.moduleId },
+      where: { moduleId: req.params.moduleId, deletedAt: null },
       orderBy: { sortOrder: "asc" },
     });
 
@@ -140,7 +140,7 @@ router.put("/:id", validate(UpdatePartSchema), async (req: Request, res: Respons
     }
 
     const existing = await prisma.part.findFirst({
-      where: { id: req.params.id, moduleId: req.params.moduleId },
+      where: { id: req.params.id, moduleId: req.params.moduleId, deletedAt: null },
     });
     if (!existing) {
       res.status(404).json({ success: false, error: "Part not found" });
@@ -173,7 +173,7 @@ router.put("/:id", validate(UpdatePartSchema), async (req: Request, res: Respons
   }
 });
 
-// DELETE .../parts/:id — Delete a part and re-number sortOrder
+// DELETE .../parts/:id — Soft-delete a part and re-number sortOrder
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const mod = await verifyOwnership(req.params.programId, req.params.moduleId, req.user!.clinicianProfileId!);
@@ -183,7 +183,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     const existing = await prisma.part.findFirst({
-      where: { id: req.params.id, moduleId: req.params.moduleId },
+      where: { id: req.params.id, moduleId: req.params.moduleId, deletedAt: null },
     });
     if (!existing) {
       res.status(404).json({ success: false, error: "Part not found" });
@@ -191,12 +191,15 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Delete related progress records first (FK is RESTRICT until migration runs)
-      await tx.partProgress.deleteMany({ where: { partId: req.params.id } });
-      await tx.part.delete({ where: { id: req.params.id } });
+      // Soft-delete: set deletedAt instead of hard-deleting
+      await tx.part.update({
+        where: { id: req.params.id },
+        data: { deletedAt: new Date() },
+      });
 
+      // Re-number remaining active parts
       const remaining = await tx.part.findMany({
-        where: { moduleId: req.params.moduleId },
+        where: { moduleId: req.params.moduleId, deletedAt: null },
         orderBy: { sortOrder: "asc" },
       });
 

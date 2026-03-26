@@ -61,7 +61,7 @@ router.get("/", async (req: Request, res: Response) => {
       where: { programId: req.params.programId },
       orderBy: { sortOrder: "asc" },
       include: {
-        _count: { select: { parts: true } },
+        _count: { select: { parts: { where: { deletedAt: null } } } },
       },
       take: 200, // Cap at 200 modules per program
     });
