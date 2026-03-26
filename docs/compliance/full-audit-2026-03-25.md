@@ -47,7 +47,7 @@ Six parallel audits were conducted covering: API & Middleware, Database & Data L
 - **HIPAA:** SS 164.312(e)(1) -- Transmission Security
 - **Fix:** Fail fast in production if `CORS_ORIGINS` is unset.
 
-### 5. Sensitive Identifiers Stored in Plaintext (No Field-Level Encryption)
+### DONE 5. Sensitive Identifiers Stored in Plaintext (No Field-Level Encryption)
 - **File:** `packages/db/prisma/schema.prisma` (multiple models)
 - **Issue:** NPI numbers, Tax IDs (SSNs/EINs), insurance Subscriber IDs, Group Numbers stored as plain `String` fields.
 - **HIPAA:** SS 164.312(a)(2)(iv) -- Encryption and Decryption
