@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,25 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  Dimensions,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import ConfettiCannon from "react-native-confetti-cannon";
 import { api } from "../../../../lib/api";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const ENCOURAGEMENTS = [
+  { emoji: "🎯", message: "Showing up is the hardest part — and you just did it." },
+  { emoji: "💪", message: "Every check-in is a step forward. Keep building momentum." },
+  { emoji: "🌟", message: "Self-awareness is a superpower. You're getting stronger." },
+  { emoji: "🧠", message: "Tracking builds insight. You're learning more about yourself." },
+  { emoji: "🌊", message: "Consistency over perfection. You're doing great." },
+];
 
 interface TrackerField {
   id: string;
@@ -251,6 +265,217 @@ function TimeField({ value, onChange }: { value: string; onChange: (v: string) =
   );
 }
 
+// ── Check-in Celebration ─────────────────────────────
+
+function CheckInCelebration({ trackerName, streak }: { trackerName: string; streak: number }) {
+  const confettiRef = useRef<any>(null);
+  const cardScale = useRef(new Animated.Value(0)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
+  const streakSlide = useRef(new Animated.Value(30)).current;
+  const streakOpacity = useRef(new Animated.Value(0)).current;
+
+  const encouragement = useRef(
+    ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)]
+  ).current;
+
+  useEffect(() => {
+    // Haptic burst
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    // Fire confetti
+    setTimeout(() => confettiRef.current?.start(), 100);
+
+    // Card springs in
+    Animated.spring(cardScale, {
+      toValue: 1,
+      damping: 12,
+      stiffness: 130,
+      delay: 200,
+      useNativeDriver: true,
+    }).start();
+
+    // Checkmark bounces
+    Animated.sequence([
+      Animated.delay(400),
+      Animated.spring(checkScale, {
+        toValue: 1.2,
+        damping: 6,
+        stiffness: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(checkScale, {
+        toValue: 1,
+        damping: 10,
+        stiffness: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Streak slides up
+    Animated.parallel([
+      Animated.timing(streakSlide, {
+        toValue: 0,
+        duration: 500,
+        delay: 700,
+        useNativeDriver: true,
+      }),
+      Animated.timing(streakOpacity, {
+        toValue: 1,
+        duration: 400,
+        delay: 700,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#F7F5F2", justifyContent: "center", alignItems: "center" }}>
+      <ConfettiCannon
+        ref={confettiRef}
+        count={80}
+        origin={{ x: SCREEN_WIDTH / 2, y: -20 }}
+        autoStart={false}
+        fadeOut
+        fallSpeed={2500}
+        explosionSpeed={400}
+        colors={["#5B8A8A", "#8FAE8B", "#C4A84D", "#D4A0A0", "#89B4C8", "#F5ECD7"]}
+      />
+
+      <Animated.View
+        style={{
+          transform: [{ scale: cardScale }],
+          opacity: cardScale,
+          width: SCREEN_WIDTH - 48,
+          backgroundColor: "#FFFFFF",
+          borderRadius: 28,
+          padding: 36,
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.12,
+          shadowRadius: 32,
+          elevation: 16,
+        }}
+      >
+        {/* Animated checkmark */}
+        <Animated.View
+          style={{
+            transform: [{ scale: checkScale }],
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: "#8FAE8B",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 20,
+            shadowColor: "#8FAE8B",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 12,
+          }}
+        >
+          <Text style={{ fontSize: 36, color: "white" }}>✓</Text>
+        </Animated.View>
+
+        <Text
+          style={{
+            fontSize: 14,
+            fontFamily: "PlusJakartaSans_600SemiBold",
+            color: "#8FAE8B",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            marginBottom: 6,
+          }}
+        >
+          Check-in Complete
+        </Text>
+
+        <Text
+          style={{
+            fontSize: 22,
+            fontFamily: "PlusJakartaSans_700Bold",
+            color: "#2D2D2D",
+            textAlign: "center",
+            marginBottom: 16,
+          }}
+        >
+          {trackerName}
+        </Text>
+
+        {/* Streak badge */}
+        <Animated.View
+          style={{
+            transform: [{ translateY: streakSlide }],
+            opacity: streakOpacity,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: streak >= 7 ? "#C4A84D15" : "#5B8A8A15",
+            borderRadius: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginBottom: 16,
+          }}
+        >
+          <Ionicons
+            name="flame"
+            size={20}
+            color={streak >= 7 ? "#C4A84D" : "#5B8A8A"}
+          />
+          <Text
+            style={{
+              fontSize: 17,
+              fontFamily: "PlusJakartaSans_700Bold",
+              color: streak >= 7 ? "#C4A84D" : "#5B8A8A",
+              marginLeft: 6,
+            }}
+          >
+            {streak} day{streak !== 1 ? "s" : ""} in a row
+          </Text>
+        </Animated.View>
+
+        {/* Encouragement */}
+        <Text style={{ fontSize: 28, marginBottom: 8 }}>{encouragement.emoji}</Text>
+        <Text
+          style={{
+            fontSize: 15,
+            fontFamily: "PlusJakartaSans_400Regular",
+            color: "#5A5A5A",
+            textAlign: "center",
+            lineHeight: 22,
+            marginBottom: 28,
+            paddingHorizontal: 8,
+          }}
+        >
+          {encouragement.message}
+        </Text>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: "#5B8A8A",
+            borderRadius: 14,
+            paddingVertical: 14,
+            paddingHorizontal: 48,
+            width: "100%",
+            alignItems: "center",
+          }}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={{
+              color: "white",
+              fontFamily: "PlusJakartaSans_700Bold",
+              fontSize: 16,
+            }}
+          >
+            Done
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  );
+}
+
 // ── Main Form ────────────────────────────────────────
 
 export default function TrackerFormScreen() {
@@ -279,6 +504,16 @@ export default function TrackerFormScreen() {
     }
   });
 
+  const streakQuery = useQuery({
+    queryKey: ["tracker-streak", trackerId],
+    queryFn: async () => {
+      const res = await api.getTrackerStreak(trackerId!);
+      if (!res.success) throw new Error(res.error);
+      return res.data as { currentStreak: number; longestStreak: number };
+    },
+    enabled: submitted,
+  });
+
   const submitMutation = useMutation({
     mutationFn: () => api.submitTrackerEntry(trackerId!, today, responses),
     onSuccess: () => {
@@ -305,28 +540,7 @@ export default function TrackerFormScreen() {
   const fields = [...tracker.fields].sort((a, b) => a.sortOrder - b.sortOrder);
 
   if (submitted) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F7F5F2", paddingHorizontal: 32 }}>
-        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#E8F5E9", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
-          <Ionicons name="checkmark-circle" size={48} color="#4CAF50" />
-        </View>
-        <Text style={{ fontSize: 22, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 8 }}>
-          All Done!
-        </Text>
-        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", textAlign: "center", marginBottom: 24 }}>
-          Your {tracker.name} for today has been saved.
-        </Text>
-        <TouchableOpacity
-          style={{ backgroundColor: "#5B8A8A", borderRadius: 12, paddingHorizontal: 32, paddingVertical: 14 }}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <Text style={{ color: "white", fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 16 }}>
-            Back to Home
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return <CheckInCelebration trackerName={tracker.name} streak={streakQuery.data?.currentStreak ?? 1} />;
   }
 
   return (
@@ -335,10 +549,7 @@ export default function TrackerFormScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Header */}
-      <View style={{ backgroundColor: "#5B8A8A", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 12 }}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
+      <View style={{ backgroundColor: "#5B8A8A", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
         <Text style={{ fontSize: 22, fontFamily: "PlusJakartaSans_700Bold", color: "white" }}>
           {tracker.name}
         </Text>
