@@ -191,6 +191,8 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     await prisma.$transaction(async (tx) => {
+      // Delete related progress records first (FK is RESTRICT until migration runs)
+      await tx.partProgress.deleteMany({ where: { partId: req.params.id } });
       await tx.part.delete({ where: { id: req.params.id } });
 
       const remaining = await tx.part.findMany({

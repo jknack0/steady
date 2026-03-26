@@ -382,7 +382,7 @@ model PartProgress {
   enrollmentId String
   enrollment   Enrollment         @relation(fields: [enrollmentId], references: [id])
   partId       String
-  part         Part               @relation(fields: [partId], references: [id])
+  part         Part               @relation(fields: [partId], references: [id], onDelete: Cascade)
   status       PartProgressStatus @default(NOT_STARTED)
   completedAt  DateTime?
   responseData Json?
