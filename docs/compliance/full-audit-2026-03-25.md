@@ -29,7 +29,7 @@ Six parallel audits were conducted covering: API & Middleware, Database & Data L
 - **HIPAA:** SS 164.312(d) -- Person or Entity Authentication
 - **Fix:** Remove fallbacks. Fail fast at startup if secrets are unset in production.
 
-### 2. No Refresh Token Rotation or Revocation
+### DONE 2. No Refresh Token Rotation or Revocation
 - **File:** `packages/api/src/routes/auth.ts:144-180`
 - **Issue:** Refresh tokens are stateless JWTs with no server-side storage, rotation, or revocation. Stolen tokens grant 7-day persistent access. No logout invalidation.
 - **HIPAA:** SS 164.312(a)(1) -- Access Control; SS 164.312(d)

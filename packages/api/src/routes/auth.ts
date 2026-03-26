@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { prisma } from "@steady/db";
 import { RegisterSchema, LoginSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
@@ -10,6 +11,36 @@ import { authenticate, type AuthUser } from "../middleware/auth";
 import { JWT_SECRET } from "../lib/env";
 
 const router = Router();
+
+const isTest = process.env.NODE_ENV === "test";
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many login attempts. Please try again in 15 minutes." },
+  keyGenerator: (req: Request) => req.body?.email?.toLowerCase() || req.ip || "unknown",
+  skip: () => isTest,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 3,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many registration attempts. Please try again later." },
+  skip: () => isTest,
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many refresh attempts. Please try again later." },
+  skip: () => isTest,
+});
 
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
@@ -52,7 +83,7 @@ function buildAuthUser(user: {
 }
 
 // POST /api/auth/register
-router.post("/register", validate(RegisterSchema), async (req: Request, res: Response) => {
+router.post("/register", registerLimiter, validate(RegisterSchema), async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, role } = req.body;
 
@@ -107,7 +138,7 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res: Res
 });
 
 // POST /api/auth/login
-router.post("/login", validate(LoginSchema), async (req: Request, res: Response) => {
+router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -166,7 +197,7 @@ router.post("/login", validate(LoginSchema), async (req: Request, res: Response)
 });
 
 // POST /api/auth/refresh
-router.post("/refresh", async (req: Request, res: Response) => {
+router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
