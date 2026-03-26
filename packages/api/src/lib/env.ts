@@ -10,4 +10,3 @@ function requireEnv(name: string, devFallback: string): string {
 }
 
 export const JWT_SECRET = requireEnv("JWT_SECRET", "dev-secret-change-in-production");
-export const REFRESH_SECRET = requireEnv("REFRESH_SECRET", "dev-refresh-secret-change-in-production");

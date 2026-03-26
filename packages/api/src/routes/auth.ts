@@ -1,19 +1,54 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "@steady/db";
 import { RegisterSchema, LoginSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
 import { authenticate, type AuthUser } from "../middleware/auth";
-import { JWT_SECRET, REFRESH_SECRET } from "../lib/env";
+import { JWT_SECRET } from "../lib/env";
 
 const router = Router();
 
-function generateTokens(user: AuthUser) {
-  const accessToken = jwt.sign(user, JWT_SECRET, { expiresIn: "30m" });
-  const refreshToken = jwt.sign({ userId: user.userId }, REFRESH_SECRET, { expiresIn: "7d" });
-  return { accessToken, refreshToken };
+const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+
+function generateAccessToken(user: AuthUser): string {
+  return jwt.sign(user, JWT_SECRET, { expiresIn: "30m" });
+}
+
+/**
+ * Create a DB-backed refresh token. Each login starts a new "family".
+ * Each refresh rotates within the same family.
+ */
+async function createRefreshToken(userId: string, familyId?: string): Promise<string> {
+  const token = crypto.randomBytes(48).toString("base64url");
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+
+  await prisma.refreshToken.create({
+    data: {
+      token,
+      userId,
+      familyId: familyId ?? crypto.randomUUID(),
+      expiresAt,
+    },
+  });
+
+  return token;
+}
+
+function buildAuthUser(user: {
+  id: string;
+  role: string;
+  clinicianProfile?: { id: string } | null;
+  participantProfile?: { id: string } | null;
+}): AuthUser {
+  return {
+    userId: user.id,
+    role: user.role as AuthUser["role"],
+    clinicianProfileId: user.clinicianProfile?.id,
+    participantProfileId: user.participantProfile?.id,
+  };
 }
 
 // POST /api/auth/register
@@ -47,14 +82,9 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res: Res
       },
     });
 
-    const authUser: AuthUser = {
-      userId: user.id,
-      role: user.role as AuthUser["role"],
-      clinicianProfileId: user.clinicianProfile?.id,
-      participantProfileId: user.participantProfile?.id,
-    };
-
-    const tokens = generateTokens(authUser);
+    const authUser = buildAuthUser(user);
+    const accessToken = generateAccessToken(authUser);
+    const refreshToken = await createRefreshToken(user.id);
 
     res.status(201).json({
       success: true,
@@ -66,7 +96,8 @@ router.post("/register", validate(RegisterSchema), async (req: Request, res: Res
           lastName: user.lastName,
           role: user.role,
         },
-        ...tokens,
+        accessToken,
+        refreshToken,
       },
     });
   } catch (err) {
@@ -99,14 +130,9 @@ router.post("/login", validate(LoginSchema), async (req: Request, res: Response)
       return;
     }
 
-    const authUser: AuthUser = {
-      userId: user.id,
-      role: user.role as AuthUser["role"],
-      clinicianProfileId: user.clinicianProfile?.id,
-      participantProfileId: user.participantProfile?.id,
-    };
-
-    const tokens = generateTokens(authUser);
+    const authUser = buildAuthUser(user);
+    const accessToken = generateAccessToken(authUser);
+    const refreshToken = await createRefreshToken(user.id);
 
     // Check setup status for clinicians
     let hasCompletedSetup = false;
@@ -129,7 +155,8 @@ router.post("/login", validate(LoginSchema), async (req: Request, res: Response)
           role: user.role,
           hasCompletedSetup,
         },
-        ...tokens,
+        accessToken,
+        refreshToken,
       },
     });
   } catch (err) {
@@ -147,10 +174,36 @@ router.post("/refresh", async (req: Request, res: Response) => {
       return;
     }
 
-    const payload = jwt.verify(refreshToken, REFRESH_SECRET) as { userId: string };
+    // Look up the token in the database
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
+
+    if (!storedToken || storedToken.expiresAt < new Date()) {
+      res.status(401).json({ success: false, error: "Invalid or expired refresh token" });
+      return;
+    }
+
+    // Token reuse detection: if the token was already revoked, an attacker
+    // is replaying a stolen token. Revoke the entire family to force re-login.
+    if (storedToken.revoked) {
+      await prisma.refreshToken.updateMany({
+        where: { familyId: storedToken.familyId },
+        data: { revoked: true },
+      });
+      logger.warn("Refresh token reuse detected", `familyId=${storedToken.familyId}`);
+      res.status(401).json({ success: false, error: "Token reuse detected. Please log in again." });
+      return;
+    }
+
+    // Revoke the current token (single use)
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { revoked: true },
+    });
 
     const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+      where: { id: storedToken.userId },
       include: {
         clinicianProfile: true,
         participantProfile: true,
@@ -162,18 +215,43 @@ router.post("/refresh", async (req: Request, res: Response) => {
       return;
     }
 
-    const authUser: AuthUser = {
-      userId: user.id,
-      role: user.role as AuthUser["role"],
-      clinicianProfileId: user.clinicianProfile?.id,
-      participantProfileId: user.participantProfile?.id,
-    };
+    const authUser = buildAuthUser(user);
+    const accessToken = generateAccessToken(authUser);
+    // Issue new refresh token in the same family (rotation)
+    const newRefreshToken = await createRefreshToken(user.id, storedToken.familyId);
 
-    const tokens = generateTokens(authUser);
-
-    res.json({ success: true, data: tokens });
+    res.json({ success: true, data: { accessToken, refreshToken: newRefreshToken } });
   } catch {
     res.status(401).json({ success: false, error: "Invalid or expired refresh token" });
+  }
+});
+
+// POST /api/auth/logout — Revoke refresh token family
+router.post("/logout", async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      // No token to revoke — still a successful logout from client perspective
+      res.json({ success: true });
+      return;
+    }
+
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
+
+    if (storedToken) {
+      // Revoke entire family so no rotated tokens remain valid
+      await prisma.refreshToken.updateMany({
+        where: { familyId: storedToken.familyId },
+        data: { revoked: true },
+      });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    logger.error("Logout error", err);
+    res.status(500).json({ success: false, error: "Logout failed" });
   }
 });
 

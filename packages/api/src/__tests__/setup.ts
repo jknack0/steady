@@ -212,6 +212,13 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
     },
+    refreshToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
   };
 
   return {

@@ -216,6 +216,7 @@ model User {
   rtmTimeLogsAsClient  RtmClinicianTimeLog[]  @relation("RtmTimeLogClient")
   clientConfigs        ClientConfig[]         @relation("ClientConfigs")
   clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
+  refreshTokens        RefreshToken[]
 
   @@map("users")
 }
@@ -849,4 +850,22 @@ model AuditLog {
   @@index([action])
   @@index([timestamp])
   @@map("audit_logs")
+}
+
+// ── Refresh Tokens ──────────────────────────────────────
+
+model RefreshToken {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId       String
+  revoked        Boolean   @default(false)
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }

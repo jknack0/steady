@@ -83,6 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await unregisterPushNotifications().catch(() => {});
+    // Revoke server-side before clearing local tokens
+    await api.logout().catch(() => {});
     await api.clearTokens();
     setUser(null);
   }, []);

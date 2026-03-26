@@ -21,7 +21,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -85,7 +85,16 @@ export function useAuthState(): AuthContextValue {
     []
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    // Revoke server-side before clearing local state
+    if (refreshToken) {
+      try {
+        await api.post("/api/auth/logout", { refreshToken });
+      } catch {
+        // Best-effort — still clear local tokens
+      }
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     setState({ user: null, isLoading: false, isAuthenticated: false });

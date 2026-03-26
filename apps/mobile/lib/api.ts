@@ -109,6 +109,14 @@ export const api = {
 
   me: () => apiFetch("/api/auth/me"),
 
+  logout: async () => {
+    const refreshToken = await getRefreshToken();
+    return apiFetch("/api/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+  },
+
   // Participant endpoints
   getEnrollments: () => apiFetch("/api/participant/enrollments"),
 
