@@ -31,7 +31,10 @@ import { SaveIndicator } from "@/components/save-indicator";
 import { PartCard, PART_TYPE_CONFIG } from "@/components/part-card";
 import { CreatePartModal, EditPartModal } from "@/components/part-editor-modal";
 import {
+  ArrowLeft,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Eye,
   Loader2,
@@ -70,14 +73,16 @@ export default function ModuleEditorPage() {
   const deletePart = useDeletePart(programId, moduleId);
   const reorderParts = useReorderParts(programId, moduleId);
 
-  // Fetch the module directly
-  const { data: module, isLoading: moduleLoading } = useQuery<Module>({
-    queryKey: ["module", programId, moduleId],
-    queryFn: async () => {
-      const modules = await api.get<Module[]>(`/api/programs/${programId}/modules`);
-      return modules.find((m) => m.id === moduleId)!;
-    },
+  // Fetch all modules for this program (for navigation + current module)
+  const { data: allModules, isLoading: moduleLoading } = useQuery<Module[]>({
+    queryKey: ["modules", programId],
+    queryFn: () => api.get<Module[]>(`/api/programs/${programId}/modules`),
   });
+
+  const module = allModules?.find((m) => m.id === moduleId);
+  const currentIndex = allModules?.findIndex((m) => m.id === moduleId) ?? -1;
+  const prevModule = currentIndex > 0 ? allModules![currentIndex - 1] : null;
+  const nextModule = allModules && currentIndex < allModules.length - 1 ? allModules[currentIndex + 1] : null;
 
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -187,6 +192,42 @@ export default function ModuleEditorPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
+      {/* Back + Module Navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push(`/programs/${programId}`)}
+          className="gap-1 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Program
+        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!prevModule}
+            onClick={() => prevModule && router.push(`/programs/${programId}/modules/${prevModule.id}`)}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Prev
+          </Button>
+          <span className="text-xs text-muted-foreground px-2">
+            {currentIndex + 1} / {allModules?.length ?? 0}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!nextModule}
+            onClick={() => nextModule && router.push(`/programs/${programId}/modules/${nextModule.id}`)}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      </div>
+
       {/* Module Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
