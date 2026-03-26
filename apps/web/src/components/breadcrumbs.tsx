@@ -93,10 +93,11 @@ function useResolvedBreadcrumbs(segments: string[]): { items: BreadcrumbItem[]; 
         items.push({ label: name, href: pathSoFar });
       }
       // Skip IDs we can't resolve (don't show raw IDs)
+    } else if (segment === "modules" && moduleId) {
+      // Skip "Modules" when we have a specific module name (redundant)
     } else if (SEGMENT_LABELS[segment]) {
       items.push({ label: SEGMENT_LABELS[segment], href: pathSoFar });
-    } else if (segment !== "modules" || !moduleId) {
-      // Skip "Modules" label when we have a specific module (redundant)
+    } else {
       items.push({ label: segment.charAt(0).toUpperCase() + segment.slice(1), href: pathSoFar });
     }
   }
