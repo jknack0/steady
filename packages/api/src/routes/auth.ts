@@ -6,11 +6,9 @@ import { prisma } from "@steady/db";
 import { RegisterSchema, LoginSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
 import { authenticate, type AuthUser } from "../middleware/auth";
+import { JWT_SECRET, REFRESH_SECRET } from "../lib/env";
 
 const router = Router();
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
-const REFRESH_SECRET = process.env.REFRESH_SECRET || "dev-refresh-secret-change-in-production";
 
 function generateTokens(user: AuthUser) {
   const accessToken = jwt.sign(user, JWT_SECRET, { expiresIn: "30m" });

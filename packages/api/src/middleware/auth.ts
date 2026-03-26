@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { runWithAuditUser } from "@steady/db";
+import { JWT_SECRET } from "../lib/env";
 
 export interface AuthUser {
   userId: string;
@@ -16,8 +17,6 @@ declare global {
     }
   }
 }
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
 
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers.authorization;

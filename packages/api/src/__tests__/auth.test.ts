@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import request from "supertest";
 import app from "../app";
 import { createTestToken } from "./helpers";
+import { JWT_SECRET } from "../lib/env";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -36,7 +37,7 @@ describe("Authentication Middleware", () => {
     const jwt = require("jsonwebtoken");
     const expiredToken = jwt.sign(
       { userId: "user-1", role: "CLINICIAN" },
-      process.env.JWT_SECRET || "dev-secret-change-in-production",
+      JWT_SECRET,
       { expiresIn: "0s" }
     );
 
