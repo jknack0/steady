@@ -35,13 +35,13 @@ Six parallel audits were conducted covering: API & Middleware, Database & Data L
 - **HIPAA:** SS 164.312(a)(1) -- Access Control; SS 164.312(d)
 - **Fix:** Database-backed refresh tokens with rotation. Revoke on logout. Detect token reuse.
 
-### 3. No Rate Limiting on Authentication Endpoints
+### DONE 3. No Rate Limiting on Authentication Endpoints
 - **File:** `packages/api/src/routes/auth.ts`
 - **Issue:** Unlimited brute-force login attempts, credential stuffing, and token-grinding attacks possible.
 - **HIPAA:** SS 164.312(a)(1); SS 164.308(a)(5)(ii)(C) -- Log-in Monitoring
 - **Fix:** Add `express-rate-limit` (5 attempts/15min on login, 3/hour on register).
 
-### 4. CORS Allows All Origins When Not Configured
+### DONE 4. CORS Allows All Origins When Not Configured
 - **File:** `packages/api/src/app.ts:31-34`
 - **Issue:** `origin: true` when `CORS_ORIGINS` unset = any website can make authenticated API requests. Combined with `credentials: true`, enables cross-site PHI exfiltration.
 - **HIPAA:** SS 164.312(e)(1) -- Transmission Security

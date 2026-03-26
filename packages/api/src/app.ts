@@ -28,9 +28,13 @@ import { configParticipantRouter } from "./routes/config";
 
 const app = express();
 
+const isProduction = process.env.NODE_ENV === "production";
+if (isProduction && !process.env.CORS_ORIGINS) {
+  throw new Error("CORS_ORIGINS must be set in production (comma-separated list of allowed origins)");
+}
 const allowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(",")
-  : true;
+  ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
+  : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
