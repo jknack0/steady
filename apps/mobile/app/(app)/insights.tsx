@@ -113,6 +113,8 @@ export default function InsightsScreen() {
             }}
             width={screenWidth - 24}
             height={180}
+            yAxisLabel=""
+            yAxisSuffix=""
             chartConfig={chartConfig}
             style={{ borderRadius: 12 }}
             fromZero

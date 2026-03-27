@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 
 function useNotificationListeners() {
   const router = useRouter();
-  const responseListener = useRef<{ remove(): void }>();
+  const responseListener = useRef<{ remove(): void } | undefined>(undefined);
 
   useEffect(() => {
     // Handle notification taps — navigate to the right screen

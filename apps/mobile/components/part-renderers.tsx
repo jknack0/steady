@@ -581,7 +581,7 @@ function PdfOpenButton({ resourceKey }: { resourceKey: string }) {
     setLoading(true);
     try {
       const res = await api.getPresignedDownloadUrl(resourceKey);
-      await Linking.openURL(res.downloadUrl);
+      if (res.data?.downloadUrl) await Linking.openURL(res.data.downloadUrl);
     } catch {
       // silently fail — user can retry
     } finally {

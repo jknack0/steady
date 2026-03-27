@@ -1,5 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
+
+function waitFor(callback: () => void, opts = { timeout: 5000, interval: 50 }): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      try { callback(); resolve(); }
+      catch (e) { Date.now() - start >= opts.timeout ? reject(e) : setTimeout(check, opts.interval); }
+    };
+    check();
+  });
+}
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import {
