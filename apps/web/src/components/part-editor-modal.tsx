@@ -477,8 +477,15 @@ export function EditPartModal({
   const [isRequired, setIsRequired] = useState(part?.isRequired ?? true);
   const [content, setContent] = useState<any>(part?.content);
   const dirtyRef = useRef(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Refs to always hold the latest values for save
+  const titleRef = useRef(title);
+  const contentRef = useRef(content);
+  const isRequiredRef = useRef(isRequired);
+  titleRef.current = title;
+  contentRef.current = content;
+  isRequiredRef.current = isRequired;
 
   // Sync when part changes
   useEffect(() => {
@@ -495,23 +502,17 @@ export function EditPartModal({
     if (!dirtyRef.current || !part) return;
     dirtyRef.current = false;
     setSaveStatus("saving");
-    onSave({ title: title.trim() || part.title, isRequired, content })
+    onSave({ title: titleRef.current.trim() || part.title, isRequired: isRequiredRef.current, content: contentRef.current })
       .then(() => {
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
       })
       .catch(() => setSaveStatus("idle"));
-  }, [onSave, title, isRequired, content, part]);
-
-  const scheduleSave = useCallback(() => {
-    dirtyRef.current = true;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(flushSave, 1500);
-  }, [flushSave]);
+  }, [onSave, part]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    scheduleSave();
+    dirtyRef.current = true;
   };
 
   const handleRequiredToggle = () => {
@@ -527,13 +528,16 @@ export function EditPartModal({
 
   const handleContentChange = (c: any) => {
     setContent(c);
-    scheduleSave();
+    dirtyRef.current = true;
+  };
+
+  const handleBlurSave = () => {
+    if (dirtyRef.current) flushSave();
   };
 
   const handleClose = () => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     if (dirtyRef.current && part) {
-      onSave({ title: title.trim() || part.title, isRequired, content });
+      onSave({ title: titleRef.current.trim() || part.title, isRequired: isRequiredRef.current, content: contentRef.current });
     }
     onOpenChange(false);
   };
@@ -610,6 +614,7 @@ export function EditPartModal({
                     id="edit-title"
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
+                    onBlur={handleBlurSave}
                     placeholder="Part title"
                   />
                 </div>
@@ -630,7 +635,9 @@ export function EditPartModal({
 
               <Separator />
 
-              <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
+              <div onBlur={handleBlurSave}>
+                <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
+              </div>
             </>
           )}
         </DialogBody>

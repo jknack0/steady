@@ -164,9 +164,14 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 ### What to Test
 - **API routes**: Integration tests with supertest against the Express app. Test happy path, validation errors, auth failures, ownership checks, edge cases. One test file per route module.
 - **Service functions**: Unit tests for business logic. Mock Prisma for pure logic tests.
-- **Zod schemas**: Unit tests for every discriminated union variant. Test valid and invalid payloads.
+- **Zod schemas**: Unit tests for every discriminated union variant. Test valid and invalid payloads. **When modifying a schema, always test round-trip preservation** — parse real/existing DB data through the schema and verify no fields are stripped or corrupted. The `validate` middleware uses `schema.parse()` which strips unknown fields and injects defaults.
 - **React components**: React Testing Library — test user behavior, not implementation.
 - **Hooks**: `renderHook` with mocked API client.
+
+### Critical Rules for Schema Changes
+- **Never use `replace_all` on Zod schema fields** — the same field name (e.g., `sortOrder`) may appear in multiple unrelated schemas. Target each schema individually.
+- **Test with realistic DB payloads** — existing data may use different field names or values than what the schema expects. Always verify the schema accepts actual production data shapes.
+- **Never put React Query hooks inside list-rendered components** — call hooks in the parent and pass data as props. Hooks in list items cause re-render storms that break autosave.
 
 ### Test Infrastructure
 - Vitest (API: node environment, Web: jsdom environment).
