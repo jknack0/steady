@@ -28,7 +28,7 @@ const HomeworkActionSchema = z.object({
   subSteps: z.array(z.string()).default([]),
   addToSteadySystem: z.boolean().default(false),
   dueDateOffsetDays: z.number().int().min(0).nullable().default(null),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -40,7 +40,7 @@ const HomeworkResourceReviewSchema = z.object({
   resourceKey: z.string().optional(), // S3 key for uploaded files — use presign-download to get URL
   audioDurationSecs: z.number().int().min(0).optional(), // Duration in seconds for audio files
   audioDescription: z.string().optional(), // Clinician instructions (e.g., "Listen daily, find a quiet place")
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -48,21 +48,21 @@ const HomeworkJournalPromptSchema = z.object({
   type: z.literal("JOURNAL_PROMPT"),
   prompts: z.array(z.string()).min(1),
   spaceSizeHint: z.enum(["small", "medium", "large"]).default("medium"),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
 const HomeworkBringToSessionSchema = z.object({
   type: z.literal("BRING_TO_SESSION"),
   reminderText: z.string().min(1),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
 const HomeworkFreeTextNoteSchema = z.object({
   type: z.literal("FREE_TEXT_NOTE"),
   content: z.string(),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -70,13 +70,13 @@ const HomeworkChoiceSchema = z.object({
   type: z.literal("CHOICE"),
   description: z.string().min(1),
   options: z.array(z.object({ label: z.string().max(200), detail: z.string().max(500).optional() })).min(2),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
 const HomeworkWorksheetSchema = z.object({
   type: z.literal("WORKSHEET"),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   instructions: z.string().max(2000).optional(),
   columns: z.array(z.object({
     label: z.string().max(200),
@@ -94,7 +94,7 @@ const HomeworkRatingScaleSchema = z.object({
   max: z.number().int().min(1).max(10).default(10),
   minLabel: z.string().max(200).optional(),
   maxLabel: z.string().max(200).optional(),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -102,7 +102,7 @@ const HomeworkTimerSchema = z.object({
   type: z.literal("TIMER"),
   description: z.string().max(2000),
   durationSeconds: z.number().int().min(10).max(7200),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -120,7 +120,7 @@ const HomeworkMoodCheckSchema = z.object({
     { emoji: "\ud83d\ude22", label: "Struggling" },
   ]),
   includeNote: z.boolean().default(false),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -128,7 +128,7 @@ const HomeworkHabitTrackerSchema = z.object({
   type: z.literal("HABIT_TRACKER"),
   description: z.string().max(2000),
   habitLabel: z.string().max(200),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
 
@@ -184,7 +184,7 @@ const ChecklistContentSchema = z.object({
   items: z.array(
     z.object({
       text: z.string().min(1).max(500),
-      sortOrder: z.number().int(),
+      sortOrder: z.number().int().default(0),
     })
   ),
 });
@@ -329,7 +329,7 @@ const AssessmentQuestionSchema = z.object({
   likertMinLabel: z.string().max(100).optional(),
   likertMaxLabel: z.string().max(100).optional(),
   required: z.boolean().default(true),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
 }).superRefine((data, ctx) => {
   if (data.type === "MULTIPLE_CHOICE" && (!data.options || data.options.length < 2)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "MULTIPLE_CHOICE requires at least 2 options", path: ["options"] });
@@ -366,7 +366,7 @@ const IntakeFieldSchema = z.object({
   options: z.array(z.string().max(500)).optional(),
   required: z.boolean().default(true),
   section: z.string().max(200).default("General"),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
 }).superRefine((data, ctx) => {
   if ((data.type === "SELECT" || data.type === "MULTI_SELECT") && (!data.options || data.options.length < 1)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${data.type} requires at least 1 option`, path: ["options"] });
@@ -390,7 +390,7 @@ const SmartGoalSchema = z.object({
   relevant: z.string().max(1000).default(""),
   timeBound: z.string().max(1000).default(""),
   category: z.enum(["DAILY_ROUTINE", "WORK", "RELATIONSHIPS", "HEALTH", "SELF_CARE", "OTHER"]).default("OTHER"),
-  sortOrder: z.number().int(),
+  sortOrder: z.number().int().default(0),
 });
 
 const SmartGoalsContentSchema = z.object({
