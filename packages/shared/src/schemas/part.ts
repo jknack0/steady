@@ -54,7 +54,8 @@ const HomeworkJournalPromptSchema = z.object({
 
 const HomeworkBringToSessionSchema = z.object({
   type: z.literal("BRING_TO_SESSION"),
-  reminderText: z.string().min(1),
+  reminderText: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
   sortOrder: z.number().int().default(0),
   customLabel: customLabelField,
 });
@@ -296,7 +297,7 @@ const HomeworkContentSchema = z.object({
   type: z.literal("HOMEWORK"),
   dueTimingType: z.enum(["BEFORE_NEXT_SESSION", "SPECIFIC_DATE", "DAYS_AFTER_UNLOCK"]),
   dueTimingValue: z.union([z.string(), z.number()]).nullable().default(null),
-  completionRule: z.enum(["ALL", "X_OF_Y"]),
+  completionRule: z.enum(["ALL", "X_OF_Y", "MAJORITY"]),
   completionMinimum: z.number().int().min(1).nullable().default(null),
   reminderCadence: z.enum(["DAILY", "EVERY_OTHER_DAY", "MID_WEEK"]),
   items: z.array(HomeworkItemSchema),

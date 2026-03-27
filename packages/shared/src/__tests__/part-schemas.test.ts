@@ -148,12 +148,15 @@ describe("PartContentSchema — CHECKLIST", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects items with missing sortOrder", () => {
+  it("defaults sortOrder to 0 when missing", () => {
     const result = PartContentSchema.safeParse({
       type: "CHECKLIST",
       items: [{ text: "Do this" }],
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as any).items[0].sortOrder).toBe(0);
+    }
   });
 });
 
