@@ -3,7 +3,7 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { prisma } from "@steady/db";
 import { RegisterSchema, LoginSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
@@ -20,7 +20,7 @@ const loginLimiter = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { success: false, error: "Too many login attempts. Please try again in 15 minutes." },
-  keyGenerator: (req: Request) => req.body?.email?.toLowerCase() || req.ip || "unknown",
+  keyGenerator: (req: Request) => req.body?.email?.toLowerCase() || ipKeyGenerator(req.ip ?? "unknown"),
   skip: () => isTest,
 });
 
