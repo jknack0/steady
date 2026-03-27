@@ -28,6 +28,10 @@ import { configParticipantRouter } from "./routes/config";
 
 const app = express();
 
+// Trust proxy headers (X-Forwarded-For) — required when running behind Railway/load balancer
+// so express-rate-limit can correctly identify client IPs
+app.set("trust proxy", 1);
+
 const isProduction = process.env.NODE_ENV === "production";
 if (isProduction && !process.env.CORS_ORIGINS) {
   throw new Error("CORS_ORIGINS must be set in production (comma-separated list of allowed origins)");
