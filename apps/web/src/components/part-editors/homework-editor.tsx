@@ -1063,16 +1063,17 @@ function SortableHomeworkItem({
   index,
   onUpdate,
   onDelete,
+  clinicianDefaults,
 }: {
   item: HomeworkItem;
   index: number;
   onUpdate: (index: number, item: HomeworkItem) => void;
   onDelete: (index: number) => void;
+  clinicianDefaults?: Partial<Record<HomeworkItemType, string>>;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState("");
-  const { data: clinicianConfig } = useClinicianConfig();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `hw-${index}`,
   });
@@ -1086,9 +1087,6 @@ function SortableHomeworkItem({
   const typeConfig = ITEM_TYPES.find((t) => t.type === item.type) || ITEM_TYPES[0];
   const Icon = typeConfig.icon;
 
-  const clinicianDefaults = (clinicianConfig?.homeworkLabels ?? undefined) as
-    | Partial<Record<HomeworkItemType, string>>
-    | undefined;
   const resolvedLabel = resolveHomeworkItemLabel(
     item.type as HomeworkItemType,
     item.customLabel,
@@ -1231,6 +1229,11 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
     ...rawContent,
     items: rawContent.items.map((item, i) => ({ ...item, sortOrder: item.sortOrder ?? i })),
   } as HomeworkContent;
+
+  const { data: clinicianConfig } = useClinicianConfig();
+  const clinicianDefaults = (clinicianConfig?.homeworkLabels ?? undefined) as
+    | Partial<Record<HomeworkItemType, string>>
+    | undefined;
 
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -1391,6 +1394,7 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
                 index={i}
                 onUpdate={handleUpdateItem}
                 onDelete={handleDeleteItem}
+                clinicianDefaults={clinicianDefaults}
               />
             ))}
           </div>
