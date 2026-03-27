@@ -299,7 +299,7 @@ const HomeworkContentSchema = z.object({
   dueTimingValue: z.union([z.string(), z.number()]).nullable().default(null),
   completionRule: z.enum(["ALL", "X_OF_Y", "MAJORITY"]),
   completionMinimum: z.number().int().min(1).nullable().default(null),
-  reminderCadence: z.enum(["DAILY", "EVERY_OTHER_DAY", "MID_WEEK"]),
+  reminderCadence: z.enum(["DAILY", "EVERY_OTHER_DAY", "MID_WEEK", "NONE"]),
   items: z.array(HomeworkItemSchema),
   recurrence: RecurrenceTypeEnum.default("NONE"),
   recurrenceDays: z.array(z.number().int().min(0).max(6)).default([]),
