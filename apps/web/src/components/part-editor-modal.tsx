@@ -635,9 +635,7 @@ export function EditPartModal({
 
               <Separator />
 
-              <div onBlur={handleBlurSave}>
-                <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
-              </div>
+              <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
             </>
           )}
         </DialogBody>
