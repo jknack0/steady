@@ -182,7 +182,7 @@ describe("GET /api/programs/:programId/modules/:moduleId/parts", () => {
     expect(res.body.data).toHaveLength(2);
     expect(db.part.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { moduleId: "module-1" },
+        where: expect.objectContaining({ moduleId: "module-1" }),
         orderBy: { sortOrder: "asc" },
       })
     );

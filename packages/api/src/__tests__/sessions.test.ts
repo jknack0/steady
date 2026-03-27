@@ -708,12 +708,15 @@ describe("GET /api/sessions/:id/prepare", () => {
   });
 
   it("returns full preparation data for a session", async () => {
+    db.dailyTracker.findMany.mockResolvedValue([]);
     db.session.findUnique.mockResolvedValue({
       id: "session-1",
       scheduledAt: new Date("2026-03-25T14:00:00Z"),
       status: "SCHEDULED",
       enrollmentId: "enroll-1",
       enrollment: {
+        id: "enroll-1",
+        programId: "prog-1",
         currentModuleId: "mod-1",
         participant: {
           id: "pp-1",
@@ -809,12 +812,15 @@ describe("GET /api/sessions/:id/prepare", () => {
   });
 
   it("returns null lastSession when no previous completed sessions", async () => {
+    db.dailyTracker.findMany.mockResolvedValue([]);
     db.session.findUnique.mockResolvedValue({
       id: "session-1",
       scheduledAt: new Date("2026-03-25T14:00:00Z"),
       status: "SCHEDULED",
       enrollmentId: "enroll-1",
       enrollment: {
+        id: "enroll-1",
+        programId: "prog-1",
         currentModuleId: null,
         participant: {
           id: "pp-1",
