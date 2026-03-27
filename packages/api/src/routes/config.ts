@@ -6,6 +6,7 @@ import {
   SaveClientConfigSchema,
   SaveDashboardLayoutSchema,
   SaveClientOverviewLayoutSchema,
+  SaveHomeworkLabelsSchema,
 } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
@@ -13,6 +14,7 @@ import {
   getClinicianConfig,
   saveClinicianConfig,
   saveDashboardLayout,
+  saveHomeworkLabels,
   saveClientOverviewLayout,
   getClientConfig,
   saveClientConfig,
@@ -75,6 +77,24 @@ router.patch(
       res
         .status(500)
         .json({ success: false, error: "Failed to save dashboard layout" });
+    }
+  }
+);
+
+// PATCH /api/config/homework-labels — Save homework label overrides
+router.patch(
+  "/homework-labels",
+  validate(SaveHomeworkLabelsSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const clinicianId = req.user!.clinicianProfileId!;
+      const config = await saveHomeworkLabels(clinicianId, req.body.homeworkLabels);
+      res.json({ success: true, data: config });
+    } catch (err) {
+      logger.error("Save homework labels error", err);
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to save homework labels" });
     }
   }
 );

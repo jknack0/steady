@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useClinicianConfig, useSaveClinicianConfig } from "@/hooks/use-config";
+import { useClinicianConfig, useSaveClinicianConfig, useSaveHomeworkLabels } from "@/hooks/use-config";
 import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +19,11 @@ import {
   MODULE_REGISTRY,
   MODULE_CATEGORIES,
   getModulesForCategory,
+  HOMEWORK_TYPE_SYSTEM_LABELS,
 } from "@steady/shared";
 import type { ModuleId, ModuleCategory } from "@steady/shared";
-import { Check, Loader2, Plus, Trash2 } from "lucide-react";
+import type { HomeworkItemType } from "@steady/shared";
+import { Check, Loader2, Plus, Trash2, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -83,6 +85,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function SettingsPage() {
   const { data: config, isLoading, isError } = useClinicianConfig();
   const saveConfig = useSaveClinicianConfig();
+  const saveHomeworkLabelsMutation = useSaveHomeworkLabels();
 
   // Form state
   const [providerType, setProviderType] = useState("OTHER");
@@ -93,6 +96,7 @@ export default function SettingsPage() {
   const [defaultAssessments, setDefaultAssessments] = useState<
     Array<{ instrumentId: string; frequency: string }>
   >([]);
+  const [homeworkLabels, setHomeworkLabels] = useState<Record<string, string>>({});
 
   // Save status
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -111,6 +115,7 @@ export default function SettingsPage() {
           instrumentId: normalizeInstrumentId(a.instrumentId),
         }))
       );
+      setHomeworkLabels(config.homeworkLabels || {});
     }
   }, [config]);
 
@@ -141,6 +146,28 @@ export default function SettingsPage() {
     setDefaultAssessments((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const updateHomeworkLabel = useCallback(
+    (type: string, value: string) => {
+      setHomeworkLabels((prev) => {
+        if (!value) {
+          const next = { ...prev };
+          delete next[type];
+          return next;
+        }
+        return { ...prev, [type]: value };
+      });
+    },
+    []
+  );
+
+  const resetHomeworkLabel = useCallback((type: string) => {
+    setHomeworkLabels((prev) => {
+      const next = { ...prev };
+      delete next[type];
+      return next;
+    });
+  }, []);
+
   const updateAssessment = useCallback(
     (index: number, field: "instrumentId" | "frequency", value: string) => {
       setDefaultAssessments((prev) =>
@@ -159,16 +186,19 @@ export default function SettingsPage() {
       })
       .map((widgetId) => ({ widgetId, visible: true }));
 
-    await saveConfig.mutateAsync({
-      providerType,
-      primaryModality: primaryModality || undefined,
-      practiceName: practiceName || undefined,
-      enabledModules,
-      dashboardLayout,
-      defaultTrackerPreset: defaultTrackerPreset || undefined,
-      defaultAssessments:
-        defaultAssessments.length > 0 ? defaultAssessments : undefined,
-    });
+    await Promise.all([
+      saveConfig.mutateAsync({
+        providerType,
+        primaryModality: primaryModality || undefined,
+        practiceName: practiceName || undefined,
+        enabledModules,
+        dashboardLayout,
+        defaultTrackerPreset: defaultTrackerPreset || undefined,
+        defaultAssessments:
+          defaultAssessments.length > 0 ? defaultAssessments : undefined,
+      }),
+      saveHomeworkLabelsMutation.mutateAsync(homeworkLabels),
+    ]);
 
     setSaveSuccess(true);
   };
@@ -408,6 +438,55 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Homework Labels ────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Homework Labels</CardTitle>
+            <CardDescription>
+              Customize the display names for homework item types. Leave blank to use the default.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(Object.entries(HOMEWORK_TYPE_SYSTEM_LABELS) as [HomeworkItemType, string][]).map(
+              ([type, systemLabel]) => {
+                const customValue = homeworkLabels[type] || "";
+                const charCount = customValue.length;
+                return (
+                  <div key={type} className="flex items-center gap-3">
+                    <span className="w-36 text-sm text-muted-foreground shrink-0">
+                      {systemLabel}
+                    </span>
+                    <div className="relative flex-1">
+                      <Input
+                        value={customValue}
+                        onChange={(e) => updateHomeworkLabel(type, e.target.value)}
+                        placeholder={systemLabel}
+                        maxLength={50}
+                        className="pr-12"
+                      />
+                      {charCount >= 40 && (
+                        <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          {charCount}/50
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={!customValue}
+                      onClick={() => resetHomeworkLabel(type)}
+                      aria-label={`Reset ${systemLabel} label`}
+                    >
+                      <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                );
+              }
+            )}
           </CardContent>
         </Card>
 

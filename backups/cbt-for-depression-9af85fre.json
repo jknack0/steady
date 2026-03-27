@@ -1,0 +1,1942 @@
+{
+  "id": "cmn5ezg3p0002fhi29af85fre",
+  "clinicianId": "cmn4wp38m0001j5kls3yhryna",
+  "practiceId": null,
+  "title": "CBT for Depression",
+  "description": "A 12-week structured Cognitive Behavioral Therapy program for adults with moderate to severe depression. Covers behavioral activation, cognitive restructuring, core beliefs, and relapse prevention.",
+  "category": "Depression",
+  "durationWeeks": 12,
+  "coverImageUrl": null,
+  "cadence": "WEEKLY",
+  "enrollmentMethod": "INVITE",
+  "enrollmentCode": null,
+  "sessionType": "ONE_ON_ONE",
+  "followUpCount": 0,
+  "isTemplate": false,
+  "templateSourceId": "cmn4wpeoq00cdj5klisn6052s",
+  "status": "DRAFT",
+  "createdAt": "2026-03-25T02:18:23.173Z",
+  "updatedAt": "2026-03-25T02:18:23.173Z",
+  "modules": [
+    {
+      "id": "cmn5ezg3z0004fhi2801vxxm4",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Welcome & Assessment",
+      "subtitle": "Getting Started",
+      "summary": "Learn what CBT is, how it treats depression, and complete your baseline assessments.",
+      "estimatedMinutes": 45,
+      "sortOrder": 0,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.183Z",
+      "updatedAt": "2026-03-25T02:18:23.183Z",
+      "parts": [
+        {
+          "id": "cmn5ezg450005fhi2bsrsnasm",
+          "moduleId": "cmn5ezg3z0004fhi2801vxxm4",
+          "type": "STYLED_CONTENT",
+          "title": "Welcome to CBT for Depression",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Welcome to this Cognitive Behavioral Therapy program for depression. CBT is one of the most researched and effective treatments for depression. It works by helping you notice the connection between your thoughts, feelings, and behaviors — and then teaching you practical skills to shift patterns that keep depression going.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Over the next 12 weeks you will:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">Learn how depression works from a CBT perspective</li><li style=\"margin-bottom: 6px;\">Track your mood and activities to find patterns</li><li style=\"margin-bottom: 6px;\">Practice behavioral activation — doing more of what matters even when motivation is low</li><li style=\"margin-bottom: 6px;\">Identify and challenge unhelpful thinking patterns</li><li style=\"margin-bottom: 6px;\">Build a relapse prevention plan so your gains last</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">Each week includes reading, a short assessment, strategy cards you can revisit anytime, and homework to practice between sessions. There is no need to rush. Go at a pace that works for you and your clinician.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.189Z",
+          "updatedAt": "2026-03-25T02:18:23.189Z"
+        },
+        {
+          "id": "cmn5ezg450006fhi21dre7omy",
+          "moduleId": "cmn5ezg3z0004fhi2801vxxm4",
+          "type": "ASSESSMENT",
+          "title": "PHQ-9 Baseline",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "ASSESSMENT",
+            "title": "Patient Health Questionnaire (PHQ-9)",
+            "questions": [
+              {
+                "type": "LIKERT",
+                "question": "Little interest or pleasure in doing things",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 0,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling down, depressed, or hopeless",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 1,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble falling or staying asleep, or sleeping too much",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 2,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling tired or having little energy",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 3,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Poor appetite or overeating",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 4,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 5,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble concentrating on things, such as reading the newspaper or watching television",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 6,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 7,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Thoughts that you would be better off dead or of hurting yourself in some way",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 8,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              }
+            ],
+            "instructions": "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
+            "scoringMethod": "SUM"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.189Z",
+          "updatedAt": "2026-03-25T02:18:23.189Z"
+        },
+        {
+          "id": "cmn5ezg450007fhi27xfmilj7",
+          "moduleId": "cmn5ezg3z0004fhi2801vxxm4",
+          "type": "ASSESSMENT",
+          "title": "GAD-7 Baseline",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "ASSESSMENT",
+            "title": "Generalized Anxiety Disorder Scale (GAD-7)",
+            "questions": [
+              {
+                "type": "LIKERT",
+                "question": "Feeling nervous, anxious, or on edge",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 0,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Not being able to stop or control worrying",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 1,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Worrying too much about different things",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 2,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble relaxing",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 3,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Being so restless that it is hard to sit still",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 4,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Becoming easily annoyed or irritable",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 5,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling afraid as if something awful might happen",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 6,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              }
+            ],
+            "instructions": "Over the last 2 weeks, how often have you been bothered by the following problems?",
+            "scoringMethod": "SUM"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.189Z",
+          "updatedAt": "2026-03-25T02:18:23.189Z"
+        },
+        {
+          "id": "cmn5ezg450008fhi21sdj57ou",
+          "moduleId": "cmn5ezg3z0004fhi2801vxxm4",
+          "type": "JOURNAL_PROMPT",
+          "title": "Your Depression Story",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "In your own words, describe what depression feels like for you on a typical day.",
+              "What are you hoping to get out of this program? What would your life look like if depression had less power over you?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.189Z",
+          "updatedAt": "2026-03-25T02:18:23.189Z"
+        },
+        {
+          "id": "cmn5ezg450009fhi2yfxb7d2j",
+          "moduleId": "cmn5ezg3z0004fhi2801vxxm4",
+          "type": "CHECKLIST",
+          "title": "Getting Started Checklist",
+          "sortOrder": 4,
+          "isRequired": true,
+          "content": {
+            "type": "CHECKLIST",
+            "items": [
+              {
+                "text": "Read the welcome material above",
+                "sortOrder": 0
+              },
+              {
+                "text": "Complete the PHQ-9 assessment",
+                "sortOrder": 1
+              },
+              {
+                "text": "Complete the GAD-7 assessment",
+                "sortOrder": 2
+              },
+              {
+                "text": "Write in the journal prompt",
+                "sortOrder": 3
+              },
+              {
+                "text": "Schedule your first session with your clinician",
+                "sortOrder": 4
+              }
+            ]
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.189Z",
+          "updatedAt": "2026-03-25T02:18:23.189Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg4d000bfhi2fatosdel",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Understanding the CBT Model",
+      "subtitle": "Thoughts, Feelings & Behaviors",
+      "summary": "Learn how your thoughts, emotions, and actions are connected and how this cycle keeps depression going.",
+      "estimatedMinutes": 35,
+      "sortOrder": 1,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.198Z",
+      "updatedAt": "2026-03-25T02:18:23.198Z",
+      "parts": [
+        {
+          "id": "cmn5ezg4i000cfhi2rb4c4kuk",
+          "moduleId": "cmn5ezg4d000bfhi2fatosdel",
+          "type": "STYLED_CONTENT",
+          "title": "The CBT Triangle",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">CBT is based on a simple but powerful idea: your thoughts, feelings, and behaviors are all connected. When you change one, the others shift too.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Imagine a triangle:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Thoughts</strong> sit at the top. These are the running commentary in your mind — interpretations, predictions, judgments.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Feelings</strong> are on one corner. These are your emotions (sad, anxious, guilty) and physical sensations (fatigue, heaviness, tension).</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Behaviors</strong> are on the other corner. These are the things you do or avoid doing.</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">In depression, this triangle often looks like this:</p><ol style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">Something happens (you cancel plans with a friend).</li><li style=\"margin-bottom: 6px;\">A thought shows up: \"I always let people down.\"</li><li style=\"margin-bottom: 6px;\">That thought triggers a feeling: sadness, guilt, heaviness.</li><li style=\"margin-bottom: 6px;\">The feeling drives a behavior: you stay in bed, avoid texting back.</li><li style=\"margin-bottom: 6px;\">Staying in bed gives you more time to think negatively, which makes you feel worse.</li></ol><p style=\"margin-bottom: 12px; line-height: 1.6;\">This is called a <strong style=\"color: var(--steady-teal);\">negative cycle</strong>. The good news is that CBT gives you tools to interrupt the cycle at any point. Over the coming weeks you will learn to:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">Notice your automatic thoughts (Module 5)</li><li style=\"margin-bottom: 6px;\">Increase activities that lift your mood (Modules 3-4)</li><li style=\"margin-bottom: 6px;\">Challenge unhelpful thinking patterns (Modules 6-7)</li><li style=\"margin-bottom: 6px;\">Change the core beliefs that drive the whole cycle (Modules 8-9)</li></ul>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.202Z",
+          "updatedAt": "2026-03-25T02:18:23.202Z"
+        },
+        {
+          "id": "cmn5ezg4i000dfhi2bia34g5h",
+          "moduleId": "cmn5ezg4d000bfhi2fatosdel",
+          "type": "STYLED_CONTENT",
+          "title": "Depression Through the CBT Lens",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Depression is not just feeling sad. It is a pattern where low mood, withdrawal, and negative thinking reinforce each other over time.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Here is what often happens:</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Withdrawal loop</strong>: You feel tired, so you skip activities. With fewer positive experiences, your mood drops further. Lower mood makes you even less likely to do things.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Thinking traps</strong>: Depression makes your brain act like a filter that only lets in the bad. You might dismiss a compliment, dwell on a mistake, or predict that nothing will get better. These are not character flaws — they are symptoms of how depression reshapes thinking.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Physical impact</strong>: Sleep changes, appetite changes, fatigue, and difficulty concentrating are all part of depression. They are not laziness. They are your nervous system responding to a prolonged state of low mood.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">CBT works because it gives you concrete skills to break these loops. You do not need to wait until you feel motivated. In fact, one of the first things we will practice is acting before the motivation shows up — because in depression, action often comes before motivation, not the other way around.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.202Z",
+          "updatedAt": "2026-03-25T02:18:23.202Z"
+        },
+        {
+          "id": "cmn5ezg4i000efhi2vgxtzj9s",
+          "moduleId": "cmn5ezg4d000bfhi2fatosdel",
+          "type": "STRATEGY_CARDS",
+          "title": "CBT Model Quick Reference",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Thoughts, feelings, and behaviors are connected in a triangle. Changing one changes the others. You do not have to fix everything at once — pick one corner to start.",
+                "emoji": "🔺",
+                "title": "The CBT Triangle"
+              },
+              {
+                "body": "Low mood leads to doing less, which leads to fewer positive experiences, which lowers mood further. Breaking this loop with small actions is the first step.",
+                "emoji": "🔄",
+                "title": "Depression Withdrawal Loop"
+              },
+              {
+                "body": "In depression, motivation rarely comes first. Do the activity first, even in a small way, and motivation often follows. This is the opposite of what your brain tells you.",
+                "emoji": "🚀",
+                "title": "Action Before Motivation"
+              },
+              {
+                "body": "Depression colors your thinking. A thought like 'nothing will get better' feels true but it is a symptom, not a prediction. You will learn to test these thoughts with evidence.",
+                "emoji": "💭",
+                "title": "Thoughts Are Not Facts"
+              }
+            ],
+            "deckName": "CBT Model Quick Reference"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.202Z",
+          "updatedAt": "2026-03-25T02:18:23.202Z"
+        },
+        {
+          "id": "cmn5ezg4i000ffhi2tlr7d94b",
+          "moduleId": "cmn5ezg4d000bfhi2fatosdel",
+          "type": "HOMEWORK",
+          "title": "Thought-Feeling-Behavior Log",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Three times this week, notice a moment when your mood shifts. Write down: (1) What happened, (2) What thought went through your mind, (3) What emotion you felt and how strong it was (0-10), (4) What you did next. Use the journal prompt below or a notebook."
+              },
+              {
+                "type": "JOURNAL_PROMPT",
+                "description": "At the end of the week, look at your three entries. Do you notice any patterns? Are certain thoughts or situations showing up more than once?"
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "ALL",
+            "reminderCadence": "EVERY_OTHER_DAY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.202Z",
+          "updatedAt": "2026-03-25T02:18:23.202Z"
+        },
+        {
+          "id": "cmn5ezg4i000gfhi2wr0h20oe",
+          "moduleId": "cmn5ezg4d000bfhi2fatosdel",
+          "type": "JOURNAL_PROMPT",
+          "title": "Mapping Your CBT Triangle",
+          "sortOrder": 4,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "Think of a recent time you felt really low. Walk through the CBT triangle: What was the situation? What thoughts came up? What emotions did you feel? What did you do (or not do)?",
+              "Now imagine a small change at one corner of the triangle. If you changed the behavior (even slightly), how might the thoughts or feelings shift?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.202Z",
+          "updatedAt": "2026-03-25T02:18:23.202Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg4o000ifhi2gtpgeo25",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Behavioral Activation I",
+      "subtitle": "Activity Monitoring",
+      "summary": "Start tracking your daily activities and their effect on your mood to find patterns and build a foundation for change.",
+      "estimatedMinutes": 30,
+      "sortOrder": 2,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.208Z",
+      "updatedAt": "2026-03-25T02:18:23.208Z",
+      "parts": [
+        {
+          "id": "cmn5ezg4r000jfhi2c658kzrr",
+          "moduleId": "cmn5ezg4o000ifhi2gtpgeo25",
+          "type": "STYLED_CONTENT",
+          "title": "Why Activity Monitoring Matters",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">When you are depressed, it can feel like everything you do is the same shade of gray. But research shows that is usually not the case — some activities give you a small lift, and others pull you down. The problem is that depression makes it hard to notice the difference.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Activity monitoring is a simple tool that helps you see what is actually happening in your day. For this week, you will keep a basic log of what you do and rate two things:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Pleasure</strong>: How much did you enjoy this activity? (0 = none, 10 = a lot)</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Mastery</strong>: How much of a sense of accomplishment did you get? (0 = none, 10 = a lot)</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">Why mastery? Because when you are depressed, even getting out of bed can be a real achievement. Mastery captures that. You might not enjoy doing laundry, but completing it when everything feels heavy is worth recognizing.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">This is not about doing more yet. This week is about noticing. Next week we will use what you learn to plan activities strategically.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.211Z",
+          "updatedAt": "2026-03-25T02:18:23.211Z"
+        },
+        {
+          "id": "cmn5ezg4r000kfhi20l7837hg",
+          "moduleId": "cmn5ezg4o000ifhi2gtpgeo25",
+          "type": "STRATEGY_CARDS",
+          "title": "Activity Monitoring Tips",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Try to rate activities right after you do them. If you wait until the end of the day, depression will color everything gray. A quick note on your phone works fine.",
+                "emoji": "📝",
+                "title": "Log in Real Time"
+              },
+              {
+                "body": "Log routine activities too — meals, showers, commuting. You might be surprised which small activities give you a mood boost or a sense of mastery.",
+                "emoji": "📋",
+                "title": "Include Everything"
+              },
+              {
+                "body": "This is data collection, not a report card. Low pleasure and mastery scores are normal in depression. The goal is to find patterns, not to feel bad about the numbers.",
+                "emoji": "🔍",
+                "title": "No Judgment"
+              },
+              {
+                "body": "If you brushed your teeth when getting out of bed felt impossible, that is mastery. Rate it relative to how hard it was for you today, not compared to what a non-depressed person might feel.",
+                "emoji": "🏆",
+                "title": "Mastery Counts"
+              }
+            ],
+            "deckName": "Activity Monitoring Tips"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.211Z",
+          "updatedAt": "2026-03-25T02:18:23.211Z"
+        },
+        {
+          "id": "cmn5ezg4r000lfhi2pih3g3dw",
+          "moduleId": "cmn5ezg4o000ifhi2gtpgeo25",
+          "type": "HOMEWORK",
+          "title": "Activity Log Week 1",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Keep a daily activity log for at least 5 of the next 7 days. For each activity, write down: the activity, the time, a pleasure rating (0-10), and a mastery rating (0-10). Aim for at least 5 activities per day."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your completed activity log to your next session. We will look for patterns together — which activities scored highest for pleasure? Which for mastery? Are there times of day that are consistently better or worse?"
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "ALL",
+            "reminderCadence": "DAILY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.211Z",
+          "updatedAt": "2026-03-25T02:18:23.211Z"
+        },
+        {
+          "id": "cmn5ezg4r000mfhi2lz9gg2de",
+          "moduleId": "cmn5ezg4o000ifhi2gtpgeo25",
+          "type": "JOURNAL_PROMPT",
+          "title": "Reflecting on Activities",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "Before you start logging, list five activities that used to bring you pleasure before depression. Are you still doing any of them? If not, what got in the way?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.211Z",
+          "updatedAt": "2026-03-25T02:18:23.211Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg4w000ofhi2g406p797",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Behavioral Activation II",
+      "subtitle": "Activity Scheduling",
+      "summary": "Use your activity monitoring data to plan activities that boost mood and build momentum.",
+      "estimatedMinutes": 35,
+      "sortOrder": 3,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.217Z",
+      "updatedAt": "2026-03-25T02:18:23.217Z",
+      "parts": [
+        {
+          "id": "cmn5ezg4z000pfhi2paapcy18",
+          "moduleId": "cmn5ezg4w000ofhi2g406p797",
+          "type": "STYLED_CONTENT",
+          "title": "From Monitoring to Scheduling",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Last week you tracked your activities and rated them for pleasure and mastery. This week, you will use that data to start doing more of what helps and less of what drains you.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Behavioral activation works on a simple principle: <strong style=\"color: var(--steady-teal);\">your mood follows your behavior, not the other way around</strong>. When you wait until you feel like doing something, depression wins — because it rarely lets you feel like doing anything.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Instead, we schedule activities in advance and do them whether we feel like it or not. This sounds hard, and it is — but it works. Here is how:</p><ol style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Review your log</strong>: Look at which activities scored highest for pleasure or mastery.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Pick 2-3 activities</strong> to schedule this week. Start small — a 10-minute walk, calling a friend for 5 minutes, cooking one meal.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Put them on your calendar</strong> with a specific day and time.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Do them at the scheduled time</strong>, even if your mood says not to.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Rate them after</strong> — you will often find the experience was better than depression predicted.</li></ol><p style=\"margin-bottom: 12px; line-height: 1.6;\">The key is to start with small, achievable goals. We are not trying to fill your calendar. We are trying to break the withdrawal cycle one activity at a time.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.220Z",
+          "updatedAt": "2026-03-25T02:18:23.220Z"
+        },
+        {
+          "id": "cmn5ezg4z000qfhi21fu19zeb",
+          "moduleId": "cmn5ezg4w000ofhi2g406p797",
+          "type": "STRATEGY_CARDS",
+          "title": "Behavioral Activation Strategies",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Tell yourself you only have to do the activity for 5 minutes. If after 5 minutes you want to stop, you can. Most of the time, once you start, you will keep going.",
+                "emoji": "⏱️",
+                "title": "The 5-Minute Rule"
+              },
+              {
+                "body": "Put activities on your calendar at specific times. When the time comes, do it — no decision needed. Depression thrives on 'I will do it later' because later never comes.",
+                "emoji": "📅",
+                "title": "Schedule, Don't Decide"
+              },
+              {
+                "body": "A good week has both pleasure activities (fun, enjoyable) and mastery activities (accomplishments, productive). You need both to build momentum.",
+                "emoji": "⚖️",
+                "title": "Balance Pleasure and Mastery"
+              },
+              {
+                "body": "When depressed, doing 50% of what you planned is a success. Do not compare yourself to your non-depressed self. Celebrate the attempts, not just the completions.",
+                "emoji": "🎯",
+                "title": "Grade on a Curve"
+              }
+            ],
+            "deckName": "Behavioral Activation Strategies"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.220Z",
+          "updatedAt": "2026-03-25T02:18:23.220Z"
+        },
+        {
+          "id": "cmn5ezg4z000rfhi210l7hpnp",
+          "moduleId": "cmn5ezg4w000ofhi2g406p797",
+          "type": "HOMEWORK",
+          "title": "Scheduled Activities Week",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Review your activity log from last week and identify the 3 activities with the highest pleasure or mastery scores. Schedule at least 2 of these for specific times this week."
+              },
+              {
+                "type": "ACTION",
+                "description": "Add one new activity you have been avoiding — something small that used to bring you pleasure or a sense of accomplishment. Schedule it at a specific time."
+              },
+              {
+                "type": "JOURNAL_PROMPT",
+                "description": "After each scheduled activity, rate your mood before (predicted) and after (actual). How often was the experience better than you expected?"
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your activity schedule and before/after mood ratings. We will discuss what you learned about the gap between predicted and actual mood."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "DAILY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.220Z",
+          "updatedAt": "2026-03-25T02:18:23.220Z"
+        },
+        {
+          "id": "cmn5ezg4z000sfhi2edvbn85m",
+          "moduleId": "cmn5ezg4w000ofhi2g406p797",
+          "type": "JOURNAL_PROMPT",
+          "title": "Predicting vs. Experiencing",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "Think about a time you did something even though you did not feel like it. How did you feel afterward compared to what you expected?",
+              "What is one activity depression is telling you to skip this week? What might happen if you did it anyway?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.220Z",
+          "updatedAt": "2026-03-25T02:18:23.220Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg55000ufhi2cc7mbxg3",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Identifying Automatic Thoughts",
+      "subtitle": "Catching Your Thoughts",
+      "summary": "Learn to notice the automatic negative thoughts that fuel depression and start keeping a thought record.",
+      "estimatedMinutes": 40,
+      "sortOrder": 4,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.225Z",
+      "updatedAt": "2026-03-25T02:18:23.225Z",
+      "parts": [
+        {
+          "id": "cmn5ezg59000vfhi2lx48kvw2",
+          "moduleId": "cmn5ezg55000ufhi2cc7mbxg3",
+          "type": "STYLED_CONTENT",
+          "title": "What Are Automatic Thoughts?",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Your brain produces thousands of thoughts every day, most of which pass by without you noticing them. In CBT, we call these <strong style=\"color: var(--steady-teal);\">automatic thoughts</strong> — they pop up quickly, feel true, and happen without effort.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">When you are depressed, many of these automatic thoughts are negative:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">\"I can't do anything right.\"</li><li style=\"margin-bottom: 6px;\">\"Nobody really cares about me.\"</li><li style=\"margin-bottom: 6px;\">\"Things will never get better.\"</li><li style=\"margin-bottom: 6px;\">\"I should be able to handle this.\"</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">These thoughts are not facts. They are habits of mind that depression reinforces. The first step to changing them is learning to catch them.</p><h3 style=\"color: var(--steady-warm-500); margin-top: 16px; margin-bottom: 8px;\">How to catch automatic thoughts:</h3><ol style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Notice a mood shift.</strong> Whenever your mood drops, gets worse, or you feel a surge of sadness, guilt, or anxiety — pause.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Ask: \"What just went through my mind?\"</strong> There is almost always a thought, image, or memory connected to the mood shift.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Write it down exactly as it came.</strong> Do not edit or soften it. Capture the raw thought.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Rate how much you believe it</strong> (0-100%).</li></ol><p style=\"margin-bottom: 12px; line-height: 1.6;\">This week you will practice catching automatic thoughts using a thought record. It takes practice — at first you might only catch thoughts after the fact. That is normal. With time, you will start noticing them in real time.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.229Z",
+          "updatedAt": "2026-03-25T02:18:23.229Z"
+        },
+        {
+          "id": "cmn5ezg59000wfhi28mbzlhv1",
+          "moduleId": "cmn5ezg55000ufhi2cc7mbxg3",
+          "type": "STRATEGY_CARDS",
+          "title": "Catching Automatic Thoughts",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Use mood shifts as an alarm. Whenever your mood dips, ask 'What just went through my mind?' That question is the gateway to catching automatic thoughts.",
+                "emoji": "🔔",
+                "title": "Mood as a Signal"
+              },
+              {
+                "body": "Write automatic thoughts word-for-word, even if they feel embarrassing or extreme. The messy version is the real one. Cleaning it up hides the pattern you need to see.",
+                "emoji": "✏️",
+                "title": "Write It Raw"
+              },
+              {
+                "body": "If you notice several thoughts at once, look for the 'hot thought' — the one that carries the most emotional charge. That is the one to work with first.",
+                "emoji": "🔥",
+                "title": "Hot Thoughts"
+              },
+              {
+                "body": "An automatic thought feels like a fact but it is really your brain's best guess. 'I always fail' is a prediction, not a truth. We will learn to check these predictions with evidence.",
+                "emoji": "🤔",
+                "title": "Thoughts Are Guesses"
+              }
+            ],
+            "deckName": "Catching Automatic Thoughts"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.229Z",
+          "updatedAt": "2026-03-25T02:18:23.229Z"
+        },
+        {
+          "id": "cmn5ezg59000xfhi2k0ktik1b",
+          "moduleId": "cmn5ezg55000ufhi2cc7mbxg3",
+          "type": "HOMEWORK",
+          "title": "Thought Record Practice",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Complete at least 5 thought records this week. For each, write: (1) Situation — what happened, (2) Mood — what you felt and its intensity 0-100, (3) Automatic thought — the exact thought, (4) Belief rating — how much you believe the thought 0-100%. Do not try to change the thoughts yet — just catch them."
+              },
+              {
+                "type": "ACTION",
+                "description": "Continue your behavioral activation schedule from last week. Keep at least 2 planned activities on your calendar."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your thought records to your next session. We will review them together and start identifying common thinking patterns."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "DAILY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.229Z",
+          "updatedAt": "2026-03-25T02:18:23.229Z"
+        },
+        {
+          "id": "cmn5ezg59000yfhi2cybkisuo",
+          "moduleId": "cmn5ezg55000ufhi2cc7mbxg3",
+          "type": "JOURNAL_PROMPT",
+          "title": "Your Automatic Thoughts",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "Think back over the past few days. What is one automatic thought that keeps showing up? How does it make you feel? How much do you believe it right now (0-100%)?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.229Z",
+          "updatedAt": "2026-03-25T02:18:23.229Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg5e0010fhi21kg0yyop",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Cognitive Distortions",
+      "subtitle": "Thinking Traps",
+      "summary": "Learn the common thinking traps that depression uses and start recognizing which ones show up in your own thoughts.",
+      "estimatedMinutes": 40,
+      "sortOrder": 5,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.235Z",
+      "updatedAt": "2026-03-25T02:18:23.235Z",
+      "parts": [
+        {
+          "id": "cmn5ezg5i0011fhi2g4irikn8",
+          "moduleId": "cmn5ezg5e0010fhi21kg0yyop",
+          "type": "STYLED_CONTENT",
+          "title": "Common Thinking Traps in Depression",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Now that you have been catching automatic thoughts, you are probably starting to see patterns. In CBT, we call these patterns <strong style=\"color: var(--steady-teal);\">cognitive distortions</strong> or thinking traps. Everyone falls into them sometimes, but depression makes them much more frequent and convincing.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Here are the most common ones:</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">All-or-Nothing Thinking</strong>: Seeing things in black and white. \"If I'm not perfect, I'm a failure.\" There is no middle ground.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Overgeneralization</strong>: One bad event becomes a never-ending pattern. \"I messed up this presentation. I always mess things up.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Mental Filter</strong>: Focusing only on the negative and filtering out anything positive. You get 10 compliments and 1 criticism, and you only think about the criticism.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Disqualifying the Positive</strong>: Dismissing good things as flukes. \"They only said that to be nice.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Mind Reading</strong>: Assuming you know what others are thinking. \"Everyone at the party thought I was boring.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Fortune Telling</strong>: Predicting the worst outcome as if it is certain. \"I'll definitely fail the interview.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Catastrophizing</strong>: Blowing things out of proportion. A small mistake becomes a disaster.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Emotional Reasoning</strong>: Feeling something and treating it as evidence. \"I feel worthless, so I must be worthless.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Should Statements</strong>: Rigid rules about how you or others should be. \"I should be able to handle this without help.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Labeling</strong>: Attaching a global label instead of describing a specific behavior. Instead of \"I made a mistake,\" you say \"I'm a loser.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">Personalization</strong>: Blaming yourself for things outside your control. \"My friend is in a bad mood — it must be something I did.\"</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">This week, go back through your thought records and label which thinking trap each automatic thought falls into. Most thoughts fit more than one. The goal is not to eliminate these patterns overnight — it is to start recognizing them so they lose some of their power.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.239Z",
+          "updatedAt": "2026-03-25T02:18:23.239Z"
+        },
+        {
+          "id": "cmn5ezg5i0012fhi2dy6rco6j",
+          "moduleId": "cmn5ezg5e0010fhi21kg0yyop",
+          "type": "STRATEGY_CARDS",
+          "title": "Thinking Traps Reference",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "You see things in only two categories — perfect or terrible. Look for the gray area. Most things in life fall somewhere in between, and that is okay.",
+                "emoji": "⚫",
+                "title": "All-or-Nothing Thinking"
+              },
+              {
+                "body": "One event becomes 'always' or 'never.' Watch for those words. Replace them with specifics: 'This time I struggled with X' instead of 'I always fail.'",
+                "emoji": "🔁",
+                "title": "Overgeneralization"
+              },
+              {
+                "body": "You zoom in on the one negative detail and ignore everything else. Try to name three neutral or positive things about the same situation.",
+                "emoji": "🔎",
+                "title": "Mental Filter"
+              },
+              {
+                "body": "Feeling it does not make it true. 'I feel like a burden' is a feeling, not a fact. Ask yourself: what evidence exists outside of this feeling?",
+                "emoji": "💔",
+                "title": "Emotional Reasoning"
+              },
+              {
+                "body": "'I should be further along by now.' Should statements create guilt and shame. Replace 'should' with 'I would like to' or 'it would be helpful if.'",
+                "emoji": "📏",
+                "title": "Should Statements"
+              },
+              {
+                "body": "You predict a negative outcome as if it is certain. But you cannot see the future. How many times have your worst-case predictions actually come true?",
+                "emoji": "🔮",
+                "title": "Fortune Telling"
+              }
+            ],
+            "deckName": "Thinking Traps Reference"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.239Z",
+          "updatedAt": "2026-03-25T02:18:23.239Z"
+        },
+        {
+          "id": "cmn5ezg5i0013fhi2ns3n2o63",
+          "moduleId": "cmn5ezg5e0010fhi21kg0yyop",
+          "type": "HOMEWORK",
+          "title": "Labeling Thinking Traps",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Go back through your thought records from last week and label each automatic thought with one or more cognitive distortions from the list above. Write the distortion name next to each thought."
+              },
+              {
+                "type": "ACTION",
+                "description": "This week, complete 5 new thought records and include the cognitive distortion label for each one. Notice which thinking traps come up most often for you."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your labeled thought records. We will discuss your most common thinking traps and start learning how to challenge them next week."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "ALL",
+            "reminderCadence": "EVERY_OTHER_DAY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.239Z",
+          "updatedAt": "2026-03-25T02:18:23.239Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg5o0015fhi2cm342eg0",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Cognitive Restructuring I",
+      "subtitle": "Examining the Evidence",
+      "summary": "Learn to challenge automatic thoughts by examining the evidence for and against them.",
+      "estimatedMinutes": 40,
+      "sortOrder": 6,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.244Z",
+      "updatedAt": "2026-03-25T02:18:23.244Z",
+      "parts": [
+        {
+          "id": "cmn5ezg5r0016fhi2coglzwdl",
+          "moduleId": "cmn5ezg5o0015fhi2cm342eg0",
+          "type": "STYLED_CONTENT",
+          "title": "Putting Thoughts on Trial",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">You have been catching automatic thoughts and labeling the thinking traps they fall into. Now it is time to challenge them.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Cognitive restructuring is the core skill of CBT. It does not mean forcing positive thinking or pretending everything is fine. It means looking at your thoughts like a scientist looks at a hypothesis — with curiosity, not certainty.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">The main technique this week is <strong style=\"color: var(--steady-teal);\">examining the evidence</strong>:</p><ol style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Write the automatic thought</strong> (e.g., \"I'm going to fail this project\")</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Evidence FOR the thought</strong>: What facts support it? (\"I missed one deadline last month.\")</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Evidence AGAINST the thought</strong>: What facts contradict it? (\"I finished three other projects on time. My boss gave me positive feedback last week. I have the skills to do this.\")</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Balanced thought</strong>: Based on ALL the evidence, what is a more realistic way to see this? (\"I've been mostly on track. Missing one deadline doesn't mean I'll fail. I can ask for help if I need it.\")</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Re-rate your belief</strong> in the original thought (0-100%) and your mood.</li></ol><p style=\"margin-bottom: 12px; line-height: 1.6;\">The balanced thought is not the opposite of the negative thought — it is the more accurate version that accounts for all the evidence, not just the depression-filtered version.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">This takes practice. Your first few balanced thoughts might feel forced or unconvincing. That is normal. Keep practicing, and they will start to feel more natural.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.248Z",
+          "updatedAt": "2026-03-25T02:18:23.248Z"
+        },
+        {
+          "id": "cmn5ezg5r0017fhi2a5ljt3hc",
+          "moduleId": "cmn5ezg5o0015fhi2cm342eg0",
+          "type": "STRATEGY_CARDS",
+          "title": "Evidence Examination Tools",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "If your best friend had this thought, what would you say to them? You would probably be kinder and more balanced. Give yourself the same compassion you would give a friend.",
+                "emoji": "👥",
+                "title": "The Friend Test"
+              },
+              {
+                "body": "When listing evidence, stick to facts. 'I feel like a failure' is not evidence — it is the thought restated. 'I got a C on one test' is evidence. Keep it concrete.",
+                "emoji": "📊",
+                "title": "Evidence Not Feelings"
+              },
+              {
+                "body": "A balanced thought is realistic, not cheerful. 'Everything will be perfect' is as distorted as 'Everything is terrible.' Aim for accuracy, not optimism.",
+                "emoji": "⚖️",
+                "title": "Balanced Not Positive"
+              },
+              {
+                "body": "After examining evidence, re-rate your belief in the original thought. Even a small drop — from 90% to 70% — means the skill is working. Change builds gradually.",
+                "emoji": "📉",
+                "title": "Belief Re-Rating"
+              }
+            ],
+            "deckName": "Evidence Examination Tools"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.248Z",
+          "updatedAt": "2026-03-25T02:18:23.248Z"
+        },
+        {
+          "id": "cmn5ezg5r0018fhi2uc1vn1rw",
+          "moduleId": "cmn5ezg5o0015fhi2cm342eg0",
+          "type": "HOMEWORK",
+          "title": "Evidence-Based Thought Records",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Complete 5 full thought records this week using the evidence examination technique: (1) Situation, (2) Automatic thought + belief rating, (3) Cognitive distortion label, (4) Evidence FOR, (5) Evidence AGAINST, (6) Balanced thought, (7) Re-rate belief and mood."
+              },
+              {
+                "type": "ACTION",
+                "description": "Continue behavioral activation — keep at least 2 scheduled pleasant activities this week."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your complete thought records. We will review them together and refine your balanced thoughts."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "DAILY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.248Z",
+          "updatedAt": "2026-03-25T02:18:23.248Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg5x001afhi2aptxf6tv",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Cognitive Restructuring II",
+      "subtitle": "Advanced Techniques",
+      "summary": "Deepen your cognitive restructuring skills with behavioral experiments, the downward arrow, and decatastrophizing.",
+      "estimatedMinutes": 40,
+      "sortOrder": 7,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.253Z",
+      "updatedAt": "2026-03-25T02:18:23.253Z",
+      "parts": [
+        {
+          "id": "cmn5ezg61001bfhi2l5fbsups",
+          "moduleId": "cmn5ezg5x001afhi2aptxf6tv",
+          "type": "STYLED_CONTENT",
+          "title": "Beyond the Evidence Table",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Examining evidence is powerful, but sometimes you need other tools. This week you will learn three advanced techniques for working with stubborn thoughts.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">1. Behavioral Experiments</strong>\nInstead of arguing with a thought in your head, test it in the real world. If your thought is \"If I speak up in the meeting, people will think I'm stupid,\" design an experiment: speak up once and observe what actually happens. Record the prediction beforehand and the actual outcome afterward.</p><p style=\"margin-bottom: 8px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">2. The Downward Arrow</strong>\nSometimes an automatic thought is connected to a deeper belief. The downward arrow technique helps you find it:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">Start with the automatic thought: \"I made a mistake on the report.\"</li><li style=\"margin-bottom: 6px;\">Ask: \"If that were true, what would it mean about me?\" → \"It means I'm incompetent.\"</li><li style=\"margin-bottom: 6px;\">Ask again: \"And if I were incompetent, what would that mean?\" → \"I'll lose my job.\"</li><li style=\"margin-bottom: 6px;\">Keep going: \"And if I lost my job?\" → \"I'd be worthless.\"</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">The deepest answer reveals a <strong style=\"color: var(--steady-teal);\">core belief</strong> — the engine driving many of your automatic thoughts. We will work with core beliefs more in Module 9.</p><p style=\"margin-bottom: 8px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">3. Decatastrophizing</strong>\nWhen you are catastrophizing, ask three questions:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">What is the <strong style=\"color: var(--steady-teal);\">worst</strong> thing that could happen?</li><li style=\"margin-bottom: 6px;\">What is the <strong style=\"color: var(--steady-teal);\">best</strong> thing that could happen?</li><li style=\"margin-bottom: 6px;\">What is the <strong style=\"color: var(--steady-teal);\">most likely</strong> thing that will happen?</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">Usually the most likely outcome is manageable — not great, but not a disaster either.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.258Z",
+          "updatedAt": "2026-03-25T02:18:23.258Z"
+        },
+        {
+          "id": "cmn5ezg61001cfhi2e63bga6m",
+          "moduleId": "cmn5ezg5x001afhi2aptxf6tv",
+          "type": "STRATEGY_CARDS",
+          "title": "Advanced Restructuring",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Write your prediction before acting, then record what actually happened. Depression's predictions are usually much worse than reality. Real-world data beats thought arguments.",
+                "emoji": "🧪",
+                "title": "Behavioral Experiment"
+              },
+              {
+                "body": "Keep asking 'If that were true, what would it mean about me?' until you hit a core belief like 'I'm unlovable' or 'I'm incompetent.' Knowing your core beliefs is the key to deep change.",
+                "emoji": "⬇️",
+                "title": "Downward Arrow"
+              },
+              {
+                "body": "Ask: What is the worst, best, and most likely outcome? Then ask: If the worst happened, could I cope? Usually the answer is yes, even if it would be unpleasant.",
+                "emoji": "🌡️",
+                "title": "Decatastrophize"
+              },
+              {
+                "body": "Use evidence examination first. If the thought is still sticky, try a behavioral experiment. If it connects to a theme about who you are, use the downward arrow.",
+                "emoji": "🧰",
+                "title": "Combine Techniques"
+              }
+            ],
+            "deckName": "Advanced Restructuring"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.258Z",
+          "updatedAt": "2026-03-25T02:18:23.258Z"
+        },
+        {
+          "id": "cmn5ezg62001dfhi23eb8bn5v",
+          "moduleId": "cmn5ezg5x001afhi2aptxf6tv",
+          "type": "HOMEWORK",
+          "title": "Advanced Techniques Practice",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Design and carry out one behavioral experiment this week. Write your prediction before the experiment, then record the actual outcome afterward. Rate your belief in the original thought before and after."
+              },
+              {
+                "type": "ACTION",
+                "description": "Use the downward arrow technique on one stubborn automatic thought. Keep asking 'If that were true, what would it mean about me?' until you reach a core belief. Write out the chain of thoughts."
+              },
+              {
+                "type": "ACTION",
+                "description": "Continue filling out at least 3 standard thought records using evidence examination."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your behavioral experiment results, downward arrow chain, and thought records. We will review the core belief you discovered."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "EVERY_OTHER_DAY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.258Z",
+          "updatedAt": "2026-03-25T02:18:23.258Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg6m001ffhi2zqpsdz84",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Core Beliefs",
+      "subtitle": "Changing Deep Patterns",
+      "summary": "Identify and start reshaping the core beliefs about yourself, others, and the world that drive your depressive thinking.",
+      "estimatedMinutes": 45,
+      "sortOrder": 8,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.278Z",
+      "updatedAt": "2026-03-25T02:18:23.278Z",
+      "parts": [
+        {
+          "id": "cmn5ezg6p001gfhi2kf81gmge",
+          "moduleId": "cmn5ezg6m001ffhi2zqpsdz84",
+          "type": "STYLED_CONTENT",
+          "title": "Understanding Core Beliefs",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Core beliefs are the deepest level of thinking in CBT. They are broad, rigid statements about yourself, other people, or the world that you learned early in life and reinforced over time.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Common core beliefs in depression include:</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">About the self: \"I am worthless,\" \"I am unlovable,\" \"I am incompetent\"</li><li style=\"margin-bottom: 6px;\">About others: \"People will always leave,\" \"No one can be trusted\"</li><li style=\"margin-bottom: 6px;\">About the world: \"The world is unfair,\" \"Nothing ever works out\"</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\">Core beliefs act like a lens. When you believe \"I am incompetent,\" you notice every mistake, dismiss every success, and interpret ambiguous situations as confirmation of incompetence. This is not a choice — it is your brain's confirmation bias running on autopilot.</p><h3 style=\"color: var(--steady-warm-500); margin-top: 16px; margin-bottom: 8px;\">How to work with core beliefs:</h3><ol style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Name the belief</strong>: Use the downward arrow results from last week. Write the core belief in clear, simple terms.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Rate how much you believe it</strong> (0-100%).</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Find the evidence</strong>: Just like with automatic thoughts, list evidence that supports and contradicts the core belief. This time, draw from your whole life — not just recent events.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Develop an alternative belief</strong>: What is a more balanced, accurate belief? (e.g., \"I am competent at many things and still learning in others.\")</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Keep a positive data log</strong>: Every day, write down one piece of evidence — however small — that supports the new belief. Over weeks, this builds a counter-narrative.</li></ol><p style=\"margin-bottom: 12px; line-height: 1.6;\">Core beliefs do not change overnight. They change gradually, through consistent practice. Each piece of evidence you log weakens the old belief and strengthens the new one.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.281Z",
+          "updatedAt": "2026-03-25T02:18:23.281Z"
+        },
+        {
+          "id": "cmn5ezg6p001hfhi2ieb8yq6r",
+          "moduleId": "cmn5ezg6m001ffhi2zqpsdz84",
+          "type": "STRATEGY_CARDS",
+          "title": "Core Belief Work",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Write your old core belief on one side and your new balanced belief on the other. Read the new belief every morning. Repetition matters — you are overwriting years of mental programming.",
+                "emoji": "📄",
+                "title": "Old Belief vs. New Belief"
+              },
+              {
+                "body": "Every day, write down one thing that supports your new belief. It can be tiny — 'I helped a coworker' supports 'I have value.' These small pieces add up over time.",
+                "emoji": "📒",
+                "title": "Positive Data Log"
+              },
+              {
+                "body": "Instead of 'I am competent' vs. 'I am incompetent,' put it on a scale of 0-100. Most people fall somewhere in the middle. Where do you realistically fall today?",
+                "emoji": "📏",
+                "title": "The Continuum Technique"
+              },
+              {
+                "body": "Look at your whole life for evidence against the core belief. Your depressed brain skips these memories. Think about childhood achievements, friendships, things you survived.",
+                "emoji": "📚",
+                "title": "Historical Test"
+              }
+            ],
+            "deckName": "Core Belief Work"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.281Z",
+          "updatedAt": "2026-03-25T02:18:23.281Z"
+        },
+        {
+          "id": "cmn5ezg6p001ifhi2tgnvwayc",
+          "moduleId": "cmn5ezg6m001ffhi2zqpsdz84",
+          "type": "HOMEWORK",
+          "title": "Core Belief Worksheet",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Write down your main core belief (from the downward arrow exercise). Rate how much you believe it 0-100%. Then write an alternative, more balanced belief and rate how much you believe that one."
+              },
+              {
+                "type": "ACTION",
+                "description": "Start a positive data log. Every day this week, write down at least one piece of evidence — however small — that supports your new balanced belief."
+              },
+              {
+                "type": "ACTION",
+                "description": "Continue 3 standard thought records and at least 2 scheduled pleasant activities."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your core belief worksheet and daily positive data log. We will review the evidence together."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "DAILY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.281Z",
+          "updatedAt": "2026-03-25T02:18:23.281Z"
+        },
+        {
+          "id": "cmn5ezg6p001jfhi22jvbqm0g",
+          "moduleId": "cmn5ezg6m001ffhi2zqpsdz84",
+          "type": "JOURNAL_PROMPT",
+          "title": "Exploring Your Core Beliefs",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "What is the core belief you discovered through the downward arrow? Where do you think it came from? Can you remember early experiences that may have planted this belief?",
+              "If your core belief were completely true, how would your life be different from what it actually is? What evidence from your real life contradicts it?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.281Z",
+          "updatedAt": "2026-03-25T02:18:23.281Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg6x001lfhi2tzf0rwe6",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Mid-Point Review & Problem Solving",
+      "subtitle": "Taking Stock",
+      "summary": "Reassess your symptoms, review your progress, and learn problem-solving skills for real-life stressors.",
+      "estimatedMinutes": 40,
+      "sortOrder": 9,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.289Z",
+      "updatedAt": "2026-03-25T02:18:23.289Z",
+      "parts": [
+        {
+          "id": "cmn5ezg71001mfhi2s0c13fyn",
+          "moduleId": "cmn5ezg6x001lfhi2tzf0rwe6",
+          "type": "ASSESSMENT",
+          "title": "PHQ-9 Mid-Point",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "ASSESSMENT",
+            "title": "Patient Health Questionnaire (PHQ-9) — Mid-Point",
+            "questions": [
+              {
+                "type": "LIKERT",
+                "question": "Little interest or pleasure in doing things",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 0,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling down, depressed, or hopeless",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 1,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble falling or staying asleep, or sleeping too much",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 2,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling tired or having little energy",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 3,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Poor appetite or overeating",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 4,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 5,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble concentrating on things, such as reading the newspaper or watching television",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 6,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 7,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Thoughts that you would be better off dead or of hurting yourself in some way",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 8,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              }
+            ],
+            "instructions": "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
+            "scoringMethod": "SUM"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.293Z",
+          "updatedAt": "2026-03-25T02:18:23.293Z"
+        },
+        {
+          "id": "cmn5ezg71001nfhi2v31ys90n",
+          "moduleId": "cmn5ezg6x001lfhi2tzf0rwe6",
+          "type": "STYLED_CONTENT",
+          "title": "Problem-Solving Skills",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Depression does not just distort your thinking — it also makes real-life problems feel unsolvable. This week, you will learn a structured approach to problem solving that works even when your mood is low.</p><h3 style=\"color: var(--steady-warm-500); margin-top: 16px; margin-bottom: 8px;\">The 6-Step Problem-Solving Method:</h3><ol style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Define the problem clearly.</strong> Be specific. Not \"My life is a mess\" but \"I'm behind on three work deadlines.\"</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Brainstorm solutions.</strong> Write down every option you can think of, even silly ones. Do not judge them yet.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Evaluate each option.</strong> For each, list pros and cons. Consider short-term and long-term consequences.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Choose the best option</strong> (or combine several).</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Make a plan.</strong> Break the solution into concrete steps with specific times.</li><li style=\"margin-bottom: 6px;\"><strong style=\"color: var(--steady-teal);\">Review the outcome.</strong> Did it work? What would you do differently?</li></ol><p style=\"margin-bottom: 12px; line-height: 1.6;\">This method is especially useful for the problems that fuel depression — relationship issues, work stress, financial concerns, health challenges. Instead of ruminating (going in circles in your mind), you take structured action.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">A key insight: you do not need a perfect solution. A good-enough solution that you actually implement beats a perfect solution you never start.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.293Z",
+          "updatedAt": "2026-03-25T02:18:23.293Z"
+        },
+        {
+          "id": "cmn5ezg71001ofhi2tnnkghhd",
+          "moduleId": "cmn5ezg6x001lfhi2tzf0rwe6",
+          "type": "STRATEGY_CARDS",
+          "title": "Problem-Solving Reference",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Vague problems feel overwhelming. Turn 'everything is falling apart' into one concrete problem statement. Solve that one first. Then pick the next one.",
+                "emoji": "🎯",
+                "title": "Define It Specifically"
+              },
+              {
+                "body": "In step 2, quantity beats quality. Write down 10 options without evaluating any of them. Depression says 'nothing will work' — brainstorming overrides that filter.",
+                "emoji": "💡",
+                "title": "Brainstorm Without Judging"
+              },
+              {
+                "body": "Perfectionism is depression's partner. A plan that is 70% perfect but actually happens beats a plan that is 100% perfect but stays in your head.",
+                "emoji": "✅",
+                "title": "Good Enough Wins"
+              }
+            ],
+            "deckName": "Problem-Solving Reference"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.293Z",
+          "updatedAt": "2026-03-25T02:18:23.293Z"
+        },
+        {
+          "id": "cmn5ezg71001pfhi2opohhy4x",
+          "moduleId": "cmn5ezg6x001lfhi2tzf0rwe6",
+          "type": "HOMEWORK",
+          "title": "Problem-Solving Practice",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Choose one real problem you are facing right now. Work through all 6 steps of the problem-solving method on paper. Implement at least step 5 (make a plan and start it) before next session."
+              },
+              {
+                "type": "ACTION",
+                "description": "Continue your positive data log, thought records (at least 3), and 2 scheduled pleasant activities."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your completed problem-solving worksheet and your PHQ-9 mid-point score. We will compare it to your baseline."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "EVERY_OTHER_DAY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.293Z",
+          "updatedAt": "2026-03-25T02:18:23.293Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg76001rfhi23y1s0fgo",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Managing Rumination & Worry",
+      "subtitle": "Breaking the Cycle",
+      "summary": "Learn techniques to break free from repetitive negative thinking, including worry time, attention training, and behavioral interruption.",
+      "estimatedMinutes": 35,
+      "sortOrder": 10,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.298Z",
+      "updatedAt": "2026-03-25T02:18:23.298Z",
+      "parts": [
+        {
+          "id": "cmn5ezg79001sfhi220akzoua",
+          "moduleId": "cmn5ezg76001rfhi23y1s0fgo",
+          "type": "STYLED_CONTENT",
+          "title": "Rumination: Depression's Favorite Tool",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">Rumination is when your mind replays the same negative thoughts over and over: \"Why did I say that? What's wrong with me? Why can't I just be normal?\" Unlike problem-solving, rumination goes in circles. It feels productive — like you are working through something — but it actually deepens depression.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Research shows that people who ruminate more have longer and more severe depressive episodes. The good news is that rumination is a habit, and habits can be changed.</p><h3 style=\"color: var(--steady-warm-500); margin-top: 16px; margin-bottom: 8px;\">Techniques to manage rumination:</h3><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">1. Scheduled Worry Time</strong>\nSet aside 15 minutes at the same time each day as your \"worry time.\" When rumination pops up outside that window, tell yourself: \"I'll deal with that during worry time.\" Write the thought down and move on. During worry time, go through your list. Most items will feel less urgent by then.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">2. Attention Shift</strong>\nRumination happens when your attention gets stuck on internal thoughts. Shift to external focus: name 5 things you can see, 4 you can hear, 3 you can touch. This grounds you in the present.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">3. Behavioral Interruption</strong>\nWhen you catch yourself ruminating, change your physical state: stand up, go outside, splash cold water on your face, or start a brief activity. Movement breaks the mental loop.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">4. Distinguish Rumination from Problem-Solving</strong>\nAsk: \"Am I actually getting closer to a solution, or am I going in circles?\" If circles, use one of the techniques above. If it is a solvable problem, use the 6-step method from last week.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.302Z",
+          "updatedAt": "2026-03-25T02:18:23.302Z"
+        },
+        {
+          "id": "cmn5ezg79001tfhi230uck14w",
+          "moduleId": "cmn5ezg76001rfhi23y1s0fgo",
+          "type": "STRATEGY_CARDS",
+          "title": "Anti-Rumination Tools",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Give rumination a 15-minute appointment each day. Outside that time, write the worry down and postpone it. By appointment time, most worries shrink on their own.",
+                "emoji": "⏰",
+                "title": "Scheduled Worry Time"
+              },
+              {
+                "body": "Name 5 things you see, 4 you hear, 3 you can touch. This pulls your attention from the internal thought spiral to the external world. Do it slowly and deliberately.",
+                "emoji": "🌍",
+                "title": "5-4-3 Grounding"
+              },
+              {
+                "body": "Rumination loves stillness. When you catch yourself spiraling, change your physical state immediately — stand up, walk, stretch. Even 2 minutes of movement can break the loop.",
+                "emoji": "🏃",
+                "title": "Move Your Body"
+              },
+              {
+                "body": "Ask: 'Am I getting closer to a solution or going in circles?' If circles, stop and use a technique. If there is a real problem, write it down and use the 6-step method.",
+                "emoji": "🔄",
+                "title": "Circles vs. Progress"
+              }
+            ],
+            "deckName": "Anti-Rumination Tools"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.302Z",
+          "updatedAt": "2026-03-25T02:18:23.302Z"
+        },
+        {
+          "id": "cmn5ezg79001ufhi28njh6gmu",
+          "moduleId": "cmn5ezg76001rfhi23y1s0fgo",
+          "type": "HOMEWORK",
+          "title": "Rumination Management",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Implement scheduled worry time this week. Set a 15-minute window at the same time each day. When you catch yourself ruminating outside that time, write the thought on a list and postpone it. Track how many times per day you postpone."
+              },
+              {
+                "type": "ACTION",
+                "description": "Practice the 5-4-3 grounding technique at least once per day, even if you are not actively ruminating. Building the habit makes it easier to use when you need it."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your worry postponement log and notes on how worry time went. How did it feel to postpone? Were the worries still as urgent during the scheduled time?"
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "MAJORITY",
+            "reminderCadence": "DAILY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.302Z",
+          "updatedAt": "2026-03-25T02:18:23.302Z"
+        }
+      ]
+    },
+    {
+      "id": "cmn5ezg7g001wfhi2r1vm45fh",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "title": "Relapse Prevention & Graduation",
+      "subtitle": "Maintaining Your Gains",
+      "summary": "Build a personalized relapse prevention plan, complete your final assessment, and celebrate your progress.",
+      "estimatedMinutes": 50,
+      "sortOrder": 11,
+      "unlockRule": "SEQUENTIAL",
+      "unlockDelayDays": null,
+      "createdAt": "2026-03-25T02:18:23.308Z",
+      "updatedAt": "2026-03-25T02:18:23.308Z",
+      "parts": [
+        {
+          "id": "cmn5ezg7j001xfhi22vagd1le",
+          "moduleId": "cmn5ezg7g001wfhi2r1vm45fh",
+          "type": "ASSESSMENT",
+          "title": "PHQ-9 Final",
+          "sortOrder": 0,
+          "isRequired": true,
+          "content": {
+            "type": "ASSESSMENT",
+            "title": "Patient Health Questionnaire (PHQ-9) — Final",
+            "questions": [
+              {
+                "type": "LIKERT",
+                "question": "Little interest or pleasure in doing things",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 0,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling down, depressed, or hopeless",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 1,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble falling or staying asleep, or sleeping too much",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 2,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling tired or having little energy",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 3,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Poor appetite or overeating",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 4,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 5,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble concentrating on things, such as reading the newspaper or watching television",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 6,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Moving or speaking so slowly that other people could have noticed? Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 7,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Thoughts that you would be better off dead or of hurting yourself in some way",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 8,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              }
+            ],
+            "instructions": "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
+            "scoringMethod": "SUM"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.311Z",
+          "updatedAt": "2026-03-25T02:18:23.311Z"
+        },
+        {
+          "id": "cmn5ezg7j001yfhi24me2jg4e",
+          "moduleId": "cmn5ezg7g001wfhi2r1vm45fh",
+          "type": "ASSESSMENT",
+          "title": "GAD-7 Final",
+          "sortOrder": 1,
+          "isRequired": true,
+          "content": {
+            "type": "ASSESSMENT",
+            "title": "Generalized Anxiety Disorder Scale (GAD-7) — Final",
+            "questions": [
+              {
+                "type": "LIKERT",
+                "question": "Feeling nervous, anxious, or on edge",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 0,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Not being able to stop or control worrying",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 1,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Worrying too much about different things",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 2,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Trouble relaxing",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 3,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Being so restless that it is hard to sit still",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 4,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Becoming easily annoyed or irritable",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 5,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              },
+              {
+                "type": "LIKERT",
+                "question": "Feeling afraid as if something awful might happen",
+                "required": true,
+                "likertMax": 3,
+                "likertMin": 0,
+                "sortOrder": 6,
+                "likertMaxLabel": "Nearly every day",
+                "likertMinLabel": "Not at all"
+              }
+            ],
+            "instructions": "Over the last 2 weeks, how often have you been bothered by the following problems?",
+            "scoringMethod": "SUM"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.311Z",
+          "updatedAt": "2026-03-25T02:18:23.311Z"
+        },
+        {
+          "id": "cmn5ezg7j001zfhi2i8vr7e66",
+          "moduleId": "cmn5ezg7g001wfhi2r1vm45fh",
+          "type": "STYLED_CONTENT",
+          "title": "Building Your Relapse Prevention Plan",
+          "sortOrder": 2,
+          "isRequired": true,
+          "content": {
+            "type": "STYLED_CONTENT",
+            "rawContent": "",
+            "styledHtml": "<p style=\"margin-bottom: 12px; line-height: 1.6;\">You have made real progress over the past 12 weeks. But depression can come back, especially during stressful times. A relapse prevention plan helps you catch early warning signs and take action before a temporary dip becomes a full relapse.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\">Your plan should include:</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">1. Early Warning Signs</strong>\nWhat are YOUR specific signs that depression might be returning? These are personal — they might include sleeping more, canceling plans, not returning texts, losing interest in food, or having more \"I can't do this\" thoughts. Write down your top 5.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">2. Triggers</strong>\nWhat situations, seasons, or events tend to trigger depression for you? Stress at work? Conflict in relationships? Winter months? Isolation? Know your triggers so you can prepare.</p><p style=\"margin-bottom: 8px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">3. Action Steps</strong>\nWhen you notice early warning signs, what will you do?</p><ul style=\"margin: 8px 0; padding-left: 20px;\"><li style=\"margin-bottom: 6px;\">Resume activity scheduling (even 2 planned activities per week helps)</li><li style=\"margin-bottom: 6px;\">Pull out your thought records and start catching automatic thoughts again</li><li style=\"margin-bottom: 6px;\">Contact your clinician or therapist</li><li style=\"margin-bottom: 6px;\">Use your strategy cards</li><li style=\"margin-bottom: 6px;\">Tell a trusted person what is happening</li></ul><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">4. Support System</strong>\nWho will you reach out to? Write down 2-3 names and how you will contact them.</p><p style=\"margin-bottom: 12px; line-height: 1.6;\"><strong style=\"color: var(--steady-teal);\">5. Skills to Maintain</strong>\nWhich CBT skills will you keep practicing regularly, even when you feel good? We recommend: activity scheduling, thought records when mood dips, and your daily tracker.</p>"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.311Z",
+          "updatedAt": "2026-03-25T02:18:23.311Z"
+        },
+        {
+          "id": "cmn5ezg7j0020fhi2vosws97y",
+          "moduleId": "cmn5ezg7g001wfhi2r1vm45fh",
+          "type": "STRATEGY_CARDS",
+          "title": "Relapse Prevention",
+          "sortOrder": 3,
+          "isRequired": true,
+          "content": {
+            "type": "STRATEGY_CARDS",
+            "cards": [
+              {
+                "body": "Know your personal red flags. When you notice 2 or more of your early warning signs in a week, treat it as a signal to activate your plan — do not wait for things to get worse.",
+                "emoji": "🚨",
+                "title": "Early Warning Signs"
+              },
+              {
+                "body": "A bad day or bad week is a setback, not a relapse. Setbacks are normal. Use your skills, and most setbacks resolve. A relapse is weeks of declining mood without intervention.",
+                "emoji": "📊",
+                "title": "Setback vs. Relapse"
+              },
+              {
+                "body": "Keep 2 pleasant activities on your schedule each week, even when you feel good. This is like exercise for your mood — you do not stop just because you are fit.",
+                "emoji": "🔧",
+                "title": "Maintenance Mode"
+              },
+              {
+                "body": "Reaching out when you first notice warning signs is a sign of strength, not weakness. It is much easier to course-correct early than to climb back from a deep episode.",
+                "emoji": "🤝",
+                "title": "Ask for Help Early"
+              }
+            ],
+            "deckName": "Relapse Prevention"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.311Z",
+          "updatedAt": "2026-03-25T02:18:23.311Z"
+        },
+        {
+          "id": "cmn5ezg7j0021fhi2kwwsb866",
+          "moduleId": "cmn5ezg7g001wfhi2r1vm45fh",
+          "type": "HOMEWORK",
+          "title": "Relapse Prevention Plan",
+          "sortOrder": 4,
+          "isRequired": true,
+          "content": {
+            "type": "HOMEWORK",
+            "items": [
+              {
+                "type": "ACTION",
+                "description": "Write your personal relapse prevention plan with all 5 sections: (1) Your top 5 early warning signs, (2) Your personal triggers, (3) Action steps you will take, (4) Your support system with names and contact info, (5) CBT skills you will maintain."
+              },
+              {
+                "type": "BRING_TO_SESSION",
+                "description": "Bring your written relapse prevention plan and final assessment scores to your last session. We will finalize the plan together and discuss next steps."
+              }
+            ],
+            "dueTimingType": "BEFORE_NEXT_SESSION",
+            "completionRule": "ALL",
+            "reminderCadence": "EVERY_OTHER_DAY"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.311Z",
+          "updatedAt": "2026-03-25T02:18:23.311Z"
+        },
+        {
+          "id": "cmn5ezg7j0022fhi20tz6n6f6",
+          "moduleId": "cmn5ezg7g001wfhi2r1vm45fh",
+          "type": "JOURNAL_PROMPT",
+          "title": "Reflecting on Your Journey",
+          "sortOrder": 5,
+          "isRequired": true,
+          "content": {
+            "type": "JOURNAL_PROMPT",
+            "prompts": [
+              "Look back at what you wrote in Module 1 about what depression feels like for you. How has your experience changed over these 12 weeks?",
+              "What is the most important skill or insight you have gained from this program? How will you carry it forward?",
+              "Write a brief letter to your future self — the version of you who might be struggling again someday. What do you want to remind them?"
+            ],
+            "spaceSizeHint": "large"
+          },
+          "deletedAt": null,
+          "createdAt": "2026-03-25T02:18:23.311Z",
+          "updatedAt": "2026-03-25T02:18:23.311Z"
+        }
+      ]
+    }
+  ],
+  "dailyTrackers": [
+    {
+      "id": "cmn5ezg7s0024fhi2v1kpiw82",
+      "programId": "cmn5ezg3p0002fhi29af85fre",
+      "enrollmentId": null,
+      "participantId": null,
+      "createdById": "cmn4wp38m0001j5kls3yhryna",
+      "name": "Daily Mood & Activity Tracker",
+      "description": "Track your mood, sleep, activity level, and thought patterns daily to monitor progress throughout the CBT program.",
+      "reminderTime": "20:00",
+      "isActive": true,
+      "createdAt": "2026-03-25T02:18:23.320Z",
+      "updatedAt": "2026-03-25T02:18:23.320Z",
+      "fields": [
+        {
+          "id": "cmn5ezg810025fhi2wxeqd8rg",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "Overall mood today",
+          "fieldType": "SCALE",
+          "options": {
+            "max": 10,
+            "min": 1,
+            "maxLabel": "Great",
+            "minLabel": "Very low"
+          },
+          "sortOrder": 0,
+          "isRequired": true
+        },
+        {
+          "id": "cmn5ezg810026fhi26hvmnaiz",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "Hours of sleep last night",
+          "fieldType": "NUMBER",
+          "options": {
+            "max": 24,
+            "min": 0,
+            "unit": "hours"
+          },
+          "sortOrder": 1,
+          "isRequired": true
+        },
+        {
+          "id": "cmn5ezg810027fhi24c8u33nx",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "Did you complete a planned activity today?",
+          "fieldType": "YES_NO",
+          "options": null,
+          "sortOrder": 2,
+          "isRequired": true
+        },
+        {
+          "id": "cmn5ezg810028fhi2hh2c03sf",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "Number of negative automatic thoughts you caught today",
+          "fieldType": "NUMBER",
+          "options": {
+            "max": 100,
+            "min": 0
+          },
+          "sortOrder": 3,
+          "isRequired": false
+        },
+        {
+          "id": "cmn5ezg810029fhi2wrhisqf6",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "Anxiety level today",
+          "fieldType": "SCALE",
+          "options": {
+            "max": 10,
+            "min": 0,
+            "maxLabel": "Severe",
+            "minLabel": "None"
+          },
+          "sortOrder": 4,
+          "isRequired": true
+        },
+        {
+          "id": "cmn5ezg81002afhi256pqs5d7",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "Activities completed today",
+          "fieldType": "MULTI_CHECK",
+          "options": {
+            "choices": [
+              "Exercise or movement",
+              "Social interaction",
+              "Work or productive task",
+              "Hobby or creative activity",
+              "Self-care (shower, cooking, etc.)",
+              "Time outdoors"
+            ]
+          },
+          "sortOrder": 5,
+          "isRequired": false
+        },
+        {
+          "id": "cmn5ezg81002bfhi29we3obeh",
+          "trackerId": "cmn5ezg7s0024fhi2v1kpiw82",
+          "label": "One thing that went well today",
+          "fieldType": "FREE_TEXT",
+          "options": null,
+          "sortOrder": 6,
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

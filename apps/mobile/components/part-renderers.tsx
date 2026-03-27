@@ -609,11 +609,13 @@ export function HomeworkRenderer({
   responses,
   onResponseChange,
   readOnly = true,
+  displayLabels,
 }: {
   content: { items: Array<any> };
   responses?: Record<string, any>;
   onResponseChange?: (key: string, response: any) => void;
   readOnly?: boolean;
+  displayLabels?: Record<string, string>;
 }) {
   const { HomeworkItemRenderer } = require("./homework-item-renderers");
 
@@ -627,7 +629,7 @@ export function HomeworkRenderer({
           <View key={index} style={{ marginBottom: 16, backgroundColor: "#F5ECD7", borderRadius: 12, padding: 16 }}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
               <View style={{ backgroundColor: "#E8DCC2", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.type.replace(/_/g, " ")}</Text>
+                <Text style={{ fontSize: 10, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A7A5A", textTransform: "uppercase", letterSpacing: 0.5 }}>{displayLabels?.[String(item.sortOrder ?? index)] || item.type.replace(/_/g, " ")}</Text>
               </View>
             </View>
             <HomeworkItemRenderer

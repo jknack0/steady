@@ -18,6 +18,7 @@ import {
   GripVertical,
   ChevronDown,
   ChevronRight,
+  Check,
   CheckCircle2,
   FileText,
   BookOpen,
@@ -33,9 +34,14 @@ import {
   Smile,
   CalendarCheck,
   Smartphone,
+  Pencil,
+  RotateCcw,
 } from "lucide-react";
 import { FileUpload } from "@/components/file-upload";
 import { useParseHomeworkPdf } from "@/hooks/use-parse-homework-pdf";
+import { useClinicianConfig } from "@/hooks/use-config";
+import { resolveHomeworkItemLabel } from "@steady/shared";
+import type { HomeworkItemType } from "@steady/shared";
 import {
   DndContext,
   closestCenter,
@@ -1064,6 +1070,9 @@ function SortableHomeworkItem({
   onDelete: (index: number) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState("");
+  const { data: clinicianConfig } = useClinicianConfig();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `hw-${index}`,
   });
@@ -1076,6 +1085,39 @@ function SortableHomeworkItem({
 
   const typeConfig = ITEM_TYPES.find((t) => t.type === item.type) || ITEM_TYPES[0];
   const Icon = typeConfig.icon;
+
+  const clinicianDefaults = (clinicianConfig?.homeworkLabels ?? undefined) as
+    | Partial<Record<HomeworkItemType, string>>
+    | undefined;
+  const resolvedLabel = resolveHomeworkItemLabel(
+    item.type as HomeworkItemType,
+    item.customLabel,
+    clinicianDefaults
+  );
+  const hasCustomLabel = !!item.customLabel;
+
+  const startEditingLabel = () => {
+    setLabelDraft(item.customLabel || "");
+    setEditingLabel(true);
+  };
+
+  const confirmLabel = () => {
+    const trimmed = labelDraft.trim();
+    if (trimmed && trimmed.length <= 50) {
+      onUpdate(index, { ...item, customLabel: trimmed } as HomeworkItem);
+    }
+    setEditingLabel(false);
+  };
+
+  const resetLabel = () => {
+    const { customLabel, ...rest } = item as any;
+    onUpdate(index, rest as HomeworkItem);
+    setEditingLabel(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingLabel(false);
+  };
 
   const renderItemEditor = () => {
     switch (item.type) {
@@ -1111,7 +1153,7 @@ function SortableHomeworkItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="rounded-lg border bg-card">
+    <div ref={setNodeRef} style={style} className="rounded-lg border bg-card group/item">
       {/* Item header */}
       <div className="flex items-center gap-2 p-3">
         <button
@@ -1128,7 +1170,43 @@ function SortableHomeworkItem({
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
         <Icon className="h-4 w-4 text-orange-600" />
-        <span className="flex-1 text-sm font-medium">{typeConfig.label}</span>
+        {editingLabel ? (
+          <div className="flex flex-1 items-center gap-1">
+            <input
+              autoFocus
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmLabel();
+                if (e.key === "Escape") cancelEdit();
+              }}
+              maxLength={50}
+              className="h-7 flex-1 rounded border px-2 text-sm"
+            />
+            <button onClick={confirmLabel} className="rounded p-1 text-green-600 hover:bg-green-50" title="Confirm">
+              <Check className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={resetLabel} className="rounded p-1 text-muted-foreground hover:bg-muted" title="Reset to default">
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center gap-1.5">
+            <span className={`text-sm font-medium ${hasCustomLabel ? "italic" : ""}`}>
+              {resolvedLabel}
+            </span>
+            {hasCustomLabel && (
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-400" title="Custom label" />
+            )}
+            <button
+              onClick={startEditingLabel}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/item:opacity-100 hover:text-foreground"
+              title="Edit label"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          </div>
+        )}
         <button
           onClick={() => onDelete(index)}
           className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"

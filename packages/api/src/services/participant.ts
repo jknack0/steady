@@ -5,7 +5,12 @@ import {
   generateInstancesForEnrollment,
   getStreakData,
 } from "./homework-instances";
-import { CompleteHomeworkInstanceSchema, SaveHomeworkResponseSchema } from "@steady/shared";
+import {
+  CompleteHomeworkInstanceSchema,
+  SaveHomeworkResponseSchema,
+  resolveHomeworkItemLabel,
+} from "@steady/shared";
+import type { HomeworkItemType } from "@steady/shared";
 import { logRtmEngagement } from "./rtm";
 
 // ── Error types ──────────────────────────────────────
@@ -351,6 +356,13 @@ export async function getHomeworkInstances(
           title: true,
           content: true,
           type: true,
+          module: {
+            select: {
+              program: {
+                select: { clinicianId: true },
+              },
+            },
+          },
         },
       },
       enrollment: {
@@ -363,7 +375,56 @@ export async function getHomeworkInstances(
     orderBy: { createdAt: "asc" },
   });
 
-  return instances;
+  // Resolve display labels for homework items
+  // Collect unique clinician IDs to batch-fetch configs
+  const clinicianIds = [
+    ...new Set(instances.map((i) => i.part?.module?.program?.clinicianId).filter(Boolean)),
+  ] as string[];
+
+  const clinicianConfigs = clinicianIds.length > 0
+    ? await prisma.clinicianConfig.findMany({
+        where: { clinicianId: { in: clinicianIds } },
+        select: { clinicianId: true, homeworkLabels: true },
+      })
+    : [];
+
+  const configByClinicianId = new Map(
+    clinicianConfigs.map((c) => [c.clinicianId, c.homeworkLabels as Record<string, string> | null])
+  );
+
+  const enrichedInstances = instances.map((instance) => {
+    const content = instance.part?.content as any;
+    const clinicianId = (instance.part as any)?.module?.program?.clinicianId;
+    const clinicianDefaults = clinicianId
+      ? (configByClinicianId.get(clinicianId) ?? undefined) as Partial<Record<HomeworkItemType, string>> | undefined
+      : undefined;
+
+    // Build displayLabels map: index -> resolved label
+    const displayLabels: Record<string, string> = {};
+    if (content?.items && Array.isArray(content.items)) {
+      content.items.forEach((item: any, index: number) => {
+        if (item.type) {
+          const key = String(item.sortOrder ?? index);
+          displayLabels[key] = resolveHomeworkItemLabel(
+            item.type as HomeworkItemType,
+            item.customLabel,
+            clinicianDefaults
+          );
+        }
+      });
+    }
+
+    // Strip the nested module.program to keep response shape clean
+    const { module: _module, ...partWithoutModule } = (instance.part || {}) as any;
+
+    return {
+      ...instance,
+      part: partWithoutModule,
+      displayLabels,
+    };
+  });
+
+  return enrichedInstances;
 }
 
 // ── 5a. Save Homework Response (Auto-save) ──────────

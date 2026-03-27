@@ -20,6 +20,8 @@ export const PartTypeEnum = z.enum([
 
 // ── Homework Item Schemas ──────────────────────────────
 
+const customLabelField = z.string().trim().min(1).max(50).optional();
+
 const HomeworkActionSchema = z.object({
   type: z.literal("ACTION"),
   description: z.string().min(1),
@@ -27,6 +29,7 @@ const HomeworkActionSchema = z.object({
   addToSteadySystem: z.boolean().default(false),
   dueDateOffsetDays: z.number().int().min(0).nullable().default(null),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkResourceReviewSchema = z.object({
@@ -38,6 +41,7 @@ const HomeworkResourceReviewSchema = z.object({
   audioDurationSecs: z.number().int().min(0).optional(), // Duration in seconds for audio files
   audioDescription: z.string().optional(), // Clinician instructions (e.g., "Listen daily, find a quiet place")
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkJournalPromptSchema = z.object({
@@ -45,18 +49,21 @@ const HomeworkJournalPromptSchema = z.object({
   prompts: z.array(z.string()).min(1),
   spaceSizeHint: z.enum(["small", "medium", "large"]).default("medium"),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkBringToSessionSchema = z.object({
   type: z.literal("BRING_TO_SESSION"),
   reminderText: z.string().min(1),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkFreeTextNoteSchema = z.object({
   type: z.literal("FREE_TEXT_NOTE"),
   content: z.string(),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkChoiceSchema = z.object({
@@ -64,6 +71,7 @@ const HomeworkChoiceSchema = z.object({
   description: z.string().min(1),
   options: z.array(z.object({ label: z.string().max(200), detail: z.string().max(500).optional() })).min(2),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkWorksheetSchema = z.object({
@@ -76,6 +84,7 @@ const HomeworkWorksheetSchema = z.object({
   })).min(1).max(10),
   rowCount: z.number().int().min(1).max(20),
   tips: z.string().max(2000).optional(),
+  customLabel: customLabelField,
 });
 
 const HomeworkRatingScaleSchema = z.object({
@@ -86,6 +95,7 @@ const HomeworkRatingScaleSchema = z.object({
   minLabel: z.string().max(200).optional(),
   maxLabel: z.string().max(200).optional(),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkTimerSchema = z.object({
@@ -93,6 +103,7 @@ const HomeworkTimerSchema = z.object({
   description: z.string().max(2000),
   durationSeconds: z.number().int().min(10).max(7200),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkMoodCheckSchema = z.object({
@@ -110,6 +121,7 @@ const HomeworkMoodCheckSchema = z.object({
   ]),
   includeNote: z.boolean().default(false),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 const HomeworkHabitTrackerSchema = z.object({
@@ -117,6 +129,7 @@ const HomeworkHabitTrackerSchema = z.object({
   description: z.string().max(2000),
   habitLabel: z.string().max(200),
   sortOrder: z.number().int(),
+  customLabel: customLabelField,
 });
 
 export const HomeworkItemSchema = z.discriminatedUnion("type", [

@@ -31,6 +31,7 @@ export interface ClinicianConfigData {
   practiceName: string | null;
   practiceLogoUrl: string | null;
   brandColor: string | null;
+  homeworkLabels: Record<string, string> | null;
   setupCompleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -105,6 +106,17 @@ export function useSaveClientOverviewLayout(clientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
       queryClient.invalidateQueries({ queryKey: ["client-config", clientId] });
+    },
+  });
+}
+
+export function useSaveHomeworkLabels() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (homeworkLabels: Record<string, string>) =>
+      api.patch("/api/config/homework-labels", { homeworkLabels }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
     },
   });
 }

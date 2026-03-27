@@ -90,6 +90,16 @@ export async function saveDashboardLayout(
   });
 }
 
+export async function saveHomeworkLabels(
+  clinicianProfileId: string,
+  homeworkLabels: Record<string, string>
+): Promise<ClinicianConfig> {
+  return prisma.clinicianConfig.update({
+    where: { clinicianId: clinicianProfileId },
+    data: { homeworkLabels },
+  });
+}
+
 export async function saveClientOverviewLayout(
   clientId: string,
   clinicianId: string,

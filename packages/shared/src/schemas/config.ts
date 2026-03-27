@@ -81,6 +81,29 @@ export const SaveClientConfigSchema = z.object({
   clientOverviewLayout: z.array(DashboardLayoutItemSchema).max(50).optional(),
 });
 
+// ── Homework Labels ───────────────────────────────
+
+export const HomeworkItemTypeEnum = z.enum([
+  "ACTION",
+  "RESOURCE_REVIEW",
+  "JOURNAL_PROMPT",
+  "BRING_TO_SESSION",
+  "FREE_TEXT_NOTE",
+  "CHOICE",
+  "WORKSHEET",
+  "RATING_SCALE",
+  "TIMER",
+  "MOOD_CHECK",
+  "HABIT_TRACKER",
+]);
+
+export const SaveHomeworkLabelsSchema = z.object({
+  homeworkLabels: z.record(
+    HomeworkItemTypeEnum,
+    z.string().trim().min(1).max(50)
+  ),
+});
+
 // ── Types ──────────────────────────────────────────
 
 export type ProviderType = z.infer<typeof ProviderTypeEnum>;
@@ -90,3 +113,4 @@ export type SaveClinicianConfigInput = z.infer<typeof SaveClinicianConfigSchema>
 export type SaveClientConfigInput = z.infer<typeof SaveClientConfigSchema>;
 export type SaveDashboardLayoutInput = z.infer<typeof SaveDashboardLayoutSchema>;
 export type SaveClientOverviewLayoutInput = z.infer<typeof SaveClientOverviewLayoutSchema>;
+export type SaveHomeworkLabelsInput = z.infer<typeof SaveHomeworkLabelsSchema>;
