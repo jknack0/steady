@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { api } from "../../../../lib/api";
+import { FeelingWheelField } from "../../../../components/feelings-wheel-field";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -31,7 +32,7 @@ const ENCOURAGEMENTS = [
 interface TrackerField {
   id: string;
   label: string;
-  fieldType: "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME";
+  fieldType: "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME" | "FEELINGS_WHEEL";
   options: any;
   sortOrder: number;
   isRequired: boolean;
@@ -617,6 +618,13 @@ export default function TrackerFormScreen() {
               <TimeField
                 value={responses[field.id] || ""}
                 onChange={(v) => updateResponse(field.id, v)}
+              />
+            )}
+            {field.fieldType === "FEELINGS_WHEEL" && (
+              <FeelingWheelField
+                value={responses[field.id] || []}
+                onChange={(v) => updateResponse(field.id, v)}
+                maxSelections={field.options?.maxSelections ?? 3}
               />
             )}
           </View>

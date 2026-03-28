@@ -291,7 +291,19 @@ For STYLED_CONTENT: generate styledHtml using these CSS variables in inline styl
   var(--steady-warm-500) — primary text
 Use <h2>, <h3>, <p>, <ul>, <li>, <div> with inline styles for callout boxes, step boxes, and themed headings. Make it visually rich.
 
-For HOMEWORK items, use these types: ACTION (tasks with optional subSteps), JOURNAL_PROMPT (reflection prompts), WORKSHEET (grid with columns/rows), CHOICE (multiple options), RESOURCE_REVIEW (link/pdf/audio to review), RATING_SCALE (1-10 scale), TIMER (timed exercise), MOOD_CHECK (emoji mood picker), HABIT_TRACKER (yes/no habit), BRING_TO_SESSION (reminder), FREE_TEXT_NOTE (informational note).
+For HOMEWORK items, use EXACTLY these field names for each type:
+- ACTION: { type: "ACTION", sortOrder: N, description: "what to do", subSteps: ["step1", "step2"], addToSteadySystem: false, dueDateOffsetDays: null }
+- JOURNAL_PROMPT: { type: "JOURNAL_PROMPT", sortOrder: N, prompts: ["prompt 1", "prompt 2"], spaceSizeHint: "small"|"medium"|"large" }
+- WORKSHEET: { type: "WORKSHEET", sortOrder: N, instructions: "what to fill in", columns: [{ label: "Col", description: "desc" }], rowCount: 5, tips: "optional" }
+- CHOICE: { type: "CHOICE", sortOrder: N, description: "the question", options: [{ label: "A", detail: "optional" }] }
+- RESOURCE_REVIEW: { type: "RESOURCE_REVIEW", sortOrder: N, resourceTitle: "title", resourceType: "handout"|"video"|"link"|"audio"|"pdf", resourceUrl: "" }
+- RATING_SCALE: { type: "RATING_SCALE", sortOrder: N, description: "what to rate", min: 1, max: 10, minLabel: "Low", maxLabel: "High" }
+- TIMER: { type: "TIMER", sortOrder: N, description: "what to do", durationSeconds: 300 } — MUST use durationSeconds (integer, seconds), NOT durationMinutes
+- MOOD_CHECK: { type: "MOOD_CHECK", sortOrder: N, description: "optional prompt", moods: [{ emoji: "😊", label: "Great" }, { emoji: "😐", label: "Okay" }, { emoji: "😢", label: "Struggling" }], includeNote: false }
+- HABIT_TRACKER: { type: "HABIT_TRACKER", sortOrder: N, description: "what habit to track", habitLabel: "Did you do X?" } — MUST use habitLabel, NOT habitDescription
+- BRING_TO_SESSION: { type: "BRING_TO_SESSION", sortOrder: N, reminderText: "what to bring" }
+- FREE_TEXT_NOTE: { type: "FREE_TEXT_NOTE", sortOrder: N, content: "the text" }
+IMPORTANT: Do NOT add a "title" field to homework items — the item type and description are sufficient. Do NOT invent field names that aren't listed above.
 
 For ASSESSMENT questions, use types: LIKERT (scale), MULTIPLE_CHOICE (options), FREE_TEXT (open), YES_NO.`;
 
