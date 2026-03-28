@@ -21,7 +21,7 @@ beforeEach(() => {
 
 describe("POST /api/auth/register-with-invite", () => {
   const validPayload = {
-    code: "STEADY-AB12",
+    inviteCode: "STEADY-AB12",
     firstName: "Jane",
     lastName: "Doe",
     email: "jane@example.com",
@@ -88,7 +88,7 @@ describe("POST /api/auth/register-with-invite", () => {
   it("returns 400 for invalid code format", async () => {
     const res = await request(app)
       .post("/api/auth/register-with-invite")
-      .send({ ...validPayload, code: "BADCODE" });
+      .send({ ...validPayload, inviteCode: "BADCODE" });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -152,7 +152,7 @@ describe("POST /api/auth/register-with-invite", () => {
   it("returns 400 for missing fields", async () => {
     const res = await request(app)
       .post("/api/auth/register-with-invite")
-      .send({ code: "STEADY-AB12" });
+      .send({ inviteCode: "STEADY-AB12" });
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);

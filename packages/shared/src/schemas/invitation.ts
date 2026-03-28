@@ -8,7 +8,7 @@ export const CreateInvitationSchema = z.object({
 });
 
 export const RegisterWithInviteSchema = z.object({
-  code: z
+  inviteCode: z
     .string()
     .min(1, "Invite code is required")
     .transform((val) => val.toUpperCase())
