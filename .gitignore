@@ -6,6 +6,8 @@ dist/
 .superpowers/
 *.tsbuildinfo
 .env
+.env.dev
+.env.prod
 .env.local
 .env.*.local
 coverage/
