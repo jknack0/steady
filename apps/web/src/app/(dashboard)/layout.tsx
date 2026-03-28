@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { ToastContainer } from "@/components/toast-container";
 import { useRtmDashboard } from "@/hooks/use-rtm";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { NotificationBell } from "@/components/notification-bell";
@@ -336,6 +337,9 @@ export default function DashboardLayout({
         isOpen={commandPalette.isOpen}
         onClose={commandPalette.close}
       />
+
+      {/* Toast Notifications */}
+      <ToastContainer />
     </div>
       </ProtectedRoute>
     </QueryProvider>

@@ -25,6 +25,7 @@ import rtmRoutes from "./routes/rtm";
 import { rtmParticipantRouter } from "./routes/rtm";
 import configRoutes from "./routes/config";
 import { configParticipantRouter } from "./routes/config";
+import invitationRoutes from "./routes/invitations";
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.use("/api/rtm", rtmRoutes);
 app.use("/api/participant/rtm", rtmParticipantRouter);
 app.use("/api/config", configRoutes);
 app.use("/api/participant/config", configParticipantRouter);
+app.use("/api/invitations", invitationRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { prisma } from "@steady/db";
-import { RegisterSchema, LoginSchema } from "@steady/shared";
+import { RegisterSchema, LoginSchema, RegisterWithInviteSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
 import { authenticate, type AuthUser } from "../middleware/auth";
 import { JWT_SECRET } from "../lib/env";
@@ -320,6 +320,70 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Get me error", err);
     res.status(500).json({ success: false, error: "Failed to get user" });
+  }
+});
+
+// Rate limiter for invite registration
+const inviteRegisterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many attempts. Please try again later." },
+  skip: () => isTest,
+});
+
+// POST /api/auth/register-with-invite
+router.post("/register-with-invite", inviteRegisterLimiter, validate(RegisterWithInviteSchema), async (req: Request, res: Response) => {
+  try {
+    const { redeemInvitation } = await import("../services/invitations");
+    const { ExpiredError } = await import("../services/invitations");
+    const { ConflictError, NotFoundError } = await import("../services/clinician");
+
+    const result = await redeemInvitation(req.body);
+
+    // Issue tokens
+    const authUser: AuthUser = {
+      userId: result.user.id,
+      role: "PARTICIPANT",
+      participantProfileId: result.user.participantProfileId,
+    };
+    const accessToken = generateAccessToken(authUser);
+    const refreshToken = await createRefreshToken(result.user.id);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+        },
+      },
+    });
+  } catch (err) {
+    // Dynamic imports for error classes
+    const { ExpiredError } = await import("../services/invitations");
+    const { ConflictError, NotFoundError } = await import("../services/clinician");
+
+    if (err instanceof NotFoundError) {
+      res.status(400).json({ success: false, error: err.message });
+      return;
+    }
+    if (err instanceof ExpiredError) {
+      res.status(410).json({ success: false, error: err.message });
+      return;
+    }
+    if (err instanceof ConflictError) {
+      res.status(409).json({ success: false, error: err.message });
+      return;
+    }
+    logger.error("Register with invite error", err);
+    res.status(500).json({ success: false, error: "Registration failed" });
   }
 });
 
