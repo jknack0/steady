@@ -11,11 +11,15 @@ export async function handleScrubExpiredInvites(): Promise<void> {
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
   try {
+    // Scrub REVOKED/EXPIRED invitations older than 90 days,
+    // AND stale PENDING invitations whose expiresAt has long passed (90+ days ago).
     const invitations = await prisma.patientInvitation.findMany({
       where: {
-        status: { in: ["REVOKED", "EXPIRED"] },
         piiScrubbed: false,
-        createdAt: { lt: ninetyDaysAgo },
+        OR: [
+          { status: { in: ["REVOKED", "EXPIRED"] }, createdAt: { lt: ninetyDaysAgo } },
+          { status: "PENDING", expiresAt: { lt: ninetyDaysAgo } },
+        ],
       },
       select: { id: true },
       take: 500,
