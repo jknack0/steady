@@ -95,3 +95,29 @@ export function mockPart(overrides: Record<string, any> = {}) {
     ...overrides,
   };
 }
+
+/**
+ * Create a mock PatientInvitation object.
+ */
+export function mockInvitation(overrides: Record<string, any> = {}) {
+  return {
+    id: "invitation-1",
+    clinicianId: "test-clinician-profile-id",
+    code: "STEADY-AB12",
+    patientName: "Jane Doe",
+    patientEmail: "jane@example.com",
+    patientEmailHash: "abc123hash",
+    programId: null,
+    status: "PENDING",
+    emailSent: false,
+    emailSendCount: 0,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    acceptedAt: null,
+    acceptedByUserId: null,
+    revokedAt: null,
+    piiScrubbed: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}

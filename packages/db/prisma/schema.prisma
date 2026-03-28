@@ -217,6 +217,7 @@ model User {
   rtmTimeLogsAsClient  RtmClinicianTimeLog[]  @relation("RtmTimeLogClient")
   clientConfigs        ClientConfig[]         @relation("ClientConfigs")
   clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
+  acceptedInvitations  PatientInvitation[]    @relation("InvitationAcceptedBy")
   refreshTokens        RefreshToken[]
 
   @@map("users")
@@ -241,6 +242,7 @@ model ClinicianProfile {
   config            ClinicianConfig?
   clientConfigs     ClientConfig[]   @relation("ClinicianClientConfigs")
   clients           ClinicianClient[]
+  invitations       PatientInvitation[]
 
   @@map("clinician_profiles")
 }
@@ -291,6 +293,7 @@ model Program {
   modules       Module[]
   enrollments   Enrollment[]
   dailyTrackers DailyTracker[]
+  invitations   PatientInvitation[]
 
   @@index([practiceId])
   @@map("programs")
@@ -828,6 +831,43 @@ model ClinicianClient {
   @@index([clinicianId])
   @@index([clientId])
   @@map("clinician_clients")
+}
+
+// ── Patient Invitations ──────────────────────────────
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+model PatientInvitation {
+  id               String           @id @default(cuid())
+  clinicianId      String
+  clinician        ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  code             String           @unique
+  patientName      String
+  patientEmail     String
+  patientEmailHash String
+  programId        String?
+  program          Program?         @relation(fields: [programId], references: [id])
+  status           InvitationStatus @default(PENDING)
+  emailSent        Boolean          @default(false)
+  emailSendCount   Int              @default(0)
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  acceptedByUserId String?
+  acceptedByUser   User?            @relation("InvitationAcceptedBy", fields: [acceptedByUserId], references: [id])
+  revokedAt        DateTime?
+  piiScrubbed      Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([clinicianId])
+  @@index([patientEmailHash, clinicianId])
+  @@index([status, expiresAt])
+  @@map("patient_invitations")
 }
 
 // ── Audit Trail (HIPAA) ───────────────────────────────
