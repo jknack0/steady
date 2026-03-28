@@ -135,7 +135,7 @@ Cognitive Processing Therapy works by helping you:</p><ul style="margin: 8px 0; 
           items: [
             { type: "ACTION", description: "Write your Impact Statement: at least one page about what it means to you that the trauma happened. Focus on why you think it happened and how it changed your beliefs about yourself, others, and the world." },
             { type: "ACTION", description: "Read the handout on PTSD symptoms and notice which symptoms you experience most. Keep this list handy for your next session." },
-            { type: "JOURNAL_PROMPT", description: "Each day this week, notice one moment when a PTSD symptom showed up. Write down what happened, what you felt in your body, and what thought went through your mind." },
+            { type: "JOURNAL_PROMPT", prompts: ["Each day this week, notice one moment when a PTSD symptom showed up. Write down what happened, what you felt in your body, and what thought went through your mind."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -200,7 +200,7 @@ Look at your Impact Statement and notice any statements that:</p><ul style="marg
           items: [
             { type: "ACTION", description: "Re-read your Impact Statement and underline or highlight any stuck points you can find. Write each stuck point on a separate line in your journal." },
             { type: "ACTION", description: "Complete at least one ABC Worksheet each day: A = Activating event (what happened), B = Belief or stuck point (what you told yourself), C = Consequence (how you felt and what you did)." },
-            { type: "JOURNAL_PROMPT", description: "Write about a moment this week when you noticed a stuck point showing up in your thinking. What was the situation? What was the stuck point? How did it make you feel?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about a moment this week when you noticed a stuck point showing up in your thinking. What was the situation? What was the stuck point? How did it make you feel?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -256,7 +256,7 @@ Some emotions after trauma are natural and need to be felt — sadness about wha
           items: [
             { type: "ACTION", description: "Complete at least one ABC Worksheet every day this week. Focus on moments when you felt a strong negative emotion. Write down the activating event, the belief/thought, and the consequence (emotion + behavior)." },
             { type: "ACTION", description: "Practice labeling your emotions with specific words throughout the day. When you notice you feel 'bad,' dig deeper: is it guilt, shame, anger, sadness, fear, or something else?" },
-            { type: "JOURNAL_PROMPT", description: "Pick one ABC Worksheet from this week. Look at the belief you wrote down. Is it a fact or an interpretation? How might someone else see the same situation differently?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Pick one ABC Worksheet from this week. Look at the belief you wrote down. Is it a fact or an interpretation? How might someone else see the same situation differently?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -320,7 +320,7 @@ Take one of your stuck points and run it through these questions. Write down you
           items: [
             { type: "ACTION", description: "Choose your top 3 stuck points from your list. Run each one through the Socratic Questions. Write down the evidence for and against each stuck point." },
             { type: "ACTION", description: "Complete at least one Challenging Questions Worksheet per day. Use the list of Socratic Questions to examine a stuck point from your ABC Worksheet." },
-            { type: "JOURNAL_PROMPT", description: "After challenging one of your stuck points, write about what you found. Did the evidence support the thought or go against it? How do you feel now compared to before you examined it?" },
+            { type: "JOURNAL_PROMPT", prompts: ["After challenging one of your stuck points, write about what you found. Did the evidence support the thought or go against it? How do you feel now compared to before you examined it?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -383,7 +383,7 @@ When you notice a stuck point, ask yourself: "Which pattern am I using?" Often, 
           items: [
             { type: "ACTION", description: "Go back through your list of stuck points and label each one with the problematic thinking pattern(s) it uses. Write the pattern name next to each stuck point." },
             { type: "ACTION", description: "Complete at least one Problematic Thinking Patterns Worksheet per day. When you catch a stuck point, identify which of the 7 patterns it fits." },
-            { type: "JOURNAL_PROMPT", description: "Which thinking pattern do you use most often? Write about a specific time this week when you caught yourself using it. What was the situation, the thought, and the pattern?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Which thinking pattern do you use most often? Write about a specific time this week when you caught yourself using it. What was the situation, the thought, and the pattern?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -494,7 +494,7 @@ Look at your stuck points related to safety. Ask:</p><ul style="margin: 8px 0; p
           items: [
             { type: "ACTION", description: "Complete at least one Challenging Beliefs Worksheet per day focused on a stuck point about safety (your safety or others' safety)." },
             { type: "ACTION", description: "Choose one avoidance behavior related to safety and take a small step toward reducing it. For example, if you avoid going to the grocery store alone, go once this week for a short trip." },
-            { type: "JOURNAL_PROMPT", description: "Write about how your beliefs about safety changed after the trauma. What did you believe before? What do you believe now? What would a balanced view of safety look like?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about how your beliefs about safety changed after the trauma. What did you believe before? What do you believe now? What would a balanced view of safety look like?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -551,7 +551,7 @@ Instead of thinking about trust as on or off, think of it as a scale from 0 to 1
           items: [
             { type: "ACTION", description: "Complete at least one Challenging Beliefs Worksheet per day focused on a stuck point about trust — either trust in others or trust in yourself." },
             { type: "ACTION", description: "Use the Trust Thermometer to rate your trust in three important people in your life. Write down what specific evidence supports each rating." },
-            { type: "JOURNAL_PROMPT", description: "Write about how your ability to trust changed after the trauma. Do you struggle more with trusting others or trusting yourself? What would balanced trust look like in your closest relationship?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about how your ability to trust changed after the trauma. Do you struggle more with trusting others or trusting yourself? What would balanced trust look like in your closest relationship?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -609,7 +609,7 @@ You CANNOT control: other people's actions, random events, the past, the weather
           items: [
             { type: "ACTION", description: "Complete at least one Challenging Beliefs Worksheet per day focused on a stuck point about power and control — either over-controlling or helplessness." },
             { type: "ACTION", description: "Draw your Circle of Control. Write down 5 things in your inner circle (things you can control) and 5 in the outer circle (things you cannot). Put the diagram somewhere you will see it daily." },
-            { type: "JOURNAL_PROMPT", description: "Do you tend more toward over-controlling or toward helplessness? Write about a specific situation this week where you noticed this pattern. How would a balanced response look?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Do you tend more toward over-controlling or toward helplessness? Write about a specific situation this week where you noticed this pattern. How would a balanced response look?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -664,7 +664,7 @@ Balanced self-esteem means:</p><ul style="margin: 8px 0; padding-left: 20px;"><l
           items: [
             { type: "ACTION", description: "Complete at least one Challenging Beliefs Worksheet per day focused on a stuck point about self-esteem or the worth of others." },
             { type: "ACTION", description: "Write a list of 10 qualities, skills, or accomplishments that show your worth as a person. These can be small (I make good coffee) or big (I survived and am still here)." },
-            { type: "JOURNAL_PROMPT", description: "Write about how the trauma affected how you see yourself. What did you believe about yourself before? What do you believe now? If shame is part of your experience, consider: does that shame rightfully belong to you?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about how the trauma affected how you see yourself. What did you believe about yourself before? What do you believe now? If shame is part of your experience, consider: does that shame rightfully belong to you?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -726,7 +726,7 @@ Recovering intimacy does not mean forcing yourself into uncomfortable situations
           items: [
             { type: "ACTION", description: "Complete at least one Challenging Beliefs Worksheet per day focused on a stuck point about intimacy — emotional closeness, physical closeness, or self-intimacy." },
             { type: "ACTION", description: "Choose one small step toward connection this week. This could be calling a friend, sharing something honest with someone you trust, or spending quiet time with yourself without distraction." },
-            { type: "JOURNAL_PROMPT", description: "Write about what intimacy means to you now compared to before the trauma. What kind of closeness do you want in your life? What stuck points stand between you and that closeness?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about what intimacy means to you now compared to before the trauma. What kind of closeness do you want in your life? What stuck points stand between you and that closeness?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -997,7 +997,7 @@ If you drive for a living or operate heavy machinery, tell your clinician — we
             { type: "ACTION", description: "Follow your prescribed sleep window every night this week: do not get into bed before your set bedtime, and get out of bed at your fixed wake time every morning — including weekends." },
             { type: "ACTION", description: "Continue your daily sleep diary every morning. Record all the same information as last week." },
             { type: "ACTION", description: "If you cannot fall asleep within about 20 minutes (do not watch the clock — estimate), get out of bed, go to another room, and do something calm until you feel sleepy, then return to bed. Repeat as needed." },
-            { type: "JOURNAL_PROMPT", description: "At the end of the week, write about how sleep restriction went. What was hardest? Did you notice any changes in how quickly you fell asleep or how deeply you slept?" },
+            { type: "JOURNAL_PROMPT", prompts: ["At the end of the week, write about how sleep restriction went. What was hardest? Did you notice any changes in how quickly you fell asleep or how deeply you slept?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1053,7 +1053,7 @@ Getting out of a warm bed when you cannot sleep feels terrible. Your brain will 
             { type: "ACTION", description: "Follow all 6 stimulus control rules every night this week. Continue your prescribed sleep window from last session." },
             { type: "ACTION", description: "Set up your 'cozy spot' for getting out of bed — a comfortable chair in another room with a dim light and a calm activity ready." },
             { type: "ACTION", description: "Continue your daily sleep diary. Add a note each morning about whether you got out of bed during the night and how many times." },
-            { type: "JOURNAL_PROMPT", description: "Write about your experience with getting out of bed when you could not sleep. Was it easier or harder than expected? Did you notice any change in how you feel about your bed?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about your experience with getting out of bed when you could not sleep. Was it easier or harder than expected? Did you notice any change in how you feel about your bed?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1117,7 +1117,7 @@ When you notice a worry about sleep, ask:</p><ul style="margin: 8px 0; padding-l
             { type: "ACTION", description: "Keep a Thought Record for sleep-related thoughts this week. When you catch a worry about sleep, write down: the thought, the emotion, the evidence for and against the thought, and a more balanced alternative thought." },
             { type: "ACTION", description: "Schedule a 15-minute 'worry time' in the early evening (at least 2 hours before bed). Write down your worries, then close the notebook and move on. If worries come at bedtime, remind yourself: 'I already dealt with that during worry time.'" },
             { type: "ACTION", description: "Continue sleep restriction and stimulus control. Continue your daily sleep diary." },
-            { type: "JOURNAL_PROMPT", description: "What is your biggest fear about not sleeping? Write it down, then write the evidence for and against it. What actually happens on the days after you sleep poorly?" },
+            { type: "JOURNAL_PROMPT", prompts: ["What is your biggest fear about not sleeping? Write it down, then write the evidence for and against it. What actually happens on the days after you sleep poorly?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1200,7 +1200,7 @@ Sleep hygiene alone does not cure insomnia, but poor sleep hygiene makes everyth
             { type: "ACTION", description: "Practice Progressive Muscle Relaxation for 15-20 minutes every day this week. Do it in a chair or on the couch, NOT in bed. Aim for the same time each day, ideally during your wind-down routine." },
             { type: "ACTION", description: "Implement at least 3 new sleep hygiene changes from the checklist this week. Track which ones you tried and what you noticed." },
             { type: "ACTION", description: "Continue sleep restriction, stimulus control, and your daily sleep diary. We will review your sleep window and adjust if your sleep efficiency is above 85%." },
-            { type: "JOURNAL_PROMPT", description: "How is your relationship with sleep changing? Compare how you felt about going to bed at the start of this program to how you feel now." },
+            { type: "JOURNAL_PROMPT", prompts: ["How is your relationship with sleep changing? Compare how you felt about going to bed at the start of this program to how you feel now."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1524,7 +1524,7 @@ If you do use, it does not mean you have failed. A lapse (a single use) becomes 
           items: [
             { type: "ACTION", description: "Write your personal history of use: when it started, how it progressed, what consequences it caused, and what motivated you to seek help. Be honest — this is for your eyes and your clinician's only." },
             { type: "ACTION", description: "Make a list of your personal warning signs for each stage of relapse — emotional, mental, and physical. Ask someone close to you what changes they notice when you are struggling." },
-            { type: "JOURNAL_PROMPT", description: "What does recovery mean to you? Not what it means to your family or your therapist — what does it mean to YOU? What kind of life are you building?" },
+            { type: "JOURNAL_PROMPT", prompts: ["What does recovery mean to you? Not what it means to your family or your therapist — what does it mean to YOU? What kind of life are you building?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1587,7 +1587,7 @@ For each high-risk situation, you need to know:
           items: [
             { type: "ACTION", description: "Complete your personal High-Risk Situation Inventory. List at least 10 situations, rate their risk level, and note whether you can avoid them or need a coping plan." },
             { type: "ACTION", description: "Identify your top 3 highest-risk situations. For each one, write down what you will do if you find yourself in that situation. Be specific — not 'I will cope' but 'I will call my sponsor, leave the situation, or do 5 minutes of deep breathing.'" },
-            { type: "JOURNAL_PROMPT", description: "Think about a time when you relapsed or came close to relapsing. What was the situation? What were you feeling? Looking back, where did the process start — and where could you have intervened?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Think about a time when you relapsed or came close to relapsing. What was the situation? What were you feeling? Looking back, where did the process start — and where could you have intervened?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1644,7 +1644,7 @@ Cravings are triggered by cues that your brain has associated with use:</p><ul s
           items: [
             { type: "ACTION", description: "Practice urge surfing at least twice this week when you experience a craving. Record: what triggered it, how intense it was (0-10), what you did, how long it lasted, and what the intensity was afterward." },
             { type: "ACTION", description: "Create your personal Craving Emergency Plan card: list 3 people you can call, 3 activities that distract you, and 3 thoughts that help you ride it out. Keep this card with you at all times." },
-            { type: "JOURNAL_PROMPT", description: "Describe a craving you had this week in detail. What triggered it? What did it feel like in your body? What thoughts came with it? What did you do? What happened next?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Describe a craving you had this week in detail. What triggered it? What did it feel like in your body? What thoughts came with it? What did you do? What happened next?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1705,7 +1705,7 @@ When you catch a permission-giving thought:
           items: [
             { type: "ACTION", description: "Keep a Thought Log this week. When you notice a permission-giving thought or an apparently irrelevant decision, write it down, name the type, challenge it, and write a recovery-supporting replacement thought." },
             { type: "ACTION", description: "Review your past week and identify any 'apparently irrelevant decisions' you made that moved you closer to a high-risk situation. Write down at least 2 and describe what you will do differently." },
-            { type: "JOURNAL_PROMPT", description: "What is your most frequent permission-giving thought? Where did it come from? Write a detailed rebuttal to this thought that you can pull out the next time it shows up." },
+            { type: "JOURNAL_PROMPT", prompts: ["What is your most frequent permission-giving thought? Where did it come from? Write a detailed rebuttal to this thought that you can pull out the next time it shows up."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1767,7 +1767,7 @@ During active use, substances dulled your emotions. In early recovery, emotions 
           items: [
             { type: "ACTION", description: "Practice the 5-4-3-2-1 grounding technique at least once a day this week — even when you are not distressed. Building the skill when calm makes it available when you need it most." },
             { type: "ACTION", description: "Each day, track your strongest emotion and what you did with it. Did you stuff it, act on it impulsively, or use a healthy coping skill? No judgment — just notice the pattern." },
-            { type: "JOURNAL_PROMPT", description: "What emotion is hardest for you to sit with? Write about why you think that emotion is so difficult. What does your brain tell you will happen if you feel it fully without using?" },
+            { type: "JOURNAL_PROMPT", prompts: ["What emotion is hardest for you to sit with? Write about why you think that emotion is so difficult. What does your brain tell you will happen if you feel it fully without using?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1825,7 +1825,7 @@ Some relationships support recovery. Others threaten it. Ask honestly about each
           items: [
             { type: "ACTION", description: "Write your go-to refusal statement and practice saying it out loud 5 times. It should feel natural and automatic when you need it." },
             { type: "ACTION", description: "Evaluate your top 10 relationships using the questions from this module. Sort them into 'supports recovery,' 'neutral,' and 'threatens recovery.' Share this with your clinician." },
-            { type: "JOURNAL_PROMPT", description: "Who in your life is hardest to say no to? Why? What would you need to change about that relationship to protect your recovery?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Who in your life is hardest to say no to? Why? What would you need to change about that relationship to protect your recovery?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1884,7 +1884,7 @@ Schedule at least one enjoyable activity every day. It does not have to be big �
           items: [
             { type: "ACTION", description: "Make a list of 20 activities you enjoy or used to enjoy that do not involve substances. These can be big (hiking, concerts) or small (hot baths, puzzles, cooking). Post this list somewhere visible." },
             { type: "ACTION", description: "Schedule at least one enjoyable activity every day this week. Treat it as non-negotiable — as important as a medical appointment." },
-            { type: "JOURNAL_PROMPT", description: "How does your current should-want balance look? Are you running on obligations alone? What would a more balanced week look like for you?" },
+            { type: "JOURNAL_PROMPT", prompts: ["How does your current should-want balance look? Are you running on obligations alone? What would a more balanced week look like for you?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -1944,7 +1944,7 @@ Did it work? If yes, great. If not, go back to step 2 and try a different approa
           items: [
             { type: "ACTION", description: "Choose a current real-life problem and work through all 6 steps of the problem-solving process. Write down the problem, your brainstormed solutions, your evaluation, your chosen solution, your action plan, and take the first step this week." },
             { type: "ACTION", description: "Identify one problem you have been avoiding. Write it down as a specific problem statement. Even if you do not solve it this week, naming it removes some of its power." },
-            { type: "JOURNAL_PROMPT", description: "How did you used to handle problems before recovery? How did that work out? What is different about approaching problems sober?" },
+            { type: "JOURNAL_PROMPT", prompts: ["How did you used to handle problems before recovery? How did that work out? What is different about approaching problems sober?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -2003,7 +2003,7 @@ Anger does not go from 0 to 100 instantly — it escalates through stages:
           items: [
             { type: "ACTION", description: "Track your anger this week. Each time you feel angry or irritated, record: the situation, the intensity (0-10), what you felt underneath the anger, and how you responded. Look for patterns." },
             { type: "ACTION", description: "Practice the STOP technique at least 3 times this week — even for mild irritation. The more you practice at low levels, the easier it is to use at high levels." },
-            { type: "JOURNAL_PROMPT", description: "Think about a time when anger led you to use or came close. What happened? What was under the anger? What could you do differently now with the skills you have learned?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Think about a time when anger led you to use or came close. What happened? What was under the anger? What could you do differently now with the skills you have learned?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -2059,7 +2059,7 @@ If you have a lapse, safety comes first. If you have been abstinent for a while 
           items: [
             { type: "ACTION", description: "Write your personal Lapse Response Plan: who you will call (list 3 names and numbers), where you will go, and what steps you will take. Keep this card in your wallet or saved on your phone." },
             { type: "ACTION", description: "Practice your response to the Abstinence Violation Effect. Write down the self-defeating thoughts that would come up after a lapse, and next to each one, write a more balanced response." },
-            { type: "JOURNAL_PROMPT", description: "If you have had a lapse in the past, write about what happened and what you did afterward. Looking back with what you know now, what would you do differently? If you have not lapsed, write about what you would want someone to say to you if you did." },
+            { type: "JOURNAL_PROMPT", prompts: ["If you have had a lapse in the past, write about what happened and what you did afterward. Looking back with what you know now, what would you do differently? If you have not lapsed, write about what you would want someone to say to you if you did."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -2116,7 +2116,7 @@ Everyone in recovery feels alone sometimes. When it hits:</p><ul style="margin: 
           items: [
             { type: "ACTION", description: "Map your current support network using the 3 layers. Write names in each layer. Identify which layers are strong and which need work. Commit to one action to strengthen a weak layer this week." },
             { type: "ACTION", description: "Reach out to at least 2 people in your recovery community this week — not because you need something, but just to connect. Recovery relationships need maintenance." },
-            { type: "JOURNAL_PROMPT", description: "What is your biggest barrier to asking for help? Where did you learn that asking for help is bad or weak? How might things be different if you allowed yourself to lean on others?" },
+            { type: "JOURNAL_PROMPT", prompts: ["What is your biggest barrier to asking for help? Where did you learn that asking for help is bad or weak? How might things be different if you allowed yourself to lean on others?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",

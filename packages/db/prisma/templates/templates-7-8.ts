@@ -203,7 +203,7 @@ This is important: your values are yours. They are not what your parents want fo
             { type: "ACTION", description: "Review the six life domains (Relationships, Work/Education, Health, Leisure, Spirituality, Community). For each one, write 1-2 sentences about what matters to you in that area.", sortOrder: 0 },
             { type: "ACTION", description: "Rank your top 5 values across all domains. Which ones feel most important to your life right now?", sortOrder: 1 },
             { type: "ACTION", description: "For each of your top 5 values, rate how well your current daily activities align with that value on a scale of 1 (not at all) to 10 (fully aligned).", sortOrder: 2 },
-            { type: "JOURNAL_PROMPT", description: "Write about one value that feels especially neglected right now. What would it look like to take even one small step toward it this week?", sortOrder: 3 },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about one value that feels especially neglected right now. What would it look like to take even one small step toward it this week?"], sortOrder: 3 },
           ],
         },
       },
@@ -454,7 +454,7 @@ Here is what research shows: the best way to stop rumination is not to try harde
           items: [
             { type: "ACTION", description: "This week, when you catch yourself ruminating, immediately switch to a scheduled activity from your activity menu. Track how many times you successfully interrupted rumination.", isRecurring: true, sortOrder: 0 },
             { type: "ACTION", description: "Set 3 phone alarms at random times each day. When the alarm goes off, check: Am I ruminating right now? If yes, get up and do something for at least 5 minutes.", sortOrder: 1 },
-            { type: "JOURNAL_PROMPT", description: "At the end of the week, write about what you noticed. Was rumination happening more than you realized? Were you able to interrupt it? What activities were most effective at breaking the cycle?", sortOrder: 2 },
+            { type: "JOURNAL_PROMPT", prompts: ["At the end of the week, write about what you noticed. Was rumination happening more than you realized? Were you able to interrupt it? What activities were most effective at breaking the cycle?"], sortOrder: 2 },
           ],
         },
       },
@@ -701,7 +701,7 @@ Your body is always in the present moment. Your mind may be in the past or futur
           items: [
             { type: "ACTION", description: "Practice the body scan for 20 minutes daily, 6 days this week. Find a quiet place, lie down, and slowly move your attention from your toes to the top of your head. When your mind wanders, gently bring it back.", isRecurring: true, sortOrder: 0 },
             { type: "ACTION", description: "Eat one meal this week mindfully. Turn off screens, sit down, and pay full attention to the taste, texture, smell, and appearance of your food. Notice when your mind wanders and bring it back to the experience of eating.", sortOrder: 1 },
-            { type: "JOURNAL_PROMPT", description: "After your first body scan, write a few sentences about what you noticed. What sensations did you feel? Where did your mind go? What was the experience like?", sortOrder: 2 },
+            { type: "JOURNAL_PROMPT", prompts: ["After your first body scan, write a few sentences about what you noticed. What sensations did you feel? Where did your mind go? What was the experience like?"], sortOrder: 2 },
           ],
         },
       },
@@ -751,7 +751,7 @@ You will add sitting meditation to your practice this week. Sit in a comfortable
           type: "HOMEWORK",
           items: [
             { type: "ACTION", description: "Practice the body scan daily (20 minutes), plus add 10 minutes of sitting meditation focusing on the breath. Alternate: body scan one day, sitting meditation the next.", isRecurring: true, sortOrder: 0 },
-            { type: "JOURNAL_PROMPT", description: "Each day, notice one moment when you reacted automatically to something. Write down: (1) What actually happened (the facts), (2) What your mind said about it (the interpretation), (3) How you reacted. Just notice — you do not need to change anything yet.", sortOrder: 1 },
+            { type: "JOURNAL_PROMPT", prompts: ["Each day, notice one moment when you reacted automatically to something. Write down: (1) What actually happened (the facts), (2) What your mind said about it (the interpretation), (3) How you reacted. Just notice — you do not need to change anything yet."], sortOrder: 1 },
           ],
         },
       },
@@ -939,7 +939,7 @@ Mindful movement is yoga or stretching done with complete attention. You move sl
           items: [
             { type: "ACTION", description: "Extend daily formal practice to 30 minutes. You may do sitting meditation, mindful movement (gentle yoga or stretching with awareness), or a combination.", isRecurring: true, sortOrder: 0 },
             { type: "ACTION", description: "Continue using STOP throughout the day, especially in stressful moments.", isRecurring: true, sortOrder: 1 },
-            { type: "JOURNAL_PROMPT", description: "Write about a time this week when you were able to respond to stress rather than react. What did you notice in your body? What helped you pause?", sortOrder: 2 },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about a time this week when you were able to respond to stress rather than react. What did you notice in your body? What helped you pause?"], sortOrder: 2 },
           ],
         },
       },
@@ -1039,7 +1039,7 @@ Sit comfortably and close your eyes. Bring to mind an image of yourself. Slowly 
           items: [
             { type: "ACTION", description: "Practice loving-kindness meditation for 20 minutes daily. Start with yourself, then extend to a loved one, a neutral person, and (if you are ready) a difficult person.", isRecurring: true, sortOrder: 0 },
             { type: "ACTION", description: "When you notice your inner critic this week, pause and ask: What would I say to a friend in this situation? Then say that to yourself.", isRecurring: true, sortOrder: 1 },
-            { type: "JOURNAL_PROMPT", description: "Write about your experience with loving-kindness meditation. What was it like to direct kindness toward yourself? Was it easy or difficult? What emotions came up?", sortOrder: 2 },
+            { type: "JOURNAL_PROMPT", prompts: ["Write about your experience with loving-kindness meditation. What was it like to direct kindness toward yourself? Was it easy or difficult? What emotions came up?"], sortOrder: 2 },
           ],
         },
       },

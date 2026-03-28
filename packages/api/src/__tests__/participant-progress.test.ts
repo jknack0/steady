@@ -137,7 +137,9 @@ describe("GET /api/participant/homework-instances", () => {
     expect(db.homeworkInstance.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          dueDate: expect.any(Date),
+          OR: expect.arrayContaining([
+            expect.objectContaining({ dueDate: expect.any(Date) }),
+          ]),
         }),
       })
     );

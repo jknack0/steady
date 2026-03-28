@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrackerCharts } from "@/components/tracker-charts";
+import { getEmotionLabel, getEmotionColor } from "@steady/shared";
 
 // ── Types ────────────────────────────────────────────
 
@@ -175,6 +176,36 @@ function FieldValue({ field, value }: { field: TrackerField; value: any }) {
       );
     case "TIME":
       return <span className="font-semibold">{value}</span>;
+    case "FEELINGS_WHEEL":
+      if (Array.isArray(value)) {
+        return (
+          <div className="flex flex-wrap gap-1">
+            {value.map((emotionId: string, i: number) => {
+              const label = getEmotionLabel(emotionId) || emotionId;
+              const color = getEmotionColor(emotionId);
+              const parts = emotionId.split(".");
+              const fullPath = parts
+                .map((_, idx) => getEmotionLabel(parts.slice(0, idx + 1).join(".")) || parts[idx])
+                .join(" > ");
+              return (
+                <span
+                  key={i}
+                  title={fullPath}
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium cursor-default"
+                  style={{
+                    backgroundColor: color ? `${color}26` : undefined,
+                    color: color || undefined,
+                    border: color ? `1px solid ${color}4D` : undefined,
+                  }}
+                >
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        );
+      }
+      return <span>{String(value)}</span>;
     default:
       return <span>{String(value)}</span>;
   }

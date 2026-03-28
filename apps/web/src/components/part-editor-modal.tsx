@@ -114,7 +114,7 @@ const PLACEHOLDER_TITLES: Record<string, string> = {
 
 // ── Content editor renderer ─────────────────────────
 
-function ContentEditor({ type, content, onChange }: { type: string; content: any; onChange: (c: any) => void }) {
+function ContentEditor({ type, content, onChange, onCommit }: { type: string; content: any; onChange: (c: any) => void; onCommit?: () => void }) {
   switch (type) {
     case "TEXT": return <TextPartEditor content={content} onChange={onChange} />;
     case "VIDEO": return <VideoPartEditor content={content} onChange={onChange} />;
@@ -123,7 +123,7 @@ function ContentEditor({ type, content, onChange }: { type: string; content: any
     case "CHECKLIST": return <ChecklistPartEditor content={content} onChange={onChange} />;
     case "RESOURCE_LINK": return <ResourceLinkPartEditor content={content} onChange={onChange} />;
     case "DIVIDER": return <DividerPartEditor content={content} onChange={onChange} />;
-    case "HOMEWORK": return <HomeworkPartEditor content={content} onChange={onChange} />;
+    case "HOMEWORK": return <HomeworkPartEditor content={content} onChange={onChange} onCommit={onCommit} />;
     case "ASSESSMENT": return <AssessmentPartEditor content={content} onChange={onChange} />;
     case "INTAKE_FORM": return <IntakeFormPartEditor content={content} onChange={onChange} />;
     case "SMART_GOALS": return <SmartGoalsPartEditor content={content} onChange={onChange} />;
@@ -635,7 +635,7 @@ export function EditPartModal({
 
               <Separator />
 
-              <ContentEditor type={part.type} content={content} onChange={handleContentChange} />
+              <ContentEditor type={part.type} content={content} onChange={handleContentChange} onCommit={handleBlurSave} />
             </>
           )}
         </DialogBody>

@@ -8,10 +8,11 @@ import {
   SubmitTrackerEntrySchema,
   ScaleOptionsSchema,
   MultiCheckOptionsSchema,
+  FeelingWheelOptionsSchema,
 } from "../schemas/daily-tracker";
 
 describe("TrackerFieldTypeEnum", () => {
-  it.each(["SCALE", "NUMBER", "YES_NO", "MULTI_CHECK", "FREE_TEXT", "TIME"])(
+  it.each(["SCALE", "NUMBER", "YES_NO", "MULTI_CHECK", "FREE_TEXT", "TIME", "FEELINGS_WHEEL"])(
     "accepts valid field type: %s",
     (value) => {
       const result = TrackerFieldTypeEnum.safeParse(value);
@@ -523,5 +524,107 @@ describe("SubmitTrackerEntrySchema", () => {
       responses: {},
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("FeelingWheelOptionsSchema", () => {
+  it("accepts valid maxSelections", () => {
+    const result = FeelingWheelOptionsSchema.safeParse({ maxSelections: 3 });
+    expect(result.success).toBe(true);
+  });
+
+  it("defaults maxSelections to 3", () => {
+    const result = FeelingWheelOptionsSchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.maxSelections).toBe(3);
+    }
+  });
+
+  it("rejects maxSelections below 1", () => {
+    const result = FeelingWheelOptionsSchema.safeParse({ maxSelections: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects maxSelections above 10", () => {
+    const result = FeelingWheelOptionsSchema.safeParse({ maxSelections: 11 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-integer maxSelections", () => {
+    const result = FeelingWheelOptionsSchema.safeParse({ maxSelections: 2.5 });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("CreateTrackerFieldSchema — FEELINGS_WHEEL", () => {
+  it("accepts FEELINGS_WHEEL with valid options", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "How are you feeling?",
+      fieldType: "FEELINGS_WHEEL",
+      options: { maxSelections: 3 },
+      sortOrder: 0,
+      isRequired: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts FEELINGS_WHEEL with default options", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "How are you feeling?",
+      fieldType: "FEELINGS_WHEEL",
+      options: { maxSelections: 3 },
+      sortOrder: 0,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects FEELINGS_WHEEL with null options", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "How are you feeling?",
+      fieldType: "FEELINGS_WHEEL",
+      options: null,
+      sortOrder: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects FEELINGS_WHEEL with wrong options shape", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "How are you feeling?",
+      fieldType: "FEELINGS_WHEEL",
+      options: { min: 0, max: 10 },
+      sortOrder: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("existing SCALE fields still work after adding FEELINGS_WHEEL", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "Mood",
+      fieldType: "SCALE",
+      options: { min: 0, max: 10 },
+      sortOrder: 0,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("existing MULTI_CHECK fields still work after adding FEELINGS_WHEEL", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "Skills",
+      fieldType: "MULTI_CHECK",
+      options: { choices: ["A", "B"] },
+      sortOrder: 0,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("existing FREE_TEXT fields still work with null options", () => {
+    const result = CreateTrackerFieldSchema.safeParse({
+      label: "Notes",
+      fieldType: "FREE_TEXT",
+      sortOrder: 0,
+    });
+    expect(result.success).toBe(true);
   });
 });

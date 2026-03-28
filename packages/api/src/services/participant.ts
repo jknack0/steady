@@ -12,6 +12,7 @@ import {
 } from "@steady/shared";
 import type { HomeworkItemType } from "@steady/shared";
 import { logRtmEngagement } from "./rtm";
+import { validateEmotionIds, VALID_EMOTION_IDS } from "@steady/shared";
 
 // ── Error types ──────────────────────────────────────
 
@@ -611,6 +612,62 @@ export async function submitTrackerEntry(
   date: string,
   responses: unknown
 ) {
+  // Validate FEELINGS_WHEEL field responses
+  const responsesObj = responses as Record<string, unknown>;
+  const tracker = await prisma.dailyTracker.findUnique({
+    where: { id: trackerId },
+    include: { fields: true },
+  });
+
+  if (tracker) {
+    const feelingsFields = tracker.fields.filter(
+      (f) => f.fieldType === "FEELINGS_WHEEL"
+    );
+
+    for (const field of feelingsFields) {
+      const value = responsesObj[field.id];
+      const options = field.options as { maxSelections?: number } | null;
+      const maxSelections = options?.maxSelections ?? 3;
+
+      // Skip validation if field is not present in responses and not required
+      if (value === undefined || value === null) {
+        if (field.isRequired) {
+          throw new ValidationError(
+            `Feelings wheel field "${field.label}" is required`
+          );
+        }
+        continue;
+      }
+
+      if (!Array.isArray(value)) {
+        throw new ValidationError(
+          `Feelings wheel field "${field.label}" must be an array of emotion IDs`
+        );
+      }
+
+      if (field.isRequired && value.length === 0) {
+        throw new ValidationError(
+          `Feelings wheel field "${field.label}" is required`
+        );
+      }
+
+      if (value.length > maxSelections) {
+        throw new ValidationError(
+          `Feelings wheel field "${field.label}" exceeds maximum of ${maxSelections} selections`
+        );
+      }
+
+      if (!validateEmotionIds(value as string[])) {
+        const invalidIds = (value as string[]).filter(
+          (id) => !VALID_EMOTION_IDS.has(id)
+        );
+        throw new ValidationError(
+          `Invalid emotion IDs in "${field.label}": ${invalidIds.join(", ")}`
+        );
+      }
+    }
+  }
+
   const entryDate = new Date(date);
   entryDate.setUTCHours(0, 0, 0, 0);
 

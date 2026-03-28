@@ -38,7 +38,7 @@ import { CSS } from "@dnd-kit/utilities";
 interface FieldConfig {
   id?: string;
   label: string;
-  fieldType: "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME";
+  fieldType: "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME" | "FEELINGS_WHEEL";
   options: any;
   sortOrder: number;
   isRequired: boolean;
@@ -51,6 +51,7 @@ const FIELD_TYPES = [
   { value: "MULTI_CHECK", label: "Multi-select Checkboxes" },
   { value: "FREE_TEXT", label: "Free Text" },
   { value: "TIME", label: "Time" },
+  { value: "FEELINGS_WHEEL", label: "Feelings Wheel" },
 ] as const;
 
 // ── Field Editor ────────────────────────────────────
@@ -112,7 +113,9 @@ function SortableFieldEditor({
                         ? { min: 0, max: 10, minLabel: "", maxLabel: "" }
                         : e.target.value === "MULTI_CHECK"
                           ? { choices: [""] }
-                          : null,
+                          : e.target.value === "FEELINGS_WHEEL"
+                            ? { maxSelections: 3 }
+                            : null,
                   })
                 }
                 className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -241,6 +244,57 @@ function SortableFieldEditor({
                 <Plus className="mr-1 h-3.5 w-3.5" />
                 Add choice
               </Button>
+            </div>
+          )}
+
+          {/* Feelings wheel options */}
+          {field.fieldType === "FEELINGS_WHEEL" && (
+            <div className="space-y-2">
+              <div className="w-48">
+                <Label className="text-xs">Max Selections</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={field.options?.maxSelections ?? 3}
+                  onChange={(e) =>
+                    onUpdate(index, {
+                      ...field,
+                      options: {
+                        ...field.options,
+                        maxSelections: Math.min(5, Math.max(1, parseInt(e.target.value) || 3)),
+                      },
+                    })
+                  }
+                  className="mt-1"
+                />
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  How many emotions can the participant select per check-in?
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {[
+                  { label: "Happy", color: "#8FAE8B" },
+                  { label: "Sad", color: "#6B8DB2" },
+                  { label: "Angry", color: "#C75C5C" },
+                  { label: "Fearful", color: "#9B7DB8" },
+                  { label: "Disgusted", color: "#7BAB7E" },
+                  { label: "Surprised", color: "#E8B960" },
+                  { label: "Bad", color: "#8B8B8B" },
+                ].map((e) => (
+                  <span
+                    key={e.label}
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={{
+                      backgroundColor: `${e.color}26`,
+                      color: e.color,
+                      border: `1px solid ${e.color}4D`,
+                    }}
+                  >
+                    {e.label}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 

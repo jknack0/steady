@@ -38,10 +38,15 @@ async function main() {
       await prisma.task.deleteMany({ where: { participant: { userId: existing.id } } });
       await prisma.calendarEvent.deleteMany({ where: { participant: { userId: existing.id } } });
       await prisma.journalEntry.deleteMany({ where: { participant: { userId: existing.id } } });
+      // Delete RTM data where this user is the client (billing periods + time logs cascade from rtmEnrollment)
+      await prisma.rtmEnrollment.deleteMany({ where: { clientId: existing.id } });
+      await prisma.rtmEngagementEvent.deleteMany({ where: { userId: existing.id } });
       await prisma.participantProfile.deleteMany({ where: { userId: existing.id } });
-      // Delete clinician configs before profiles (FK dependency)
+      // Delete clinician-related data before profiles (FK dependencies)
       const clinicianProfiles = await prisma.clinicianProfile.findMany({ where: { userId: existing.id }, select: { id: true } });
       for (const cp of clinicianProfiles) {
+        // Delete RTM enrollments (billing periods + time logs cascade)
+        await prisma.rtmEnrollment.deleteMany({ where: { clinicianId: cp.id } });
         await prisma.clinicianConfig.deleteMany({ where: { clinicianId: cp.id } });
       }
       await prisma.clinicianProfile.deleteMany({ where: { userId: existing.id } });
@@ -283,10 +288,10 @@ async function main() {
           items: [
             { type: "ACTION", description: "Choose one system that includes a Calendar, To-do list, and Journal. Paper options: Anecdote, Erin Condren, Laurel Denise, Papier, or any planner with calendar + to-do + journal space. A whiteboard can be part of your calendar system. Tech options: Fantastical, Notes app, iCalendar (Mac); Calendly, Google Calendar, Proton Calendar (Android). Make sure it syncs across your devices." },
             { type: "ACTION", description: "Review the Material: Read the Memory Handouts and watch the Videos." },
-            { type: "JOURNAL_PROMPT", description: "How confident are you (1-10) that the STEADY system will help you make meaningful changes? Why that number?" },
-            { type: "JOURNAL_PROMPT", description: "What are your thoughts about journaling? Have you tried it before? What was that experience like?" },
-            { type: "JOURNAL_PROMPT", description: "Did we address your specific needs in your intended outcomes? Was there anything we missed?" },
-            { type: "JOURNAL_PROMPT", description: "Once you set up your STEADY SYSTEM, where will you keep it so you actually use it?" },
+            { type: "JOURNAL_PROMPT", prompts: ["How confident are you (1-10) that the STEADY system will help you make meaningful changes? Why that number?"] },
+            { type: "JOURNAL_PROMPT", prompts: ["What are your thoughts about journaling? Have you tried it before? What was that experience like?"] },
+            { type: "JOURNAL_PROMPT", prompts: ["Did we address your specific needs in your intended outcomes? Was there anything we missed?"] },
+            { type: "JOURNAL_PROMPT", prompts: ["Once you set up your STEADY SYSTEM, where will you keep it so you actually use it?"] },
             { type: "BRING_TO_SESSION", description: "Bring your STEADY SYSTEM so we can begin using it together." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
@@ -358,7 +363,7 @@ Dr. William Dodson describes the ADHD motivation system as "interest-based" rath
             { type: "ACTION", description: "Estimate How Long Each Step Will Take — Write down an approximate time for each step. Being realistic helps you plan without overwhelm." },
             { type: "ACTION", description: "Schedule Each Step in Your STEADY SYSTEM — Break tasks into hours or blocks. Be realistic about what you can complete in one sitting. Consider using the Pomodoro Method (25 minutes work / 5 minutes break). Calculate your total estimated time to catch up." },
             { type: "ACTION", description: "Start Catching Up — Begin with your first step. Focus on progress, not perfection." },
-            { type: "JOURNAL_PROMPT", description: "Bring the Future to the Present: Visualize yourself fully caught up. Use all your senses — see it, hear it, feel it. Imagine how you'll feel when the last task is done. Describe your experience of finishing these tasks." },
+            { type: "JOURNAL_PROMPT", prompts: ["Bring the Future to the Present: Visualize yourself fully caught up. Use all your senses — see it, hear it, feel it. Imagine how you'll feel when the last task is done. Describe your experience of finishing these tasks."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -434,7 +439,7 @@ Using last week's energy tracking data, you likely noticed patterns. Most people
             { type: "ACTION", description: "Practice Adding STEADY TASKS to Your To-Do List — Write each task in your list. Reflect: How often did you forget to add a task, and why? How often did you remember, and why?" },
             { type: "ACTION", description: "Practice Transferring To-Do List Items to Your Calendar — Give each STEADY TASK a specific time slot in your calendar." },
             { type: "ACTION", description: "Track Time for Repetitive Tasks — Record how long these usually take so you can schedule realistically: Shower, Making dinner, Getting ready to leave the house, Laundry, Regular phone calls, Homework, Bedtime routine, Grocery shopping, Drive to work." },
-            { type: "JOURNAL_PROMPT", description: "How sustainable do you think it will be to consistently use your STEADY SYSTEM? What might be the barriers?" },
+            { type: "JOURNAL_PROMPT", prompts: ["How sustainable do you think it will be to consistently use your STEADY SYSTEM? What might be the barriers?"] },
             { type: "BRING_TO_SESSION", description: "Bring your STEADY SYSTEM to the next meeting — be ready to review and refine it." },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
@@ -509,7 +514,7 @@ The goal isn't to stop feeling emotions — it's to create a gap between the fee
             { type: "ACTION", description: "Eliminating Micro-Stressors — Go through each sensory category and adjust small things in your environment. Touch: Pillows/sheets, Clothes, Work chair, Couch, Lotion/soap, Toothbrush, Water bottle. Smell: Cleaning products, Soaps, Lotion, Hair products, Laundry detergent, Deodorant, Bad smells. Taste: Toothpaste, Drinking water, Snacks, Condiments, Floss. See: Decorations, House setup, Your car, Colors, Clutter. Hear: Sound machine, Music, Alarm tones, Ring tones, Text notifications, TV volume. Mark Y for changes made, N for no change." },
             { type: "ACTION", description: "Healthy vs. Unhealthy Dopamine Behaviors — List your healthy dopamine behaviors and your unhealthy dopamine behaviors." },
             { type: "ACTION", description: "Reflection: Which healthy behaviors do you want to increase? Which unhealthy behaviors do you want to reduce? Name new healthy behaviors you will try." },
-            { type: "JOURNAL_PROMPT", description: "For all changes you made (Y answers), describe the changes you made to reduce micro-stress. If you increased healthy behaviors or reduced unhealthy behaviors, write about those here." },
+            { type: "JOURNAL_PROMPT", prompts: ["For all changes you made (Y answers), describe the changes you made to reduce micro-stress. If you increased healthy behaviors or reduced unhealthy behaviors, write about those here."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -582,7 +587,7 @@ People with ADHD often avoid planning because rigid plans feel suffocating and i
             { type: "ACTION", description: "Childhood Challenges — How did your ADHD symptoms make life harder when you were young?" },
             { type: "ACTION", description: "Inner Critic — What does your inner critic say? How does it make you feel?" },
             { type: "ACTION", description: "Strengths & Weaknesses — List your strengths and weaknesses." },
-            { type: "JOURNAL_PROMPT", description: "Throughout the week, notice a moment when your inner critic spoke up. Write what it said and how it made you feel." },
+            { type: "JOURNAL_PROMPT", prompts: ["Throughout the week, notice a moment when your inner critic spoke up. Write what it said and how it made you feel."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -658,7 +663,7 @@ People with ADHD often avoid planning because rigid plans feel suffocating and i
             { type: "ACTION", description: "HINDSIGHT + SELF-AWARENESS — Notice your patterns. Identify one pattern you see in your behavior. Do you react the same way in certain situations? Are you usually grumpy in the morning? More impulsive with certain people? More irritable in certain places? What kinds of things do you usually look forward to?" },
             { type: "ACTION", description: "Foresight and Time Horizon — Look in your STEADY SYSTEM and identify an upcoming event. Imagine the event using your senses. How might this feel for me? Should I schedule this if I might be tired after work? Will I enjoy going? Should I bring anything I might need later? Who will be there? Will it be loud or overstimulating? Do I actually enjoy doing this activity? Is this important for me to attend?" },
             { type: "ACTION", description: "ADHD + RELATIONSHIPS — How does ADHD show up in your relationships? What changes might you make? How will you make these changes? Consider: Co-workers, Friends, Romantic partner(s), Family, Roommate, Strangers." },
-            { type: "JOURNAL_PROMPT", description: "Describe yourself in 3 sentences." },
+            { type: "JOURNAL_PROMPT", prompts: ["Describe yourself in 3 sentences."] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",
@@ -717,7 +722,7 @@ Forget complex apps with tags, contexts, and due dates on everything. ADHD-frien
             { type: "ACTION", description: "Set up your ADHD-friendly task system: choose ONE tool (whiteboard, paper planner, or simple app) and migrate all floating tasks to it." },
             { type: "ACTION", description: "Practice the Daily Big 3 method every morning this week." },
             { type: "ACTION", description: "Keep a 'Done List' every evening — write down at least 5 things you accomplished, no matter how small." },
-            { type: "JOURNAL_PROMPT", description: "Which productivity trap resonated most with you? What's one pattern you want to break?" },
+            { type: "JOURNAL_PROMPT", prompts: ["Which productivity trap resonated most with you? What's one pattern you want to break?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "MAJORITY",
@@ -768,7 +773,7 @@ Forget complex apps with tags, contexts, and due dates on everything. ADHD-frien
           items: [
             { type: "ACTION", description: "Practice active listening in at least 2 conversations this week. Afterward, reflect on how it felt." },
             { type: "ACTION", description: "If you have a partner or close friend, schedule a brief check-in using the Weekly Check-In format." },
-            { type: "JOURNAL_PROMPT", description: "How has ADHD affected your most important relationships? What's one communication pattern you'd like to change?" },
+            { type: "JOURNAL_PROMPT", prompts: ["How has ADHD affected your most important relationships? What's one communication pattern you'd like to change?"] },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",

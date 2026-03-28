@@ -159,6 +159,7 @@ vi.mock("@steady/db", () => {
     },
     dailyTrackerEntry: {
       create: vi.fn(),
+      upsert: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),

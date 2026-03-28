@@ -1064,12 +1064,14 @@ function SortableHomeworkItem({
   onUpdate,
   onDelete,
   clinicianDefaults,
+  onCommit,
 }: {
   item: HomeworkItem;
   index: number;
   onUpdate: (index: number, item: HomeworkItem) => void;
   onDelete: (index: number) => void;
   clinicianDefaults?: Partial<Record<HomeworkItemType, string>>;
+  onCommit?: () => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [editingLabel, setEditingLabel] = useState(false);
@@ -1103,6 +1105,7 @@ function SortableHomeworkItem({
     const trimmed = labelDraft.trim();
     if (trimmed && trimmed.length <= 50) {
       onUpdate(index, { ...item, customLabel: trimmed } as HomeworkItem);
+      setTimeout(() => onCommit?.(), 0);
     }
     setEditingLabel(false);
   };
@@ -1110,6 +1113,7 @@ function SortableHomeworkItem({
   const resetLabel = () => {
     const { customLabel, ...rest } = item as any;
     onUpdate(index, rest as HomeworkItem);
+    setTimeout(() => onCommit?.(), 0);
     setEditingLabel(false);
   };
 
@@ -1223,7 +1227,7 @@ function SortableHomeworkItem({
 
 // ── Main Homework Editor ─────────────────────────────
 
-export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEditorProps) {
+export function HomeworkPartEditor({ content: rawContent, onChange, onCommit }: HomeworkEditorProps & { onCommit?: () => void }) {
   // Ensure all items have sortOrder (may be missing from DB)
   const content = {
     ...rawContent,
@@ -1395,6 +1399,7 @@ export function HomeworkPartEditor({ content: rawContent, onChange }: HomeworkEd
                 onUpdate={handleUpdateItem}
                 onDelete={handleDeleteItem}
                 clinicianDefaults={clinicianDefaults}
+                onCommit={onCommit}
               />
             ))}
           </div>

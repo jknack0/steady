@@ -13,9 +13,22 @@ describe("WIDGET_REGISTRY", () => {
     expect(dashboardWidgets.length).toBe(20);
   });
 
-  it("contains all 10 client overview widgets", () => {
+  it("contains all 11 client overview widgets", () => {
     const clientWidgets = getClientOverviewWidgets();
-    expect(clientWidgets.length).toBe(10);
+    expect(clientWidgets.length).toBe(11);
+  });
+
+  it("includes emotion_trends widget on client_overview page", () => {
+    const widget = WIDGET_REGISTRY["emotion_trends"];
+    expect(widget).toBeDefined();
+    expect(widget.page).toBe("client_overview");
+    expect(widget.requiresModule).toBe("daily_tracker");
+    expect(widget.defaultColumn).toBe("main");
+    expect(widget.settingsSchema).not.toBeNull();
+    if (widget.settingsSchema) {
+      const result = widget.settingsSchema.safeParse(widget.defaultSettings);
+      expect(result.success).toBe(true);
+    }
   });
 
   it("every widget has required fields", () => {

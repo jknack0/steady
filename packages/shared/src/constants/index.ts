@@ -5,6 +5,7 @@ export * from "./dashboard-widgets";
 export { normalizeDashboardLayout, type PartialDashboardLayoutItem } from "../lib/normalize-layout";
 export * from "./provider-presets";
 export * from "./homework-labels";
+export * from "./feelings-wheel";
 
 export const APP_NAME = "STEADY with ADHD";
 

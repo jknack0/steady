@@ -76,6 +76,26 @@ describe("GET /api/daily-trackers/templates", () => {
     expect(template).toHaveProperty("fields");
   });
 
+  it("includes the feelings-check-in template", async () => {
+    const res = await request(app)
+      .get("/api/daily-trackers/templates")
+      .set(...authHeader());
+
+    expect(res.status).toBe(200);
+    const feelings = res.body.data.find((t: any) => t.key === "feelings-check-in");
+    expect(feelings).toBeDefined();
+    expect(feelings.name).toBe("Feelings Check-in");
+    // Should have a FEELINGS_WHEEL field
+    const wheelField = feelings.fields.find((f: any) => f.fieldType === "FEELINGS_WHEEL");
+    expect(wheelField).toBeDefined();
+    expect(wheelField.isRequired).toBe(true);
+    expect(wheelField.options).toEqual({ maxSelections: 3 });
+    // Should also have a free text field
+    const textField = feelings.fields.find((f: any) => f.fieldType === "FREE_TEXT");
+    expect(textField).toBeDefined();
+    expect(textField.isRequired).toBe(false);
+  });
+
   it("returns 401 without auth", async () => {
     const res = await request(app).get("/api/daily-trackers/templates");
     expect(res.status).toBe(401);
@@ -875,5 +895,75 @@ describe("GET /api/daily-trackers/:id/trends", () => {
       .get("/api/daily-trackers/tracker-1/trends?userId=test-user-id");
 
     expect(res.status).toBe(401);
+  });
+
+  it("returns emotionTrends for FEELINGS_WHEEL fields", async () => {
+    const trackerWithFeelings = mockTracker({
+      fields: [
+        mockTrackerField({ id: "f-mood", label: "Mood", fieldType: "SCALE" }),
+        mockTrackerField({
+          id: "f-feelings",
+          label: "How are you feeling?",
+          fieldType: "FEELINGS_WHEEL",
+          options: { maxSelections: 3 },
+          sortOrder: 1,
+        }),
+      ],
+    });
+
+    const date1 = new Date("2026-01-10T00:00:00Z");
+    const date2 = new Date("2026-01-09T00:00:00Z");
+
+    db.dailyTracker.findUnique.mockResolvedValue(trackerWithFeelings as any);
+    db.dailyTrackerEntry.findMany.mockResolvedValue([
+      mockTrackerEntry({
+        id: "e1",
+        date: date1,
+        responses: {
+          "f-mood": 8,
+          "f-feelings": ["happy.optimistic.hopeful", "sad.lonely"],
+        },
+      }),
+      mockTrackerEntry({
+        id: "e2",
+        date: date2,
+        responses: {
+          "f-mood": 6,
+          "f-feelings": ["happy.optimistic.hopeful", "angry"],
+        },
+      }),
+    ] as any);
+
+    const res = await request(app)
+      .get("/api/daily-trackers/tracker-1/trends?userId=test-user-id")
+      .set(...authHeader());
+
+    expect(res.status).toBe(200);
+    const { data } = res.body;
+    expect(data).toHaveProperty("emotionTrends");
+    expect(data.emotionTrends).toHaveProperty("f-feelings");
+
+    const emotionData = data.emotionTrends["f-feelings"];
+    expect(emotionData).toHaveProperty("byEmotion");
+    expect(emotionData).toHaveProperty("byPrimary");
+    expect(emotionData).toHaveProperty("timeline");
+
+    // hopeful appears twice
+    const hopeful = emotionData.byEmotion.find(
+      (e: any) => e.emotionId === "happy.optimistic.hopeful"
+    );
+    expect(hopeful).toBeDefined();
+    expect(hopeful.count).toBe(2);
+    expect(hopeful.color).toBe("#8FAE8B");
+
+    // happy primary should have count of 2 (both from hopeful)
+    const happyPrimary = emotionData.byPrimary.find(
+      (e: any) => e.emotionId === "happy"
+    );
+    expect(happyPrimary).toBeDefined();
+    expect(happyPrimary.count).toBe(2);
+
+    // Timeline should have 2 entries
+    expect(emotionData.timeline).toHaveLength(2);
   });
 });
