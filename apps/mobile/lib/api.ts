@@ -107,6 +107,18 @@ export const api = {
       body: JSON.stringify({ ...data, role: "PARTICIPANT" }),
     }),
 
+  registerWithInvite: (data: {
+    inviteCode: string;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }) =>
+    apiFetch("/api/auth/register-with-invite", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   me: () => apiFetch("/api/auth/me"),
 
   logout: async () => {

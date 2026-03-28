@@ -16,6 +16,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: {
+    inviteCode: string;
     email: string;
     password: string;
     firstName: string;
@@ -68,8 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (data: { email: string; password: string; firstName: string; lastName: string }) => {
-      const res = await api.register(data);
+    async (data: {
+      inviteCode: string;
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    }) => {
+      const res = await api.registerWithInvite(data);
       if (res.success && res.data) {
         await api.setTokens(res.data.accessToken, res.data.refreshToken);
         setUser(res.data.user);
