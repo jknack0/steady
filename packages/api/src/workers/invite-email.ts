@@ -49,6 +49,10 @@ export async function handleInviteEmail(job: PgBoss.Job<InviteEmailJob>): Promis
  * Register the invite email worker with pg-boss.
  */
 export async function registerInviteEmailWorker(boss: PgBoss): Promise<void> {
-  await boss.work<InviteEmailJob>("send-invite-email", handleInviteEmail);
+  await boss.work<InviteEmailJob>("send-invite-email", async (jobs) => {
+    for (const job of jobs) {
+      await handleInviteEmail(job);
+    }
+  });
   logger.info("Registered send-invite-email worker");
 }
