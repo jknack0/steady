@@ -213,6 +213,16 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
     },
+    patientInvitation: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      upsert: vi.fn(),
+      count: vi.fn(),
+    },
     refreshToken: {
       create: vi.fn(),
       findUnique: vi.fn(),
