@@ -5,6 +5,9 @@ import {
   CreateDailyTrackerSchema,
   CreateTrackerFromTemplateSchema,
   UpdateDailyTrackerSchema,
+  getPrimaryEmotion,
+  getEmotionLabel,
+  getEmotionColor,
 } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
@@ -432,6 +435,62 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
       }
     }
 
+    // Build emotion trends for FEELINGS_WHEEL fields
+    const feelingsFields = tracker.fields.filter(
+      (f) => f.fieldType === "FEELINGS_WHEEL"
+    );
+
+    const emotionTrends: Record<
+      string,
+      {
+        byEmotion: Array<{ emotionId: string; label: string; color: string; count: number }>;
+        byPrimary: Array<{ emotionId: string; label: string; color: string; count: number }>;
+        timeline: Array<{ date: string; emotions: string[] }>;
+      }
+    > = {};
+
+    for (const field of feelingsFields) {
+      const emotionCounts = new Map<string, number>();
+      const primaryCounts = new Map<string, number>();
+      const timeline: Array<{ date: string; emotions: string[] }> = [];
+
+      for (const entry of entries) {
+        const responses = entry.responses as Record<string, unknown>;
+        const value = responses[field.id];
+        if (Array.isArray(value)) {
+          const dateStr = entry.date.toISOString().split("T")[0];
+          timeline.push({ date: dateStr, emotions: value as string[] });
+
+          for (const emotionId of value as string[]) {
+            emotionCounts.set(emotionId, (emotionCounts.get(emotionId) || 0) + 1);
+            const primary = getPrimaryEmotion(emotionId);
+            primaryCounts.set(primary, (primaryCounts.get(primary) || 0) + 1);
+          }
+        }
+      }
+
+      // Sort by count descending
+      const byEmotion = Array.from(emotionCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([emotionId, count]) => ({
+          emotionId,
+          label: getEmotionLabel(emotionId) || emotionId,
+          color: getEmotionColor(emotionId),
+          count,
+        }));
+
+      const byPrimary = Array.from(primaryCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([emotionId, count]) => ({
+          emotionId,
+          label: getEmotionLabel(emotionId) || emotionId,
+          color: getEmotionColor(emotionId),
+          count,
+        }));
+
+      emotionTrends[field.id] = { byEmotion, byPrimary, timeline };
+    }
+
     // Completion rate
     const totalDays = Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1;
     const completedDays = entries.length;
@@ -465,6 +524,7 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
           options: f.options,
         })),
         fieldTrends,
+        emotionTrends,
         completionRate: totalDays > 0 ? completedDays / totalDays : 0,
         totalDays,
         completedDays,

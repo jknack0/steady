@@ -299,7 +299,7 @@ Cool thought: "That driver made a bad move. Maybe they didn't see me, or maybe t
           type: "HOMEWORK",
           items: [
             { type: "ACTION", description: "Catch at least 3 hot thoughts this week. For each one, write down: the situation, the hot thought, the type of hot thought (demanding, catastrophizing, labeling, mind-reading, personalizing), and a cooler replacement thought.", sortOrder: 0 },
-            { type: "JOURNAL_PROMPT", description: "At the end of each day, review any anger episodes and identify which hot thoughts were involved. Write a brief thought record: situation, hot thought, anger level (0-10), cool thought, anger level after cool thought.", sortOrder: 1 },
+            { type: "JOURNAL_PROMPT", prompts: ["At the end of each day, review any anger episodes and identify which hot thoughts were involved. Write a brief thought record: situation, hot thought, anger level (0-10), cool thought, anger level after cool thought."], sortOrder: 1 },
           ],
           dueTimingType: "BEFORE_NEXT_SESSION",
           completionRule: "ALL",

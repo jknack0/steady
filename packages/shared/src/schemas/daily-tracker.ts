@@ -9,6 +9,7 @@ export const TrackerFieldTypeEnum = z.enum([
   "MULTI_CHECK",
   "FREE_TEXT",
   "TIME",
+  "FEELINGS_WHEEL",
 ]);
 
 // ── Scale Options ───────────────────────────────────
@@ -24,12 +25,16 @@ export const MultiCheckOptionsSchema = z.object({
   choices: z.array(z.string()).min(1),
 });
 
+export const FeelingWheelOptionsSchema = z.object({
+  maxSelections: z.number().int().min(1).max(10).default(3),
+});
+
 // ── Field Schemas ───────────────────────────────────
 
 export const CreateTrackerFieldSchema = z.object({
   label: z.string().min(1).max(200),
   fieldType: TrackerFieldTypeEnum,
-  options: z.union([ScaleOptionsSchema, MultiCheckOptionsSchema, z.null()]).default(null),
+  options: z.union([ScaleOptionsSchema, MultiCheckOptionsSchema, FeelingWheelOptionsSchema, z.null()]).default(null),
   sortOrder: z.number().int(),
   isRequired: z.boolean().default(true),
 }).superRefine((data, ctx) => {
@@ -38,6 +43,9 @@ export const CreateTrackerFieldSchema = z.object({
   }
   if (data.fieldType === "MULTI_CHECK" && (data.options === null || !("choices" in data.options))) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "MULTI_CHECK fields require options with choices", path: ["options"] });
+  }
+  if (data.fieldType === "FEELINGS_WHEEL" && (data.options === null || !("maxSelections" in data.options))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "FEELINGS_WHEEL fields require options with maxSelections", path: ["options"] });
   }
 });
 
@@ -80,6 +88,7 @@ export const SubmitTrackerEntrySchema = z.object({
 export type TrackerFieldType = z.infer<typeof TrackerFieldTypeEnum>;
 export type ScaleOptions = z.infer<typeof ScaleOptionsSchema>;
 export type MultiCheckOptions = z.infer<typeof MultiCheckOptionsSchema>;
+export type FeelingWheelOptions = z.infer<typeof FeelingWheelOptionsSchema>;
 export type CreateDailyTrackerInput = z.input<typeof CreateDailyTrackerSchema>;
 export type UpdateDailyTrackerInput = z.input<typeof UpdateDailyTrackerSchema>;
 export type CreateTrackerFromTemplateInput = z.infer<typeof CreateTrackerFromTemplateSchema>;

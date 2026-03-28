@@ -46,7 +46,7 @@ const HomeworkResourceReviewSchema = z.object({
 
 const HomeworkJournalPromptSchema = z.object({
   type: z.literal("JOURNAL_PROMPT"),
-  prompts: z.array(z.string()).min(1),
+  prompts: z.array(z.string()).min(1).default([""]),
   spaceSizeHint: z.enum(["small", "medium", "large"]).default("medium"),
   sortOrder: z.number().int().default(0),
   customLabel: customLabelField,

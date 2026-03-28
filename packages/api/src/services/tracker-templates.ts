@@ -4,7 +4,7 @@ import { prisma } from "@steady/db";
 
 interface TemplateField {
   label: string;
-  fieldType: "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME";
+  fieldType: "SCALE" | "NUMBER" | "YES_NO" | "MULTI_CHECK" | "FREE_TEXT" | "TIME" | "FEELINGS_WHEEL";
   options?: Record<string, unknown>;
   isRequired: boolean;
 }
@@ -110,6 +110,24 @@ const TEMPLATES: TrackerTemplate[] = [
       { label: "Feelings Before", fieldType: "FREE_TEXT", isRequired: false },
       { label: "Binge", fieldType: "YES_NO", isRequired: true },
       { label: "Purge", fieldType: "YES_NO", isRequired: true },
+    ],
+  },
+  {
+    key: "feelings-check-in",
+    name: "Feelings Check-in",
+    description: "Track daily emotions using the Willcox feelings wheel",
+    fields: [
+      {
+        label: "How are you feeling?",
+        fieldType: "FEELINGS_WHEEL",
+        options: { maxSelections: 3 },
+        isRequired: true,
+      },
+      {
+        label: "What's on your mind?",
+        fieldType: "FREE_TEXT",
+        isRequired: false,
+      },
     ],
   },
 ];

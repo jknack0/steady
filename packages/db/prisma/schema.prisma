@@ -137,6 +137,7 @@ enum TrackerFieldType {
   MULTI_CHECK
   FREE_TEXT
   TIME
+  FEELINGS_WHEEL
 }
 
 enum HomeworkInstanceStatus {

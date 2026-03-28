@@ -42,6 +42,7 @@ const FIELD_TYPE_LABELS: Record<TrackerFieldType, string> = {
   MULTI_CHECK: "Multi-Check",
   FREE_TEXT: "Free Text",
   TIME: "Time",
+  FEELINGS_WHEEL: "Feelings Wheel",
 };
 
 const FIELD_TYPES: TrackerFieldType[] = [
@@ -51,13 +52,14 @@ const FIELD_TYPES: TrackerFieldType[] = [
   "MULTI_CHECK",
   "FREE_TEXT",
   "TIME",
+  "FEELINGS_WHEEL",
 ];
 
 interface LocalField {
   id?: string;
   label: string;
   fieldType: TrackerFieldType;
-  options: { min: number; max: number; minLabel?: string; maxLabel?: string } | { choices: string[] } | null;
+  options: { min: number; max: number; minLabel?: string; maxLabel?: string } | { choices: string[] } | { maxSelections: number } | null;
   sortOrder: number;
   isRequired: boolean;
 }
@@ -205,6 +207,8 @@ export function EditCheckinModal({
         .filter(Boolean);
       if (choices.length === 0) return;
       options = { choices };
+    } else if (newFieldType === "FEELINGS_WHEEL") {
+      options = { maxSelections: 3 };
     }
 
     setLocalFields((prev) => [

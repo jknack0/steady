@@ -31,6 +31,10 @@ export const RecentSubmissionsSettings = z.object({
   daysBack: z.number().int().min(1).max(30),
 });
 
+export const EmotionTrendsSettings = z.object({
+  daysBack: z.number().int().min(7).max(90).default(30),
+});
+
 export const QuickActionsSettings = z.object({
   links: z
     .array(
@@ -389,6 +393,17 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         { label: "Assign Homework", path: "/programs" },
       ],
     },
+  },
+  emotion_trends: {
+    id: "emotion_trends",
+    label: "Emotion Trends",
+    description: "Emotion frequency and patterns from feelings wheel check-ins",
+    page: "client_overview",
+    defaultColumn: "main",
+    supportedColumns: ["main", "sidebar"],
+    requiresModule: "daily_tracker" as ModuleId,
+    settingsSchema: EmotionTrendsSettings,
+    defaultSettings: { daysBack: 30 },
   },
 };
 
