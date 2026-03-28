@@ -65,7 +65,7 @@ describe("CreateInvitationSchema", () => {
 describe("RegisterWithInviteSchema", () => {
   it("accepts valid registration with invite code", () => {
     const result = RegisterWithInviteSchema.safeParse({
-      code: "STEADY-7X2K",
+      inviteCode: "STEADY-7X2K",
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -76,7 +76,7 @@ describe("RegisterWithInviteSchema", () => {
 
   it("accepts lowercase invite code and uppercases it", () => {
     const result = RegisterWithInviteSchema.safeParse({
-      code: "steady-7x2k",
+      inviteCode: "steady-7x2k",
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -84,7 +84,7 @@ describe("RegisterWithInviteSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.code).toBe("STEADY-7X2K");
+      expect(result.data.inviteCode).toBe("STEADY-7X2K");
     }
   });
 
@@ -100,7 +100,7 @@ describe("RegisterWithInviteSchema", () => {
 
   it("rejects invalid code format", () => {
     const result = RegisterWithInviteSchema.safeParse({
-      code: "INVALID",
+      inviteCode: "INVALID",
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -111,7 +111,7 @@ describe("RegisterWithInviteSchema", () => {
 
   it("rejects password under 8 chars", () => {
     const result = RegisterWithInviteSchema.safeParse({
-      code: "STEADY-7X2K",
+      inviteCode: "STEADY-7X2K",
       firstName: "Jane",
       lastName: "Doe",
       email: "jane@example.com",
@@ -122,7 +122,7 @@ describe("RegisterWithInviteSchema", () => {
 
   it("rejects invalid email", () => {
     const result = RegisterWithInviteSchema.safeParse({
-      code: "STEADY-7X2K",
+      inviteCode: "STEADY-7X2K",
       firstName: "Jane",
       lastName: "Doe",
       email: "not-email",

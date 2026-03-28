@@ -172,6 +172,7 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 - **Never use `replace_all` on Zod schema fields** — the same field name (e.g., `sortOrder`) may appear in multiple unrelated schemas. Target each schema individually.
 - **Test with realistic DB payloads** — existing data may use different field names or values than what the schema expects. Always verify the schema accepts actual production data shapes.
 - **Never put React Query hooks inside list-rendered components** — call hooks in the parent and pass data as props. Hooks in list items cause re-render storms that break autosave.
+- **Field names MUST match across the full stack** — Zod schema, service function, route handler, and client (mobile + web) must all use the same field names. The `validate` middleware runs `schema.parse()` which silently strips unrecognized fields, so a field name mismatch (e.g., schema says `code` but client sends `inviteCode`) will fail at runtime with a misleading "Required" error. When writing or modifying a schema, always check the client code to verify the field names match what's actually sent.
 
 ### Test Infrastructure
 - Vitest (API: node environment, Web: jsdom environment).
