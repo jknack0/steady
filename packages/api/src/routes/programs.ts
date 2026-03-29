@@ -58,7 +58,7 @@ router.get("/templates", async (_req: Request, res: Response) => {
   }
 });
 
-// GET /api/programs — List all programs for the authenticated clinician
+// GET /api/programs — List all program templates for the authenticated clinician
 router.get("/", async (req: Request, res: Response) => {
   try {
     const { cursor, limit = "50" } = req.query;
@@ -67,7 +67,7 @@ router.get("/", async (req: Request, res: Response) => {
     const programs = await prisma.program.findMany({
       where: {
         clinicianId: req.user!.clinicianProfileId!,
-        isTemplate: false,
+        isTemplate: true,
         status: { not: "ARCHIVED" },
       },
       include: {
