@@ -310,6 +310,7 @@ model Module {
   sortOrder        Int
   unlockRule       UnlockRule @default(SEQUENTIAL)
   unlockDelayDays  Int?
+  deletedAt        DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 

@@ -135,15 +135,6 @@ export function StrategyCardsPartEditor({ content, onChange }: StrategyCardsEdit
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2">
-        <Label>Deck Name</Label>
-        <Input
-          placeholder="e.g., Memory Strategies"
-          value={content.deckName || ""}
-          onChange={(e) => onChange({ ...content, deckName: e.target.value })}
-        />
-      </div>
-
       <div className="space-y-2">
         <Label>Cards</Label>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
