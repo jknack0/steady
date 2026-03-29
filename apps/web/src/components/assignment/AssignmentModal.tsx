@@ -6,6 +6,7 @@ import { api } from "@/lib/api-client";
 import { useAssignProgram, useAppendModules } from "@/hooks/use-assignment";
 import { ParticipantPicker } from "./ParticipantPicker";
 import { TemplatePicker } from "./TemplatePicker";
+import { ProgramPicker } from "./ProgramPicker";
 import { ProgramTreeSelect } from "./ProgramTreeSelect";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,7 +149,7 @@ export function AssignmentModal({
     ? "Uncheck modules or parts to exclude them"
     : entryPoint === "program"
       ? "Select a client to assign this program to"
-      : "Select a program template to assign";
+      : "Choose a program to assign to this client";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -170,7 +171,7 @@ export function AssignmentModal({
           )}
 
           {step === "select" && entryPoint === "client" && (
-            <TemplatePicker
+            <ProgramPicker
               selectedId={selectedTemplateId}
               onSelect={(id, name) => {
                 setSelectedTemplateId(id);

@@ -216,7 +216,6 @@ function OverviewTab({
   participantId: string;
 }) {
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
-  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
 
@@ -258,16 +257,16 @@ function OverviewTab({
           <p className="text-xs text-muted-foreground mt-1 mb-4">
             Enroll this client in a program to track their progress, assign modules, and schedule sessions.
           </p>
-          <Button size="sm" onClick={() => setEnrollDialogOpen(true)}>
+          <Button size="sm" onClick={() => setAssignModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Enroll in Program
           </Button>
         </div>
-        <EnrollDialog
-          open={enrollDialogOpen}
-          onOpenChange={setEnrollDialogOpen}
-          participantEmail={data.participant.email}
-          participantId={participantId}
+        <AssignmentModal
+          open={assignModalOpen}
+          onOpenChange={setAssignModalOpen}
+          participantId={data.participantProfileId}
+          participantName={`${data.participant.firstName} ${data.participant.lastName}`.trim()}
         />
       </div>
     );
@@ -321,13 +320,7 @@ function OverviewTab({
         onOpenChange={setHwViewerOpen}
       />
 
-      {/* Enroll Dialog */}
-      <EnrollDialog
-        open={enrollDialogOpen}
-        onOpenChange={setEnrollDialogOpen}
-        participantEmail={data.participant.email}
-        participantId={participantId}
-      />
+      {/* Enroll Dialog — now uses AssignmentModal */}
 
       {/* Assignment Modal */}
       <AssignmentModal
