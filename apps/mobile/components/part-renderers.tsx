@@ -329,9 +329,6 @@ export function StrategyCardsRenderer({
 
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      {content.deckName ? (
-        <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>{content.deckName}</Text>
-      ) : null}
       <View style={{ backgroundColor: "#E3EDED", borderRadius: 16, padding: 24, minHeight: 200 }}>
         {card.emoji ? (
           <Text style={{ fontSize: 36, marginBottom: 12 }}>{card.emoji}</Text>
@@ -678,9 +675,6 @@ export function AssessmentRenderer({
 
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      {content.title ? (
-        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>{content.title}</Text>
-      ) : null}
       {content.instructions ? (
         <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16, lineHeight: 20 }}>{content.instructions}</Text>
       ) : null}
@@ -885,9 +879,6 @@ export function IntakeFormRenderer({
 
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      {content.title ? (
-        <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 4 }}>{content.title}</Text>
-      ) : null}
       {content.instructions ? (
         <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#5A5A5A", marginBottom: 16, lineHeight: 20 }}>{content.instructions}</Text>
       ) : null}
