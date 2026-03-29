@@ -68,6 +68,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { AssignmentModal } from "@/components/assignment";
 import { WidgetGrid } from "@/components/widget-grid";
 import { CLIENT_WIDGET_COMPONENTS } from "@/components/client-widgets";
 import { normalizeDashboardLayout, getClientOverviewWidgets } from "@steady/shared";
@@ -216,6 +217,7 @@ function OverviewTab({
 }) {
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
 
   const { data: clinicianConfig } = useClinicianConfig();
@@ -285,8 +287,12 @@ function OverviewTab({
 
   return (
     <div className="space-y-6">
-      {/* Customize toggle */}
-      <div className="flex justify-end">
+      {/* Actions */}
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => setAssignModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Program
+        </Button>
         <Button
           variant={isCustomizing ? "default" : "outline"}
           size="sm"
@@ -321,6 +327,14 @@ function OverviewTab({
         onOpenChange={setEnrollDialogOpen}
         participantEmail={data.participant.email}
         participantId={participantId}
+      />
+
+      {/* Assignment Modal */}
+      <AssignmentModal
+        open={assignModalOpen}
+        onOpenChange={setAssignModalOpen}
+        participantId={data.participantProfileId}
+        participantName={participantName}
       />
     </div>
   );

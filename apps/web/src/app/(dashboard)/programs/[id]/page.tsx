@@ -54,6 +54,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Module } from "@/hooks/use-programs";
 import { EnrollmentSection } from "@/components/enrollment-section";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
+import { AssignmentModal } from "@/components/assignment";
 import { FileUpload } from "@/components/file-upload";
 import Link from "next/link";
 
@@ -187,6 +188,7 @@ export default function ProgramEditorPage() {
   const [addingModule, setAddingModule] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
@@ -297,10 +299,19 @@ export default function ProgramEditorPage() {
             >
               {program.status.toLowerCase()}
             </Badge>
+          {program.isTemplate && (
+            <Button
+              size="sm"
+              className="ml-auto"
+              onClick={() => setAssignOpen(true)}
+            >
+              Assign to Client
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className={program.isTemplate ? "" : "ml-auto"}
             onClick={() => setPreviewOpen(true)}
           >
             <Eye className="mr-2 h-4 w-4" />
@@ -522,6 +533,14 @@ export default function ProgramEditorPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
       />
+      {program.isTemplate && (
+        <AssignmentModal
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          templateId={programId}
+          onSuccess={() => setAssignOpen(false)}
+        />
+      )}
       {confirmDialog}
     </div>
   );
