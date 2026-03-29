@@ -71,6 +71,7 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
       deleteMany: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
     },
     partProgress: {
       create: vi.fn(),
@@ -80,6 +81,7 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
       deleteMany: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
     },
     task: {
       create: vi.fn(),

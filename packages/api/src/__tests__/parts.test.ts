@@ -270,6 +270,7 @@ describe("DELETE /api/programs/:programId/modules/:moduleId/parts/:id", () => {
   it("deletes a part and renumbers", async () => {
     mockOwnership();
     db.part.findFirst.mockResolvedValue(mockPart() as any);
+    db.partProgress.count.mockResolvedValue(0); // No progress → hard delete
 
     db.$transaction.mockImplementation(async (fn: any) => {
       if (typeof fn === "function") return fn(db);
@@ -286,6 +287,7 @@ describe("DELETE /api/programs/:programId/modules/:moduleId/parts/:id", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+    expect(res.body.data.deleted).toBe("hard");
   });
 
   it("returns 404 if part not found", async () => {

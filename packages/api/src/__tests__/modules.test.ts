@@ -141,6 +141,7 @@ describe("DELETE /api/programs/:programId/modules/:id", () => {
   it("deletes a module and renumbers remaining", async () => {
     db.program.findFirst.mockResolvedValue(mockProgram() as any);
     db.module.findFirst.mockResolvedValue(mockModule() as any);
+    db.moduleProgress.count.mockResolvedValue(0); // No progress → hard delete
 
     // Mock transaction
     db.$transaction.mockImplementation(async (fn: any) => {
@@ -158,6 +159,7 @@ describe("DELETE /api/programs/:programId/modules/:id", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+    expect(res.body.data.deleted).toBe("hard");
   });
 
   it("returns 404 if module not found", async () => {
