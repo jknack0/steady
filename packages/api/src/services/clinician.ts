@@ -96,7 +96,7 @@ export async function getClinicianParticipants(
   const enrollments = await prisma.enrollment.findMany({
     where: {
       programId: { in: programIds },
-      status: { in: ["ACTIVE", "PAUSED", "INVITED"] },
+      status: { in: ["ACTIVE", "PAUSED", "INVITED", "DROPPED", "COMPLETED"] },
     },
     include: {
       participant: {
