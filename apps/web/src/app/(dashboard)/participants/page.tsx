@@ -469,9 +469,7 @@ export default function ParticipantsPage() {
                       <InviteStatusBadge status="ACTIVE" />
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {p.enrollmentStatus === "DROPPED" || p.enrollmentStatus === "COMPLETED"
-                        ? <span className="text-muted-foreground">—</span>
-                        : p.programTitle}
+                      {p.programTitle || <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       <Badge

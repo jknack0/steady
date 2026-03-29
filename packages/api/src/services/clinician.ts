@@ -238,8 +238,8 @@ export async function getClinicianParticipants(
       enrollmentId: enrollment.id,
       name,
       email: user.email,
-      programId: enrollment.programId,
-      programTitle: programMap.get(enrollment.programId) || "",
+      programId: enrollment.status === "DROPPED" || enrollment.status === "COMPLETED" ? "" : enrollment.programId,
+      programTitle: enrollment.status === "DROPPED" || enrollment.status === "COMPLETED" ? "" : (programMap.get(enrollment.programId) || ""),
       currentModule: currentModule
         ? { id: currentModule.id, title: currentModule.title }
         : null,
