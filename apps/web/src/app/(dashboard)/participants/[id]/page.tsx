@@ -262,7 +262,7 @@ function OverviewTab({
     return normalizeDashboardLayout(raw, clientOverviewWidgets);
   }, [clientConfig, clinicianConfig, clientOverviewWidgets]);
 
-  const enrollment = data.enrollments[0];
+  const enrollment = data.enrollments.find((e) => e.status === "ACTIVE" || e.status === "PAUSED" || e.status === "INVITED") ?? null;
   if (!enrollment) {
     return (
       <div className="space-y-6">
