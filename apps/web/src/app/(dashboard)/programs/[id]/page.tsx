@@ -52,7 +52,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Module } from "@/hooks/use-programs";
-import { EnrollmentSection } from "@/components/enrollment-section";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
 import { AssignmentModal } from "@/components/assignment";
 import { FileUpload } from "@/components/file-upload";
@@ -493,9 +492,6 @@ export default function ProgramEditorPage() {
           </div>
         )}
       </div>
-
-      {/* Enrollments */}
-      <EnrollmentSection programId={programId} programStatus={program.status} />
 
       <PhonePreviewModal
         programId={programId}
