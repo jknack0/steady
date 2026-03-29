@@ -983,6 +983,7 @@ export async function addClient(
 interface ClientRow {
   id: string;
   clientId: string;
+  participantProfileId: string | null;
   name: string;
   email: string;
   status: string;
@@ -1085,6 +1086,7 @@ export async function getClinicianClients(
     return {
       id: cc.id,
       clientId: cc.clientId,
+      participantProfileId: participantProfileId ?? null,
       name,
       email: cc.client.email,
       status: cc.status,

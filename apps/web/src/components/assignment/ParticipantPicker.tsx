@@ -7,17 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Check } from "lucide-react";
 
-interface Client {
+interface ClientRow {
   id: string;
   clientId: string;
+  participantProfileId: string | null;
+  name: string;
+  email: string;
   status: string;
-  client: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-    participantProfile?: { id: string };
-  };
 }
 
 interface ParticipantPickerProps {
@@ -28,19 +24,19 @@ interface ParticipantPickerProps {
 export function ParticipantPicker({ onSelect, selectedId }: ParticipantPickerProps) {
   const [search, setSearch] = useState("");
 
-  const { data: clients, isLoading } = useQuery<Client[]>({
+  const { data: clients, isLoading } = useQuery<ClientRow[]>({
     queryKey: ["clinician-clients"],
     queryFn: () => api.get("/api/clinician/clients"),
   });
 
   const filtered = useMemo(() => {
     if (!clients) return [];
-    if (!search) return clients;
+    const withProfile = clients.filter((c) => c.participantProfileId);
+    if (!search) return withProfile;
     const q = search.toLowerCase();
-    return clients.filter((c) => {
-      const name = `${c.client.firstName || ""} ${c.client.lastName || ""}`.toLowerCase();
-      return name.includes(q) || c.client.email.toLowerCase().includes(q);
-    });
+    return withProfile.filter((c) =>
+      c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)
+    );
   }, [clients, search]);
 
   return (
@@ -72,11 +68,7 @@ export function ParticipantPicker({ onSelect, selectedId }: ParticipantPickerPro
         )}
 
         {filtered.map((c) => {
-          const participantId = c.client.participantProfile?.id;
-          if (!participantId) return null;
-          const name = [c.client.firstName, c.client.lastName].filter(Boolean).join(" ") || c.client.email;
-          const isSelected = selectedId === participantId;
-
+          const isSelected = selectedId === c.participantProfileId;
           return (
             <button
               key={c.id}
@@ -84,11 +76,11 @@ export function ParticipantPicker({ onSelect, selectedId }: ParticipantPickerPro
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors ${
                 isSelected ? "bg-primary/10 border border-primary" : "hover:bg-accent/50 border border-transparent"
               }`}
-              onClick={() => onSelect(participantId, name)}
+              onClick={() => onSelect(c.participantProfileId!, c.name)}
             >
               <div>
-                <p className="text-sm font-medium">{name}</p>
-                <p className="text-xs text-muted-foreground">{c.client.email}</p>
+                <p className="text-sm font-medium">{c.name}</p>
+                <p className="text-xs text-muted-foreground">{c.email}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={c.status === "ACTIVE" ? "default" : "secondary"} className="text-xs">
