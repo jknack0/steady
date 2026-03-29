@@ -2,102 +2,221 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePrograms } from "@/hooks/use-programs";
+import { useSearchParams, useRouter } from "next/navigation";
+import { usePrograms, useTemplates, useCloneProgram } from "@/hooks/use-programs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Users, Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/loading-state";
 import { CreateProgramDialog } from "./create-program-dialog";
+import { AssignmentModal } from "@/components/assignment";
 import { PageHeader } from "@/components/page-header";
 
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  PUBLISHED: "bg-green-100 text-green-800 border-green-200",
-  ARCHIVED: "bg-gray-100 text-gray-800 border-gray-200",
-};
+type Tab = "my-programs" | "templates";
 
 export default function ProgramsPage() {
-  const { data: programs, isLoading, error } = usePrograms();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab");
+  const activeTab: Tab = tabParam === "templates" ? "templates" : "my-programs";
+
+  const { data: programs, isLoading: programsLoading } = usePrograms();
+  const { data: templates, isLoading: templatesLoading } = useTemplates();
+  const cloneProgram = useCloneProgram();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [assignTemplateId, setAssignTemplateId] = useState<string | null>(null);
+
+  const setTab = (tab: Tab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "templates") {
+      params.set("tab", "templates");
+    } else {
+      params.delete("tab");
+    }
+    router.replace(`/programs?${params.toString()}`);
+  };
+
+  const handleUseTemplate = async (templateId: string) => {
+    try {
+      const result = await cloneProgram.mutateAsync({ id: templateId });
+      router.push(`/programs/${result.id}`);
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
+  const isLoading = activeTab === "my-programs" ? programsLoading : templatesLoading;
 
   return (
     <div>
       <PageHeader
-        title="My Programs"
-        subtitle={programs ? `${programs.length} programs` : undefined}
+        title="Programs"
         actions={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Program
-          </Button>
+          activeTab === "my-programs" ? (
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Program
+            </Button>
+          ) : undefined
         }
       />
 
+      {/* Tabs */}
+      <div className="flex gap-1 border-b mb-6">
+        {([
+          { key: "my-programs" as Tab, label: "My Programs" },
+          { key: "templates" as Tab, label: "Template Library" },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading && <LoadingState />}
 
-      {error && (
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-          Failed to load programs. Make sure the API server is running.
-        </div>
-      )}
+      {/* My Programs Tab */}
+      {activeTab === "my-programs" && !programsLoading && (
+        <>
+          {programs && programs.length === 0 && (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No programs yet</h3>
+              <p className="text-muted-foreground mt-1 mb-4">
+                Create one or browse the Template Library.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Program
+                </Button>
+                <Button variant="outline" onClick={() => setTab("templates")}>
+                  Browse Templates
+                </Button>
+              </div>
+            </div>
+          )}
 
-      {programs && programs.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
-          <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No programs yet</h3>
-          <p className="text-muted-foreground mt-1 mb-4">
-            Create your first program to get started
-          </p>
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Program
-          </Button>
-        </div>
-      )}
-
-      {programs && programs.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {programs.map((program) => (
-            <Link key={program.id} href={`/programs/${program.id}`}>
-              <Card className="cursor-pointer transition-shadow hover:shadow-md">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg line-clamp-1">
-                      {program.title}
-                    </CardTitle>
-                    <Badge
+          {programs && programs.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {programs.map((program) => (
+                <Card key={program.id} className="transition-shadow hover:shadow-md">
+                  <Link href={`/programs/${program.id}`}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg line-clamp-1">
+                        {program.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {program.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                          {program.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-3.5 w-3.5" />
+                          {program.moduleCount ?? 0} modules
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          {program.activeEnrollmentCount ?? 0} active
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Link>
+                  <div className="px-6 pb-4 flex gap-2">
+                    <Button
+                      size="sm"
                       variant="outline"
-                      className={statusColors[program.status] || ""}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setAssignTemplateId(program.id);
+                      }}
                     >
-                      {program.status.toLowerCase()}
-                    </Badge>
+                      Assign to Client
+                    </Button>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {program.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                      {program.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Template Library Tab */}
+      {activeTab === "templates" && !templatesLoading && (
+        <>
+          {templates && templates.length === 0 && (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No templates available</h3>
+            </div>
+          )}
+
+          {templates && templates.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {templates.map((template) => (
+                <Card key={template.id} className="transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg line-clamp-1">
+                      {template.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {template.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        {template.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
                       <BookOpen className="h-3.5 w-3.5" />
-                      {program.moduleCount ?? 0} modules
+                      {template.moduleCount} modules
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5" />
-                      {program.activeEnrollmentCount ?? 0} active
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleUseTemplate(template.id)}
+                        disabled={cloneProgram.isPending}
+                      >
+                        {cloneProgram.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Use Template
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAssignTemplateId(template.id)}
+                      >
+                        Assign to Client
+                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <CreateProgramDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      {assignTemplateId && (
+        <AssignmentModal
+          open={!!assignTemplateId}
+          onOpenChange={(open) => !open && setAssignTemplateId(null)}
+          templateId={assignTemplateId}
+        />
+      )}
     </div>
   );
 }

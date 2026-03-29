@@ -19,6 +19,8 @@ router.post("/", validate(CreateProgramSchema), async (req: Request, res: Respon
       data: {
         ...req.body,
         clinicianId: req.user!.clinicianProfileId!,
+        isTemplate: true,
+        status: "PUBLISHED",
       },
     });
     res.status(201).json({ success: true, data: program });
@@ -28,13 +30,17 @@ router.post("/", validate(CreateProgramSchema), async (req: Request, res: Respon
   }
 });
 
-// GET /api/programs/templates — List all available program templates
-router.get("/templates", async (_req: Request, res: Response) => {
+// GET /api/programs/templates — List seeded templates not owned by the clinician
+router.get("/templates", async (req: Request, res: Response) => {
   try {
     const templates = await prisma.program.findMany({
-      where: { isTemplate: true, status: "PUBLISHED" },
+      where: {
+        isTemplate: true,
+        status: { not: "ARCHIVED" },
+        clinicianId: { not: req.user!.clinicianProfileId! },
+      },
       include: {
-        _count: { select: { modules: true } },
+        _count: { select: { modules: { where: { deletedAt: null } } } },
       },
       orderBy: { title: "asc" },
       take: 100,
@@ -294,6 +300,122 @@ router.post("/:id/assign/append", validate(AppendModulesSchema), async (req: Req
   }
 });
 
+// POST /api/programs/:id/promote — Save a client program as My Program (structure only, no progress)
+router.post("/:id/promote", async (req: Request, res: Response) => {
+  try {
+    const source = await prisma.program.findFirst({
+      where: {
+        id: req.params.id,
+        clinicianId: req.user!.clinicianProfileId!,
+        isTemplate: false, // Must be a client copy
+      },
+      include: {
+        modules: {
+          where: { deletedAt: null },
+          orderBy: { sortOrder: "asc" },
+          include: { parts: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } } },
+        },
+        dailyTrackers: {
+          include: { fields: { orderBy: { sortOrder: "asc" } } },
+        },
+      },
+    });
+
+    if (!source) {
+      res.status(404).json({ success: false, error: "Program not found" });
+      return;
+    }
+
+    const customTitle = typeof req.body?.title === "string" && req.body.title.trim()
+      ? req.body.title.trim()
+      : source.title;
+
+    const promoted = await prisma.$transaction(async (tx) => {
+      const newProgram = await tx.program.create({
+        data: {
+          clinicianId: req.user!.clinicianProfileId!,
+          title: customTitle,
+          description: source.description,
+          category: source.category,
+          durationWeeks: source.durationWeeks,
+          coverImageUrl: source.coverImageUrl,
+          cadence: source.cadence,
+          enrollmentMethod: source.enrollmentMethod,
+          sessionType: source.sessionType,
+          followUpCount: source.followUpCount,
+          isTemplate: true,
+          templateSourceId: source.templateSourceId, // Preserve original lineage
+          status: "PUBLISHED",
+        },
+      });
+
+      for (const mod of source.modules) {
+        const newModule = await tx.module.create({
+          data: {
+            programId: newProgram.id,
+            title: mod.title,
+            subtitle: mod.subtitle,
+            summary: mod.summary,
+            estimatedMinutes: mod.estimatedMinutes,
+            sortOrder: mod.sortOrder,
+            unlockRule: mod.unlockRule,
+            unlockDelayDays: mod.unlockDelayDays,
+          },
+        });
+
+        if (mod.parts.length > 0) {
+          await tx.part.createMany({
+            data: mod.parts.map((p) => ({
+              moduleId: newModule.id,
+              type: p.type,
+              title: p.title,
+              sortOrder: p.sortOrder,
+              isRequired: p.isRequired,
+              content: p.content as any,
+            })),
+          });
+        }
+      }
+
+      for (const tracker of source.dailyTrackers) {
+        const newTracker = await tx.dailyTracker.create({
+          data: {
+            programId: newProgram.id,
+            createdById: req.user!.clinicianProfileId!,
+            name: tracker.name,
+            description: tracker.description,
+          },
+        });
+
+        if (tracker.fields.length > 0) {
+          await tx.dailyTrackerField.createMany({
+            data: tracker.fields.map((f) => ({
+              trackerId: newTracker.id,
+              label: f.label,
+              fieldType: f.fieldType,
+              sortOrder: f.sortOrder,
+              isRequired: f.isRequired,
+              options: f.options as any,
+            })),
+          });
+        }
+      }
+
+      return newProgram;
+    });
+
+    const result = await prisma.program.findUnique({
+      where: { id: promoted.id },
+      include: { modules: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } } },
+    });
+
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    logger.error("Promote program error", err);
+    res.status(500).json({ success: false, error: "Failed to save as my program" });
+  }
+});
+
 // POST /api/programs/:id/clone — Clone a program (or template) with all content
 router.post("/:id/clone", async (req: Request, res: Response) => {
   try {
@@ -302,7 +424,7 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
       where: {
         id: req.params.id,
         OR: [
-          { isTemplate: true, status: "PUBLISHED" },
+          { isTemplate: true, status: { not: "ARCHIVED" } },
           { clinicianId: req.user!.clinicianProfileId! },
         ],
       },
@@ -342,9 +464,9 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
           enrollmentMethod: source.enrollmentMethod,
           sessionType: source.sessionType,
           followUpCount: source.followUpCount,
-          isTemplate: false,
+          isTemplate: true,
           templateSourceId: source.id,
-          status: "DRAFT",
+          status: "PUBLISHED",
         },
       });
 

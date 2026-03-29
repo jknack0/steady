@@ -52,6 +52,17 @@ export function useDeleteModule() {
   });
 }
 
+export function usePromoteProgram() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ programId, title }: { programId: string; title?: string }) =>
+      api.post<{ id: string; title: string }>(`/api/programs/${programId}/promote`, title ? { title } : {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+    },
+  });
+}
+
 export function useDeletePart() {
   const queryClient = useQueryClient();
   return useMutation({

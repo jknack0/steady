@@ -176,9 +176,7 @@ export function InvitePatientModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No program</SelectItem>
-                    {(programs ?? [])
-                      .filter((p) => p.status === "PUBLISHED")
-                      .map((p) => (
+                    {(programs ?? []).map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.title}
                         </SelectItem>

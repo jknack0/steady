@@ -245,12 +245,6 @@ export default function ProgramEditorPage() {
     }
   };
 
-  const handleStatusToggle = () => {
-    if (!program) return;
-    const newStatus = program.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    updateProgram.mutate({ status: newStatus as any });
-  };
-
   if (isLoading) {
     return <LoadingState />;
   }
@@ -289,29 +283,16 @@ export default function ProgramEditorPage() {
             </h1>
           )}
           <SaveIndicator status={programSaveStatus} />
-          <Badge
-            variant="outline"
-            className={
-              program.status === "PUBLISHED"
-                ? "bg-green-100 text-green-800 border-green-200"
-                : "bg-yellow-100 text-yellow-800 border-yellow-200"
-              }
-            >
-              {program.status.toLowerCase()}
-            </Badge>
-          {program.isTemplate && (
-            <Button
-              size="sm"
-              className="ml-auto"
-              onClick={() => setAssignOpen(true)}
-            >
-              Assign to Client
-            </Button>
-          )}
+          <Button
+            size="sm"
+            className="ml-auto"
+            onClick={() => setAssignOpen(true)}
+          >
+            Assign to Client
+          </Button>
           <Button
             variant="outline"
             size="sm"
-            className={program.isTemplate ? "" : "ml-auto"}
             onClick={() => setPreviewOpen(true)}
           >
             <Eye className="mr-2 h-4 w-4" />
@@ -425,18 +406,6 @@ export default function ProgramEditorPage() {
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label>Status</Label>
-                <Button
-                  variant="outline"
-                  onClick={handleStatusToggle}
-                  className="justify-start"
-                >
-                  {program.status === "DRAFT"
-                    ? "Publish Program"
-                    : "Revert to Draft"}
-                </Button>
-              </div>
             </div>
 
             <div className="mt-4 pt-4 border-t">
@@ -533,14 +502,12 @@ export default function ProgramEditorPage() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
       />
-      {program.isTemplate && (
-        <AssignmentModal
-          open={assignOpen}
-          onOpenChange={setAssignOpen}
-          templateId={programId}
-          onSuccess={() => setAssignOpen(false)}
-        />
-      )}
+      <AssignmentModal
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        templateId={programId}
+        onSuccess={() => setAssignOpen(false)}
+      />
       {confirmDialog}
     </div>
   );
