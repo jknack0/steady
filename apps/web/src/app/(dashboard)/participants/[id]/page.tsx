@@ -96,8 +96,21 @@ export default function ParticipantDetailPage() {
   const participant = data.participant;
   const name = `${participant.firstName} ${participant.lastName}`.trim();
 
+  const tabLabels: Record<Tab, string> = { overview: "Overview", homework: "Homework", trackers: "Check-in", rtm: "RTM" };
+
   return (
     <div>
+      {/* Breadcrumbs */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm mb-4">
+        <Link href="/participants" className="text-muted-foreground hover:text-foreground transition-colors">
+          Clients
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <span className="text-muted-foreground">{name}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <span className="font-medium text-foreground">{tabLabels[tab]}</span>
+      </nav>
+
       <PageHeader title={name} subtitle={participant.email} />
 
       {/* Tabs */}
