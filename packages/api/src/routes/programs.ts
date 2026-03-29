@@ -30,14 +30,19 @@ router.post("/", validate(CreateProgramSchema), async (req: Request, res: Respon
   }
 });
 
-// GET /api/programs/templates — List seeded templates not owned by the clinician
+// GET /api/programs/templates — List seeded templates (owned by system user)
 router.get("/templates", async (req: Request, res: Response) => {
   try {
+    // Find the system user that owns seeded templates
+    const systemProfile = await prisma.clinicianProfile.findFirst({
+      where: { user: { email: "system@steady.app" } },
+    });
+
     const templates = await prisma.program.findMany({
       where: {
         isTemplate: true,
         status: { not: "ARCHIVED" },
-        clinicianId: { not: req.user!.clinicianProfileId! },
+        ...(systemProfile ? { clinicianId: systemProfile.id } : { clinicianId: "none" }),
       },
       include: {
         _count: { select: { modules: { where: { deletedAt: null } } } },
