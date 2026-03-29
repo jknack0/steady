@@ -1,10 +1,11 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
-import { CreateProgramSchema, UpdateProgramSchema } from "@steady/shared";
+import { CreateProgramSchema, UpdateProgramSchema, AssignProgramSchema, AppendModulesSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import crypto from "crypto";
+import { assignProgram, appendModules, AssignmentError } from "../services/assignment";
 
 const router = Router();
 
@@ -72,7 +73,7 @@ router.get("/", async (req: Request, res: Response) => {
       include: {
         _count: {
           select: {
-            modules: true,
+            modules: { where: { deletedAt: null } },
             enrollments: { where: { status: "ACTIVE" } },
           },
         },
@@ -109,6 +110,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       },
       include: {
         modules: {
+          where: { deletedAt: null },
           orderBy: { sortOrder: "asc" },
           include: {
             _count: { select: { parts: { where: { deletedAt: null } } } },
@@ -161,6 +163,7 @@ router.get("/:id/preview", async (req: Request, res: Response) => {
       },
       include: {
         modules: {
+          where: { deletedAt: null },
           orderBy: { sortOrder: "asc" },
           include: {
             parts: {
@@ -240,6 +243,57 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/programs/:id/assign — Assign a template to a client with inline customization
+router.post("/:id/assign", validate(AssignProgramSchema), async (req: Request, res: Response) => {
+  try {
+    const { participantId, title, excludedModuleIds, excludedPartIds } = req.body;
+    const result = await assignProgram(
+      req.user!.clinicianProfileId!,
+      req.params.id,
+      participantId,
+      { excludedModuleIds, excludedPartIds },
+      title
+    );
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    if (err instanceof AssignmentError) {
+      res.status(err.statusCode).json({
+        success: false,
+        error: err.message,
+        ...(err.data || {}),
+      });
+      return;
+    }
+    logger.error("Assign program error", err);
+    res.status(500).json({ success: false, error: "Failed to assign program" });
+  }
+});
+
+// POST /api/programs/:id/assign/append — Re-assign template, appending modules to existing client program
+router.post("/:id/assign/append", validate(AppendModulesSchema), async (req: Request, res: Response) => {
+  try {
+    const { clientProgramId, excludedModuleIds, excludedPartIds } = req.body;
+    const result = await appendModules(
+      req.user!.clinicianProfileId!,
+      clientProgramId,
+      req.params.id,
+      { excludedModuleIds, excludedPartIds }
+    );
+    res.json({ success: true, data: result });
+  } catch (err) {
+    if (err instanceof AssignmentError) {
+      res.status(err.statusCode).json({
+        success: false,
+        error: err.message,
+        ...(err.data || {}),
+      });
+      return;
+    }
+    logger.error("Append modules error", err);
+    res.status(500).json({ success: false, error: "Failed to append modules" });
+  }
+});
+
 // POST /api/programs/:id/clone — Clone a program (or template) with all content
 router.post("/:id/clone", async (req: Request, res: Response) => {
   try {
@@ -254,6 +308,7 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
       },
       include: {
         modules: {
+          where: { deletedAt: null },
           orderBy: { sortOrder: "asc" },
           include: { parts: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } } },
         },

@@ -8,3 +8,4 @@ export * from "./daily-tracker";
 export * from "./rtm";
 export * from "./config";
 export * from "./invitation";
+export * from "./assignment";

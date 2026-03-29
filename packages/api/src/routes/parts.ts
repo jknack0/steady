@@ -173,7 +173,7 @@ router.put("/:id", validate(UpdatePartSchema), async (req: Request, res: Respons
   }
 });
 
-// DELETE .../parts/:id — Soft-delete a part and re-number sortOrder
+// DELETE .../parts/:id — Smart delete: hard if no progress, soft if progress exists
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const mod = await verifyOwnership(req.params.programId, req.params.moduleId, req.user!.clinicianProfileId!);
@@ -190,12 +190,25 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
+    // Check if any enrollment has progress on this part (COND-2)
+    const progressCount = await prisma.partProgress.count({
+      where: {
+        partId: req.params.id,
+        status: { not: "NOT_STARTED" },
+      },
+    });
+
+    const deleteType = progressCount > 0 ? "soft" : "hard";
+
     await prisma.$transaction(async (tx) => {
-      // Soft-delete: set deletedAt instead of hard-deleting
-      await tx.part.update({
-        where: { id: req.params.id },
-        data: { deletedAt: new Date() },
-      });
+      if (deleteType === "soft") {
+        await tx.part.update({
+          where: { id: req.params.id },
+          data: { deletedAt: new Date() },
+        });
+      } else {
+        await tx.part.delete({ where: { id: req.params.id } });
+      }
 
       // Re-number remaining active parts
       const remaining = await tx.part.findMany({
@@ -213,7 +226,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       }
     });
 
-    res.json({ success: true });
+    res.json({ success: true, data: { deleted: deleteType } });
   } catch (err) {
     logger.error("Delete part error", err);
     res.status(500).json({ success: false, error: "Failed to delete part" });
