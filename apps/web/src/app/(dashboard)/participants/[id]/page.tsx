@@ -149,9 +149,9 @@ function EnrollDialog({
 }) {
   const queryClient = useQueryClient();
 
-  const { data: programs, isLoading } = useQuery<Array<{ id: string; title: string; status: string }>>({
-    queryKey: ["programs"],
-    queryFn: () => api.get("/api/programs"),
+  const { data: programs, isLoading } = useQuery<Array<{ id: string; title: string; moduleCount: number }>>({
+    queryKey: ["program-templates"],
+    queryFn: () => api.get("/api/programs/templates"),
     enabled: open,
   });
 
@@ -164,7 +164,7 @@ function EnrollDialog({
     },
   });
 
-  const publishedPrograms = (programs || []).filter((p) => p.status === "PUBLISHED");
+  const publishedPrograms = programs || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
