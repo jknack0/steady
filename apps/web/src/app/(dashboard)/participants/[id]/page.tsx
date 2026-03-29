@@ -231,6 +231,8 @@ function OverviewTab({
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const manage = useManageEnrollment(participantId);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const { data: clinicianConfig } = useClinicianConfig();
 
@@ -301,6 +303,25 @@ function OverviewTab({
     <div className="space-y-6">
       {/* Actions */}
       <div className="flex justify-end gap-2">
+        {enrollment && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={() =>
+              confirm({
+                title: "Remove from Program",
+                description: `Remove this client from "${enrollment.program.title}"? Their progress will be preserved but they will no longer have access.`,
+                confirmLabel: "Remove",
+                variant: "danger",
+                onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action: "drop" }),
+              })
+            }
+          >
+            <X className="mr-2 h-4 w-4" />
+            Remove from Program
+          </Button>
+        )}
         <Button size="sm" variant="outline" onClick={() => setAssignModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Program
@@ -342,6 +363,7 @@ function OverviewTab({
         participantId={data.participantProfileId}
         participantName={participantName}
       />
+      {confirmDialog}
     </div>
   );
 }
@@ -350,8 +372,12 @@ function OverviewTab({
 
 function EnrollmentCard({
   enrollment,
+  onRemove,
+  isRemoving,
 }: {
   enrollment: ParticipantDetail["enrollments"][0];
+  onRemove?: () => void;
+  isRemoving?: boolean;
 }) {
   const STATUS_COLORS: Record<string, string> = {
     ACTIVE: "bg-green-100 text-green-800",
@@ -365,9 +391,23 @@ function EnrollmentCard({
     <div className="rounded-lg border p-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold">{enrollment.program.title}</h3>
-        <Badge variant="outline" className={cn(STATUS_COLORS[enrollment.status])}>
-          {enrollment.status.toLowerCase()}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={cn(STATUS_COLORS[enrollment.status])}>
+            {enrollment.status.toLowerCase()}
+          </Badge>
+          {onRemove && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={onRemove}
+              disabled={isRemoving}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Remove
+            </Button>
+          )}
+        </div>
       </div>
       {enrollment.program.description && (
         <p className="text-sm text-muted-foreground mb-3">
