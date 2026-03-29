@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useProgram, useUpdateProgram } from "@/hooks/use-programs";
+import { useProgram, useUpdateProgram, useDeleteProgram } from "@/hooks/use-programs";
 import { useAutosave } from "@/hooks/use-autosave";
 import { SaveIndicator } from "@/components/save-indicator";
 import {
@@ -180,6 +180,7 @@ export default function ProgramEditorPage() {
   const programId = params.id as string;
   const { data: program, isLoading } = useProgram(programId);
   const updateProgram = useUpdateProgram(programId);
+  const deleteProgram = useDeleteProgram();
   const deleteModule = useDeleteModule(programId);
   const reorderModules = useReorderModules(programId);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -416,6 +417,27 @@ export default function ProgramEditorPage() {
                   updateProgram.mutate({ coverImageUrl: publicUrl || null });
                 }}
               />
+            </div>
+
+            <div className="mt-4 pt-4 border-t">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() =>
+                  confirm({
+                    title: "Archive Program",
+                    description: "This program will be hidden from your program list. You can't undo this.",
+                    confirmLabel: "Archive",
+                    variant: "danger",
+                    onConfirm: async () => {
+                      await deleteProgram.mutateAsync(programId);
+                      router.push("/programs");
+                    },
+                  })
+                }
+              >
+                Archive Program
+              </Button>
             </div>
           </div>
         )}
