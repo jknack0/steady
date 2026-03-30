@@ -28,12 +28,15 @@ export async function assignProgram(
   selections: AssignmentSelections,
   customTitle?: string
 ) {
-  // 1. Verify template exists, is published, and is a template
+  // 1. Verify program exists and is published (own program or a template)
   const template = await prisma.program.findFirst({
     where: {
       id: templateId,
-      isTemplate: true,
       status: "PUBLISHED",
+      OR: [
+        { clinicianId },
+        { isTemplate: true },
+      ],
     },
     include: {
       modules: {
@@ -187,12 +190,15 @@ export async function appendModules(
   templateId: string,
   selections: AssignmentSelections
 ) {
-  // 1. Verify template
+  // 1. Verify program exists and is published (own program or a template)
   const template = await prisma.program.findFirst({
     where: {
       id: templateId,
-      isTemplate: true,
       status: "PUBLISHED",
+      OR: [
+        { clinicianId },
+        { isTemplate: true },
+      ],
     },
     include: {
       modules: {
