@@ -152,6 +152,25 @@ export function useBulkAction() {
   });
 }
 
+export interface ClinicianClient {
+  id: string;
+  clientId: string;
+  status: string;
+  client: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export function useClinicianClients() {
+  return useQuery<ClinicianClient[]>({
+    queryKey: ["clinician-clients"],
+    queryFn: () => api.get("/api/clinician/clients"),
+  });
+}
+
 export function useAddClient() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -159,6 +178,7 @@ export function useAddClient() {
       api.post("/api/clinician/clients", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
+      queryClient.invalidateQueries({ queryKey: ["clinician-clients"] });
     },
   });
 }

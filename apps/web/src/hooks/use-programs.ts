@@ -128,3 +128,14 @@ export function useClientPrograms() {
     queryFn: () => api.get("/api/programs/client-programs"),
   });
 }
+
+export function useCreateProgramForClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { title: string; clientId: string }) =>
+      api.post<{ program: Program; enrollment: { id: string } }>("/api/programs/for-client", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-programs"] });
+    },
+  });
+}

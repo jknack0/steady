@@ -6,6 +6,7 @@ import {
   useCreateProgram,
   useTemplates,
   useCloneProgram,
+  useCreateProgramForClient,
 } from "@/hooks/use-programs";
 import type { ProgramTemplate } from "@/hooks/use-programs";
 import {
@@ -30,7 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Loader2, ArrowLeft, FilePlus } from "lucide-react";
+import { BookOpen, Clock, Loader2, ArrowLeft, FilePlus, UserPlus } from "lucide-react";
+import { ClientPicker } from "@/components/client-picker";
 
 interface CreateProgramDialogProps {
   open: boolean;
@@ -50,7 +52,7 @@ const categoryColors: Record<string, string> = {
   Parenting: "bg-green-100 text-green-800 border-green-200",
 };
 
-type View = "templates" | "blank";
+type View = "templates" | "blank" | "for-client";
 
 export function CreateProgramDialog({
   open,
@@ -58,6 +60,7 @@ export function CreateProgramDialog({
 }: CreateProgramDialogProps) {
   const router = useRouter();
   const createProgram = useCreateProgram();
+  const createForClient = useCreateProgramForClient();
   const cloneProgram = useCloneProgram();
   const { data: templates, isLoading: templatesLoading } = useTemplates();
 
@@ -70,6 +73,9 @@ export function CreateProgramDialog({
   const [cadence, setCadence] = useState("WEEKLY");
   const [sessionType, setSessionType] = useState("ONE_ON_ONE");
 
+  // For-client form state
+  const [clientId, setClientId] = useState<string | null>(null);
+
   const reset = () => {
     setView("templates");
     setCloningId(null);
@@ -77,6 +83,7 @@ export function CreateProgramDialog({
     setDescription("");
     setCadence("WEEKLY");
     setSessionType("ONE_ON_ONE");
+    setClientId(null);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -115,6 +122,22 @@ export function CreateProgramDialog({
     }
   };
 
+  const handleForClientSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !clientId) return;
+
+    try {
+      const result = await createForClient.mutateAsync({
+        title: title.trim(),
+        clientId,
+      });
+      handleOpenChange(false);
+      router.push(`/programs/${result.program.id}`);
+    } catch {
+      // Error handled by React Query
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="md">
@@ -127,39 +150,61 @@ export function CreateProgramDialog({
                 className="inline-flex items-center gap-1.5 hover:text-muted-foreground transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Start from Scratch
+                {view === "blank" ? "Start from Scratch" : "Create for Client"}
               </button>
             )}
           </DialogTitle>
           <DialogDescription>
             {view === "templates"
               ? "Start from a proven template or create a blank program."
-              : "Set up a new program from scratch."}
+              : view === "blank"
+                ? "Set up a new program from scratch."
+                : "Build a custom program for a specific client."}
           </DialogDescription>
         </DialogHeader>
 
         {view === "templates" && (
           <DialogBody>
             <div className="grid gap-2">
-              {/* Blank program option */}
-              <Card
-                className="cursor-pointer transition-shadow hover:shadow-md border-dashed"
-                onClick={() => setView("blank")}
-              >
-                <CardContent className="flex items-center gap-3 p-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
-                    <FilePlus className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">
-                      Start from scratch
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Create a blank program and build it yourself
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Action cards */}
+              <div className="grid grid-cols-2 gap-2">
+                <Card
+                  className="cursor-pointer transition-shadow hover:shadow-md border-dashed"
+                  onClick={() => setView("blank")}
+                >
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                      <FilePlus className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">
+                        Start from Scratch
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Build a new program template
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card
+                  className="cursor-pointer transition-shadow hover:shadow-md border-dashed"
+                  onClick={() => setView("for-client")}
+                >
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                      <UserPlus className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">
+                        Create for Client
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Build a custom program for a specific client
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Templates */}
               {templatesLoading && (
@@ -300,6 +345,49 @@ export function CreateProgramDialog({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 Create Program
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+        {view === "for-client" && (
+          <form onSubmit={handleForClientSubmit} className="flex flex-col flex-1 overflow-hidden">
+            <DialogBody>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="client-title">Program Title *</Label>
+                  <Input
+                    id="client-title"
+                    placeholder="e.g. Anxiety Management Plan"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Client *</Label>
+                  <ClientPicker value={clientId} onChange={setClientId} />
+                </div>
+              </div>
+            </DialogBody>
+
+            <DialogFooter className="shrink-0 px-6 py-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createForClient.isPending || !title.trim() || !clientId}
+              >
+                {createForClient.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {createForClient.isPending ? "Creating..." : "Create Program"}
               </Button>
             </DialogFooter>
           </form>
