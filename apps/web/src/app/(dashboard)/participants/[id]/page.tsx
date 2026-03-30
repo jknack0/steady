@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -44,6 +44,7 @@ import { HomeworkResponseViewer } from "@/components/homework-response-viewer";
 import { CreatePartModal } from "@/components/part-editor-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
+import { useCreateProgramForClient } from "@/hooks/use-programs";
 import {
   Loader2,
   CheckCircle2,
@@ -228,10 +229,14 @@ function OverviewTab({
   data: ParticipantDetail;
   participantId: string;
 }) {
+  const router = useRouter();
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [createForClientOpen, setCreateForClientOpen] = useState(false);
+  const [newProgramTitle, setNewProgramTitle] = useState("");
   const [isCustomizing, setIsCustomizing] = useState(false);
   const manage = useManageEnrollment(participantId);
+  const createForClient = useCreateProgramForClient();
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const { data: clinicianConfig } = useClinicianConfig();
@@ -272,16 +277,29 @@ function OverviewTab({
           <p className="text-xs text-muted-foreground mt-1 mb-4">
             Enroll this client in a program to track their progress, assign modules, and schedule sessions.
           </p>
-          <Button size="sm" onClick={() => setAssignModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Enroll in Program
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setAssignModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Enroll in Program
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setCreateForClientOpen(true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Create Program
+            </Button>
+          </div>
         </div>
         <AssignmentModal
           open={assignModalOpen}
           onOpenChange={setAssignModalOpen}
           participantId={data.participantProfileId}
           participantName={`${data.participant.firstName} ${data.participant.lastName}`.trim()}
+        />
+        <CreateForClientDialog
+          open={createForClientOpen}
+          onOpenChange={(open) => { if (!open) { setNewProgramTitle(""); } setCreateForClientOpen(open); }}
+          clientId={data.participant.id}
+          clientName={`${data.participant.firstName} ${data.participant.lastName}`.trim()}
+          onCreated={(programId) => router.push(`/programs/${programId}`)}
         />
       </div>
     );
@@ -326,6 +344,10 @@ function OverviewTab({
           <Plus className="mr-2 h-4 w-4" />
           Add Program
         </Button>
+        <Button size="sm" variant="outline" onClick={() => setCreateForClientOpen(true)}>
+          <Sparkles className="mr-2 h-4 w-4" />
+          Create Program
+        </Button>
         <Button
           variant={isCustomizing ? "default" : "outline"}
           size="sm"
@@ -362,6 +384,13 @@ function OverviewTab({
         onOpenChange={setAssignModalOpen}
         participantId={data.participantProfileId}
         participantName={participantName}
+      />
+      <CreateForClientDialog
+        open={createForClientOpen}
+        onOpenChange={(open) => { if (!open) { setNewProgramTitle(""); } setCreateForClientOpen(open); }}
+        clientId={data.participant.id}
+        clientName={participantName}
+        onCreated={(programId) => router.push(`/programs/${programId}`)}
       />
       {confirmDialog}
     </div>
@@ -2068,5 +2097,81 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ── Create Program for Client Dialog ──────────────────────
+
+function CreateForClientDialog({
+  open,
+  onOpenChange,
+  clientId,
+  clientName,
+  onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  clientId: string;
+  clientName: string;
+  onCreated: (programId: string) => void;
+}) {
+  const [title, setTitle] = useState("");
+  const createForClient = useCreateProgramForClient();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    try {
+      const result = await createForClient.mutateAsync({
+        title: title.trim(),
+        clientId,
+      });
+      setTitle("");
+      onOpenChange(false);
+      onCreated(result.program.id);
+    } catch {
+      // Error handled by React Query
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) setTitle(""); onOpenChange(nextOpen); }}>
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>Create Program for {clientName}</DialogTitle>
+          <DialogDescription>
+            Build a custom program from scratch for this client.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <DialogBody>
+            <div className="grid gap-2">
+              <Label htmlFor="create-for-client-title">Program Title</Label>
+              <Input
+                id="create-for-client-title"
+                placeholder="e.g. Anxiety Management Plan"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+          </DialogBody>
+          <DialogFooter className="px-6 py-4 border-t">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createForClient.isPending || !title.trim()}>
+              {createForClient.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
+              ) : (
+                "Create Program"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
