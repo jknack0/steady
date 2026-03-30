@@ -101,9 +101,6 @@ function SortableModuleCard({
       >
         <div className="flex-1">
           <h3 className="font-medium">{module.title}</h3>
-          {module.subtitle && (
-            <p className="text-sm text-muted-foreground">{module.subtitle}</p>
-          )}
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

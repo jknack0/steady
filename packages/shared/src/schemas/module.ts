@@ -4,7 +4,6 @@ export const UnlockRuleEnum = z.enum(["SEQUENTIAL", "MANUAL", "TIME_BASED"]);
 
 export const CreateModuleSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
-  subtitle: z.string().max(200).optional(),
   summary: z.string().max(2000).optional(),
   estimatedMinutes: z.number().int().min(1).optional(),
   unlockRule: UnlockRuleEnum.optional().default("SEQUENTIAL"),
@@ -12,7 +11,6 @@ export const CreateModuleSchema = z.object({
 
 export const UpdateModuleSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  subtitle: z.string().max(200).optional(),
   summary: z.string().max(2000).optional(),
   estimatedMinutes: z.number().int().min(1).optional(),
   unlockRule: UnlockRuleEnum.optional(),
