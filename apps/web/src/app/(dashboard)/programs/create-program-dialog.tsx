@@ -37,6 +37,8 @@ import { ClientPicker } from "@/components/client-picker";
 interface CreateProgramDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Pre-select a client — skips client picker and opens directly to the for-client form */
+  preselectedClient?: { id: string; name: string } | null;
 }
 
 const categoryColors: Record<string, string> = {
@@ -57,6 +59,7 @@ type View = "templates" | "blank" | "for-client";
 export function CreateProgramDialog({
   open,
   onOpenChange,
+  preselectedClient,
 }: CreateProgramDialogProps) {
   const router = useRouter();
   const createProgram = useCreateProgram();
@@ -64,7 +67,8 @@ export function CreateProgramDialog({
   const cloneProgram = useCloneProgram();
   const { data: templates, isLoading: templatesLoading } = useTemplates();
 
-  const [view, setView] = useState<View>("templates");
+  const initialView: View = preselectedClient ? "for-client" : "templates";
+  const [view, setView] = useState<View>(initialView);
   const [cloningId, setCloningId] = useState<string | null>(null);
 
   // Blank form state
@@ -74,16 +78,16 @@ export function CreateProgramDialog({
   const [sessionType, setSessionType] = useState("ONE_ON_ONE");
 
   // For-client form state
-  const [clientId, setClientId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState<string | null>(preselectedClient?.id ?? null);
 
   const reset = () => {
-    setView("templates");
+    setView(preselectedClient ? "for-client" : "templates");
     setCloningId(null);
     setTitle("");
     setDescription("");
     setCadence("WEEKLY");
     setSessionType("ONE_ON_ONE");
-    setClientId(null);
+    setClientId(preselectedClient?.id ?? null);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -144,14 +148,18 @@ export function CreateProgramDialog({
         <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
           <DialogTitle>
             {view === "templates" ? "Create Program" : (
-              <button
-                type="button"
-                onClick={() => setView("templates")}
-                className="inline-flex items-center gap-1.5 hover:text-muted-foreground transition-colors"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {view === "blank" ? "Start from Scratch" : "Create for Client"}
-              </button>
+              preselectedClient && view === "for-client" ? (
+                `Create Program for ${preselectedClient.name}`
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setView("templates")}
+                  className="inline-flex items-center gap-1.5 hover:text-muted-foreground transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {view === "blank" ? "Start from Scratch" : "Create for Client"}
+                </button>
+              )
             )}
           </DialogTitle>
           <DialogDescription>
@@ -159,7 +167,9 @@ export function CreateProgramDialog({
               ? "Start from a proven template or create a blank program."
               : view === "blank"
                 ? "Set up a new program from scratch."
-                : "Build a custom program for a specific client."}
+                : preselectedClient
+                  ? "Build a custom program from scratch for this client."
+                  : "Build a custom program for a specific client."}
           </DialogDescription>
         </DialogHeader>
 
@@ -367,7 +377,11 @@ export function CreateProgramDialog({
 
                 <div className="grid gap-2">
                   <Label>Client *</Label>
-                  <ClientPicker value={clientId} onChange={setClientId} />
+                  {preselectedClient ? (
+                    <Input value={preselectedClient.name} disabled />
+                  ) : (
+                    <ClientPicker value={clientId} onChange={setClientId} />
+                  )}
                 </div>
               </div>
             </DialogBody>
