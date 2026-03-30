@@ -471,7 +471,7 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
           followUpCount: source.followUpCount,
           isTemplate: true,
           templateSourceId: source.id,
-          status: "PUBLISHED",
+          status: "DRAFT",
         },
       });
 
