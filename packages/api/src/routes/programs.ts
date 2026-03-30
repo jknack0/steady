@@ -79,6 +79,10 @@ router.get("/", async (req: Request, res: Response) => {
       where: {
         clinicianId: req.user!.clinicianProfileId!,
         status: { not: "ARCHIVED" },
+        NOT: {
+          isTemplate: false,
+          templateSourceId: { not: null },
+        },
       },
       include: {
         _count: {

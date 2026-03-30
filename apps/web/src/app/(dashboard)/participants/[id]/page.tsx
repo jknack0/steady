@@ -390,7 +390,9 @@ function EnrollmentCard({
   return (
     <div className="rounded-lg border p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold">{enrollment.program.title}</h3>
+        <Link href={`/programs/${enrollment.program.id}`} className="font-semibold hover:underline">
+          {enrollment.program.title}
+        </Link>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className={cn(STATUS_COLORS[enrollment.status])}>
             {enrollment.status.toLowerCase()}
