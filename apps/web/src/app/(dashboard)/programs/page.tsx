@@ -121,15 +121,9 @@ export default function ProgramsPage() {
                           {program.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-3.5 w-3.5" />
-                          {program.moduleCount ?? 0} modules
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3.5 w-3.5" />
-                          {program.activeEnrollmentCount ?? 0} active
-                        </div>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <BookOpen className="h-3.5 w-3.5" />
+                        {program.moduleCount ?? 0} modules
                       </div>
                     </CardContent>
                   </Link>
