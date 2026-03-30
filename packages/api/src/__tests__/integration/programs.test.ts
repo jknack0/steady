@@ -217,8 +217,18 @@ describe("Programs Routes (integration)", () => {
   });
 
   it("POST /api/programs/:id/clone — 404 for other clinician's non-template program", async () => {
+    // Create a non-template program owned by clinician1
+    const createRes = await request(app)
+      .post(PROGRAMS_URL)
+      .set(...clinicianAuthHeader())
+      .send({ title: "Private Non-Template" });
+    const privateId = createRes.body.data.id;
+    createdProgramIds.push(privateId);
+    // Mark it as non-template
+    await testPrisma.program.update({ where: { id: privateId }, data: { isTemplate: false } });
+
     const res = await request(app)
-      .post(`${PROGRAMS_URL}/${TEST_IDS.programId}/clone`)
+      .post(`${PROGRAMS_URL}/${privateId}/clone`)
       .set(...clinician2AuthHeader());
 
     expect(res.status).toBe(404);

@@ -90,8 +90,6 @@ export default function ModuleEditorPage() {
   const [previewPartId, setPreviewPartId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
-  const [editingSubtitle, setEditingSubtitle] = useState(false);
-  const [subtitleValue, setSubtitleValue] = useState("");
   const [summaryValue, setSummaryValue] = useState("");
   const [editingSummary, setEditingSummary] = useState(false);
   const [addPartOpen, setAddPartOpen] = useState(false);
@@ -116,13 +114,6 @@ export default function ModuleEditorPage() {
     setEditingTitle(false);
     if (titleValue.trim() && titleValue !== module?.title) {
       saveModuleField({ title: titleValue.trim() });
-    }
-  };
-
-  const handleSubtitleBlur = () => {
-    setEditingSubtitle(false);
-    if (subtitleValue !== (module?.subtitle ?? "")) {
-      saveModuleField({ subtitle: subtitleValue.trim() || undefined });
     }
   };
 
@@ -262,28 +253,6 @@ export default function ModuleEditorPage() {
             Preview
           </Button>
         </div>
-
-        {editingSubtitle ? (
-          <Input
-            value={subtitleValue}
-            onChange={(e) => setSubtitleValue(e.target.value)}
-            onBlur={handleSubtitleBlur}
-            onKeyDown={(e) => e.key === "Enter" && handleSubtitleBlur()}
-            placeholder="Add a subtitle..."
-            className="text-muted-foreground"
-            autoFocus
-          />
-        ) : (
-          <p
-            className="text-muted-foreground cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1 transition-colors"
-            onClick={() => {
-              setSubtitleValue(module.subtitle ?? "");
-              setEditingSubtitle(true);
-            }}
-          >
-            {module.subtitle || "Click to add a subtitle..."}
-          </p>
-        )}
 
         {editingSummary ? (
           <Textarea

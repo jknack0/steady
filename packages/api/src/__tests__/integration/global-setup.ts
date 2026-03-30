@@ -75,6 +75,7 @@ export default async function globalSetup() {
         enrollmentMethod: "INVITE",
         sessionType: "ONE_ON_ONE",
         status: "PUBLISHED",
+        isTemplate: true,
       },
     });
 

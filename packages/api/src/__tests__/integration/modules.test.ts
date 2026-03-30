@@ -94,11 +94,10 @@ describe("Modules Routes (integration)", () => {
     const res = await request(app)
       .put(`${MODULES_URL}/${moduleId}`)
       .set(...clinicianAuthHeader())
-      .send({ title: "Updated Title", subtitle: "New subtitle" });
+      .send({ title: "Updated Title" });
 
     expect(res.status).toBe(200);
     expect(res.body.data.title).toBe("Updated Title");
-    expect(res.body.data.subtitle).toBe("New subtitle");
   });
 
   it("PUT /:id — 404 for nonexistent module", async () => {

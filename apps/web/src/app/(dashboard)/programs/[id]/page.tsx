@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useProgram, useUpdateProgram } from "@/hooks/use-programs";
+import { useProgram, useUpdateProgram, useDeleteProgram } from "@/hooks/use-programs";
 import { useAutosave } from "@/hooks/use-autosave";
 import { SaveIndicator } from "@/components/save-indicator";
 import {
@@ -52,8 +52,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Module } from "@/hooks/use-programs";
-import { EnrollmentSection } from "@/components/enrollment-section";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
+import { AssignmentModal } from "@/components/assignment";
 import { FileUpload } from "@/components/file-upload";
 import Link from "next/link";
 
@@ -101,9 +101,6 @@ function SortableModuleCard({
       >
         <div className="flex-1">
           <h3 className="font-medium">{module.title}</h3>
-          {module.subtitle && (
-            <p className="text-sm text-muted-foreground">{module.subtitle}</p>
-          )}
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -180,6 +177,7 @@ export default function ProgramEditorPage() {
   const programId = params.id as string;
   const { data: program, isLoading } = useProgram(programId);
   const updateProgram = useUpdateProgram(programId);
+  const deleteProgram = useDeleteProgram();
   const deleteModule = useDeleteModule(programId);
   const reorderModules = useReorderModules(programId);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -187,6 +185,7 @@ export default function ProgramEditorPage() {
   const [addingModule, setAddingModule] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
@@ -243,12 +242,6 @@ export default function ProgramEditorPage() {
     }
   };
 
-  const handleStatusToggle = () => {
-    if (!program) return;
-    const newStatus = program.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    updateProgram.mutate({ status: newStatus as any });
-  };
-
   if (isLoading) {
     return <LoadingState />;
   }
@@ -287,20 +280,16 @@ export default function ProgramEditorPage() {
             </h1>
           )}
           <SaveIndicator status={programSaveStatus} />
-          <Badge
-            variant="outline"
-            className={
-              program.status === "PUBLISHED"
-                ? "bg-green-100 text-green-800 border-green-200"
-                : "bg-yellow-100 text-yellow-800 border-yellow-200"
-              }
-            >
-              {program.status.toLowerCase()}
-            </Badge>
+          <Button
+            size="sm"
+            className="ml-auto"
+            onClick={() => setAssignOpen(true)}
+          >
+            Assign to Client
+          </Button>
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
             onClick={() => setPreviewOpen(true)}
           >
             <Eye className="mr-2 h-4 w-4" />
@@ -414,18 +403,6 @@ export default function ProgramEditorPage() {
                 />
               </div>
 
-              <div className="grid gap-2">
-                <Label>Status</Label>
-                <Button
-                  variant="outline"
-                  onClick={handleStatusToggle}
-                  className="justify-start"
-                >
-                  {program.status === "DRAFT"
-                    ? "Publish Program"
-                    : "Revert to Draft"}
-                </Button>
-              </div>
             </div>
 
             <div className="mt-4 pt-4 border-t">
@@ -437,6 +414,27 @@ export default function ProgramEditorPage() {
                   updateProgram.mutate({ coverImageUrl: publicUrl || null });
                 }}
               />
+            </div>
+
+            <div className="mt-4 pt-4 border-t">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() =>
+                  confirm({
+                    title: "Archive Program",
+                    description: "This program will be hidden from your program list. You can't undo this.",
+                    confirmLabel: "Archive",
+                    variant: "danger",
+                    onConfirm: async () => {
+                      await deleteProgram.mutateAsync(programId);
+                      router.push("/programs");
+                    },
+                  })
+                }
+              >
+                Archive Program
+              </Button>
             </div>
           </div>
         )}
@@ -514,13 +512,16 @@ export default function ProgramEditorPage() {
         )}
       </div>
 
-      {/* Enrollments */}
-      <EnrollmentSection programId={programId} programStatus={program.status} />
-
       <PhonePreviewModal
         programId={programId}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+      />
+      <AssignmentModal
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        templateId={programId}
+        onSuccess={() => setAssignOpen(false)}
       />
       {confirmDialog}
     </div>

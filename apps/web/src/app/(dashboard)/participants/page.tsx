@@ -468,7 +468,9 @@ export default function ParticipantsPage() {
                     <td className="px-4 py-3">
                       <InviteStatusBadge status="ACTIVE" />
                     </td>
-                    <td className="px-4 py-3 text-sm">{p.programTitle}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {p.programTitle || <span className="text-muted-foreground">—</span>}
+                    </td>
                     <td className="px-4 py-3">
                       <Badge
                         variant="outline"

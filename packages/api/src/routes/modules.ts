@@ -58,7 +58,7 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     const modules = await prisma.module.findMany({
-      where: { programId: req.params.programId },
+      where: { programId: req.params.programId, deletedAt: null },
       orderBy: { sortOrder: "asc" },
       include: {
         _count: { select: { parts: { where: { deletedAt: null } } } },
@@ -155,7 +155,7 @@ router.put("/:id", validate(UpdateModuleSchema), async (req: Request, res: Respo
   }
 });
 
-// DELETE /api/programs/:programId/modules/:id — Delete module and re-number sortOrder
+// DELETE /api/programs/:programId/modules/:id — Smart delete: hard if no progress, soft if progress exists
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const program = await verifyProgramOwnership(req.params.programId, req.user!.clinicianProfileId!);
@@ -165,20 +165,36 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     const existing = await prisma.module.findFirst({
-      where: { id: req.params.id, programId: req.params.programId },
+      where: { id: req.params.id, programId: req.params.programId, deletedAt: null },
     });
     if (!existing) {
       res.status(404).json({ success: false, error: "Module not found" });
       return;
     }
 
-    await prisma.$transaction(async (tx) => {
-      // Delete module (parts cascade via onDelete: Cascade)
-      await tx.module.delete({ where: { id: req.params.id } });
+    // Check if any enrollment has progress on this module (COND-2)
+    const progressCount = await prisma.moduleProgress.count({
+      where: {
+        moduleId: req.params.id,
+        status: { not: "LOCKED" },
+      },
+    });
 
-      // Re-number remaining modules
+    const deleteType = progressCount > 0 ? "soft" : "hard";
+
+    await prisma.$transaction(async (tx) => {
+      if (deleteType === "soft") {
+        await tx.module.update({
+          where: { id: req.params.id },
+          data: { deletedAt: new Date() },
+        });
+      } else {
+        await tx.module.delete({ where: { id: req.params.id } });
+      }
+
+      // Re-number remaining active modules
       const remaining = await tx.module.findMany({
-        where: { programId: req.params.programId },
+        where: { programId: req.params.programId, deletedAt: null },
         orderBy: { sortOrder: "asc" },
       });
 
@@ -192,7 +208,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       }
     });
 
-    res.json({ success: true });
+    res.json({ success: true, data: { deleted: deleteType } });
   } catch (err) {
     logger.error("Delete module error", err);
     res.status(500).json({ success: false, error: "Failed to delete module" });

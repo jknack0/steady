@@ -175,6 +175,13 @@ router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, 
       hasCompletedSetup = config?.setupCompleted === true;
     }
 
+    // Dev-only: sync kevin → admin on admin login (fire-and-forget)
+    if (email === "admin@admin.com" && process.env.NODE_ENV !== "production") {
+      import("../services/sync-admin").then(({ syncKevinToAdmin }) => {
+        syncKevinToAdmin().catch((e) => logger.warn("Admin sync failed", e));
+      }).catch(() => {});
+    }
+
     res.json({
       success: true,
       data: {

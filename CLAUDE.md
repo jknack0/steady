@@ -6,6 +6,11 @@ HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Ne
 
 **Tech stack**: React 19, TypeScript strict, TanStack Query, Tailwind CSS / NativeWind, JWT auth, S3 file storage, Railway deployment.
 
+**Database env vars** (in `.env`):
+- `DATABASE_URL` — local dev (localhost:5432)
+- `DATABASE_URL_DEV` — Railway dev/staging database
+- `DATABASE_URL_PROD` — Railway production database
+
 ## Monorepo Structure
 
 ```
