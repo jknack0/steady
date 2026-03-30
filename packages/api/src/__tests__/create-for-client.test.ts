@@ -134,4 +134,17 @@ describe("POST /api/programs/for-client", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain("participant profile");
   });
+
+  it("returns 403 for discharged client", async () => {
+    // findFirst with status: { not: "DISCHARGED" } returns null for discharged clients
+    db.clinicianClient.findFirst.mockResolvedValue(null);
+
+    const res = await request(app)
+      .post("/api/programs/for-client")
+      .set(...authHeader())
+      .send({ title: "Custom Plan", clientId: "discharged-client" });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("not in your client list");
+  });
 });
