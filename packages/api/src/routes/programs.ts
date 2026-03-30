@@ -78,7 +78,6 @@ router.get("/", async (req: Request, res: Response) => {
     const programs = await prisma.program.findMany({
       where: {
         clinicianId: req.user!.clinicianProfileId!,
-        isTemplate: true,
         status: { not: "ARCHIVED" },
       },
       include: {
