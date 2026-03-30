@@ -79,6 +79,10 @@ router.get("/", async (req: Request, res: Response) => {
       where: {
         clinicianId: req.user!.clinicianProfileId!,
         status: { not: "ARCHIVED" },
+        NOT: {
+          isTemplate: false,
+          templateSourceId: { not: null },
+        },
       },
       include: {
         _count: {
@@ -107,6 +111,59 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("List programs error", err);
     res.status(500).json({ success: false, error: "Failed to list programs" });
+  }
+});
+
+// GET /api/programs/client-programs — List programs assigned to clients
+router.get("/client-programs", async (req: Request, res: Response) => {
+  try {
+    const programs = await prisma.program.findMany({
+      where: {
+        clinicianId: req.user!.clinicianProfileId!,
+        isTemplate: false,
+        templateSourceId: { not: null },
+        status: { not: "ARCHIVED" },
+      },
+      include: {
+        _count: {
+          select: {
+            modules: { where: { deletedAt: null } },
+          },
+        },
+        enrollments: {
+          where: { status: { in: ["ACTIVE", "PAUSED", "INVITED"] } },
+          include: {
+            participant: {
+              include: {
+                user: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
+          take: 1,
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    });
+
+    const data = programs.map((p) => {
+      const enrollment = p.enrollments[0];
+      const client = enrollment?.participant?.user;
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        status: p.status,
+        moduleCount: p._count.modules,
+        clientName: client ? `${client.firstName} ${client.lastName}` : null,
+        enrollmentStatus: enrollment?.status ?? null,
+      };
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    logger.error("List client programs error", err);
+    res.status(500).json({ success: false, error: "Failed to list client programs" });
   }
 });
 
