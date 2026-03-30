@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { usePrograms, useTemplates, useCloneProgram } from "@/hooks/use-programs";
+import { usePrograms, useTemplates, useCloneProgram, useClientPrograms } from "@/hooks/use-programs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Users, Loader2 } from "lucide-react";
@@ -12,26 +12,27 @@ import { CreateProgramDialog } from "./create-program-dialog";
 import { AssignmentModal } from "@/components/assignment";
 import { PageHeader } from "@/components/page-header";
 
-type Tab = "my-programs" | "templates";
+type Tab = "my-programs" | "client-programs" | "templates";
 
 export default function ProgramsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab");
-  const activeTab: Tab = tabParam === "templates" ? "templates" : "my-programs";
+  const activeTab: Tab = tabParam === "templates" ? "templates" : tabParam === "client-programs" ? "client-programs" : "my-programs";
 
   const { data: programs, isLoading: programsLoading } = usePrograms();
   const { data: templates, isLoading: templatesLoading } = useTemplates();
+  const { data: clientPrograms, isLoading: clientProgramsLoading } = useClientPrograms();
   const cloneProgram = useCloneProgram();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [assignTemplateId, setAssignTemplateId] = useState<string | null>(null);
 
   const setTab = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (tab === "templates") {
-      params.set("tab", "templates");
-    } else {
+    if (tab === "my-programs") {
       params.delete("tab");
+    } else {
+      params.set("tab", tab);
     }
     router.replace(`/programs?${params.toString()}`);
   };
@@ -45,7 +46,7 @@ export default function ProgramsPage() {
     }
   };
 
-  const isLoading = activeTab === "my-programs" ? programsLoading : templatesLoading;
+  const isLoading = activeTab === "my-programs" ? programsLoading : activeTab === "client-programs" ? clientProgramsLoading : templatesLoading;
 
   return (
     <div>
@@ -63,6 +64,7 @@ export default function ProgramsPage() {
       <div className="flex gap-1 border-b mb-6">
         {([
           { key: "my-programs" as Tab, label: "My Programs" },
+          { key: "client-programs" as Tab, label: "Client Programs" },
           { key: "templates" as Tab, label: "Template Library" },
         ]).map((t) => (
           <button
@@ -143,6 +145,59 @@ export default function ProgramsPage() {
                       Assign to Client
                     </Button>
                   </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Client Programs Tab */}
+      {activeTab === "client-programs" && !clientProgramsLoading && (
+        <>
+          {clientPrograms && clientPrograms.length === 0 && (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+              <Users className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No client programs yet</h3>
+              <p className="text-muted-foreground mt-1">
+                Assign a program to a client to see it here.
+              </p>
+            </div>
+          )}
+
+          {clientPrograms && clientPrograms.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {clientPrograms.map((cp) => (
+                <Card key={cp.id} className="transition-shadow hover:shadow-md">
+                  <Link href={`/programs/${cp.id}`}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg line-clamp-1">
+                        {cp.title}
+                      </CardTitle>
+                      {cp.clientName && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          {cp.clientName}
+                        </p>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      {cp.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                          {cp.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-3.5 w-3.5" />
+                          {cp.moduleCount} modules
+                        </div>
+                        {cp.enrollmentStatus && (
+                          <span className="capitalize">{cp.enrollmentStatus.toLowerCase()}</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Link>
                 </Card>
               ))}
             </div>

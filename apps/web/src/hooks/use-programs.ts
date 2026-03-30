@@ -111,3 +111,20 @@ export function useTemplates() {
     queryFn: () => api.get("/api/programs/templates"),
   });
 }
+
+export interface ClientProgram {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  moduleCount: number;
+  clientName: string | null;
+  enrollmentStatus: string | null;
+}
+
+export function useClientPrograms() {
+  return useQuery<ClientProgram[]>({
+    queryKey: ["client-programs"],
+    queryFn: () => api.get("/api/programs/client-programs"),
+  });
+}
