@@ -73,6 +73,11 @@ router.post("/", validate(CreateEnrollmentSchema), async (req: Request, res: Res
       return;
     }
 
+    if (program.status !== "PUBLISHED") {
+      res.status(400).json({ success: false, error: "Program must be published before enrolling participants" });
+      return;
+    }
+
     const { participantEmail, firstName, lastName } = req.body;
 
     // Find or create participant user
