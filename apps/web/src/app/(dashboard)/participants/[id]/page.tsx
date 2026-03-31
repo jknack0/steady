@@ -36,6 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api-client";
 import { TrackerDataView } from "@/components/tracker-data-view";
 import { EditCheckinModal } from "@/components/edit-checkin-modal";
@@ -67,6 +73,7 @@ import {
   Sparkles,
   ChevronRight,
   Settings2,
+  MoreHorizontal,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { AssignmentModal } from "@/components/assignment";
@@ -316,25 +323,6 @@ function OverviewTab({
     <div className="space-y-6">
       {/* Actions */}
       <div className="flex justify-end gap-2">
-        {enrollment && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={() =>
-              confirm({
-                title: "Remove from Program",
-                description: `Remove this client from "${enrollment.program.title}"? Their progress will be preserved but they will no longer have access.`,
-                confirmLabel: "Remove",
-                variant: "danger",
-                onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action: "drop" }),
-              })
-            }
-          >
-            <X className="mr-2 h-4 w-4" />
-            Remove from Program
-          </Button>
-        )}
         <Button size="sm" variant="outline" onClick={() => setAssignModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Program
@@ -351,6 +339,32 @@ function OverviewTab({
           <Settings2 className="mr-2 h-4 w-4" />
           {isCustomizing ? "Done" : "Customize"}
         </Button>
+        {enrollment && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() =>
+                  confirm({
+                    title: "Remove from Program",
+                    description: `Remove this client from "${enrollment.program.title}"? Their progress will be preserved but they will no longer have access.`,
+                    confirmLabel: "Remove",
+                    variant: "danger",
+                    onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action: "drop" }),
+                  })
+                }
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remove from Program
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Widget Grid */}
