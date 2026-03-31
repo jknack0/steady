@@ -87,7 +87,7 @@ describe("POST /api/programs/for-client (integration)", () => {
     // Check audit logs for this program
     const auditLogs = await testPrisma.auditLog.findMany({
       where: { resourceId: programId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { timestamp: "asc" },
     });
 
     // Should have at least: Program CREATE, Program UPDATE (templateSourceId)
