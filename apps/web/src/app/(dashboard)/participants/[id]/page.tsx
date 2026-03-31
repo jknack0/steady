@@ -274,7 +274,7 @@ function OverviewTab({
           <p className="text-xs text-muted-foreground mt-1 mb-4">
             Enroll this client in a program to track their progress, assign modules, and schedule sessions.
           </p>
-          <div className="flex gap-2">
+          <div className="flex justify-center gap-2">
             <Button size="sm" onClick={() => setAssignModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Enroll in Program
