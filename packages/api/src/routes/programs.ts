@@ -375,9 +375,19 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    if (program._count.enrollments > 0) {
+    const isClientProgram = !program.isTemplate && program.templateSourceId !== null;
+
+    if (program._count.enrollments > 0 && !isClientProgram) {
       res.status(409).json({ success: false, error: "Cannot archive a program with active enrollments" });
       return;
+    }
+
+    // For client programs, drop active enrollments before archiving
+    if (isClientProgram && program._count.enrollments > 0) {
+      await prisma.enrollment.updateMany({
+        where: { programId: req.params.id, status: "ACTIVE" },
+        data: { status: "DROPPED" },
+      });
     }
 
     await prisma.program.update({
