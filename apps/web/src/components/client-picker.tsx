@@ -36,8 +36,8 @@ export function ClientPicker({ value, onChange }: ClientPickerProps) {
     const q = search.toLowerCase();
     return clients.filter(
       (c) =>
-        `${c.client.firstName} ${c.client.lastName}`.toLowerCase().includes(q) ||
-        c.client.email.toLowerCase().includes(q)
+        c.name.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q)
     );
   }, [clients, search]);
 
@@ -142,7 +142,7 @@ export function ClientPicker({ value, onChange }: ClientPickerProps) {
         <SelectTrigger>
           <SelectValue placeholder="Select a client...">
             {selectedClient
-              ? `${selectedClient.client.firstName} ${selectedClient.client.lastName}`
+              ? selectedClient.name
               : "Select a client..."}
           </SelectValue>
         </SelectTrigger>
@@ -160,8 +160,8 @@ export function ClientPicker({ value, onChange }: ClientPickerProps) {
           {filteredClients.map((c) => (
             <SelectItem key={c.clientId} value={c.clientId}>
               <div>
-                <span className="font-medium">{c.client.firstName} {c.client.lastName}</span>
-                <span className="text-muted-foreground ml-2 text-xs">{c.client.email}</span>
+                <span className="font-medium">{c.name}</span>
+                <span className="text-muted-foreground ml-2 text-xs">{c.email}</span>
               </div>
             </SelectItem>
           ))}

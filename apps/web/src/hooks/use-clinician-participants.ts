@@ -156,12 +156,8 @@ export interface ClinicianClient {
   id: string;
   clientId: string;
   status: string;
-  client: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  name: string;
+  email: string;
 }
 
 export function useClinicianClients() {
