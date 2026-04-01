@@ -1,5 +1,6 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
+import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
 import {
   createSession,
@@ -15,6 +16,26 @@ const router = Router();
 
 router.use(authenticate);
 
+// Verify a session belongs to the clinician's programs
+async function verifySessionOwnership(sessionId: string, clinicianProfileId: string) {
+  return prisma.session.findFirst({
+    where: {
+      id: sessionId,
+      enrollment: { program: { clinicianId: clinicianProfileId } },
+    },
+  });
+}
+
+// Verify an enrollment belongs to the clinician's programs
+async function verifyEnrollmentOwnership(enrollmentId: string, clinicianProfileId: string) {
+  return prisma.enrollment.findFirst({
+    where: {
+      id: enrollmentId,
+      program: { clinicianId: clinicianProfileId },
+    },
+  });
+}
+
 // ── Clinician Endpoints ─────────────────────────────
 
 // POST /api/sessions — Create session + CalendarEvent for participant
@@ -27,6 +48,12 @@ router.post("/", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Re
         success: false,
         error: "enrollmentId and scheduledAt are required",
       });
+      return;
+    }
+
+    const enrollment = await verifyEnrollmentOwnership(enrollmentId, req.user!.clinicianProfileId!);
+    if (!enrollment) {
+      res.status(404).json({ success: false, error: "Enrollment not found" });
       return;
     }
 
@@ -104,6 +131,12 @@ router.get("/history", requireRole("PARTICIPANT"), async (req: Request, res: Res
 // PUT /api/sessions/:id — Update (reschedule, change video link)
 router.put("/:id", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Response) => {
   try {
+    const owned = await verifySessionOwnership(req.params.id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Session not found" });
+      return;
+    }
+
     const updated = await updateSession(req.params.id, req.body);
 
     if (!updated) {
@@ -121,6 +154,12 @@ router.put("/:id", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: 
 // PUT /api/sessions/:id/complete — Mark completed with notes + module unlock + task push
 router.put("/:id/complete", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Response) => {
   try {
+    const owned = await verifySessionOwnership(req.params.id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Session not found" });
+      return;
+    }
+
     const result = await completeSession(req.params.id, req.body);
 
     if ("error" in result) {
@@ -144,6 +183,12 @@ router.put("/:id/complete", requireRole("CLINICIAN", "ADMIN"), async (req: Reque
 // GET /api/sessions/:id/prepare — Pre-session view data for clinician
 router.get("/:id/prepare", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Response) => {
   try {
+    const owned = await verifySessionOwnership(req.params.id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Session not found" });
+      return;
+    }
+
     const data = await getSessionPrepData(req.params.id);
 
     if (!data) {
