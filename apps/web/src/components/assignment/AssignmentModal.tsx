@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useAssignProgram, useAppendModules } from "@/hooks/use-assignment";
@@ -47,6 +48,7 @@ export function AssignmentModal({
   participantName: initialParticipantName,
   onSuccess,
 }: AssignmentModalProps) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("select");
   const [selectedTemplateId, setSelectedTemplateId] = useState(initialTemplateId || "");
   const [selectedTemplateName, setSelectedTemplateName] = useState("");
@@ -88,7 +90,7 @@ export function AssignmentModal({
   const handleAssign = async () => {
     setError("");
     try {
-      await assignMutation.mutateAsync({
+      const result = await assignMutation.mutateAsync({
         templateId: templateIdToUse,
         participantId: selectedParticipantId,
         excludedModuleIds,
@@ -96,6 +98,8 @@ export function AssignmentModal({
       });
       onSuccess?.();
       handleClose();
+      // Redirect to the new client program for editing
+      router.push(`/programs/${result.program.id}`);
     } catch (err: any) {
       if (err.message?.includes("already has this program")) {
         // Extract clientProgramId from error response if available
@@ -110,7 +114,7 @@ export function AssignmentModal({
   const handleAppend = async () => {
     setError("");
     try {
-      await appendMutation.mutateAsync({
+      const result = await appendMutation.mutateAsync({
         templateId: templateIdToUse,
         clientProgramId: conflictProgramId,
         excludedModuleIds,
@@ -118,6 +122,7 @@ export function AssignmentModal({
       });
       onSuccess?.();
       handleClose();
+      router.push(`/programs/${result.program.id}`);
     } catch (err: any) {
       setError(err.message || "Failed to add modules. Please try again.");
     }
