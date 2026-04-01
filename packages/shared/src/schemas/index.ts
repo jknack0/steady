@@ -9,3 +9,4 @@ export * from "./rtm";
 export * from "./config";
 export * from "./invitation";
 export * from "./assignment";
+export * from "./session";

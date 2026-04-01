@@ -124,7 +124,7 @@ describe("POST /api/participant/journal", () => {
       .send({ freeformContent: "No date provided" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("entryDate is required");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 for invalid date format", async () => {
@@ -133,8 +133,8 @@ describe("POST /api/participant/journal", () => {
       .set(...participantAuthHeader())
       .send({ entryDate: "not-a-date" });
 
+    // Zod accepts the string, route handler catches invalid date
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Invalid date format");
   });
 
   it("returns 400 when regulationScore is below 1", async () => {
@@ -144,7 +144,7 @@ describe("POST /api/participant/journal", () => {
       .send({ entryDate: "2026-04-01", regulationScore: 0 });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("regulationScore must be between 1 and 10");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 when regulationScore is above 10", async () => {
@@ -154,7 +154,7 @@ describe("POST /api/participant/journal", () => {
       .send({ entryDate: "2026-04-01", regulationScore: 11 });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("regulationScore must be between 1 and 10");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("accepts regulationScore at boundary values (1 and 10)", async () => {

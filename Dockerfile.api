@@ -38,5 +38,12 @@ COPY --from=build /app/packages/db/prisma ./packages/db/prisma
 COPY --from=build /app/packages/api/dist ./packages/api/dist
 COPY --from=build /app/packages/api/package.json ./packages/api/package.json
 COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+# Run as non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 steady
+USER steady
+
 EXPOSE 4000
 CMD ["./docker-entrypoint.sh"]

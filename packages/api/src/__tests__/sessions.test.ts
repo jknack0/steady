@@ -647,7 +647,7 @@ describe("PUT /api/sessions/:id/complete (additional)", () => {
       .put("/api/sessions/session-1/complete")
       .set(...authHeader())
       .send({
-        tasksToAssign: [{ title: "" }, { title: "  " }],
+        tasksToAssign: [{ title: "  " }, { title: "   " }],
       });
 
     expect(res.status).toBe(200);

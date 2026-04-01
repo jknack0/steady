@@ -1,7 +1,9 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
+import { CreateSessionSchema, UpdateSessionSchema, CompleteSessionSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import {
   createSession,
   listClinicianSessions,
@@ -39,17 +41,9 @@ async function verifyEnrollmentOwnership(enrollmentId: string, clinicianProfileI
 // ── Clinician Endpoints ─────────────────────────────
 
 // POST /api/sessions — Create session + CalendarEvent for participant
-router.post("/", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Response) => {
+router.post("/", requireRole("CLINICIAN", "ADMIN"), validate(CreateSessionSchema), async (req: Request, res: Response) => {
   try {
     const { enrollmentId, scheduledAt, videoCallUrl, durationMinutes } = req.body;
-
-    if (!enrollmentId || !scheduledAt) {
-      res.status(400).json({
-        success: false,
-        error: "enrollmentId and scheduledAt are required",
-      });
-      return;
-    }
 
     const enrollment = await verifyEnrollmentOwnership(enrollmentId, req.user!.clinicianProfileId!);
     if (!enrollment) {
@@ -129,7 +123,7 @@ router.get("/history", requireRole("PARTICIPANT"), async (req: Request, res: Res
 // ── Clinician /:id Routes ────────────────────────────
 
 // PUT /api/sessions/:id — Update (reschedule, change video link)
-router.put("/:id", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Response) => {
+router.put("/:id", requireRole("CLINICIAN", "ADMIN"), validate(UpdateSessionSchema), async (req: Request, res: Response) => {
   try {
     const owned = await verifySessionOwnership(req.params.id, req.user!.clinicianProfileId!);
     if (!owned) {
@@ -152,7 +146,7 @@ router.put("/:id", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: 
 });
 
 // PUT /api/sessions/:id/complete — Mark completed with notes + module unlock + task push
-router.put("/:id/complete", requireRole("CLINICIAN", "ADMIN"), async (req: Request, res: Response) => {
+router.put("/:id/complete", requireRole("CLINICIAN", "ADMIN"), validate(CompleteSessionSchema), async (req: Request, res: Response) => {
   try {
     const owned = await verifySessionOwnership(req.params.id, req.user!.clinicianProfileId!);
     if (!owned) {

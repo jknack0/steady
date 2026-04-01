@@ -369,6 +369,14 @@ router.delete("/:id", async (req: Request, res: Response) => {
 // GET /api/daily-trackers/:id/entries?userId=X&startDate=Y&endDate=Z — Get entries
 router.get("/:id/entries", async (req: Request, res: Response) => {
   try {
+    if (req.user!.role === "CLINICIAN") {
+      const owned = await verifyTrackerOwnership(req.params.id, req.user!.clinicianProfileId!);
+      if (!owned) {
+        res.status(404).json({ success: false, error: "Tracker not found" });
+        return;
+      }
+    }
+
     const { userId, startDate, endDate, cursor, limit } = req.query;
 
     if (!userId) {

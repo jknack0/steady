@@ -2,6 +2,7 @@ import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { z } from "zod";
+import { AssignHomeworkSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
@@ -409,16 +410,11 @@ router.get("/participants/:id/homework", async (req: Request, res: Response) => 
 });
 
 // POST /api/clinician/participants/:id/homework — Assign standalone homework
-router.post("/participants/:id/homework", async (req: Request, res: Response) => {
+router.post("/participants/:id/homework", validate(AssignHomeworkSchema), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const clinicianProfileId = req.user!.clinicianProfileId!;
     const { title, content, dueDate } = req.body;
-
-    if (!title || !content) {
-      res.status(400).json({ success: false, error: "title and content are required" });
-      return;
-    }
 
     const detail = await getParticipantDetail(clinicianProfileId, id);
     if (!detail || "notFound" in detail) {
