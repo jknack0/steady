@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
-  ChevronDown,
-  ChevronUp,
   Clock,
   GripVertical,
   Layers,
@@ -34,6 +32,7 @@ import {
   Trash2,
   Eye,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -180,7 +179,7 @@ export default function ProgramEditorPage() {
   const deleteProgram = useDeleteProgram();
   const deleteModule = useDeleteModule(programId);
   const reorderModules = useReorderModules(programId);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"content" | "settings">("content");
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [addingModule, setAddingModule] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -317,131 +316,137 @@ export default function ProgramEditorPage() {
         )}
       </div>
 
-      {/* Settings Panel (collapsible) */}
-      <div className="mb-8 rounded-lg border">
-        <button
-          className="flex w-full items-center justify-between p-4 text-left font-medium"
-          onClick={() => setSettingsOpen(!settingsOpen)}
-        >
-          Program Settings
-          {settingsOpen ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
-
-        {settingsOpen && (
-          <div className="border-t p-4">
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <div className="grid gap-2">
-                <Label>Cadence</Label>
-                <Select
-                  value={program.cadence}
-                  onValueChange={(v) => updateProgram.mutate({ cadence: v as any })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="WEEKLY">Weekly</SelectItem>
-                    <SelectItem value="BIWEEKLY">Biweekly</SelectItem>
-                    <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Enrollment</Label>
-                <Select
-                  value={program.enrollmentMethod}
-                  onValueChange={(v) =>
-                    updateProgram.mutate({ enrollmentMethod: v as any })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INVITE">Invite Only</SelectItem>
-                    <SelectItem value="LINK">Link</SelectItem>
-                    <SelectItem value="CODE">Code</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Session Type</Label>
-                <Select
-                  value={program.sessionType}
-                  onValueChange={(v) =>
-                    updateProgram.mutate({ sessionType: v as any })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ONE_ON_ONE">One-on-One</SelectItem>
-                    <SelectItem value="GROUP">Group</SelectItem>
-                    <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Follow-up Count</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={program.followUpCount}
-                  onChange={(e) =>
-                    updateProgram.mutate({
-                      followUpCount: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-
-            </div>
-
-            <div className="mt-4 pt-4 border-t">
-              <FileUpload
-                context="program-cover"
-                label="Cover Image"
-                value={program.coverImageUrl || null}
-                onChange={(key, publicUrl) => {
-                  updateProgram.mutate({ coverImageUrl: publicUrl || null });
-                }}
-              />
-            </div>
-
-            <div className="mt-4 pt-4 border-t">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() =>
-                  confirm({
-                    title: "Archive Program",
-                    description: "This program will be hidden from your program list. You can't undo this.",
-                    confirmLabel: "Archive",
-                    variant: "danger",
-                    onConfirm: async () => {
-                      await deleteProgram.mutateAsync(programId);
-                      router.push("/programs");
-                    },
-                  })
-                }
-              >
-                Archive Program
-              </Button>
-            </div>
-          </div>
-        )}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b mb-6">
+        {([
+          { key: "content" as const, label: "Content" },
+          { key: "settings" as const, label: "Settings" },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px",
+              activeTab === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Module List */}
-      <div>
+      {/* Settings Tab */}
+      {activeTab === "settings" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div className="grid gap-2">
+              <Label>Cadence</Label>
+              <Select
+                value={program.cadence}
+                onValueChange={(v) => updateProgram.mutate({ cadence: v as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="WEEKLY">Weekly</SelectItem>
+                  <SelectItem value="BIWEEKLY">Biweekly</SelectItem>
+                  <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Enrollment</Label>
+              <Select
+                value={program.enrollmentMethod}
+                onValueChange={(v) =>
+                  updateProgram.mutate({ enrollmentMethod: v as any })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INVITE">Invite Only</SelectItem>
+                  <SelectItem value="LINK">Link</SelectItem>
+                  <SelectItem value="CODE">Code</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Session Type</Label>
+              <Select
+                value={program.sessionType}
+                onValueChange={(v) =>
+                  updateProgram.mutate({ sessionType: v as any })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ONE_ON_ONE">One-on-One</SelectItem>
+                  <SelectItem value="GROUP">Group</SelectItem>
+                  <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Follow-up Count</Label>
+              <Input
+                type="number"
+                min={0}
+                value={program.followUpCount}
+                onChange={(e) =>
+                  updateProgram.mutate({
+                    followUpCount: parseInt(e.target.value) || 0,
+                  })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t">
+            <FileUpload
+              context="program-cover"
+              label="Cover Image"
+              value={program.coverImageUrl || null}
+              onChange={(key, publicUrl) => {
+                updateProgram.mutate({ coverImageUrl: publicUrl || null });
+              }}
+            />
+          </div>
+
+          <div className="pt-4 border-t">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                confirm({
+                  title: "Archive Program",
+                  description: "This program will be hidden from your program list. You can't undo this.",
+                  confirmLabel: "Archive",
+                  variant: "danger",
+                  onConfirm: async () => {
+                    await deleteProgram.mutateAsync(programId);
+                    router.push("/programs");
+                  },
+                })
+              }
+            >
+              Archive Program
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Content Tab — Module List */}
+      {activeTab === "content" && <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Modules</h2>
           {!addingModule && (
@@ -510,7 +515,7 @@ export default function ProgramEditorPage() {
             />
           </div>
         )}
-      </div>
+      </div>}
 
       <PhonePreviewModal
         programId={programId}
