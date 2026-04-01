@@ -245,6 +245,11 @@ export default function ProgramEditorPage() {
     return <LoadingState />;
   }
 
+  // Determine program type
+  const isClientProgram = program && !program.isTemplate && program.templateSourceId !== null;
+  const isMyProgram = program && !program.isTemplate && program.templateSourceId === null;
+  const isTemplate = program?.isTemplate;
+
   if (!program) {
     return (
       <div className="text-center py-12">
@@ -279,21 +284,39 @@ export default function ProgramEditorPage() {
             </h1>
           )}
           <SaveIndicator status={programSaveStatus} />
-          <Button
-            size="sm"
-            className="ml-auto"
-            onClick={() => setAssignOpen(true)}
-          >
-            Assign to Client
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPreviewOpen(true)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </Button>
+          {isClientProgram && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              Client Program
+            </Badge>
+          )}
+          {isMyProgram && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              My Program
+            </Badge>
+          )}
+          {isTemplate && (
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              Template
+            </Badge>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            {!isClientProgram && (
+              <Button
+                size="sm"
+                onClick={() => setAssignOpen(true)}
+              >
+                Assign to Client
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview
+            </Button>
+          </div>
         </div>
 
         {editingDesc ? (
