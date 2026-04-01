@@ -196,17 +196,18 @@ router.delete("/:id", async (req: Request, res: Response) => {
       const remaining = await tx.module.findMany({
         where: { programId: req.params.programId, deletedAt: null },
         orderBy: { sortOrder: "asc" },
+        select: { id: true, sortOrder: true },
       });
 
-      for (let i = 0; i < remaining.length; i++) {
-        if (remaining[i].sortOrder !== i) {
-          await tx.module.update({
-            where: { id: remaining[i].id },
-            data: { sortOrder: i },
-          });
-        }
+      const updates = remaining
+        .map((m, i) => ({ id: m.id, sortOrder: m.sortOrder, newOrder: i }))
+        .filter((m) => m.sortOrder !== m.newOrder)
+        .map((m) => tx.module.update({ where: { id: m.id }, data: { sortOrder: m.newOrder } }));
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
       }
-    });
+    }, { timeout: 15000 });
 
     res.json({ success: true, data: { deleted: deleteType } });
   } catch (err) {
