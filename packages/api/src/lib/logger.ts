@@ -28,8 +28,14 @@ export const logger = {
     }
   },
 
-  warn(context: string, detail?: string): void {
-    console.warn(`[WARN] ${context}${detail ? ` — ${detail}` : ""}`);
+  warn(context: string, detail?: unknown): void {
+    if (detail instanceof Error) {
+      console.warn(`[WARN] ${context} — ${sanitizeError(detail)}`);
+    } else if (typeof detail === "string") {
+      console.warn(`[WARN] ${context} — ${detail}`);
+    } else {
+      console.warn(`[WARN] ${context}`);
+    }
   },
 
   info(context: string, detail?: string): void {

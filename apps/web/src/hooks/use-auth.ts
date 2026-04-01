@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { api } from "@/lib/api-client";
+import { getQueryClient } from "@/lib/query-provider";
 
 interface User {
   id: string;
@@ -97,6 +98,7 @@ export function useAuthState(): AuthContextValue {
     }
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
+    getQueryClient().clear(); // Clear all cached PHI from memory
     setState({ user: null, isLoading: false, isAuthenticated: false });
   }, []);
 

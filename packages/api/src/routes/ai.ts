@@ -191,7 +191,7 @@ Design guidelines:
     try {
       result = JSON.parse(rawJson);
     } catch {
-      logger.error("AI generate-tracker returned invalid JSON", new Error(rawJson.slice(0, 200)));
+      logger.error("AI generate-tracker returned invalid JSON");
       res.status(500).json({ success: false, error: "AI returned invalid content. Try again." });
       return;
     }
@@ -253,7 +253,7 @@ router.post("/generate-part", async (req: Request, res: Response) => {
     try {
       content = JSON.parse(rawJson);
     } catch {
-      logger.error("AI generate-part returned invalid JSON", new Error(rawJson.slice(0, 200)));
+      logger.error("AI generate-part returned invalid JSON");
       res.status(500).json({ success: false, error: "AI returned invalid content. Try again." });
       return;
     }
@@ -419,7 +419,7 @@ GUIDELINES:
       }
       items = parsed;
     } catch {
-      logger.error("AI returned invalid JSON for homework PDF parse", rawJson.slice(0, 200));
+      logger.error("AI returned invalid JSON for homework PDF parse");
       res.status(500).json({ success: false, error: "Failed to parse PDF content" });
       return;
     }

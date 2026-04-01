@@ -359,14 +359,13 @@ async function rtmClinicianThresholdAlerts(): Promise<void> {
           (period.periodEnd.getTime() - today.getTime()) / 86400000
         )
       );
-      const clientName = period.client.firstName;
       const engDays = period.engagementDays;
 
       if (engDays === 16) {
         await queueNotification(
           clinicianUserId,
           "\ud83c\udfaf RTM threshold met",
-          `${clientName} hit 16 days \u2014 RTM is billable! Log your monitoring time.`,
+          `A client hit 16 days \u2014 RTM is billable! Log your monitoring time.`,
           "RTM_CLINICIAN",
           { type: "rtm_threshold_met", billingPeriodId: period.id },
           { singletonKey: `rtm-threshold-${period.id}-16` }
@@ -376,7 +375,7 @@ async function rtmClinicianThresholdAlerts(): Promise<void> {
         await queueNotification(
           clinicianUserId,
           "RTM threshold approaching",
-          `${clientName} is close to RTM threshold \u2014 ${needed} more days needed.`,
+          `A client is close to RTM threshold \u2014 ${needed} more days needed.`,
           "RTM_CLINICIAN",
           { type: "rtm_approaching", billingPeriodId: period.id },
           { singletonKey: `rtm-approaching-${period.id}-${todayKey()}` }
@@ -385,7 +384,7 @@ async function rtmClinicianThresholdAlerts(): Promise<void> {
         await queueNotification(
           clinicianUserId,
           "\u26a0\ufe0f RTM at risk",
-          `${clientName} may miss RTM threshold this month. ${engDays} engagement days with ${daysRemaining} days remaining.`,
+          `A client may miss RTM threshold this month. ${engDays} engagement days with ${daysRemaining} days remaining.`,
           "RTM_CLINICIAN",
           { type: "rtm_at_risk", billingPeriodId: period.id },
           { singletonKey: `rtm-atrisk-${period.id}-${todayKey()}` }
