@@ -46,7 +46,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section id="try-demo" className="max-w-6xl mx-auto px-6 pt-24 pb-20">
+      <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-[var(--steady-teal-bg)] px-4 py-1.5 text-sm font-medium text-[var(--steady-teal-dark)] mb-6">
             <span className="flex h-2 w-2 rounded-full bg-[var(--steady-teal)]" />
@@ -61,7 +61,20 @@ export default function LandingPage() {
             tracking client progress between sessions, and managing RTM billing — all
             in one HIPAA-compliant platform.
           </p>
-          <DemoProvisionForm />
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="#try-demo"
+              className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-6 py-3 text-base font-semibold text-white hover:bg-[var(--steady-teal-dark)] transition-colors shadow-sm"
+            >
+              Try the Demo
+            </Link>
+            <Link
+              href="#how-it-works"
+              className="inline-flex items-center justify-center rounded-lg border border-[var(--steady-warm-200)] bg-white px-6 py-3 text-base font-medium text-foreground hover:bg-[var(--steady-warm-100)] transition-colors"
+            >
+              See How It Works
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -193,13 +206,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Try the Demo */}
+      <section id="try-demo" className="bg-white border-y border-[var(--steady-warm-200)]">
+        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-3">Try it yourself</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto mb-10">
+            Enter your info and you'll be exploring the full platform in seconds.
+            Pre-loaded with sample programs and clients. No sales call, no credit card.
+          </p>
+          <DemoProvisionForm />
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="bg-[var(--steady-teal)] text-white">
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to see it for yourself?</h2>
+          <h2 className="text-3xl font-bold mb-4">Ready to transform your practice?</h2>
           <p className="text-white/80 max-w-xl mx-auto mb-8 leading-relaxed">
-            Enter your name and email above and you'll be exploring the full platform
-            in seconds. Pre-loaded with sample programs and clients.
+            Join clinicians who are using STEADY to deliver structured, evidence-based
+            care with less admin work and better client outcomes.
           </p>
           <Link
             href="#try-demo"
