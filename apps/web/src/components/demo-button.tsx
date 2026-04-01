@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api-client";
+import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
 const DEMO_EMAIL = "admin@admin.com";
@@ -15,18 +15,15 @@ interface DemoButtonProps {
 
 export function DemoButton({ className, children }: DemoButtonProps) {
   const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleDemo = async () => {
     setLoading(true);
     try {
-      await api.post("/api/auth/login", {
-        email: DEMO_EMAIL,
-        password: DEMO_PASSWORD,
-      });
+      await login(DEMO_EMAIL, DEMO_PASSWORD);
       router.push("/dashboard");
     } catch {
-      // If demo login fails, redirect to login page
       router.push("/login");
     } finally {
       setLoading(false);
