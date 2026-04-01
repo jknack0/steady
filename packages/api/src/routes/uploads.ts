@@ -90,6 +90,12 @@ router.get("/presign-download", async (req: Request, res: Response) => {
       return;
     }
 
+    // Basic path validation — only allow downloads from uploads/ prefix
+    if (!key.startsWith("uploads/")) {
+      res.status(403).json({ success: false, error: "Access denied" });
+      return;
+    }
+
     const downloadUrl = await generateDownloadUrl(key);
 
     res.json({ success: true, data: { downloadUrl } });
