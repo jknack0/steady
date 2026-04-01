@@ -33,6 +33,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { NotificationBell } from "@/components/notification-bell";
 import { CommandPalette } from "@/components/command-palette";
 import { useCommandPalette } from "@/hooks/use-command-palette";
+import { InactivityTimeout } from "@/components/inactivity-timeout";
 
 // ── Nav Config ──────────────────────────────────────
 
@@ -340,6 +341,9 @@ export default function DashboardLayout({
 
       {/* Toast Notifications */}
       <ToastContainer />
+
+      {/* HIPAA: Auto-logoff after 30 minutes of inactivity */}
+      <InactivityTimeout />
     </div>
       </ProtectedRoute>
     </QueryProvider>

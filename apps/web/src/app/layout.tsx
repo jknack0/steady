@@ -6,10 +6,15 @@ import { AuthProvider } from "@/components/auth-provider";
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "STEADY with ADHD — Clinician Dashboard",
-  description: "Clinician dashboard and Clinical Assessment System for the STEADY with ADHD study",
+  title: "STEADY Mental Health — Clinical Platform for Modern Therapists",
+  description: "HIPAA-compliant clinical platform with structured treatment programs, daily check-ins, homework tracking, and RTM billing. Built for therapists who want better outcomes.",
   icons: {
     icon: "/icon.svg",
+  },
+  openGraph: {
+    title: "STEADY Mental Health",
+    description: "Clinical platform for structured care, progress tracking, and RTM billing.",
+    siteName: "STEADY Mental Health",
   },
 };
 

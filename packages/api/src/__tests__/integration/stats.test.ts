@@ -1,8 +1,29 @@
 import request from "supertest";
 import app from "../../app";
-import { TEST_IDS, clinicianAuthHeader, participantAuthHeader } from "./setup";
+import { testPrisma, TEST_IDS, clinicianAuthHeader, participantAuthHeader } from "./setup";
 
 describe("Stats Routes (integration)", () => {
+  beforeAll(async () => {
+    // Ownership check requires ClinicianClient relationship
+    const existing = await testPrisma.clinicianClient.findFirst({
+      where: { clinicianId: TEST_IDS.clinicianProfileId, clientId: TEST_IDS.participantUserId },
+    });
+    if (!existing) {
+      await testPrisma.clinicianClient.create({
+        data: {
+          clinicianId: TEST_IDS.clinicianProfileId,
+          clientId: TEST_IDS.participantUserId,
+          status: "ACTIVE",
+        },
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await testPrisma.clinicianClient.deleteMany({
+      where: { clinicianId: TEST_IDS.clinicianProfileId, clientId: TEST_IDS.participantUserId },
+    }).catch(() => {});
+  });
   // ── Participant Stats ─────────────────────────────────
 
   it("GET /api/stats/participant — returns own stats", async () => {

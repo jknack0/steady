@@ -5,6 +5,7 @@ import { encryptField, decryptField } from "./crypto";
  * Map of Prisma model names to the fields that require encryption.
  */
 const ENCRYPTED_FIELDS: Record<string, string[]> = {
+  Session: ["clinicianNotes", "participantSummary"],
   RtmEnrollment: ["subscriberId", "groupNumber"],
   ClinicianBillingProfile: ["npiNumber", "taxId", "licenseNumber"],
   PatientInvitation: ["patientName", "patientEmail"],

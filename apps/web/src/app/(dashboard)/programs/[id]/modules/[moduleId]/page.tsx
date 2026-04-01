@@ -32,14 +32,13 @@ import { PartCard, PART_TYPE_CONFIG } from "@/components/part-card";
 import { CreatePartModal, EditPartModal } from "@/components/part-editor-modal";
 import {
   ArrowLeft,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   Eye,
   Loader2,
   Plus,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -85,7 +84,7 @@ export default function ModuleEditorPage() {
   const nextModule = allModules && currentIndex < allModules.length - 1 ? allModules[currentIndex + 1] : null;
 
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"content" | "settings">("content");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewPartId, setPreviewPartId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -277,69 +276,77 @@ export default function ModuleEditorPage() {
         )}
       </div>
 
-      {/* Module Settings (collapsible) */}
-      <div className="mb-8 rounded-lg border">
-        <button
-          className="flex w-full items-center justify-between p-4 text-left font-medium"
-          onClick={() => setSettingsOpen(!settingsOpen)}
-        >
-          Module Settings
-          {settingsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-
-        {settingsOpen && (
-          <div className="border-t p-4">
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <div className="grid gap-2">
-                <Label>Unlock Rule</Label>
-                <Select
-                  value={module.unlockRule}
-                  onValueChange={(v) =>
-                    saveModuleField({ unlockRule: v })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SEQUENTIAL">Sequential</SelectItem>
-                    <SelectItem value="MANUAL">Manual</SelectItem>
-                    <SelectItem value="TIME_BASED">Time-Based</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {module.unlockRule === "TIME_BASED" && (
-                <div className="grid gap-2">
-                  <Label>Unlock Delay (days)</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={module.estimatedMinutes ?? ""}
-                    onChange={(e) =>
-                      saveModuleField({ unlockDelayDays: parseInt(e.target.value) || undefined } as any)
-                    }
-                  />
-                </div>
-              )}
-
-              <div className="grid gap-2">
-                <Label>Estimated Time (minutes)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={module.estimatedMinutes ?? ""}
-                  onChange={(e) =>
-                    saveModuleField({ estimatedMinutes: parseInt(e.target.value) || undefined })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b mb-6">
+        {([
+          { key: "content" as const, label: "Content" },
+          { key: "settings" as const, label: "Settings" },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px",
+              activeTab === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Parts List */}
+      {/* Settings Tab */}
+      {activeTab === "settings" && (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="grid gap-2">
+            <Label>Unlock Rule</Label>
+            <Select
+              value={module.unlockRule}
+              onValueChange={(v) => saveModuleField({ unlockRule: v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SEQUENTIAL">Sequential</SelectItem>
+                <SelectItem value="MANUAL">Manual</SelectItem>
+                <SelectItem value="TIME_BASED">Time-Based</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {module.unlockRule === "TIME_BASED" && (
+            <div className="grid gap-2">
+              <Label>Unlock Delay (days)</Label>
+              <Input
+                type="number"
+                min={1}
+                value={module.unlockDelayDays ?? ""}
+                onChange={(e) =>
+                  saveModuleField({ unlockDelayDays: parseInt(e.target.value) || undefined } as any)
+                }
+              />
+            </div>
+          )}
+
+          <div className="grid gap-2">
+            <Label>Estimated Time (minutes)</Label>
+            <Input
+              type="number"
+              min={1}
+              value={module.estimatedMinutes ?? ""}
+              onChange={(e) =>
+                saveModuleField({ estimatedMinutes: parseInt(e.target.value) || undefined })
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Content Tab — Parts List */}
+      {activeTab === "content" && <>
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Parts</h2>
@@ -384,6 +391,7 @@ export default function ModuleEditorPage() {
           </div>
         )}
       </div>
+      </>}
 
       {/* Add Part Modal */}
       <CreatePartModal

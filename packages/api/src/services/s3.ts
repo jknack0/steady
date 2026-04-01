@@ -12,7 +12,7 @@ const s3 = new S3Client({
 });
 
 const UPLOAD_EXPIRY = 300; // 5 minutes
-const DOWNLOAD_EXPIRY = 3600; // 1 hour
+const DOWNLOAD_EXPIRY = 300; // 5 minutes — minimize exposure window for PHI
 
 export async function generateUploadUrl(opts: {
   userId: string;

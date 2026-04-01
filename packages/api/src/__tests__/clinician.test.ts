@@ -19,6 +19,9 @@ beforeEach(() => {
   db.rtmEnrollment.findMany.mockResolvedValue([] as any);
   // ClinicianClient fallback in getClinicianParticipants needs this mock
   db.clinicianClient.findMany.mockResolvedValue([] as any);
+  // Default ownership check mocks
+  db.clinicianClient.findFirst.mockResolvedValue({ id: "cc-1" } as any);
+  db.enrollment.findFirst.mockResolvedValue({ id: "enroll-1" } as any);
 });
 
 // ── GET /api/clinician/participants ──────────────────────
@@ -798,7 +801,7 @@ describe("GET /api/clinician/participants/:id (additional)", () => {
     expect(res.body.data.participant.email).toBe("jane@test.com");
   });
 
-  it("returns 404 when participant has no enrollments in clinician programs", async () => {
+  it("returns 404 when participant has no enrollments and is not a direct client", async () => {
     db.participantProfile.findUnique.mockResolvedValue({
       id: "pp-1",
       userId: "user-1",
@@ -807,6 +810,8 @@ describe("GET /api/clinician/participants/:id (additional)", () => {
 
     db.program.findMany.mockResolvedValue([{ id: "prog-1" }] as any);
     db.enrollment.findMany.mockResolvedValue([]);
+    // Override: not a direct client either
+    db.clinicianClient.findFirst.mockResolvedValue(null);
 
     const res = await request(app)
       .get("/api/clinician/participants/user-1")

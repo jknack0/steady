@@ -32,6 +32,7 @@ export interface Module {
   estimatedMinutes: number | null;
   sortOrder: number;
   unlockRule: string;
+  unlockDelayDays: number | null;
   partCount?: number;
   createdAt: string;
   updatedAt: string;

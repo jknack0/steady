@@ -1,7 +1,9 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
+import { CreateJournalEntrySchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import { logRtmEngagement } from "../services/rtm";
 
 const router = Router();
@@ -72,28 +74,15 @@ router.get("/:date", async (req: Request, res: Response) => {
 });
 
 // POST /api/participant/journal — Create or update a journal entry
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", validate(CreateJournalEntrySchema), async (req: Request, res: Response) => {
   try {
     const participantId = req.user!.participantProfileId!;
     const { entryDate, freeformContent, responses, regulationScore, isSharedWithClinician, promptPartId } = req.body;
-
-    if (!entryDate) {
-      res.status(400).json({ success: false, error: "entryDate is required" });
-      return;
-    }
 
     const date = new Date(entryDate);
     if (isNaN(date.getTime())) {
       res.status(400).json({ success: false, error: "Invalid date format" });
       return;
-    }
-
-    // Validate regulation score if provided
-    if (regulationScore !== undefined && regulationScore !== null) {
-      if (regulationScore < 1 || regulationScore > 10) {
-        res.status(400).json({ success: false, error: "regulationScore must be between 1 and 10" });
-        return;
-      }
     }
 
     const entry = await prisma.journalEntry.upsert({

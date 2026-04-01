@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { prisma } from "@steady/db";
 import { APP_NAME } from "@steady/shared";
 import { errorHandler } from "./middleware/errorHandler";
@@ -41,7 +42,22 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
-app.use(express.json());
+app.use(cookieParser());
+app.use(express.json({ limit: "1mb" }));
+
+// Security headers — HIPAA compliance
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "0"); // Modern browsers use CSP instead
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Pragma", "no-cache");
+  if (isProduction) {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
+});
 
 // Health check — always returns 200 so Railway deploys succeed.
 // Database status is informational only.
@@ -54,6 +70,33 @@ app.get("/health", async (_req, res) => {
     dbStatus = "disconnected";
   }
   res.json({ status: "ok", service: APP_NAME, database: dbStatus });
+});
+
+// Waitlist signup (public, rate-limited)
+import rateLimit from "express-rate-limit";
+const waitlistLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many requests. Please try again later." },
+});
+app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
+  try {
+    const email = req.body?.email?.trim()?.toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ success: false, error: "Valid email is required" });
+      return;
+    }
+    await prisma.waitlistEntry.upsert({
+      where: { email },
+      create: { email },
+      update: {},
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Failed to join waitlist" });
+  }
 });
 
 // API routes

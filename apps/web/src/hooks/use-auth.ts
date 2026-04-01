@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { api } from "@/lib/api-client";
+import { getQueryClient } from "@/lib/query-provider";
 
 interface User {
   id: string;
@@ -41,19 +42,11 @@ export function useAuthState(): AuthContextValue {
   });
 
   const checkAuth = useCallback(async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setState({ user: null, isLoading: false, isAuthenticated: false });
-      return;
-    }
-
     try {
-      // api.get handles 401 → refresh automatically
+      // Cookie is sent automatically via credentials: "include"
       const user = await api.get<User>("/api/auth/me");
       setState({ user, isLoading: false, isAuthenticated: true });
     } catch {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
       setState({ user: null, isLoading: false, isAuthenticated: false });
     }
   }, []);
@@ -67,8 +60,7 @@ export function useAuthState(): AuthContextValue {
       "/api/auth/login",
       { email, password }
     );
-    localStorage.setItem("token", data.accessToken);
-    localStorage.setItem("refreshToken", data.refreshToken);
+    // Cookies are set by the server via Set-Cookie headers
     setState({ user: data.user, isLoading: false, isAuthenticated: true });
   }, []);
 
@@ -78,26 +70,27 @@ export function useAuthState(): AuthContextValue {
         "/api/auth/register",
         { ...input, role: "CLINICIAN" }
       );
-      localStorage.setItem("token", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
       setState({ user: data.user, isLoading: false, isAuthenticated: true });
     },
     []
   );
 
   const logout = useCallback(async () => {
-    const refreshToken = localStorage.getItem("refreshToken");
-    // Revoke server-side before clearing local state
-    if (refreshToken) {
-      try {
-        await api.post("/api/auth/logout", { refreshToken });
-      } catch {
-        // Best-effort — still clear local tokens
-      }
+    try {
+      await api.post("/api/auth/logout", {});
+    } catch {
+      // Best-effort — server clears cookies
     }
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
+    getQueryClient().clear();
     setState({ user: null, isLoading: false, isAuthenticated: false });
+  }, []);
+
+  // One-time cleanup: remove any stale tokens from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+    }
   }, []);
 
   return { ...state, login, register, logout, refreshUser: checkAuth };

@@ -26,6 +26,9 @@ vi.mock("../services/notifications", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default ownership check mocks — return truthy so tests pass unless overridden
+  db.session.findFirst.mockResolvedValue({ id: "session-1" } as any);
+  db.enrollment.findFirst.mockResolvedValue({ id: "enroll-1" } as any);
   // Restore default $transaction behavior (execute callback with mockPrisma)
   db.$transaction.mockImplementation(async (fnOrArray: any) => {
     if (typeof fnOrArray === "function") {
@@ -644,7 +647,7 @@ describe("PUT /api/sessions/:id/complete (additional)", () => {
       .put("/api/sessions/session-1/complete")
       .set(...authHeader())
       .send({
-        tasksToAssign: [{ title: "" }, { title: "  " }],
+        tasksToAssign: [{ title: "  " }, { title: "   " }],
       });
 
     expect(res.status).toBe(200);
@@ -837,7 +840,9 @@ describe("GET /api/sessions/:id/prepare", () => {
       },
     } as any);
 
-    db.session.findFirst.mockResolvedValue(null);
+    db.session.findFirst
+      .mockResolvedValueOnce({ id: "session-1" } as any) // ownership check
+      .mockResolvedValueOnce(null); // no previous completed session
     db.task.count.mockResolvedValue(0);
     db.journalEntry.count.mockResolvedValue(0);
 
