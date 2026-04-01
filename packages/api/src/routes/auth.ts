@@ -70,10 +70,13 @@ async function createRefreshToken(userId: string, familyId?: string): Promise<st
 
 // ── Cookie Helpers (HIPAA: httpOnly cookies prevent XSS token theft) ──
 
+const isProduction = process.env.NODE_ENV === "production";
 const COOKIE_OPTIONS_BASE: CookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
+  secure: isProduction,
+  // "none" required for cross-origin cookies (Vercel web → Railway API)
+  // "lax" is safer but only works same-site
+  sameSite: isProduction ? "none" : "lax",
   path: "/",
 };
 
