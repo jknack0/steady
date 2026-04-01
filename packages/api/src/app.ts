@@ -1,6 +1,9 @@
-import express from "express";
+import express, { type CookieOptions } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
 import { APP_NAME } from "@steady/shared";
 import { errorHandler } from "./middleware/errorHandler";
@@ -96,6 +99,246 @@ app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: "Failed to join waitlist" });
+  }
+});
+
+// Demo provisioning — create account, clone admin's data, log in
+const DEMO_SOURCE_EMAIL = "admin@admin.com";
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
+const REFRESH_TOKEN_EXPIRY_DAYS = 7;
+
+const demoCookieOptions: CookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  path: "/",
+};
+
+const demoLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many requests. Please try again later." },
+});
+
+app.post("/api/demo/provision", demoLimiter, async (req, res) => {
+  try {
+    const firstName = req.body?.firstName?.trim();
+    const lastName = req.body?.lastName?.trim();
+    const email = req.body?.email?.trim()?.toLowerCase();
+
+    if (!firstName || !lastName || !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ success: false, error: "First name, last name, and valid email are required" });
+      return;
+    }
+
+    // Save to waitlist
+    await prisma.waitlistEntry.upsert({ where: { email }, create: { email }, update: {} });
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email },
+      include: { clinicianProfile: true, participantProfile: true },
+    });
+
+    if (user && user.role !== "CLINICIAN") {
+      res.status(400).json({ success: false, error: "This email is already associated with a participant account" });
+      return;
+    }
+
+    let isNewAccount = false;
+
+    if (!user) {
+      isNewAccount = true;
+      const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10);
+
+      user = await prisma.user.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          passwordHash,
+          role: "CLINICIAN",
+          clinicianProfile: { create: {} },
+        },
+        include: { clinicianProfile: true, participantProfile: true },
+      });
+
+      // Create default clinician config
+      await prisma.clinicianConfig.create({
+        data: {
+          clinicianId: user.clinicianProfile!.id,
+          enabledModules: ["homework", "journal", "assessments", "strategy_cards", "program_modules"],
+          dashboardLayout: [],
+          setupCompleted: true,
+        },
+      });
+
+      // Find admin source account
+      const adminUser = await prisma.user.findUnique({
+        where: { email: DEMO_SOURCE_EMAIL },
+        include: { clinicianProfile: true },
+      });
+
+      if (adminUser?.clinicianProfile) {
+        const adminClinicianId = adminUser.clinicianProfile.id;
+        const newClinicianId = user.clinicianProfile!.id;
+
+        // Clone admin's programs (with modules, parts, trackers)
+        const programs = await prisma.program.findMany({
+          where: { clinicianId: adminClinicianId, status: { not: "ARCHIVED" } },
+          include: {
+            modules: {
+              where: { deletedAt: null },
+              orderBy: { sortOrder: "asc" },
+              include: { parts: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } } },
+            },
+            dailyTrackers: {
+              include: { fields: { orderBy: { sortOrder: "asc" } } },
+            },
+          },
+        });
+
+        for (const source of programs) {
+          await prisma.$transaction(async (tx) => {
+            const newProgram = await tx.program.create({
+              data: {
+                clinicianId: newClinicianId,
+                title: source.title,
+                description: source.description,
+                category: source.category,
+                durationWeeks: source.durationWeeks,
+                coverImageUrl: source.coverImageUrl,
+                cadence: source.cadence,
+                enrollmentMethod: source.enrollmentMethod,
+                sessionType: source.sessionType,
+                followUpCount: source.followUpCount,
+                isTemplate: source.isTemplate,
+                status: source.status,
+              },
+            });
+
+            for (const mod of source.modules) {
+              const newModule = await tx.module.create({
+                data: {
+                  programId: newProgram.id,
+                  title: mod.title,
+                  subtitle: mod.subtitle,
+                  summary: mod.summary,
+                  estimatedMinutes: mod.estimatedMinutes,
+                  sortOrder: mod.sortOrder,
+                  unlockRule: mod.unlockRule,
+                  unlockDelayDays: mod.unlockDelayDays,
+                },
+              });
+
+              if (mod.parts.length > 0) {
+                await tx.part.createMany({
+                  data: mod.parts.map((p, i) => ({
+                    moduleId: newModule.id,
+                    type: p.type,
+                    title: p.title,
+                    sortOrder: i,
+                    isRequired: p.isRequired,
+                    content: p.content as any,
+                  })),
+                });
+              }
+            }
+
+            for (const tracker of source.dailyTrackers) {
+              const newTracker = await tx.dailyTracker.create({
+                data: {
+                  programId: newProgram.id,
+                  createdById: newClinicianId,
+                  name: tracker.name,
+                  description: tracker.description,
+                  reminderTime: tracker.reminderTime,
+                  isActive: tracker.isActive,
+                },
+              });
+
+              if (tracker.fields.length > 0) {
+                await tx.dailyTrackerField.createMany({
+                  data: tracker.fields.map((f) => ({
+                    trackerId: newTracker.id,
+                    label: f.label,
+                    fieldType: f.fieldType,
+                    sortOrder: f.sortOrder,
+                    isRequired: f.isRequired,
+                    options: f.options as any,
+                  })),
+                });
+              }
+            }
+          });
+        }
+
+        // Clone admin's clients (create ClinicianClient relationships)
+        const adminClients = await prisma.clinicianClient.findMany({
+          where: { clinicianId: adminClinicianId },
+        });
+
+        for (const client of adminClients) {
+          const exists = await prisma.clinicianClient.findUnique({
+            where: { clinicianId_clientId: { clinicianId: newClinicianId, clientId: client.clientId } },
+          });
+          if (!exists) {
+            await prisma.clinicianClient.create({
+              data: {
+                clinicianId: newClinicianId,
+                clientId: client.clientId,
+                status: "ACTIVE",
+                acceptedAt: new Date(),
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // Issue tokens
+    const authPayload = {
+      userId: user.id,
+      role: "CLINICIAN" as const,
+      clinicianProfileId: user.clinicianProfile!.id,
+    };
+    const accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
+    const refreshToken = crypto.randomBytes(48).toString("base64url");
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        familyId: crypto.randomUUID(),
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // Set cookies
+    res.cookie("access_token", accessToken, { ...demoCookieOptions, maxAge: 30 * 60 * 1000 });
+    res.cookie("refresh_token", refreshToken, { ...demoCookieOptions, maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000, path: "/api/auth" });
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          hasCompletedSetup: true,
+        },
+        accessToken,
+        refreshToken,
+        isNewAccount,
+      },
+    });
+  } catch (err) {
+    const logger = await import("./lib/logger").then((m) => m.logger);
+    logger.error("Demo provision error", err);
+    res.status(500).json({ success: false, error: "Failed to provision demo. Please try again." });
   }
 });
 
