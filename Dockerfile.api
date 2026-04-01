@@ -42,7 +42,8 @@ RUN chmod +x ./docker-entrypoint.sh
 
 # Run as non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 steady
+    adduser --system --uid 1001 steady && \
+    chown -R steady:nodejs /app
 USER steady
 
 EXPOSE 4000
