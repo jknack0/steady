@@ -18,6 +18,19 @@ import {
 
 const router = Router();
 
+// Verify a tracker belongs to this clinician (via program ownership)
+async function verifyTrackerOwnership(trackerId: string, clinicianProfileId: string) {
+  return prisma.dailyTracker.findFirst({
+    where: {
+      id: trackerId,
+      OR: [
+        { program: { clinicianId: clinicianProfileId } },
+        { createdById: clinicianProfileId },
+      ],
+    },
+  });
+}
+
 router.use(authenticate, requireRole("CLINICIAN"));
 
 // Helper: verify clinician owns the program
@@ -234,6 +247,15 @@ router.get("/participant/:participantId", async (req: Request, res: Response) =>
 // GET /api/daily-trackers/:id — Get tracker with fields
 router.get("/:id", async (req: Request, res: Response) => {
   try {
+    // Clinicians must own the tracker; participants access via different routes
+    if (req.user!.role === "CLINICIAN") {
+      const owned = await verifyTrackerOwnership(req.params.id, req.user!.clinicianProfileId!);
+      if (!owned) {
+        res.status(404).json({ success: false, error: "Tracker not found" });
+        return;
+      }
+    }
+
     const tracker = await prisma.dailyTracker.findUnique({
       where: { id: req.params.id },
       include: { fields: { orderBy: { sortOrder: "asc" } } },
@@ -254,6 +276,12 @@ router.get("/:id", async (req: Request, res: Response) => {
 // PUT /api/daily-trackers/:id — Update tracker config
 router.put("/:id", validate(UpdateDailyTrackerSchema), async (req: Request, res: Response) => {
   try {
+    const owned = await verifyTrackerOwnership(req.params.id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Tracker not found" });
+      return;
+    }
+
     const existing = await prisma.dailyTracker.findUnique({
       where: { id: req.params.id },
     });
@@ -315,6 +343,12 @@ router.put("/:id", validate(UpdateDailyTrackerSchema), async (req: Request, res:
 // DELETE /api/daily-trackers/:id — Delete tracker
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
+    const owned = await verifyTrackerOwnership(req.params.id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Tracker not found" });
+      return;
+    }
+
     const existing = await prisma.dailyTracker.findUnique({
       where: { id: req.params.id },
     });
@@ -379,6 +413,14 @@ router.get("/:id/entries", async (req: Request, res: Response) => {
 // GET /api/daily-trackers/:id/trends?userId=X — Trend data for charts
 router.get("/:id/trends", async (req: Request, res: Response) => {
   try {
+    if (req.user!.role === "CLINICIAN") {
+      const owned = await verifyTrackerOwnership(req.params.id, req.user!.clinicianProfileId!);
+      if (!owned) {
+        res.status(404).json({ success: false, error: "Tracker not found" });
+        return;
+      }
+    }
+
     const { userId, startDate, endDate } = req.query;
 
     if (!userId) {

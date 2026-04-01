@@ -26,6 +26,20 @@ const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN", "ADMIN"));
 
+// Verify a participant belongs to this clinician via ClinicianClient or enrollment
+async function verifyParticipantOwnership(participantUserId: string, clinicianProfileId: string) {
+  return prisma.clinicianClient.findFirst({
+    where: { clinicianId: clinicianProfileId, clientId: participantUserId },
+  });
+}
+
+// Verify an enrollment belongs to this clinician's programs
+async function verifyEnrollmentOwnership(enrollmentId: string, clinicianProfileId: string) {
+  return prisma.enrollment.findFirst({
+    where: { id: enrollmentId, program: { clinicianId: clinicianProfileId } },
+  });
+}
+
 // GET /api/clinician/dashboard — Dashboard summary data
 router.get("/dashboard", async (req: Request, res: Response) => {
   try {
@@ -437,6 +451,12 @@ router.post("/participants/:id/homework", async (req: Request, res: Response) =>
 router.post("/participants/:id/push-task", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const owned = await verifyParticipantOwnership(id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Participant not found" });
+      return;
+    }
+
     const { title, description, dueDate } = req.body;
 
     if (!title?.trim()) {
@@ -455,10 +475,22 @@ router.post("/participants/:id/push-task", async (req: Request, res: Response) =
 // POST /api/clinician/participants/:id/unlock-module — Unlock next module
 router.post("/participants/:id/unlock-module", async (req: Request, res: Response) => {
   try {
+    const owned = await verifyParticipantOwnership(req.params.id, req.user!.clinicianProfileId!);
+    if (!owned) {
+      res.status(404).json({ success: false, error: "Participant not found" });
+      return;
+    }
+
     const { enrollmentId, moduleId } = req.body;
 
     if (!enrollmentId || !moduleId) {
       res.status(400).json({ success: false, error: "enrollmentId and moduleId are required" });
+      return;
+    }
+
+    const enrollmentOwned = await verifyEnrollmentOwnership(enrollmentId, req.user!.clinicianProfileId!);
+    if (!enrollmentOwned) {
+      res.status(404).json({ success: false, error: "Enrollment not found" });
       return;
     }
 
@@ -474,6 +506,13 @@ router.post("/participants/:id/unlock-module", async (req: Request, res: Respons
 router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, res: Response) => {
   try {
     const { enrollmentId } = req.params;
+
+    const enrollmentOwned = await verifyEnrollmentOwnership(enrollmentId, req.user!.clinicianProfileId!);
+    if (!enrollmentOwned) {
+      res.status(404).json({ success: false, error: "Enrollment not found" });
+      return;
+    }
+
     const { action } = req.body;
 
     if (!["pause", "resume", "drop", "reset-progress"].includes(action)) {

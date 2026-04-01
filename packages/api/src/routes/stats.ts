@@ -36,19 +36,29 @@ router.get(
       const { participantId } = req.params;
       const { start, end } = req.query;
 
+      const clinicianId = req.user!.clinicianProfileId!;
+
       // Look up by participantProfile ID or User ID
       let participant = await prisma.participantProfile.findUnique({
         where: { id: participantId },
       });
 
       if (!participant) {
-        // Try looking up by userId (enrollment list returns user IDs)
         participant = await prisma.participantProfile.findUnique({
           where: { userId: participantId },
         });
       }
 
       if (!participant) {
+        res.status(404).json({ success: false, error: "Participant not found" });
+        return;
+      }
+
+      // Verify clinician owns this participant via ClinicianClient or enrollment
+      const owned = await prisma.clinicianClient.findFirst({
+        where: { clinicianId, clientId: participant.userId },
+      });
+      if (!owned) {
         res.status(404).json({ success: false, error: "Participant not found" });
         return;
       }
