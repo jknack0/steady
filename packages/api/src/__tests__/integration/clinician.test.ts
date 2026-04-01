@@ -7,6 +7,20 @@ describe("Clinician Routes (integration)", () => {
   const createdClientUserIds: string[] = [];
 
   beforeAll(async () => {
+    // Create ClinicianClient relationship (required by ownership checks)
+    const existing = await testPrisma.clinicianClient.findFirst({
+      where: { clinicianId: TEST_IDS.clinicianProfileId, clientId: TEST_IDS.participantUserId },
+    });
+    if (!existing) {
+      await testPrisma.clinicianClient.create({
+        data: {
+          clinicianId: TEST_IDS.clinicianProfileId,
+          clientId: TEST_IDS.participantUserId,
+          status: "ACTIVE",
+        },
+      });
+    }
+
     // Create an active enrollment so participant shows up
     const enrollment = await testPrisma.enrollment.create({
       data: {
@@ -26,7 +40,10 @@ describe("Clinician Routes (integration)", () => {
       where: { participantId: TEST_IDS.participantProfileId },
     });
     await testPrisma.moduleProgress.deleteMany({ where: { enrollmentId } });
-    await testPrisma.enrollment.delete({ where: { id: enrollmentId } }).catch(() => {});
+    await testPrisma.enrollment.deleteMany({ where: { id: enrollmentId } }).catch(() => {});
+    await testPrisma.clinicianClient.deleteMany({
+      where: { clinicianId: TEST_IDS.clinicianProfileId, clientId: TEST_IDS.participantUserId },
+    }).catch(() => {});
     for (const id of createdClientUserIds) {
       await testPrisma.clinicianClient.deleteMany({ where: { clientId: id } });
       await testPrisma.participantProfile.deleteMany({ where: { userId: id } });
