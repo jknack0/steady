@@ -24,5 +24,11 @@ export const UpdateProgramSchema = z.object({
   status: ProgramStatusEnum.optional(),
 });
 
+export const CreateProgramForClientSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  clientId: z.string().min(1, "Client is required"),
+});
+
 export type CreateProgramInput = z.input<typeof CreateProgramSchema>;
 export type UpdateProgramInput = z.infer<typeof UpdateProgramSchema>;
+export type CreateProgramForClientInput = z.infer<typeof CreateProgramForClientSchema>;

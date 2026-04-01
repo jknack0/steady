@@ -1,7 +1,7 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
-import { CreateProgramSchema, UpdateProgramSchema, AssignProgramSchema, AppendModulesSchema } from "@steady/shared";
+import { CreateProgramSchema, UpdateProgramSchema, AssignProgramSchema, AppendModulesSchema, CreateProgramForClientSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import crypto from "crypto";
@@ -167,6 +167,88 @@ router.get("/client-programs", async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/programs/for-client — Create a blank program for a specific client
+router.post("/for-client", validate(CreateProgramForClientSchema), async (req: Request, res: Response) => {
+  try {
+    const clinicianId = req.user!.clinicianProfileId!;
+    const { title, clientId } = req.body;
+
+    // Verify client belongs to this clinician
+    const clientRelation = await prisma.clinicianClient.findFirst({
+      where: {
+        clinicianId,
+        clientId,
+        status: { not: "DISCHARGED" },
+      },
+      include: {
+        client: {
+          include: { participantProfile: true },
+        },
+      },
+    });
+
+    if (!clientRelation) {
+      res.status(403).json({ success: false, error: "This client is not in your client list" });
+      return;
+    }
+
+    const participantProfileId = clientRelation.client.participantProfile?.id;
+    if (!participantProfileId) {
+      res.status(400).json({ success: false, error: "Client does not have a participant profile" });
+      return;
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Create blank program
+      const program = await tx.program.create({
+        data: {
+          clinicianId,
+          title,
+          isTemplate: false,
+          status: "PUBLISHED",
+          cadence: "WEEKLY",
+          enrollmentMethod: "INVITE",
+          sessionType: "ONE_ON_ONE",
+        },
+      });
+
+      // Self-reference templateSourceId to mark as client program
+      await tx.program.update({
+        where: { id: program.id },
+        data: { templateSourceId: program.id },
+      });
+
+      // Create one empty module
+      await tx.module.create({
+        data: {
+          programId: program.id,
+          title: "Module 1",
+          sortOrder: 0,
+        },
+      });
+
+      // Create active enrollment
+      const enrollment = await tx.enrollment.create({
+        data: {
+          participantId: participantProfileId,
+          programId: program.id,
+          status: "ACTIVE",
+        },
+      });
+
+      return {
+        program: { ...program, templateSourceId: program.id },
+        enrollment,
+      };
+    });
+
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    logger.error("Create program for client error", err);
+    res.status(500).json({ success: false, error: "Failed to create program for client" });
+  }
+});
+
 // GET /api/programs/:id — Get a single program with modules and enrollment stats
 router.get("/:id", async (req: Request, res: Response) => {
   try {
@@ -293,9 +375,19 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    if (program._count.enrollments > 0) {
+    const isClientProgram = !program.isTemplate && program.templateSourceId !== null;
+
+    if (program._count.enrollments > 0 && !isClientProgram) {
       res.status(409).json({ success: false, error: "Cannot archive a program with active enrollments" });
       return;
+    }
+
+    // For client programs, drop active enrollments before archiving
+    if (isClientProgram && program._count.enrollments > 0) {
+      await prisma.enrollment.updateMany({
+        where: { programId: req.params.id, status: "ACTIVE" },
+        data: { status: "DROPPED" },
+      });
     }
 
     await prisma.program.update({

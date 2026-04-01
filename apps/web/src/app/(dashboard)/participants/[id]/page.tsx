@@ -36,6 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api-client";
 import { TrackerDataView } from "@/components/tracker-data-view";
 import { EditCheckinModal } from "@/components/edit-checkin-modal";
@@ -44,6 +50,7 @@ import { HomeworkResponseViewer } from "@/components/homework-response-viewer";
 import { CreatePartModal } from "@/components/part-editor-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
+import { CreateProgramDialog } from "@/app/(dashboard)/programs/create-program-dialog";
 import {
   Loader2,
   CheckCircle2,
@@ -66,6 +73,7 @@ import {
   Sparkles,
   ChevronRight,
   Settings2,
+  MoreHorizontal,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { AssignmentModal } from "@/components/assignment";
@@ -230,6 +238,7 @@ function OverviewTab({
 }) {
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [createForClientOpen, setCreateForClientOpen] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const manage = useManageEnrollment(participantId);
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
@@ -272,16 +281,27 @@ function OverviewTab({
           <p className="text-xs text-muted-foreground mt-1 mb-4">
             Enroll this client in a program to track their progress, assign modules, and schedule sessions.
           </p>
-          <Button size="sm" onClick={() => setAssignModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Enroll in Program
-          </Button>
+          <div className="flex justify-center gap-2">
+            <Button size="sm" onClick={() => setAssignModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Enroll in Program
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setCreateForClientOpen(true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Create Program
+            </Button>
+          </div>
         </div>
         <AssignmentModal
           open={assignModalOpen}
           onOpenChange={setAssignModalOpen}
           participantId={data.participantProfileId}
           participantName={`${data.participant.firstName} ${data.participant.lastName}`.trim()}
+        />
+        <CreateProgramDialog
+          open={createForClientOpen}
+          onOpenChange={setCreateForClientOpen}
+          preselectedClient={{ id: data.participant.id, name: `${data.participant.firstName} ${data.participant.lastName}`.trim() }}
         />
       </div>
     );
@@ -303,28 +323,13 @@ function OverviewTab({
     <div className="space-y-6">
       {/* Actions */}
       <div className="flex justify-end gap-2">
-        {enrollment && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={() =>
-              confirm({
-                title: "Remove from Program",
-                description: `Remove this client from "${enrollment.program.title}"? Their progress will be preserved but they will no longer have access.`,
-                confirmLabel: "Remove",
-                variant: "danger",
-                onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action: "drop" }),
-              })
-            }
-          >
-            <X className="mr-2 h-4 w-4" />
-            Remove from Program
-          </Button>
-        )}
         <Button size="sm" variant="outline" onClick={() => setAssignModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Program
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setCreateForClientOpen(true)}>
+          <Sparkles className="mr-2 h-4 w-4" />
+          Create Program
         </Button>
         <Button
           variant={isCustomizing ? "default" : "outline"}
@@ -334,6 +339,32 @@ function OverviewTab({
           <Settings2 className="mr-2 h-4 w-4" />
           {isCustomizing ? "Done" : "Customize"}
         </Button>
+        {enrollment && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() =>
+                  confirm({
+                    title: "Remove from Program",
+                    description: `Remove this client from "${enrollment.program.title}"? Their progress will be preserved but they will no longer have access.`,
+                    confirmLabel: "Remove",
+                    variant: "danger",
+                    onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action: "drop" }),
+                  })
+                }
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remove from Program
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Widget Grid */}
@@ -362,6 +393,11 @@ function OverviewTab({
         onOpenChange={setAssignModalOpen}
         participantId={data.participantProfileId}
         participantName={participantName}
+      />
+      <CreateProgramDialog
+        open={createForClientOpen}
+        onOpenChange={setCreateForClientOpen}
+        preselectedClient={{ id: data.participant.id, name: participantName }}
       />
       {confirmDialog}
     </div>
@@ -2070,3 +2106,4 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     </div>
   );
 }
+

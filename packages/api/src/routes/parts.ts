@@ -214,17 +214,18 @@ router.delete("/:id", async (req: Request, res: Response) => {
       const remaining = await tx.part.findMany({
         where: { moduleId: req.params.moduleId, deletedAt: null },
         orderBy: { sortOrder: "asc" },
+        select: { id: true, sortOrder: true },
       });
 
-      for (let i = 0; i < remaining.length; i++) {
-        if (remaining[i].sortOrder !== i) {
-          await tx.part.update({
-            where: { id: remaining[i].id },
-            data: { sortOrder: i },
-          });
-        }
+      const updates = remaining
+        .map((p, i) => ({ id: p.id, sortOrder: p.sortOrder, newOrder: i }))
+        .filter((p) => p.sortOrder !== p.newOrder)
+        .map((p) => tx.part.update({ where: { id: p.id }, data: { sortOrder: p.newOrder } }));
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
       }
-    });
+    }, { timeout: 15000 });
 
     res.json({ success: true, data: { deleted: deleteType } });
   } catch (err) {
