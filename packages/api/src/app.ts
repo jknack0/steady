@@ -143,7 +143,7 @@ app.post("/api/demo/provision", demoLimiter, async (req, res) => {
     });
 
     if (user && user.role !== "CLINICIAN") {
-      res.status(400).json({ success: false, error: "This email is already associated with a participant account" });
+      res.status(400).json({ success: false, error: "Unable to create account with this email" });
       return;
     }
 
@@ -330,8 +330,6 @@ app.post("/api/demo/provision", demoLimiter, async (req, res) => {
           role: user.role,
           hasCompletedSetup: true,
         },
-        accessToken,
-        refreshToken,
         isNewAccount,
       },
     });
