@@ -1,57 +1,37 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
-  if (!refreshToken) return null;
-
+async function refreshAccessToken(): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({}),
     });
-
-    if (!res.ok) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      return null;
-    }
-
-    const json = await res.json();
-    if (json.data?.accessToken) {
-      localStorage.setItem("token", json.data.accessToken);
-      if (json.data.refreshToken) {
-        localStorage.setItem("refreshToken", json.data.refreshToken);
-      }
-      return json.data.accessToken;
-    }
-    return null;
+    return res.ok;
   } catch {
-    return null;
+    return false;
   }
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const doFetch = async (authToken: string | null) => {
-    return fetch(`${API_BASE}${path}`, {
+  const doFetch = () =>
+    fetch(`${API_BASE}${path}`, {
       ...options,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...options.headers,
       },
     });
-  };
 
-  let res = await doFetch(token);
+  let res = await doFetch();
 
   // If 401, try refreshing the token once
-  if (res.status === 401 && token) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      res = await doFetch(newToken);
+  if (res.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      res = await doFetch();
     }
   }
 

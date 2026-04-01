@@ -1,5 +1,5 @@
 import { logger } from "../lib/logger";
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, type CookieOptions } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -68,6 +68,32 @@ async function createRefreshToken(userId: string, familyId?: string): Promise<st
   return token;
 }
 
+// ── Cookie Helpers (HIPAA: httpOnly cookies prevent XSS token theft) ──
+
+const COOKIE_OPTIONS_BASE: CookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+};
+
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+  res.cookie("access_token", accessToken, {
+    ...COOKIE_OPTIONS_BASE,
+    maxAge: 30 * 60 * 1000, // 30 minutes
+  });
+  res.cookie("refresh_token", refreshToken, {
+    ...COOKIE_OPTIONS_BASE,
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    path: "/api/auth",
+  });
+}
+
+function clearAuthCookies(res: Response): void {
+  res.clearCookie("access_token", { ...COOKIE_OPTIONS_BASE });
+  res.clearCookie("refresh_token", { ...COOKIE_OPTIONS_BASE, path: "/api/auth" });
+}
+
 function buildAuthUser(user: {
   id: string;
   role: string;
@@ -117,6 +143,7 @@ router.post("/register", registerLimiter, validate(RegisterSchema), async (req: 
     const accessToken = generateAccessToken(authUser);
     const refreshToken = await createRefreshToken(user.id);
 
+    setAuthCookies(res, accessToken, refreshToken);
     res.status(201).json({
       success: true,
       data: {
@@ -182,6 +209,7 @@ router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, 
       }).catch(() => {});
     }
 
+    setAuthCookies(res, accessToken, refreshToken);
     res.json({
       success: true,
       data: {
@@ -206,7 +234,8 @@ router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, 
 // POST /api/auth/refresh
 router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    // Read from body (mobile) or cookie (web)
+    const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
     if (!refreshToken) {
       res.status(400).json({ success: false, error: "Refresh token required" });
       return;
@@ -258,18 +287,20 @@ router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
     // Issue new refresh token in the same family (rotation)
     const newRefreshToken = await createRefreshToken(user.id, storedToken.familyId);
 
+    setAuthCookies(res, accessToken, newRefreshToken);
     res.json({ success: true, data: { accessToken, refreshToken: newRefreshToken } });
   } catch {
     res.status(401).json({ success: false, error: "Invalid or expired refresh token" });
   }
 });
 
-// POST /api/auth/logout — Revoke refresh token family
+// POST /api/auth/logout — Revoke refresh token family + clear cookies
 router.post("/logout", async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    // Read from body (mobile) or cookie (web)
+    const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
     if (!refreshToken) {
-      // No token to revoke — still a successful logout from client perspective
+      clearAuthCookies(res);
       res.json({ success: true });
       return;
     }
@@ -279,13 +310,13 @@ router.post("/logout", async (req: Request, res: Response) => {
     });
 
     if (storedToken) {
-      // Revoke entire family so no rotated tokens remain valid
       await prisma.refreshToken.updateMany({
         where: { familyId: storedToken.familyId },
         data: { revoked: true },
       });
     }
 
+    clearAuthCookies(res);
     res.json({ success: true });
   } catch (err) {
     logger.error("Logout error", err);
@@ -358,6 +389,7 @@ router.post("/register-with-invite", inviteRegisterLimiter, validate(RegisterWit
     const accessToken = generateAccessToken(authUser);
     const refreshToken = await createRefreshToken(result.user.id);
 
+    setAuthCookies(res, accessToken, refreshToken);
     res.status(201).json({
       success: true,
       data: {

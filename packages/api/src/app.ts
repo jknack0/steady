@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { prisma } from "@steady/db";
 import { APP_NAME } from "@steady/shared";
 import { errorHandler } from "./middleware/errorHandler";
@@ -41,6 +42,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
 
 // Security headers — HIPAA compliance
