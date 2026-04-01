@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { DemoButton } from "@/components/demo-button";
 
 export const metadata: Metadata = {
   title: "STEADY Mental Health — Clinical Platform for Modern Therapists",
@@ -35,20 +36,9 @@ export default function LandingPage() {
             </div>
             <span className="text-lg font-bold text-foreground">STEADY</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--steady-teal-dark)] transition-colors"
-            >
-              Get Started
-            </Link>
-          </div>
+          <DemoButton className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--steady-teal-dark)] transition-colors">
+            Try Demo
+          </DemoButton>
         </div>
       </nav>
 
@@ -69,12 +59,9 @@ export default function LandingPage() {
             in one HIPAA-compliant platform.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-6 py-3 text-base font-semibold text-white hover:bg-[var(--steady-teal-dark)] transition-colors shadow-sm"
-            >
-              Start Free Trial
-            </Link>
+            <DemoButton className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-6 py-3 text-base font-semibold text-white hover:bg-[var(--steady-teal-dark)] transition-colors shadow-sm">
+              Try the Demo
+            </DemoButton>
             <Link
               href="#how-it-works"
               className="inline-flex items-center justify-center rounded-lg border border-[var(--steady-warm-200)] bg-white px-6 py-3 text-base font-medium text-foreground hover:bg-[var(--steady-warm-100)] transition-colors"
@@ -216,17 +203,14 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="bg-[var(--steady-teal)] text-white">
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to transform your practice?</h2>
+          <h2 className="text-3xl font-bold mb-4">See it in action</h2>
           <p className="text-white/80 max-w-xl mx-auto mb-8 leading-relaxed">
-            Join clinicians who are using STEADY to deliver structured, evidence-based
-            care with less admin work and better client outcomes.
+            Explore the full platform with a pre-loaded demo account.
+            No sign-up required.
           </p>
-          <Link
-            href="/register"
-            className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-semibold text-[var(--steady-teal-dark)] hover:bg-white/90 transition-colors shadow-sm"
-          >
-            Get Started Free
-          </Link>
+          <DemoButton className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-semibold text-[var(--steady-teal-dark)] hover:bg-white/90 transition-colors shadow-sm">
+            Launch Demo
+          </DemoButton>
         </div>
       </section>
 
