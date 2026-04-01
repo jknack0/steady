@@ -72,6 +72,33 @@ app.get("/health", async (_req, res) => {
   res.json({ status: "ok", service: APP_NAME, database: dbStatus });
 });
 
+// Waitlist signup (public, rate-limited)
+import rateLimit from "express-rate-limit";
+const waitlistLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many requests. Please try again later." },
+});
+app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
+  try {
+    const email = req.body?.email?.trim()?.toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      res.status(400).json({ success: false, error: "Valid email is required" });
+      return;
+    }
+    await prisma.waitlistEntry.upsert({
+      where: { email },
+      create: { email },
+      update: {},
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Failed to join waitlist" });
+  }
+});
+
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/programs", programRoutes);

@@ -912,3 +912,11 @@ model RefreshToken {
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("waitlist_entries")
+}

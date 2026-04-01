@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { DemoButton } from "@/components/demo-button";
+import { WaitlistForm } from "@/components/waitlist-form";
 
 export const metadata: Metadata = {
   title: "STEADY Mental Health — Clinical Platform for Modern Therapists",
@@ -197,6 +198,17 @@ export default function LandingPage() {
               <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Waitlist */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-3">Get early access</h2>
+          <p className="text-muted-foreground mb-8">
+            STEADY is currently in private beta. Join the waitlist and we'll reach out when we're ready for you.
+          </p>
+          <WaitlistForm />
         </div>
       </section>
 
