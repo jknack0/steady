@@ -15,3 +15,5 @@ coverage/
 .DS_Store
 .claude/
 scripts/sync-to-admin.js
+__pycache__/
+*.pyc
