@@ -4,10 +4,20 @@ import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
+import { assertNoPhi, PhiDetectedError } from "../lib/phi-detector";
 
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN"));
+
+function handleAiError(err: unknown, res: Response, context: string): void {
+  if (err instanceof PhiDetectedError) {
+    res.status(422).json({ success: false, error: err.message });
+    return;
+  }
+  logger.error(`AI ${context} error`, err);
+  res.status(500).json({ success: false, error: `Failed to ${context}. Please try again.` });
+}
 
 const STYLE_CONTEXTS: Record<string, string> = {
   general: "a healthcare professional providing patient education materials",
@@ -92,6 +102,8 @@ router.post("/style-content", async (req: Request, res: Response) => {
       return;
     }
 
+    assertNoPhi(rawContent, "style-content");
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       res.status(500).json({ success: false, error: "AI service not configured" });
@@ -117,8 +129,7 @@ router.post("/style-content", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { styledHtml } });
   } catch (err) {
-    logger.error("AI style-content error", err);
-    res.status(500).json({ success: false, error: "Failed to style content" });
+    handleAiError(err, res, "style content");
   }
 });
 
@@ -131,6 +142,8 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: "description is required" });
       return;
     }
+
+    assertNoPhi(description, "generate-tracker");
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -198,8 +211,7 @@ Design guidelines:
 
     res.json({ success: true, data: result });
   } catch (err) {
-    logger.error("AI generate-tracker error", err);
-    res.status(500).json({ success: false, error: "Failed to generate tracker" });
+    handleAiError(err, res, "generate tracker");
   }
 });
 
@@ -216,6 +228,8 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       res.status(400).json({ success: false, error: "rawInput is required" });
       return;
     }
+
+    assertNoPhi(rawInput, "generate-part");
 
     const schema = PART_SCHEMAS[partType];
     if (!schema) {
@@ -267,8 +281,7 @@ router.post("/generate-part", async (req: Request, res: Response) => {
 
     res.json({ success: true, data: { content, title } });
   } catch (err) {
-    logger.error("AI generate-part error", err);
-    res.status(500).json({ success: false, error: "Failed to generate part content" });
+    handleAiError(err, res, "generate part");
   }
 });
 
@@ -429,8 +442,7 @@ GUIDELINES:
 
     res.json({ success: true, data: { items } });
   } catch (err) {
-    logger.error("AI parse-homework-pdf error", err);
-    res.status(500).json({ success: false, error: "Failed to parse PDF" });
+    handleAiError(err, res, "parse PDF");
   }
 });
 
