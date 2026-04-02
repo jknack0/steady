@@ -11,13 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download ML model at build time so it's cached in the image
-RUN python -c "from transformers import AutoTokenizer, AutoModelForTokenClassification; \
-    AutoTokenizer.from_pretrained('obi/deid_roberta_i2b2'); \
-    AutoModelForTokenClassification.from_pretrained('obi/deid_roberta_i2b2')"
-
 # Copy app code
 COPY . .
+
+# Download ML model at build time so it's cached in the image
+# Model is loaded from the local download_model script (not inline)
+RUN python models/model_manager.py
 
 # Non-root user
 RUN addgroup --system --gid 1001 app && \

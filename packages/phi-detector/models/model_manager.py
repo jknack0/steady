@@ -1,14 +1,20 @@
-"""Model download and cache management."""
+"""Model download and cache management.
+
+Run directly to pre-download models during Docker build:
+    python models/model_manager.py
+
+Model name is configurable via PHI_MODEL_NAME env var.
+"""
 
 import logging
-from pathlib import Path
+import os
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = Path.home() / ".cache" / "phi_detector"
+PHI_MODEL_NAME = os.environ.get("PHI_MODEL_NAME", "obi/deid_roberta_i2b2")
 
 
-def ensure_model(model_name: str) -> bool:
+def ensure_model(model_name: str = PHI_MODEL_NAME) -> bool:
     """Ensure a model is downloaded and cached."""
     try:
         if model_name.startswith("en_core_web"):
@@ -23,9 +29,10 @@ def ensure_model(model_name: str) -> bool:
                 return True
         else:
             from transformers import AutoTokenizer, AutoModelForTokenClassification
-            logger.info(f"Ensuring HuggingFace model cached: {model_name}")
+            logger.info(f"Downloading model: {model_name}")
             AutoTokenizer.from_pretrained(model_name)
             AutoModelForTokenClassification.from_pretrained(model_name)
+            logger.info(f"Model {model_name} cached successfully")
             return True
     except Exception as e:
         logger.error(f"Failed to download model {model_name}: {e}")
@@ -38,10 +45,10 @@ def get_model_status() -> dict:
 
     try:
         from transformers import AutoTokenizer
-        AutoTokenizer.from_pretrained("obi/deid_roberta_i2b2", local_files_only=True)
-        status["obi/deid_roberta_i2b2"] = "cached"
+        AutoTokenizer.from_pretrained(PHI_MODEL_NAME, local_files_only=True)
+        status[PHI_MODEL_NAME] = "cached"
     except Exception:
-        status["obi/deid_roberta_i2b2"] = "not cached"
+        status[PHI_MODEL_NAME] = "not cached"
 
     try:
         import spacy
@@ -51,3 +58,13 @@ def get_model_status() -> dict:
         status["en_core_web_trf"] = "not available"
 
     return status
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    print(f"Downloading model: {PHI_MODEL_NAME}")
+    success = ensure_model()
+    if success:
+        print("Model downloaded successfully")
+    else:
+        print("WARNING: Model download failed. Service will run in regex-only mode.")
