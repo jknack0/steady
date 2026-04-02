@@ -102,7 +102,7 @@ router.post("/style-content", async (req: Request, res: Response) => {
       return;
     }
 
-    assertNoPhi(rawContent, "style-content");
+    await assertNoPhi(rawContent, "style-content");
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -143,7 +143,7 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
       return;
     }
 
-    assertNoPhi(description, "generate-tracker");
+    await assertNoPhi(description, "generate-tracker");
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -229,7 +229,7 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
-    assertNoPhi(rawInput, "generate-part");
+    await assertNoPhi(rawInput, "generate-part");
 
     const schema = PART_SCHEMAS[partType];
     if (!schema) {
