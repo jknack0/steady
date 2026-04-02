@@ -4,7 +4,7 @@ import { DemoProvisionForm } from "@/components/demo-provision-form";
 
 export const metadata: Metadata = {
   title: "STEADY Mental Health — Clinical Platform for Modern Therapists",
-  description: "HIPAA-compliant clinical platform with structured treatment programs, daily check-ins, homework tracking, and RTM billing. Built for therapists who want better outcomes.",
+  description: "Clinical platform with structured treatment programs, daily check-ins, homework tracking, and RTM billing. Built for therapists who want better outcomes.",
 };
 
 export default function LandingPage() {
@@ -48,10 +48,6 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--steady-teal-bg)] px-4 py-1.5 text-sm font-medium text-[var(--steady-teal-dark)] mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-[var(--steady-teal)]" />
-            HIPAA Compliant
-          </div>
           <h1 className="text-5xl sm:text-6xl font-bold text-foreground tracking-tight leading-[1.1] mb-6">
             Better outcomes through{" "}
             <span style={{ color: "var(--steady-teal)" }}>structured care</span>
@@ -59,7 +55,7 @@ export default function LandingPage() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             STEADY gives clinicians a complete toolkit for building treatment programs,
             tracking client progress between sessions, and managing RTM billing — all
-            in one HIPAA-compliant platform.
+            in one platform.
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link
@@ -147,8 +143,8 @@ export default function LandingPage() {
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 ),
-                title: "HIPAA Compliant",
-                description: "Field-level encryption, audit logging, role-based access, httpOnly auth cookies, and automatic session timeout. Built for healthcare.",
+                title: "Built for Clinicians",
+                description: "Designed around clinical workflows, not generic project management. Every feature exists to help you deliver better care with less admin work.",
               },
             ].map((feature) => (
               <div key={feature.title} className="rounded-xl border border-[var(--steady-warm-200)] bg-[var(--steady-warm-50)] p-6">
