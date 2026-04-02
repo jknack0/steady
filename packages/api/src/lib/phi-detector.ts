@@ -53,7 +53,7 @@ export async function detectPhi(text: string): Promise<PhiDetection> {
       throw new Error(`PHI service returned ${res.status}`);
     }
 
-    const data: ServiceResponse = await res.json();
+    const data = (await res.json()) as ServiceResponse;
     const categories = [...new Set(data.entities.map((e) => e.category))];
 
     return {
