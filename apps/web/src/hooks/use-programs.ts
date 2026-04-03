@@ -15,6 +15,7 @@ export interface Program {
   followUpCount: number;
   status: string;
   isTemplate: boolean;
+  templateSourceId: string | null;
   moduleCount?: number;
   activeEnrollmentCount?: number;
   completedEnrollmentCount?: number;

@@ -378,7 +378,9 @@ export function CreatePartModal({ open, onOpenChange, onCreate, isPending, locke
                   </div>
 
                   {generatePart.isError && (
-                    <p className="text-sm text-destructive">Failed to generate. Try again or switch to manual.</p>
+                    <p className="text-sm text-destructive">
+                      {(generatePart.error as any)?.message || "Failed to generate. Try again or switch to manual."}
+                    </p>
                   )}
 
                   <Button

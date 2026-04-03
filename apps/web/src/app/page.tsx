@@ -1,11 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { DemoButton } from "@/components/demo-button";
-import { WaitlistForm } from "@/components/waitlist-form";
+import { DemoProvisionForm } from "@/components/demo-provision-form";
 
 export const metadata: Metadata = {
   title: "STEADY Mental Health — Clinical Platform for Modern Therapists",
-  description: "HIPAA-compliant clinical platform with structured treatment programs, daily check-ins, homework tracking, and RTM billing. Built for therapists who want better outcomes.",
+  description: "Clinical platform with structured treatment programs, daily check-ins, homework tracking, and RTM billing. Built for therapists who want better outcomes.",
 };
 
 export default function LandingPage() {
@@ -37,19 +36,18 @@ export default function LandingPage() {
             </div>
             <span className="text-lg font-bold text-foreground">STEADY</span>
           </div>
-          <DemoButton className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--steady-teal-dark)] transition-colors">
-            Try Demo
-          </DemoButton>
+          <Link
+            href="#try-demo"
+            className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--steady-teal-dark)] transition-colors"
+          >
+            Try the Demo
+          </Link>
         </div>
       </nav>
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-24 pb-20">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--steady-teal-bg)] px-4 py-1.5 text-sm font-medium text-[var(--steady-teal-dark)] mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-[var(--steady-teal)]" />
-            HIPAA Compliant
-          </div>
           <h1 className="text-5xl sm:text-6xl font-bold text-foreground tracking-tight leading-[1.1] mb-6">
             Better outcomes through{" "}
             <span style={{ color: "var(--steady-teal)" }}>structured care</span>
@@ -57,12 +55,15 @@ export default function LandingPage() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             STEADY gives clinicians a complete toolkit for building treatment programs,
             tracking client progress between sessions, and managing RTM billing — all
-            in one HIPAA-compliant platform.
+            in one platform.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <DemoButton className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-6 py-3 text-base font-semibold text-white hover:bg-[var(--steady-teal-dark)] transition-colors shadow-sm">
+            <Link
+              href="#try-demo"
+              className="inline-flex items-center justify-center rounded-lg bg-[var(--steady-teal)] px-6 py-3 text-base font-semibold text-white hover:bg-[var(--steady-teal-dark)] transition-colors shadow-sm"
+            >
               Try the Demo
-            </DemoButton>
+            </Link>
             <Link
               href="#how-it-works"
               className="inline-flex items-center justify-center rounded-lg border border-[var(--steady-warm-200)] bg-white px-6 py-3 text-base font-medium text-foreground hover:bg-[var(--steady-warm-100)] transition-colors"
@@ -142,8 +143,8 @@ export default function LandingPage() {
                     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 ),
-                title: "HIPAA Compliant",
-                description: "Field-level encryption, audit logging, role-based access, httpOnly auth cookies, and automatic session timeout. Built for healthcare.",
+                title: "Built for Clinicians",
+                description: "Designed around clinical workflows, not generic project management. Every feature exists to help you deliver better care with less admin work.",
               },
             ].map((feature) => (
               <div key={feature.title} className="rounded-xl border border-[var(--steady-warm-200)] bg-[var(--steady-warm-50)] p-6">
@@ -201,28 +202,32 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Waitlist */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-3">Get early access</h2>
-          <p className="text-muted-foreground mb-8">
-            STEADY is currently in private beta. Join the waitlist and we'll reach out when we're ready for you.
+      {/* Try the Demo */}
+      <section id="try-demo" className="bg-white border-y border-[var(--steady-warm-200)]">
+        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-3">Try it yourself</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto mb-10">
+            Enter your info and you'll be exploring the full platform in seconds.
+            Pre-loaded with sample programs and clients. No sales call, no credit card.
           </p>
-          <WaitlistForm />
+          <DemoProvisionForm />
         </div>
       </section>
 
       {/* CTA */}
       <section className="bg-[var(--steady-teal)] text-white">
         <div className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold mb-4">See it in action</h2>
+          <h2 className="text-3xl font-bold mb-4">Ready to transform your practice?</h2>
           <p className="text-white/80 max-w-xl mx-auto mb-8 leading-relaxed">
-            Explore the full platform with a pre-loaded demo account.
-            No sign-up required.
+            Join clinicians who are using STEADY to deliver structured, evidence-based
+            care with less admin work and better client outcomes.
           </p>
-          <DemoButton className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-semibold text-[var(--steady-teal-dark)] hover:bg-white/90 transition-colors shadow-sm">
-            Launch Demo
-          </DemoButton>
+          <Link
+            href="#try-demo"
+            className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-semibold text-[var(--steady-teal-dark)] hover:bg-white/90 transition-colors shadow-sm"
+          >
+            Try the Demo
+          </Link>
         </div>
       </section>
 
