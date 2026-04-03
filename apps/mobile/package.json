@@ -4,7 +4,8 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "build": "echo 'Use EAS Build for mobile'",
+    "build": "expo export --platform web",
+    "build:native": "echo 'Use EAS Build for native mobile'",
     "dev": "expo start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
