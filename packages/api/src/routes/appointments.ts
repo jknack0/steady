@@ -7,19 +7,120 @@ import {
   UpdateAppointmentSchema,
   StatusChangeSchema,
   ListAppointmentsQuerySchema,
+  ListParticipantAppointmentsQuerySchema,
+  type AppointmentStatus,
 } from "@steady/shared";
 import {
   createAppointment,
   listAppointments,
+  listParticipantAppointments,
   getAppointment,
   updateAppointment,
   changeStatus,
   deleteAppointment,
   toClinicianView,
+  toParticipantView,
 } from "../services/appointments";
 import { logger } from "../lib/logger";
 
 const router = Router();
+
+const DEFAULT_PARTICIPANT_STATUSES: AppointmentStatus[] = ["SCHEDULED", "ATTENDED"];
+const VALID_PARTICIPANT_STATUSES = new Set<AppointmentStatus>([
+  "SCHEDULED",
+  "ATTENDED",
+  "NO_SHOW",
+  "LATE_CANCELED",
+  "CLIENT_CANCELED",
+  "CLINICIAN_CANCELED",
+]);
+
+// Participant-facing endpoint — must NOT pass through clinician/practice middleware.
+// Mounted before the clinician-role guard below.
+router.get(
+  "/mine",
+  authenticate,
+  requireRole("PARTICIPANT"),
+  async (req: Request, res: Response) => {
+    try {
+      const parsed = ListParticipantAppointmentsQuerySchema.safeParse(req.query);
+      if (!parsed.success) {
+        res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: parsed.error.issues.map((i) => ({
+            path: i.path.join("."),
+            message: i.message,
+          })),
+        });
+        return;
+      }
+
+      const participantProfileId = req.user?.participantProfileId;
+      if (!participantProfileId) {
+        res.status(403).json({ success: false, error: "Participant profile required" });
+        return;
+      }
+
+      const now = new Date();
+      const from = parsed.data.from ? new Date(parsed.data.from) : now;
+      // Default window: 60 days forward (fits within 62-day cap per COND-14)
+      const to = parsed.data.to
+        ? new Date(parsed.data.to)
+        : new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+      // 62-day cap (COND-14) — Zod covers explicit from+to, but defaults can exceed.
+      const MS = 62 * 24 * 60 * 60 * 1000;
+      if (to.getTime() - from.getTime() > MS) {
+        res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: [{ path: "to", message: "Date range cannot exceed 62 days" }],
+        });
+        return;
+      }
+      if (to.getTime() <= from.getTime()) {
+        res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: [{ path: "to", message: "to must be after from" }],
+        });
+        return;
+      }
+
+      let statusList: AppointmentStatus[] = DEFAULT_PARTICIPANT_STATUSES;
+      if (parsed.data.status) {
+        const raw = parsed.data.status
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s): s is AppointmentStatus =>
+            VALID_PARTICIPANT_STATUSES.has(s as AppointmentStatus),
+          );
+        if (raw.length > 0) statusList = raw;
+      }
+
+      const limit = Math.min(parsed.data.limit ?? 50, 100);
+
+      const result = await listParticipantAppointments({
+        participantProfileId,
+        from,
+        to,
+        status: statusList,
+        limit,
+        cursor: parsed.data.cursor,
+      });
+
+      res.json({
+        success: true,
+        data: result.data.map(toParticipantView),
+        cursor: result.cursor,
+      });
+    } catch (err) {
+      logger.error("List participant appointments error", err);
+      res.status(500).json({ success: false, error: "Failed to list appointments" });
+    }
+  },
+);
 
 router.use(authenticate);
 router.use(requireRole("CLINICIAN", "ADMIN"));

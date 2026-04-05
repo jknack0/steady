@@ -8,6 +8,7 @@ import { useAuth } from "../../../lib/auth-context";
 import { useConfig } from "../../../lib/config-context";
 import { DailyTrackerCards } from "../../../components/daily-tracker-card";
 import { TodaysHomeworkInstances } from "../../../components/homework-instances";
+import { useMyAppointments } from "../../../hooks/use-appointments";
 
 // ── Shared styles ────────────
 const CARD = {
@@ -261,6 +262,126 @@ function DailyProgressSummary() {
   );
 }
 
+// ── Next Appointment Card ────────────
+
+function NextAppointmentCard() {
+  // Query a 7-day window and take the earliest SCHEDULED appointment.
+  const now = new Date();
+  const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const { data } = useMyAppointments({
+    from: now.toISOString(),
+    to: sevenDays.toISOString(),
+    status: "SCHEDULED",
+  });
+
+  const next = data[0];
+  if (!next) return null;
+
+  const start = new Date(next.startAt);
+  const timeStr = start.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const today0 = new Date();
+  today0.setHours(0, 0, 0, 0);
+  const target0 = new Date(start);
+  target0.setHours(0, 0, 0, 0);
+  const diffDays = Math.round(
+    (target0.getTime() - today0.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  let whenLabel: string;
+  if (diffDays === 0) whenLabel = `Today at ${timeStr}`;
+  else if (diffDays === 1) whenLabel = `Tomorrow at ${timeStr}`;
+  else {
+    const weekday = start.toLocaleDateString(undefined, { weekday: "long" });
+    whenLabel = `${weekday} at ${timeStr}`;
+  }
+
+  const clinicianName = next.clinician
+    ? `${next.clinician.firstName ?? ""} ${next.clinician.lastName ?? ""}`.trim()
+    : "Your clinician";
+  const serviceLabel = next.serviceCode?.description ?? "Session";
+  const isVirtual = next.location?.type === "VIRTUAL";
+  const locationLabel = next.location
+    ? isVirtual
+      ? "Video visit"
+      : next.location.name
+    : "";
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/appointments")}
+      accessibilityLabel={`Next appointment: ${whenLabel}, ${clinicianName}, ${serviceLabel}, ${locationLabel}`}
+      style={{ ...CARD, marginHorizontal: 16, marginTop: 12 }}
+      activeOpacity={0.7}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: "#5B8A8A",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 12,
+          }}
+        >
+          <Ionicons
+            name={isVirtual ? "videocam-outline" : "calendar-outline"}
+            size={18}
+            color="#FFFFFF"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: "PlusJakartaSans_600SemiBold",
+              color: "#2D2D2D",
+            }}
+          >
+            Next appointment
+          </Text>
+          <Text
+            style={{
+              fontSize: 12,
+              fontFamily: "PlusJakartaSans_400Regular",
+              color: "#8A8A8A",
+            }}
+          >
+            {whenLabel}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#D4D0CB" />
+      </View>
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: "PlusJakartaSans_500Medium",
+          color: "#2D2D2D",
+          marginBottom: 2,
+        }}
+        numberOfLines={1}
+      >
+        {serviceLabel}
+      </Text>
+      <Text
+        style={{
+          fontSize: 12,
+          fontFamily: "PlusJakartaSans_400Regular",
+          color: "#5A5A5A",
+        }}
+        numberOfLines={1}
+      >
+        with {clinicianName}
+        {locationLabel ? ` · ${locationLabel}` : ""}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 // ── Upcoming Session Card ────────────
 
 function UpcomingSessionCard() {
@@ -478,6 +599,7 @@ export default function TodayScreen() {
         <DailyProgressSummary />
 
         {isModuleEnabled("daily_tracker") && <CheckInSection />}
+        <NextAppointmentCard />
         <UpcomingSessionCard />
         {isModuleEnabled("homework") && <TodaysHomeworkInstances />}
         <ProgramProgressCard />

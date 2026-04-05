@@ -4,6 +4,7 @@ import {
   UpdateAppointmentSchema,
   StatusChangeSchema,
   ListAppointmentsQuerySchema,
+  ListParticipantAppointmentsQuerySchema,
 } from "../schemas/appointment";
 
 const validCreate = {
@@ -152,5 +153,46 @@ describe("ListAppointmentsQuerySchema", () => {
       endAt: "2026-03-04T00:00:00Z",
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("ListParticipantAppointmentsQuerySchema", () => {
+  it("accepts empty params (all optional)", () => {
+    const result = ListParticipantAppointmentsQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a valid from/to", () => {
+    const result = ListParticipantAppointmentsQuerySchema.safeParse({
+      from: "2026-05-01T00:00:00Z",
+      to: "2026-05-08T00:00:00Z",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects range > 62 days", () => {
+    const result = ListParticipantAppointmentsQuerySchema.safeParse({
+      from: "2026-01-01T00:00:00Z",
+      to: "2026-04-01T00:00:00Z",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects to <= from", () => {
+    const result = ListParticipantAppointmentsQuerySchema.safeParse({
+      from: "2026-05-10T00:00:00Z",
+      to: "2026-05-01T00:00:00Z",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("coerces limit to number and caps at 100", () => {
+    const result = ListParticipantAppointmentsQuerySchema.safeParse({
+      limit: "50",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.limit).toBe(50);
+    const bad = ListParticipantAppointmentsQuerySchema.safeParse({ limit: 500 });
+    expect(bad.success).toBe(false);
   });
 });

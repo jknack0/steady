@@ -320,6 +320,24 @@ export const api = {
   // Config
   getMyConfig: () => apiFetch("/api/participant/config"),
 
+  // Appointments (participant view)
+  getMyAppointments: (params?: {
+    from?: string;
+    to?: string;
+    status?: string;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.from) qs.set("from", params.from);
+    if (params?.to) qs.set("to", params.to);
+    if (params?.status) qs.set("status", params.status);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.cursor) qs.set("cursor", params.cursor);
+    const query = qs.toString();
+    return apiFetch(`/api/appointments/mine${query ? `?${query}` : ""}`);
+  },
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

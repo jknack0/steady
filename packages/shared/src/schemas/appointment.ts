@@ -105,6 +105,41 @@ export const ListAppointmentsQuerySchema = z
     }
   });
 
+export const ListParticipantAppointmentsQuerySchema = z
+  .object({
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    status: z.string().max(200).optional(),
+    cursor: z.string().max(200).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.from && data.to) {
+      const start = new Date(data.from).getTime();
+      const end = new Date(data.to).getTime();
+      if (isNaN(start) || isNaN(end)) return;
+      if (end <= start) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["to"],
+          message: "to must be after from",
+        });
+        return;
+      }
+      if (end - start > MAX_RANGE_DAYS * MS_PER_DAY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["to"],
+          message: "Date range cannot exceed 62 days",
+        });
+      }
+    }
+  });
+
+export type ListParticipantAppointmentsQuery = z.infer<
+  typeof ListParticipantAppointmentsQuerySchema
+>;
+
 export type CreateAppointmentInput = z.infer<typeof CreateAppointmentSchema>;
 export type UpdateAppointmentInput = z.infer<typeof UpdateAppointmentSchema>;
 export type StatusChangeInput = z.infer<typeof StatusChangeSchema>;

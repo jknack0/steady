@@ -436,15 +436,55 @@ export function toParticipantView(a: any): any {
   return {
     id: a.id,
     clinicianId: a.clinicianId,
+    clinician: a.clinician?.user
+      ? {
+          firstName: a.clinician.user.firstName ?? null,
+          lastName: a.clinician.user.lastName ?? null,
+        }
+      : null,
     serviceCode: a.serviceCode
       ? { code: a.serviceCode.code, description: a.serviceCode.description }
       : null,
-    location: a.location ? { name: a.location.name, type: a.location.type } : null,
+    location: a.location
+      ? {
+          name: a.location.name,
+          type: a.location.type,
+          addressLine1: a.location.addressLine1 ?? null,
+          city: a.location.city ?? null,
+          state: a.location.state ?? null,
+        }
+      : null,
     startAt: toIso(a.startAt),
     endAt: toIso(a.endAt),
     status: a.status,
     appointmentType: a.appointmentType,
   };
+}
+
+export async function listParticipantAppointments(params: {
+  participantProfileId: string;
+  from: Date;
+  to: Date;
+  status: AppointmentStatusType[];
+  limit: number;
+  cursor?: string;
+}): Promise<{ data: any[]; cursor: string | null }> {
+  const { participantProfileId, from, to, status, limit, cursor } = params;
+  const items = await prisma.appointment.findMany({
+    where: {
+      participantId: participantProfileId,
+      status: { in: status as any },
+      AND: [{ startAt: { lt: to } }, { endAt: { gt: from } }],
+    },
+    include: APPOINTMENT_INCLUDE,
+    orderBy: [{ startAt: "asc" }, { id: "asc" }],
+    take: limit + 1,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+  });
+
+  const hasMore = items.length > limit;
+  const data = hasMore ? items.slice(0, limit) : items;
+  return { data, cursor: hasMore ? data[data.length - 1].id : null };
 }
 
 function toIso(d: Date | string): string {

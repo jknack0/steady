@@ -438,6 +438,190 @@ describe("DELETE /api/appointments/:id", () => {
   });
 });
 
+describe("GET /api/appointments/mine (participant)", () => {
+  beforeEach(() => {
+    (db.appointment.findMany as any).mockResolvedValue([]);
+  });
+
+  it("returns 401 without auth", async () => {
+    const res = await request(app).get("/api/appointments/mine");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for clinician role", async () => {
+    const res = await request(app)
+      .get("/api/appointments/mine")
+      .set(...authHeader());
+    expect(res.status).toBe(403);
+  });
+
+  it("happy path: participant gets own appointments filtered by participantId", async () => {
+    (db.appointment.findMany as any).mockResolvedValue([
+      mockAppointment({
+        internalNote: "PHI — migraine history",
+        cancelReason: "sick",
+        statusChangedAt: new Date(),
+      }),
+    ]);
+    const res = await request(app)
+      .get("/api/appointments/mine")
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(1);
+
+    const call = (db.appointment.findMany as any).mock.calls[0][0];
+    expect(call.where.participantId).toBe("test-participant-profile-id");
+    // ordered asc
+    expect(call.orderBy).toEqual([{ startAt: "asc" }, { id: "asc" }]);
+  });
+
+  it("COND-7: response strips internalNote, cancelReason, createdById, statusChangedAt, updatedAt", async () => {
+    (db.appointment.findMany as any).mockResolvedValue([
+      mockAppointment({
+        internalNote: "clinician private PHI",
+        cancelReason: "embarrassing reason",
+        statusChangedAt: new Date(),
+      }),
+    ]);
+    const res = await request(app)
+      .get("/api/appointments/mine")
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(200);
+    const item = res.body.data[0];
+    expect(item).not.toHaveProperty("internalNote");
+    expect(item).not.toHaveProperty("cancelReason");
+    expect(item).not.toHaveProperty("createdById");
+    expect(item).not.toHaveProperty("statusChangedAt");
+    expect(item).not.toHaveProperty("updatedAt");
+    // raw body must not contain the PHI strings
+    const serialized = JSON.stringify(res.body);
+    expect(serialized).not.toContain("clinician private PHI");
+    expect(serialized).not.toContain("embarrassing reason");
+  });
+
+  it("includes clinician name and service code/location fields", async () => {
+    (db.appointment.findMany as any).mockResolvedValue([mockAppointment()]);
+    const res = await request(app)
+      .get("/api/appointments/mine")
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(200);
+    const item = res.body.data[0];
+    expect(item.clinician.firstName).toBe("Dr.");
+    expect(item.clinician.lastName).toBe("Smith");
+    expect(item.serviceCode.code).toBe("90834");
+    expect(item.serviceCode.description).toBeTruthy();
+    expect(item.location.name).toBe("Main Office");
+    expect(item.location.type).toBe("IN_PERSON");
+  });
+
+  it("cross-participant: query always filters by authenticated participantProfileId", async () => {
+    (db.appointment.findMany as any).mockResolvedValue([]);
+    await request(app)
+      .get("/api/appointments/mine")
+      .set(...participantAuthHeader({ participantProfileId: "pp-B" }));
+    const call = (db.appointment.findMany as any).mock.calls[0][0];
+    expect(call.where.participantId).toBe("pp-B");
+  });
+
+  it("default status filter is SCHEDULED,ATTENDED", async () => {
+    await request(app)
+      .get("/api/appointments/mine")
+      .set(...participantAuthHeader());
+    const call = (db.appointment.findMany as any).mock.calls[0][0];
+    expect(call.where.status.in).toEqual(["SCHEDULED", "ATTENDED"]);
+  });
+
+  it("status filter respects query param", async () => {
+    await request(app)
+      .get("/api/appointments/mine?status=CLIENT_CANCELED,NO_SHOW")
+      .set(...participantAuthHeader());
+    const call = (db.appointment.findMany as any).mock.calls[0][0];
+    expect(call.where.status.in).toEqual(["CLIENT_CANCELED", "NO_SHOW"]);
+  });
+
+  it("enforces 62-day range cap via Zod", async () => {
+    const res = await request(app)
+      .get(
+        "/api/appointments/mine?from=2026-01-01T00:00:00Z&to=2026-04-01T00:00:00Z",
+      )
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when to <= from", async () => {
+    const res = await request(app)
+      .get(
+        "/api/appointments/mine?from=2026-05-10T00:00:00Z&to=2026-05-01T00:00:00Z",
+      )
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(400);
+  });
+
+  it("empty list returns [] not 404", async () => {
+    (db.appointment.findMany as any).mockResolvedValue([]);
+    const res = await request(app)
+      .get("/api/appointments/mine")
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+    expect(res.body.cursor).toBeNull();
+  });
+
+  it("paginates with cursor", async () => {
+    const rows = Array.from({ length: 3 }, (_, i) =>
+      mockAppointment({ id: `a-${i}` }),
+    );
+    (db.appointment.findMany as any).mockResolvedValue(rows);
+    const res = await request(app)
+      .get("/api/appointments/mine?limit=2")
+      .set(...participantAuthHeader());
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.cursor).toBe("a-1");
+  });
+});
+
+describe("toParticipantView serializer", () => {
+  it("omits all PHI/internal fields (COND-7)", async () => {
+    const { toParticipantView } = await import("../services/appointments");
+    const view = toParticipantView(
+      mockAppointment({
+        internalNote: "PHI note",
+        cancelReason: "PHI reason",
+        statusChangedAt: new Date(),
+      }),
+    );
+    expect(view).not.toHaveProperty("internalNote");
+    expect(view).not.toHaveProperty("cancelReason");
+    expect(view).not.toHaveProperty("createdById");
+    expect(view).not.toHaveProperty("statusChangedAt");
+    expect(view).not.toHaveProperty("updatedAt");
+    expect(view).not.toHaveProperty("practiceId");
+  });
+
+  it("includes clinician.firstName and clinician.lastName", async () => {
+    const { toParticipantView } = await import("../services/appointments");
+    const view = toParticipantView(mockAppointment());
+    expect(view.clinician.firstName).toBe("Dr.");
+    expect(view.clinician.lastName).toBe("Smith");
+  });
+
+  it("includes serviceCode.code and serviceCode.description", async () => {
+    const { toParticipantView } = await import("../services/appointments");
+    const view = toParticipantView(mockAppointment());
+    expect(view.serviceCode.code).toBe("90834");
+    expect(view.serviceCode.description).toBeTruthy();
+  });
+
+  it("includes location.name and location.type", async () => {
+    const { toParticipantView } = await import("../services/appointments");
+    const view = toParticipantView(mockAppointment());
+    expect(view.location.name).toBe("Main Office");
+    expect(view.location.type).toBe("IN_PERSON");
+  });
+});
+
 describe("Conflict detection", () => {
   it("returns conflict IDs for overlapping appointments", async () => {
     const conflicting = mockAppointment({ id: "conflict-1" });
