@@ -49,6 +49,8 @@ vi.mock("@steady/db", () => {
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
     },
@@ -116,6 +118,8 @@ vi.mock("@steady/db", () => {
     participantProfile: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
     },
     clinicianProfile: {
       findUnique: vi.fn(),

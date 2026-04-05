@@ -28,6 +28,7 @@ import { configParticipantRouter } from "./routes/config";
 import appointmentsRoutes from "./routes/appointments";
 import locationsRoutes from "./routes/locations";
 import serviceCodesRoutes from "./routes/service-codes";
+import participantsRoutes from "./routes/participants";
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use("/api/participant/config", configParticipantRouter);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/locations", locationsRoutes);
 app.use("/api/service-codes", serviceCodesRoutes);
+app.use("/api/participants", participantsRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -10,3 +10,4 @@ export * from "./config";
 export * from "./appointment";
 export * from "./location";
 export * from "./service-code";
+export * from "./participant";
