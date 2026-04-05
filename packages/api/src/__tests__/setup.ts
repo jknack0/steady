@@ -49,6 +49,8 @@ vi.mock("@steady/db", () => {
     user: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
     },
@@ -118,6 +120,8 @@ vi.mock("@steady/db", () => {
     participantProfile: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
     },
     clinicianProfile: {
       findUnique: vi.fn(),
@@ -136,6 +140,7 @@ vi.mock("@steady/db", () => {
     practiceMembership: {
       create: vi.fn(),
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       delete: vi.fn(),
     },
@@ -143,6 +148,32 @@ vi.mock("@steady/db", () => {
       findMany: vi.fn(),
       count: vi.fn(),
       groupBy: vi.fn(),
+      create: vi.fn(),
+    },
+    appointment: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
+    },
+    location: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    serviceCode: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     dailyTracker: {
       create: vi.fn(),

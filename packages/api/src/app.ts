@@ -29,6 +29,10 @@ import rtmRoutes from "./routes/rtm";
 import { rtmParticipantRouter } from "./routes/rtm";
 import configRoutes from "./routes/config";
 import { configParticipantRouter } from "./routes/config";
+import appointmentsRoutes from "./routes/appointments";
+import locationsRoutes from "./routes/locations";
+import serviceCodesRoutes from "./routes/service-codes";
+import participantsRoutes from "./routes/participants";
 import invitationRoutes from "./routes/invitations";
 
 const app = express();
@@ -363,6 +367,10 @@ app.use("/api/rtm", rtmRoutes);
 app.use("/api/participant/rtm", rtmParticipantRouter);
 app.use("/api/config", configRoutes);
 app.use("/api/participant/config", configParticipantRouter);
+app.use("/api/appointments", appointmentsRoutes);
+app.use("/api/locations", locationsRoutes);
+app.use("/api/service-codes", serviceCodesRoutes);
+app.use("/api/participants", participantsRoutes);
 app.use("/api/invitations", invitationRoutes);
 
 // Error handler
