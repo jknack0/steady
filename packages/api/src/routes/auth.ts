@@ -1,11 +1,11 @@
 import { logger } from "../lib/logger";
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, type CookieOptions } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { prisma } from "@steady/db";
-import { RegisterSchema, LoginSchema } from "@steady/shared";
+import { RegisterSchema, LoginSchema, RegisterWithInviteSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
 import { authenticate, type AuthUser } from "../middleware/auth";
 import { JWT_SECRET } from "../lib/env";
@@ -68,6 +68,35 @@ async function createRefreshToken(userId: string, familyId?: string): Promise<st
   return token;
 }
 
+// ── Cookie Helpers (HIPAA: httpOnly cookies prevent XSS token theft) ──
+
+const isProduction = process.env.NODE_ENV === "production";
+const COOKIE_OPTIONS_BASE: CookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  // "none" required for cross-origin cookies (Vercel web → Railway API)
+  // "lax" is safer but only works same-site
+  sameSite: isProduction ? "none" : "lax",
+  path: "/",
+};
+
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+  res.cookie("access_token", accessToken, {
+    ...COOKIE_OPTIONS_BASE,
+    maxAge: 30 * 60 * 1000, // 30 minutes
+  });
+  res.cookie("refresh_token", refreshToken, {
+    ...COOKIE_OPTIONS_BASE,
+    maxAge: REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    path: "/api/auth",
+  });
+}
+
+function clearAuthCookies(res: Response): void {
+  res.clearCookie("access_token", { ...COOKIE_OPTIONS_BASE });
+  res.clearCookie("refresh_token", { ...COOKIE_OPTIONS_BASE, path: "/api/auth" });
+}
+
 function buildAuthUser(user: {
   id: string;
   role: string;
@@ -117,6 +146,7 @@ router.post("/register", registerLimiter, validate(RegisterSchema), async (req: 
     const accessToken = generateAccessToken(authUser);
     const refreshToken = await createRefreshToken(user.id);
 
+    setAuthCookies(res, accessToken, refreshToken);
     res.status(201).json({
       success: true,
       data: {
@@ -175,6 +205,14 @@ router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, 
       hasCompletedSetup = config?.setupCompleted === true;
     }
 
+    // Dev-only: sync kevin → admin on admin login (fire-and-forget)
+    if (email === "admin@admin.com" && process.env.NODE_ENV !== "production") {
+      import("../services/sync-admin").then(({ syncKevinToAdmin }) => {
+        syncKevinToAdmin().catch((e) => logger.warn("Admin sync failed", e));
+      }).catch(() => {});
+    }
+
+    setAuthCookies(res, accessToken, refreshToken);
     res.json({
       success: true,
       data: {
@@ -199,7 +237,8 @@ router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, 
 // POST /api/auth/refresh
 router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    // Read from body (mobile) or cookie (web)
+    const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
     if (!refreshToken) {
       res.status(400).json({ success: false, error: "Refresh token required" });
       return;
@@ -251,18 +290,20 @@ router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
     // Issue new refresh token in the same family (rotation)
     const newRefreshToken = await createRefreshToken(user.id, storedToken.familyId);
 
+    setAuthCookies(res, accessToken, newRefreshToken);
     res.json({ success: true, data: { accessToken, refreshToken: newRefreshToken } });
   } catch {
     res.status(401).json({ success: false, error: "Invalid or expired refresh token" });
   }
 });
 
-// POST /api/auth/logout — Revoke refresh token family
+// POST /api/auth/logout — Revoke refresh token family + clear cookies
 router.post("/logout", async (req: Request, res: Response) => {
   try {
-    const { refreshToken } = req.body;
+    // Read from body (mobile) or cookie (web)
+    const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
     if (!refreshToken) {
-      // No token to revoke — still a successful logout from client perspective
+      clearAuthCookies(res);
       res.json({ success: true });
       return;
     }
@@ -272,13 +313,13 @@ router.post("/logout", async (req: Request, res: Response) => {
     });
 
     if (storedToken) {
-      // Revoke entire family so no rotated tokens remain valid
       await prisma.refreshToken.updateMany({
         where: { familyId: storedToken.familyId },
         data: { revoked: true },
       });
     }
 
+    clearAuthCookies(res);
     res.json({ success: true });
   } catch (err) {
     logger.error("Logout error", err);
@@ -320,6 +361,71 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Get me error", err);
     res.status(500).json({ success: false, error: "Failed to get user" });
+  }
+});
+
+// Rate limiter for invite registration
+const inviteRegisterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { success: false, error: "Too many attempts. Please try again later." },
+  skip: () => isTest,
+});
+
+// POST /api/auth/register-with-invite
+router.post("/register-with-invite", inviteRegisterLimiter, validate(RegisterWithInviteSchema), async (req: Request, res: Response) => {
+  try {
+    const { redeemInvitation } = await import("../services/invitations");
+    const { ExpiredError } = await import("../services/invitations");
+    const { ConflictError, NotFoundError } = await import("../services/clinician");
+
+    const result = await redeemInvitation(req.body);
+
+    // Issue tokens
+    const authUser: AuthUser = {
+      userId: result.user.id,
+      role: "PARTICIPANT",
+      participantProfileId: result.user.participantProfileId,
+    };
+    const accessToken = generateAccessToken(authUser);
+    const refreshToken = await createRefreshToken(result.user.id);
+
+    setAuthCookies(res, accessToken, refreshToken);
+    res.status(201).json({
+      success: true,
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+        },
+      },
+    });
+  } catch (err) {
+    // Dynamic imports for error classes
+    const { ExpiredError } = await import("../services/invitations");
+    const { ConflictError, NotFoundError } = await import("../services/clinician");
+
+    if (err instanceof NotFoundError) {
+      res.status(400).json({ success: false, error: err.message });
+      return;
+    }
+    if (err instanceof ExpiredError) {
+      res.status(410).json({ success: false, error: err.message });
+      return;
+    }
+    if (err instanceof ConflictError) {
+      res.status(409).json({ success: false, error: err.message });
+      return;
+    }
+    logger.error("Register with invite error", err);
+    res.status(500).json({ success: false, error: "Registration failed" });
   }
 });
 

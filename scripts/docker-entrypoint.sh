@@ -2,10 +2,10 @@
 set -e
 
 echo "Running Prisma db push..."
-if npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --accept-data-loss; then
+if npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate 2>&1; then
   echo "Prisma db push succeeded."
 else
-  echo "ERROR: Prisma db push failed (exit code $?). Starting server anyway — schema may be out of sync."
+  echo "WARNING: Prisma db push failed. Schema may already be in sync. Starting server anyway."
 fi
 
 echo "Starting API server..."

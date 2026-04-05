@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useProgram, useUpdateProgram } from "@/hooks/use-programs";
+import { useProgram, useUpdateProgram, useDeleteProgram } from "@/hooks/use-programs";
 import { useAutosave } from "@/hooks/use-autosave";
 import { SaveIndicator } from "@/components/save-indicator";
 import {
@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
-  ChevronDown,
-  ChevronUp,
   Clock,
   GripVertical,
   Layers,
@@ -34,6 +32,7 @@ import {
   Trash2,
   Eye,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -52,8 +51,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Module } from "@/hooks/use-programs";
-import { EnrollmentSection } from "@/components/enrollment-section";
 import { PhonePreviewModal } from "@/components/phone-preview-modal";
+import { AssignmentModal } from "@/components/assignment";
 import { FileUpload } from "@/components/file-upload";
 import Link from "next/link";
 
@@ -101,9 +100,6 @@ function SortableModuleCard({
       >
         <div className="flex-1">
           <h3 className="font-medium">{module.title}</h3>
-          {module.subtitle && (
-            <p className="text-sm text-muted-foreground">{module.subtitle}</p>
-          )}
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -180,13 +176,15 @@ export default function ProgramEditorPage() {
   const programId = params.id as string;
   const { data: program, isLoading } = useProgram(programId);
   const updateProgram = useUpdateProgram(programId);
+  const deleteProgram = useDeleteProgram();
   const deleteModule = useDeleteModule(programId);
   const reorderModules = useReorderModules(programId);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"content" | "settings">("content");
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const [addingModule, setAddingModule] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
@@ -243,15 +241,14 @@ export default function ProgramEditorPage() {
     }
   };
 
-  const handleStatusToggle = () => {
-    if (!program) return;
-    const newStatus = program.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    updateProgram.mutate({ status: newStatus as any });
-  };
-
   if (isLoading) {
     return <LoadingState />;
   }
+
+  // Determine program type
+  const isClientProgram = program && !program.isTemplate && program.templateSourceId !== null;
+  const isMyProgram = program && !program.isTemplate && program.templateSourceId === null;
+  const isTemplate = program?.isTemplate;
 
   if (!program) {
     return (
@@ -287,25 +284,39 @@ export default function ProgramEditorPage() {
             </h1>
           )}
           <SaveIndicator status={programSaveStatus} />
-          <Badge
-            variant="outline"
-            className={
-              program.status === "PUBLISHED"
-                ? "bg-green-100 text-green-800 border-green-200"
-                : "bg-yellow-100 text-yellow-800 border-yellow-200"
-              }
-            >
-              {program.status.toLowerCase()}
+          {isClientProgram && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              Client Program
             </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            onClick={() => setPreviewOpen(true)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Preview
-          </Button>
+          )}
+          {isMyProgram && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              My Program
+            </Badge>
+          )}
+          {isTemplate && (
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              Template
+            </Badge>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            {!isClientProgram && (
+              <Button
+                size="sm"
+                onClick={() => setAssignOpen(true)}
+              >
+                Assign to Client
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewOpen(true)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Preview
+            </Button>
+          </div>
         </div>
 
         {editingDesc ? (
@@ -328,122 +339,137 @@ export default function ProgramEditorPage() {
         )}
       </div>
 
-      {/* Settings Panel (collapsible) */}
-      <div className="mb-8 rounded-lg border">
-        <button
-          className="flex w-full items-center justify-between p-4 text-left font-medium"
-          onClick={() => setSettingsOpen(!settingsOpen)}
-        >
-          Program Settings
-          {settingsOpen ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </button>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b mb-6">
+        {([
+          { key: "content" as const, label: "Content" },
+          { key: "settings" as const, label: "Settings" },
+        ]).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px",
+              activeTab === t.key
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-        {settingsOpen && (
-          <div className="border-t p-4">
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              <div className="grid gap-2">
-                <Label>Cadence</Label>
-                <Select
-                  value={program.cadence}
-                  onValueChange={(v) => updateProgram.mutate({ cadence: v as any })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="WEEKLY">Weekly</SelectItem>
-                    <SelectItem value="BIWEEKLY">Biweekly</SelectItem>
-                    <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Enrollment</Label>
-                <Select
-                  value={program.enrollmentMethod}
-                  onValueChange={(v) =>
-                    updateProgram.mutate({ enrollmentMethod: v as any })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="INVITE">Invite Only</SelectItem>
-                    <SelectItem value="LINK">Link</SelectItem>
-                    <SelectItem value="CODE">Code</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Session Type</Label>
-                <Select
-                  value={program.sessionType}
-                  onValueChange={(v) =>
-                    updateProgram.mutate({ sessionType: v as any })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ONE_ON_ONE">One-on-One</SelectItem>
-                    <SelectItem value="GROUP">Group</SelectItem>
-                    <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Follow-up Count</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={program.followUpCount}
-                  onChange={(e) =>
-                    updateProgram.mutate({
-                      followUpCount: parseInt(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label>Status</Label>
-                <Button
-                  variant="outline"
-                  onClick={handleStatusToggle}
-                  className="justify-start"
-                >
-                  {program.status === "DRAFT"
-                    ? "Publish Program"
-                    : "Revert to Draft"}
-                </Button>
-              </div>
+      {/* Settings Tab */}
+      {activeTab === "settings" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div className="grid gap-2">
+              <Label>Cadence</Label>
+              <Select
+                value={program.cadence}
+                onValueChange={(v) => updateProgram.mutate({ cadence: v as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="WEEKLY">Weekly</SelectItem>
+                  <SelectItem value="BIWEEKLY">Biweekly</SelectItem>
+                  <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="mt-4 pt-4 border-t">
-              <FileUpload
-                context="program-cover"
-                label="Cover Image"
-                value={program.coverImageUrl || null}
-                onChange={(key, publicUrl) => {
-                  updateProgram.mutate({ coverImageUrl: publicUrl || null });
-                }}
+            <div className="grid gap-2">
+              <Label>Enrollment</Label>
+              <Select
+                value={program.enrollmentMethod}
+                onValueChange={(v) =>
+                  updateProgram.mutate({ enrollmentMethod: v as any })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INVITE">Invite Only</SelectItem>
+                  <SelectItem value="LINK">Link</SelectItem>
+                  <SelectItem value="CODE">Code</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Session Type</Label>
+              <Select
+                value={program.sessionType}
+                onValueChange={(v) =>
+                  updateProgram.mutate({ sessionType: v as any })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ONE_ON_ONE">One-on-One</SelectItem>
+                  <SelectItem value="GROUP">Group</SelectItem>
+                  <SelectItem value="SELF_PACED">Self-Paced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Follow-up Count</Label>
+              <Input
+                type="number"
+                min={0}
+                value={program.followUpCount}
+                onChange={(e) =>
+                  updateProgram.mutate({
+                    followUpCount: parseInt(e.target.value) || 0,
+                  })
+                }
               />
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Module List */}
-      <div>
+          <div className="pt-4 border-t">
+            <FileUpload
+              context="program-cover"
+              label="Cover Image"
+              value={program.coverImageUrl || null}
+              onChange={(key, publicUrl) => {
+                updateProgram.mutate({ coverImageUrl: publicUrl || null });
+              }}
+            />
+          </div>
+
+          <div className="pt-4 border-t">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                confirm({
+                  title: "Archive Program",
+                  description: "This program will be hidden from your program list. You can't undo this.",
+                  confirmLabel: "Archive",
+                  variant: "danger",
+                  onConfirm: async () => {
+                    await deleteProgram.mutateAsync(programId);
+                    router.push("/programs");
+                  },
+                })
+              }
+            >
+              Archive Program
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Content Tab — Module List */}
+      {activeTab === "content" && <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Modules</h2>
           {!addingModule && (
@@ -512,15 +538,18 @@ export default function ProgramEditorPage() {
             />
           </div>
         )}
-      </div>
-
-      {/* Enrollments */}
-      <EnrollmentSection programId={programId} programStatus={program.status} />
+      </div>}
 
       <PhonePreviewModal
         programId={programId}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+      />
+      <AssignmentModal
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        templateId={programId}
+        onSuccess={() => setAssignOpen(false)}
       />
       {confirmDialog}
     </div>

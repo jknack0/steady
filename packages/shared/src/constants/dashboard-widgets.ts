@@ -418,3 +418,18 @@ export function getClientOverviewWidgets(): WidgetDefinition[] {
 }
 
 export type DashboardWidgetId = string;
+
+// ── Default Dashboard Layout ──────────────────────────
+
+export const DEFAULT_DASHBOARD_LAYOUT = [
+  { widgetId: "stat_active_clients", visible: true, column: "main" as const, order: 0 },
+  { widgetId: "stat_sessions_today", visible: true, column: "main" as const, order: 1 },
+  { widgetId: "stat_homework_rate", visible: true, column: "main" as const, order: 2 },
+  { widgetId: "stat_overdue_count", visible: true, column: "main" as const, order: 3 },
+  { widgetId: "todays_sessions", visible: true, column: "main" as const, order: 4 },
+  { widgetId: "overdue_homework", visible: true, column: "main" as const, order: 5 },
+  { widgetId: "checkin_alerts", visible: true, column: "main" as const, order: 6 },
+  { widgetId: "recent_submissions", visible: true, column: "sidebar" as const, order: 0 },
+  { widgetId: "quick_actions", visible: true, column: "sidebar" as const, order: 1 },
+  { widgetId: "journal_activity", visible: true, column: "sidebar" as const, order: 2 },
+];

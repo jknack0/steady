@@ -303,17 +303,7 @@ export function IntakeFormPartEditor({ content, onChange }: IntakeFormEditorProp
 
   return (
     <div className="space-y-4">
-      {/* Title & instructions */}
-      <div>
-        <Label className="text-xs">Form Title</Label>
-        <Input
-          value={safeContent.title}
-          onChange={(e) => updateField({ title: e.target.value })}
-          placeholder="e.g., Initial ADHD Intake"
-          className="mt-1"
-        />
-      </div>
-
+      {/* Instructions */}
       <div>
         <Label className="text-xs">Instructions</Label>
         <Textarea

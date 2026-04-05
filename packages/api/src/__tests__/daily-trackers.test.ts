@@ -489,6 +489,10 @@ describe("GET /api/daily-trackers/participant/:participantId", () => {
 // ── GET /api/daily-trackers/:id ──────────────────────
 
 describe("GET /api/daily-trackers/:id", () => {
+  beforeEach(() => {
+    db.dailyTracker.findFirst.mockResolvedValue({ id: "tracker-1" } as any);
+  });
+
   it("returns a tracker with its fields", async () => {
     const tracker = mockTracker({
       fields: [
@@ -528,6 +532,10 @@ describe("GET /api/daily-trackers/:id", () => {
 // ── PUT /api/daily-trackers/:id ──────────────────────
 
 describe("PUT /api/daily-trackers/:id", () => {
+  beforeEach(() => {
+    db.dailyTracker.findFirst.mockResolvedValue({ id: "tracker-1" } as any);
+  });
+
   it("updates tracker metadata (name, reminderTime)", async () => {
     db.dailyTracker.findUnique
       .mockResolvedValueOnce(mockTracker() as any) // existence check
@@ -639,6 +647,10 @@ describe("PUT /api/daily-trackers/:id", () => {
 // ── DELETE /api/daily-trackers/:id ───────────────────
 
 describe("DELETE /api/daily-trackers/:id", () => {
+  beforeEach(() => {
+    db.dailyTracker.findFirst.mockResolvedValue({ id: "tracker-1" } as any);
+  });
+
   it("deletes an existing tracker", async () => {
     db.dailyTracker.findUnique.mockResolvedValue(mockTracker() as any);
     db.dailyTracker.delete.mockResolvedValue(mockTracker() as any);
@@ -783,6 +795,9 @@ describe("GET /api/daily-trackers/:id/entries", () => {
 // ── GET /api/daily-trackers/:id/trends ───────────────
 
 describe("GET /api/daily-trackers/:id/trends", () => {
+  beforeEach(() => {
+    db.dailyTracker.findFirst.mockResolvedValue({ id: "tracker-1" } as any);
+  });
   const trackerWithFields = mockTracker({
     fields: [
       mockTrackerField({ id: "f-mood", label: "Mood", fieldType: "SCALE" }),

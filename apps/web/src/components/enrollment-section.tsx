@@ -178,21 +178,13 @@ export function EnrollmentSection({
             </span>
           )}
         </h2>
-        {!adding && programStatus === "PUBLISHED" && (
+        {!adding && (
           <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             Invite Client
           </Button>
         )}
       </div>
-
-      {programStatus !== "PUBLISHED" && !enrollments?.length && (
-        <div className="rounded-lg border border-dashed py-8 text-center">
-          <p className="text-muted-foreground">
-            Publish this program to start enrolling clients
-          </p>
-        </div>
-      )}
 
       {adding && (
         <form onSubmit={handleInvite} className="mb-4 rounded-lg border p-4 space-y-3">
@@ -307,12 +299,12 @@ export function EnrollmentSection({
             </div>
           ))}
         </div>
-      ) : programStatus === "PUBLISHED" ? (
+      ) : (
         <div className="rounded-lg border border-dashed py-8 text-center">
           <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-muted-foreground">No clients enrolled yet</p>
         </div>
-      ) : null}
+      )}
       {removeDialog}
     </div>
   );

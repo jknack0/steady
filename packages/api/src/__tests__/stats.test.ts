@@ -15,6 +15,8 @@ vi.mock("bcryptjs", () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default ownership check mock
+  db.clinicianClient.findFirst.mockResolvedValue({ id: "cc-1" } as any);
 });
 
 // ── Helpers ──────────────────────────────────────────────

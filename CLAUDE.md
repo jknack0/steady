@@ -6,6 +6,11 @@ HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Ne
 
 **Tech stack**: React 19, TypeScript strict, TanStack Query, Tailwind CSS / NativeWind, JWT auth, S3 file storage, Railway deployment.
 
+**Database env vars** (in `.env`):
+- `DATABASE_URL` — local dev (localhost:5432)
+- `DATABASE_URL_DEV` — Railway dev/staging database
+- `DATABASE_URL_PROD` — Railway production database
+
 ## Monorepo Structure
 
 ```
@@ -102,14 +107,79 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 ### Routes (`packages/api/src/routes/` — 20 modules)
 `auth` · `programs` · `modules` · `parts` · `enrollments` · `participant` · `tasks` · `calendar` · `journal` · `notifications` · `ai` · `stats` · `clinician` · `sessions` · `admin` · `practice` · `uploads` · `daily-trackers` · `rtm` · `config`
 
-### Services (`packages/api/src/services/` — 14 modules)
-`clinician` · `participant` · `sessions` · `rtm` · `rtm-notifications` · `notifications` · `config` · `s3` · `tracker-templates` · `homework-instances` · `notification-copy` · `stats` · `superbill` · `queue`
+### Services (`packages/api/src/services/` — 15 modules)
+`assignment` · `clinician` · `participant` · `sessions` · `rtm` · `rtm-notifications` · `notifications` · `config` · `s3` · `tracker-templates` · `homework-instances` · `notification-copy` · `stats` · `superbill` · `queue`
 
 ### Key Patterns
 - pg-boss queue (`services/queue.ts`) runs notification and RTM workers on server start.
 - Push notifications via Expo Server SDK, queued through pg-boss.
 - S3 presigned URLs generated in `services/s3.ts` — API never touches file bytes.
 - Homework recurrence handled by `services/homework-instances.ts`.
+
+## Program System
+
+### Three Program Types
+Programs are distinguished by `isTemplate` and `templateSourceId`:
+
+| Type | `isTemplate` | `templateSourceId` | Where it shows | Created via |
+|------|-------------|-------------------|----------------|-------------|
+| **My Programs** | `false` | `null` | My Programs tab | Create from scratch, cloned from prod |
+| **Client Programs** (assigned) | `false` | Points to source template | Client Programs tab | `POST /api/programs/:id/assign` |
+| **Client Programs** (blank) | `false` | Self-referencing (own ID) | Client Programs tab | `POST /api/programs/for-client` |
+| **System Templates** | `true` | `null` | Template Library tab | Seeded by system@steady.app |
+
+### Query Logic
+- **My Programs list**: `NOT { isTemplate: false, templateSourceId: { not: null } }` — excludes all client copies
+- **Client Programs list**: `isTemplate: false, templateSourceId: { not: null }` — includes both assigned and blank-created
+- **Template Library**: `isTemplate: true, clinicianId: systemProfileId`
+
+### Self-Referencing `templateSourceId` Pattern
+When a blank program is created for a client via `POST /api/programs/for-client`, its `templateSourceId` is set to its own `id` in a two-step transaction (create → update). This marks it as a client program without requiring a source template.
+
+### Program Endpoints (`packages/api/src/routes/programs.ts`)
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/programs` | List My Programs (excludes client copies) |
+| `GET /api/programs/templates` | List system templates (owned by system@steady.app) |
+| `GET /api/programs/client-programs` | List client programs with enrolled client name |
+| `POST /api/programs` | Create blank My Program template |
+| `POST /api/programs/for-client` | Create blank client program (self-ref templateSourceId + module + enrollment in transaction) |
+| `POST /api/programs/:id/assign` | Deep-copy template to client with module/part exclusions |
+| `POST /api/programs/:id/assign/append` | Append modules from template to existing client program |
+| `POST /api/programs/:id/clone` | Clone a program (templates or own programs) |
+| `POST /api/programs/:id/promote` | Promote client program to My Programs template (structure only) |
+| `GET /api/programs/:id` | Get single program with modules |
+| `GET /api/programs/:id/preview` | Full program with all parts |
+| `PUT /api/programs/:id` | Update program metadata |
+| `DELETE /api/programs/:id` | Archive program |
+
+### Assignment Service (`packages/api/src/services/assignment.ts`)
+- `assignProgram()`: Deep-copies template → client program + enrollment. Verifies ownership via `ClinicianClient`. Supports `excludedModuleIds`/`excludedPartIds` for content customization.
+- `appendModules()`: Appends modules from template to existing client program. Deduplicates daily trackers by name. Offsets sortOrder to avoid collisions.
+- Both require the source program to be PUBLISHED and either owned by the clinician or a system template.
+
+### Frontend — Programs Page (`apps/web/src/app/(dashboard)/programs/page.tsx`)
+Three tabs with URL-based routing (`?tab=client-programs`, `?tab=templates`, default: `my-programs`):
+- **My Programs**: Clinician's base programs. Cards with module count + "Assign to Client" button.
+- **Client Programs**: Assigned/created-for-client programs. Shows client name + enrollment status.
+- **Template Library**: System templates with "Use Template" + "Assign to Client" buttons.
+
+### Create Program Dialog (`apps/web/src/app/(dashboard)/programs/create-program-dialog.tsx`)
+Three-view state machine:
+- **Templates view** (default): Template cards + two action cards ("Start from Scratch", "Create for Client")
+- **Blank view**: Form for new My Program template (title, description, cadence, session type)
+- **For-client view**: Title + client picker. Supports `preselectedClient` prop to skip picker (used from client detail page).
+
+### Client Picker (`apps/web/src/components/client-picker.tsx`)
+Searchable dropdown of clinician's clients with inline "Add New Client" form (firstName, lastName, email). Uses `useClinicianClients()` hook. Client-side filtering only (HIPAA: no server-side search across clients).
+
+### Program Hooks (`apps/web/src/hooks/use-programs.ts`)
+`usePrograms` · `useProgram` · `useCreateProgram` · `useUpdateProgram` · `useDeleteProgram` · `useCloneProgram` · `useTemplates` · `useClientPrograms` · `useCreateProgramForClient`
+
+### Client Detail Page Integration
+The participant detail page (`apps/web/src/app/(dashboard)/participants/[id]/page.tsx`) has:
+- **"Create Program" button** in both enrolled and not-enrolled states — opens `CreateProgramDialog` with `preselectedClient` set
+- **Clickable program title** on enrollment card — links to `/programs/:id` for editing the client's program copy
 
 ## Content System
 
@@ -172,6 +242,7 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 - **Never use `replace_all` on Zod schema fields** — the same field name (e.g., `sortOrder`) may appear in multiple unrelated schemas. Target each schema individually.
 - **Test with realistic DB payloads** — existing data may use different field names or values than what the schema expects. Always verify the schema accepts actual production data shapes.
 - **Never put React Query hooks inside list-rendered components** — call hooks in the parent and pass data as props. Hooks in list items cause re-render storms that break autosave.
+- **Field names MUST match across the full stack** — Zod schema, service function, route handler, and client (mobile + web) must all use the same field names. The `validate` middleware runs `schema.parse()` which silently strips unrecognized fields, so a field name mismatch (e.g., schema says `code` but client sends `inviteCode`) will fail at runtime with a misleading "Required" error. When writing or modifying a schema, always check the client code to verify the field names match what's actually sent.
 
 ### Test Infrastructure
 - Vitest (API: node environment, Web: jsdom environment).
@@ -181,13 +252,13 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 - Target >80% coverage on `packages/api` and `packages/shared`. Frontend coverage is secondary.
 
 ### Test File Locations
-- `packages/api/src/__tests__/` — API route + service tests (19 test files)
+- `packages/api/src/__tests__/` — API route + service tests (20+ test files)
 - `packages/shared/src/__tests__/` — Schema validation tests
 - `apps/web/src/__tests__/` — Component and hook tests
 
 ## Zod Schema Conventions
 
-All Zod schemas live in `packages/shared/src/schemas/` (10 schema files: auth, program, module, part, enrollment, daily-tracker, rtm, config, stats).
+All Zod schemas live in `packages/shared/src/schemas/` (12 schema files: auth, program, module, part, enrollment, daily-tracker, rtm, config, stats, invitation, assignment).
 
 ### String bounds
 Every `z.string()` field must have a `.max()` unless it's an enum or literal:
@@ -226,9 +297,9 @@ Never use `z.any()` for structured data. Use `z.union([SchemaA, SchemaB, z.null(
 
 ## Deployment
 
-- **Docker**: Multi-stage `Dockerfile.api` (node:20-slim), runs `prisma db push` on startup via `docker-entrypoint.sh`.
-- **Railway**: Configured in `railway.toml` — health check at `/health`, 120s timeout, restart on failure (max 3).
-- **PostgreSQL**: Docker Compose with PostgreSQL 16 for local dev (port 5432, db: `steady_adhd`).
+- **API (Railway)**: Docker multi-stage `Dockerfile.api` (node:20-slim), runs `prisma db push` on startup via `docker-entrypoint.sh`. Configured in `railway.toml` — health check at `/health`, 120s timeout, restart on failure (max 3).
+- **Web (Vercel)**: Next.js deployed via Vercel. Config in `apps/web/vercel.json`. Build runs `turbo run build --filter=@steady/web` which builds shared → db → web in order. Deploys from `dev` branch.
+- **PostgreSQL**: Docker Compose with PostgreSQL 16 for local dev (port 5432, db: `steady_adhd`). Railway PostgreSQL for dev/staging and production.
 
 ## Common Commands
 

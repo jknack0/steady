@@ -10,10 +10,15 @@ describe("Enrollments Routes (integration)", () => {
 
   afterAll(async () => {
     for (const id of createdEnrollmentIds) {
-      await testPrisma.enrollment.delete({ where: { id } }).catch(() => {});
+      await testPrisma.enrollment.deleteMany({ where: { id } }).catch(() => {});
     }
     for (const id of createdUserIds) {
-      await testPrisma.participantProfile.deleteMany({ where: { userId: id } });
+      // Delete any enrollments referencing this participant before deleting profile
+      const profile = await testPrisma.participantProfile.findFirst({ where: { userId: id } });
+      if (profile) {
+        await testPrisma.enrollment.deleteMany({ where: { participantId: profile.id } }).catch(() => {});
+      }
+      await testPrisma.participantProfile.deleteMany({ where: { userId: id } }).catch(() => {});
       await testPrisma.user.delete({ where: { id } }).catch(() => {});
     }
   });

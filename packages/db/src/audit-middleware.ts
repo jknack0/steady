@@ -139,7 +139,9 @@ export function registerAuditMiddleware(client: PrismaClient): void {
       metadata ? JSON.stringify(metadata) : null
     ).catch((err) => {
       // Never let audit logging break the application
-      console.error("Audit log write failed:", err);
+      // Log only error name/message — never the full object which may contain SQL with PHI
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : "Unknown error";
+      console.error(`[AUDIT] Audit log write failed — ${msg}`);
     });
 
     return result;

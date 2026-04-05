@@ -305,7 +305,11 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.enrollment.delete({ where: { id: req.params.id } });
+    // Soft-delete: HIPAA requires 6-year minimum data retention
+    await prisma.enrollment.update({
+      where: { id: req.params.id },
+      data: { status: "DROPPED" },
+    });
 
     res.json({ success: true });
   } catch (err) {

@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { WidgetGrid } from "@/components/widget-grid";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
-import { normalizeDashboardLayout, WIDGET_REGISTRY } from "@steady/shared";
+import { normalizeDashboardLayout, WIDGET_REGISTRY, DEFAULT_DASHBOARD_LAYOUT } from "@steady/shared";
 import type { DashboardLayoutItem, PartialDashboardLayoutItem } from "@steady/shared";
 
 interface DashboardData {
@@ -63,7 +63,8 @@ export default function DashboardPage() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [editingLayout, setEditingLayout] = useState<DashboardLayoutItem[] | null>(null);
 
-  const layout = (config?.dashboardLayout ?? []) as PartialDashboardLayoutItem[];
+  const rawLayout = (config?.dashboardLayout ?? []) as PartialDashboardLayoutItem[];
+  const layout = rawLayout.length > 0 ? rawLayout : DEFAULT_DASHBOARD_LAYOUT;
   const enabledModules = config?.enabledModules ?? [];
   const registry = Object.values(WIDGET_REGISTRY);
   const normalizedLayout = normalizeDashboardLayout(layout, registry);

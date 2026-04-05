@@ -73,6 +73,7 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
       deleteMany: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
     },
     partProgress: {
       create: vi.fn(),
@@ -82,6 +83,7 @@ vi.mock("@steady/db", () => {
       update: vi.fn(),
       upsert: vi.fn(),
       deleteMany: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
     },
     task: {
       create: vi.fn(),
@@ -190,6 +192,7 @@ vi.mock("@steady/db", () => {
     },
     dailyTrackerEntry: {
       create: vi.fn(),
+      upsert: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
@@ -242,6 +245,16 @@ vi.mock("@steady/db", () => {
       findUnique: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
+    },
+    patientInvitation: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      upsert: vi.fn(),
+      count: vi.fn(),
     },
     refreshToken: {
       create: vi.fn(),

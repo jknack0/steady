@@ -6,9 +6,14 @@ dist/
 .superpowers/
 *.tsbuildinfo
 .env
+.env.dev
+.env.prod
 .env.local
 .env.*.local
 coverage/
 *.log
 .DS_Store
 .claude/
+scripts/sync-to-admin.js
+__pycache__/
+*.pyc

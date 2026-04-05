@@ -96,7 +96,7 @@ export async function getClinicianParticipants(
   const enrollments = await prisma.enrollment.findMany({
     where: {
       programId: { in: programIds },
-      status: { in: ["ACTIVE", "PAUSED", "INVITED"] },
+      status: { in: ["ACTIVE", "PAUSED", "INVITED", "DROPPED", "COMPLETED"] },
     },
     include: {
       participant: {
@@ -238,8 +238,8 @@ export async function getClinicianParticipants(
       enrollmentId: enrollment.id,
       name,
       email: user.email,
-      programId: enrollment.programId,
-      programTitle: programMap.get(enrollment.programId) || "",
+      programId: enrollment.status === "DROPPED" || enrollment.status === "COMPLETED" ? "" : enrollment.programId,
+      programTitle: enrollment.status === "DROPPED" || enrollment.status === "COMPLETED" ? "" : (programMap.get(enrollment.programId) || ""),
       currentModule: currentModule
         ? { id: currentModule.id, title: currentModule.title }
         : null,
@@ -983,6 +983,7 @@ export async function addClient(
 interface ClientRow {
   id: string;
   clientId: string;
+  participantProfileId: string | null;
   name: string;
   email: string;
   status: string;
@@ -1085,6 +1086,7 @@ export async function getClinicianClients(
     return {
       id: cc.id,
       clientId: cc.clientId,
+      participantProfileId: participantProfileId ?? null,
       name,
       email: cc.client.email,
       status: cc.status,

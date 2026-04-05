@@ -36,6 +36,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api-client";
 import { TrackerDataView } from "@/components/tracker-data-view";
 import { EditCheckinModal } from "@/components/edit-checkin-modal";
@@ -44,6 +50,7 @@ import { HomeworkResponseViewer } from "@/components/homework-response-viewer";
 import { CreatePartModal } from "@/components/part-editor-modal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/components/loading-state";
+import { CreateProgramDialog } from "@/app/(dashboard)/programs/create-program-dialog";
 import {
   Loader2,
   CheckCircle2,
@@ -66,8 +73,10 @@ import {
   Sparkles,
   ChevronRight,
   Settings2,
+  MoreHorizontal,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { AssignmentModal } from "@/components/assignment";
 import { WidgetGrid } from "@/components/widget-grid";
 import { CLIENT_WIDGET_COMPONENTS } from "@/components/client-widgets";
 import { normalizeDashboardLayout, getClientOverviewWidgets } from "@steady/shared";
@@ -95,8 +104,21 @@ export default function ParticipantDetailPage() {
   const participant = data.participant;
   const name = `${participant.firstName} ${participant.lastName}`.trim();
 
+  const tabLabels: Record<Tab, string> = { overview: "Overview", homework: "Homework", trackers: "Check-in", rtm: "RTM" };
+
   return (
     <div>
+      {/* Breadcrumbs */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm mb-4">
+        <Link href="/participants" className="text-muted-foreground hover:text-foreground transition-colors">
+          Clients
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <span className="text-muted-foreground">{name}</span>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <span className="font-medium text-foreground">{tabLabels[tab]}</span>
+      </nav>
+
       <PageHeader title={name} subtitle={participant.email} />
 
       {/* Tabs */}
@@ -148,9 +170,9 @@ function EnrollDialog({
 }) {
   const queryClient = useQueryClient();
 
-  const { data: programs, isLoading } = useQuery<Array<{ id: string; title: string; status: string }>>({
-    queryKey: ["programs"],
-    queryFn: () => api.get("/api/programs"),
+  const { data: programs, isLoading } = useQuery<Array<{ id: string; title: string; moduleCount: number }>>({
+    queryKey: ["program-templates"],
+    queryFn: () => api.get("/api/programs/templates"),
     enabled: open,
   });
 
@@ -163,7 +185,7 @@ function EnrollDialog({
     },
   });
 
-  const publishedPrograms = (programs || []).filter((p) => p.status === "PUBLISHED");
+  const publishedPrograms = programs || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -215,8 +237,11 @@ function OverviewTab({
   participantId: string;
 }) {
   const [hwViewerOpen, setHwViewerOpen] = useState(false);
-  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [createForClientOpen, setCreateForClientOpen] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const manage = useManageEnrollment(participantId);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const { data: clinicianConfig } = useClinicianConfig();
 
@@ -246,7 +271,7 @@ function OverviewTab({
     return normalizeDashboardLayout(raw, clientOverviewWidgets);
   }, [clientConfig, clinicianConfig, clientOverviewWidgets]);
 
-  const enrollment = data.enrollments[0];
+  const enrollment = data.enrollments.find((e) => e.status === "ACTIVE" || e.status === "PAUSED" || e.status === "INVITED") ?? null;
   if (!enrollment) {
     return (
       <div className="space-y-6">
@@ -256,16 +281,27 @@ function OverviewTab({
           <p className="text-xs text-muted-foreground mt-1 mb-4">
             Enroll this client in a program to track their progress, assign modules, and schedule sessions.
           </p>
-          <Button size="sm" onClick={() => setEnrollDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Enroll in Program
-          </Button>
+          <div className="flex justify-center gap-2">
+            <Button size="sm" onClick={() => setAssignModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Enroll in Program
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setCreateForClientOpen(true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Create Program
+            </Button>
+          </div>
         </div>
-        <EnrollDialog
-          open={enrollDialogOpen}
-          onOpenChange={setEnrollDialogOpen}
-          participantEmail={data.participant.email}
-          participantId={participantId}
+        <AssignmentModal
+          open={assignModalOpen}
+          onOpenChange={setAssignModalOpen}
+          participantId={data.participantProfileId}
+          participantName={`${data.participant.firstName} ${data.participant.lastName}`.trim()}
+        />
+        <CreateProgramDialog
+          open={createForClientOpen}
+          onOpenChange={setCreateForClientOpen}
+          preselectedClient={{ id: data.participant.id, name: `${data.participant.firstName} ${data.participant.lastName}`.trim() }}
         />
       </div>
     );
@@ -285,8 +321,16 @@ function OverviewTab({
 
   return (
     <div className="space-y-6">
-      {/* Customize toggle */}
-      <div className="flex justify-end">
+      {/* Actions */}
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={() => setAssignModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Program
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setCreateForClientOpen(true)}>
+          <Sparkles className="mr-2 h-4 w-4" />
+          Create Program
+        </Button>
         <Button
           variant={isCustomizing ? "default" : "outline"}
           size="sm"
@@ -295,6 +339,32 @@ function OverviewTab({
           <Settings2 className="mr-2 h-4 w-4" />
           {isCustomizing ? "Done" : "Customize"}
         </Button>
+        {enrollment && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() =>
+                  confirm({
+                    title: "Remove from Program",
+                    description: `Remove this client from "${enrollment.program.title}"? Their progress will be preserved but they will no longer have access.`,
+                    confirmLabel: "Remove",
+                    variant: "danger",
+                    onConfirm: () => manage.mutate({ enrollmentId: enrollment.id, action: "drop" }),
+                  })
+                }
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remove from Program
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Widget Grid */}
@@ -315,13 +385,21 @@ function OverviewTab({
         onOpenChange={setHwViewerOpen}
       />
 
-      {/* Enroll Dialog */}
-      <EnrollDialog
-        open={enrollDialogOpen}
-        onOpenChange={setEnrollDialogOpen}
-        participantEmail={data.participant.email}
-        participantId={participantId}
+      {/* Enroll Dialog — now uses AssignmentModal */}
+
+      {/* Assignment Modal */}
+      <AssignmentModal
+        open={assignModalOpen}
+        onOpenChange={setAssignModalOpen}
+        participantId={data.participantProfileId}
+        participantName={participantName}
       />
+      <CreateProgramDialog
+        open={createForClientOpen}
+        onOpenChange={setCreateForClientOpen}
+        preselectedClient={{ id: data.participant.id, name: participantName }}
+      />
+      {confirmDialog}
     </div>
   );
 }
@@ -330,8 +408,12 @@ function OverviewTab({
 
 function EnrollmentCard({
   enrollment,
+  onRemove,
+  isRemoving,
 }: {
   enrollment: ParticipantDetail["enrollments"][0];
+  onRemove?: () => void;
+  isRemoving?: boolean;
 }) {
   const STATUS_COLORS: Record<string, string> = {
     ACTIVE: "bg-green-100 text-green-800",
@@ -344,10 +426,26 @@ function EnrollmentCard({
   return (
     <div className="rounded-lg border p-5">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold">{enrollment.program.title}</h3>
-        <Badge variant="outline" className={cn(STATUS_COLORS[enrollment.status])}>
-          {enrollment.status.toLowerCase()}
-        </Badge>
+        <Link href={`/programs/${enrollment.program.id}`} className="font-semibold hover:underline">
+          {enrollment.program.title}
+        </Link>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={cn(STATUS_COLORS[enrollment.status])}>
+            {enrollment.status.toLowerCase()}
+          </Badge>
+          {onRemove && enrollment.status !== "DROPPED" && enrollment.status !== "COMPLETED" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={onRemove}
+              disabled={isRemoving}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Remove
+            </Button>
+          )}
+        </div>
       </div>
       {enrollment.program.description && (
         <p className="text-sm text-muted-foreground mb-3">
@@ -2008,3 +2106,4 @@ function TrackersTab({ participantProfileId, participantUserId }: { participantP
     </div>
   );
 }
+

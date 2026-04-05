@@ -15,6 +15,7 @@ export interface Program {
   followUpCount: number;
   status: string;
   isTemplate: boolean;
+  templateSourceId: string | null;
   moduleCount?: number;
   activeEnrollmentCount?: number;
   completedEnrollmentCount?: number;
@@ -32,6 +33,7 @@ export interface Module {
   estimatedMinutes: number | null;
   sortOrder: number;
   unlockRule: string;
+  unlockDelayDays: number | null;
   partCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -109,5 +111,33 @@ export function useTemplates() {
   return useQuery<ProgramTemplate[]>({
     queryKey: ["program-templates"],
     queryFn: () => api.get("/api/programs/templates"),
+  });
+}
+
+export interface ClientProgram {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  moduleCount: number;
+  clientName: string | null;
+  enrollmentStatus: string | null;
+}
+
+export function useClientPrograms() {
+  return useQuery<ClientProgram[]>({
+    queryKey: ["client-programs"],
+    queryFn: () => api.get("/api/programs/client-programs"),
+  });
+}
+
+export function useCreateProgramForClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { title: string; clientId: string }) =>
+      api.post<{ program: Program; enrollment: { id: string } }>("/api/programs/for-client", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client-programs"] });
+    },
   });
 }

@@ -1,16 +1,16 @@
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { PageHeader } from "@/components/page-header";
 
 describe("PageHeader", () => {
   it("renders title", () => {
-    render(<PageHeader title="My Programs" />);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("My Programs");
+    const { getByRole } = render(<PageHeader title="My Programs" />);
+    expect(getByRole("heading", { level: 1 })).toHaveTextContent("My Programs");
   });
 
   it("renders subtitle when provided", () => {
-    render(<PageHeader title="My Programs" subtitle="12 programs" />);
-    expect(screen.getByText("12 programs")).toBeInTheDocument();
+    const { getByText } = render(<PageHeader title="My Programs" subtitle="12 programs" />);
+    expect(getByText("12 programs")).toBeInTheDocument();
   });
 
   it("does not render subtitle when omitted", () => {
@@ -19,9 +19,9 @@ describe("PageHeader", () => {
   });
 
   it("renders actions slot", () => {
-    render(
+    const { getByRole } = render(
       <PageHeader title="My Programs" actions={<button>Create</button>} />
     );
-    expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Create" })).toBeInTheDocument();
   });
 });

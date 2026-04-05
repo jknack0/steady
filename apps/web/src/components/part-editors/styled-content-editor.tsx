@@ -159,7 +159,7 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
       {/* Error */}
       {styleContent.isError && (
         <div className="px-3 py-2 text-sm text-destructive bg-destructive/10 rounded-b-md">
-          Failed to style content. Try again.
+          {(styleContent.error as any)?.message || "Failed to style content. Try again."}
         </div>
       )}
 

@@ -11,3 +11,6 @@ export * from "./appointment";
 export * from "./location";
 export * from "./service-code";
 export * from "./participant";
+export * from "./invitation";
+export * from "./assignment";
+export * from "./session";

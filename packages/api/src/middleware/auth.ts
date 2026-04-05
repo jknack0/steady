@@ -19,14 +19,23 @@ declare global {
 }
 
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
+  // 1. Try httpOnly cookie (web clients)
+  let token = req.cookies?.access_token;
+
+  // 2. Fall back to Authorization header (mobile clients)
+  if (!token) {
+    const header = req.headers.authorization;
+    if (header?.startsWith("Bearer ")) {
+      token = header.slice(7);
+    }
+  }
+
+  if (!token) {
     res.status(401).json({ success: false, error: "Missing authorization token" });
     return;
   }
 
   try {
-    const token = header.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as AuthUser;
     req.user = payload;
     // Attach userId to audit context for HIPAA audit trail
