@@ -171,8 +171,11 @@ model Practice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships PracticeMembership[]
-  programs    Program[]            @relation("PracticePrograms")
+  memberships  PracticeMembership[]
+  programs     Program[]            @relation("PracticePrograms")
+  appointments Appointment[]
+  locations    Location[]
+  serviceCodes ServiceCode[]
 
   @@map("practices")
 }
@@ -218,6 +221,7 @@ model User {
   clientConfigs        ClientConfig[]         @relation("ClientConfigs")
   clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
   refreshTokens        RefreshToken[]
+  createdAppointments  Appointment[]          @relation("AppointmentCreatedBy")
 
   @@map("users")
 }
@@ -241,6 +245,7 @@ model ClinicianProfile {
   config            ClinicianConfig?
   clientConfigs     ClientConfig[]   @relation("ClinicianClientConfigs")
   clients           ClinicianClient[]
+  appointments      Appointment[]
 
   @@map("clinician_profiles")
 }
@@ -258,6 +263,7 @@ model ParticipantProfile {
   journalEntries    JournalEntry[]
   dailyTrackers     DailyTracker[]
   homeworkInstances HomeworkInstance[]
+  appointments      Appointment[]
 
   @@map("participant_profiles")
 }
@@ -472,11 +478,112 @@ model Session {
   participantSummary String?
   moduleCompletedId  String?
   moduleCompleted    Module?       @relation("CompletedModule", fields: [moduleCompletedId], references: [id])
+  appointmentId      String?
+  appointment        Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
   @@index([scheduledAt])
+  @@index([appointmentId])
   @@map("sessions")
+}
+
+// ── Appointments (Sprint 19) ───────────────────────────
+
+enum AppointmentStatus {
+  SCHEDULED
+  ATTENDED
+  NO_SHOW
+  LATE_CANCELED
+  CLIENT_CANCELED
+  CLINICIAN_CANCELED
+}
+
+enum AppointmentType {
+  INDIVIDUAL
+  COUPLE
+  GROUP
+}
+
+enum LocationType {
+  IN_PERSON
+  VIRTUAL
+}
+
+model Appointment {
+  id               String            @id @default(cuid())
+  practiceId       String
+  practice         Practice          @relation(fields: [practiceId], references: [id])
+  clinicianId      String
+  clinician        ClinicianProfile  @relation(fields: [clinicianId], references: [id])
+  participantId    String
+  participant      ParticipantProfile @relation(fields: [participantId], references: [id])
+  serviceCodeId    String
+  serviceCode      ServiceCode       @relation(fields: [serviceCodeId], references: [id])
+  locationId       String
+  location         Location          @relation(fields: [locationId], references: [id])
+  startAt          DateTime
+  endAt            DateTime
+  status           AppointmentStatus @default(SCHEDULED)
+  appointmentType  AppointmentType   @default(INDIVIDUAL)
+  internalNote     String?
+  cancelReason     String?
+  statusChangedAt  DateTime?
+  createdById      String
+  createdBy        User              @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  sessions         Session[]
+
+  @@index([practiceId, clinicianId, startAt])
+  @@index([practiceId, locationId, startAt])
+  @@index([practiceId, participantId])
+  @@index([status])
+  @@index([createdById])
+  @@map("appointments")
+}
+
+model Location {
+  id           String        @id @default(cuid())
+  practiceId   String
+  practice     Practice      @relation(fields: [practiceId], references: [id])
+  name         String
+  type         LocationType
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  timezone     String?
+  isDefault    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  appointments Appointment[]
+
+  @@index([practiceId, isActive])
+  @@map("locations")
+}
+
+model ServiceCode {
+  id                     String        @id @default(cuid())
+  practiceId             String
+  practice               Practice      @relation(fields: [practiceId], references: [id])
+  code                   String
+  description            String
+  defaultDurationMinutes Int
+  defaultPriceCents      Int?
+  isActive               Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  appointments Appointment[]
+
+  @@unique([practiceId, code])
+  @@index([practiceId, isActive])
+  @@map("service_codes")
 }
 
 // ── Notifications ──────────────────────────────────────

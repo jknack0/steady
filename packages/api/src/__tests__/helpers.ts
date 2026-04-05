@@ -79,6 +79,95 @@ export function mockModule(overrides: Record<string, any> = {}) {
 }
 
 /**
+ * Create a mock location object.
+ */
+export function mockLocation(overrides: Record<string, any> = {}) {
+  return {
+    id: "loc-1",
+    practiceId: "practice-1",
+    name: "Main Office",
+    type: "IN_PERSON",
+    addressLine1: null,
+    addressLine2: null,
+    city: null,
+    state: null,
+    postalCode: null,
+    timezone: null,
+    isDefault: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock service code object.
+ */
+export function mockServiceCode(overrides: Record<string, any> = {}) {
+  return {
+    id: "sc-1",
+    practiceId: "practice-1",
+    code: "90834",
+    description: "Psychotherapy, 45 min",
+    defaultDurationMinutes: 45,
+    defaultPriceCents: 14000,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock appointment object.
+ */
+export function mockAppointment(overrides: Record<string, any> = {}) {
+  const start = new Date("2026-05-01T14:00:00Z");
+  const end = new Date("2026-05-01T14:45:00Z");
+  return {
+    id: "appt-1",
+    practiceId: "practice-1",
+    clinicianId: "test-clinician-profile-id",
+    participantId: "pp-1",
+    serviceCodeId: "sc-1",
+    locationId: "loc-1",
+    startAt: start,
+    endAt: end,
+    status: "SCHEDULED",
+    appointmentType: "INDIVIDUAL",
+    internalNote: null,
+    cancelReason: null,
+    statusChangedAt: null,
+    createdById: "test-user-id",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    serviceCode: mockServiceCode(),
+    location: mockLocation(),
+    participant: {
+      id: "pp-1",
+      user: { id: "u-pp-1", firstName: "Jane", lastName: "Doe", email: "jane@test.com" },
+    },
+    clinician: {
+      id: "test-clinician-profile-id",
+      user: { id: "test-user-id", firstName: "Dr.", lastName: "Smith", email: "dr@test.com" },
+    },
+    ...overrides,
+  };
+}
+
+export function seedTwoPractices() {
+  return {
+    practiceA: "practice-A",
+    practiceB: "practice-B",
+    clinicianA: "clin-A",
+    clinicianB: "clin-B",
+    userA: "user-A",
+    userB: "user-B",
+  };
+}
+
+/**
  * Create a mock part object.
  */
 export function mockPart(overrides: Record<string, any> = {}) {
