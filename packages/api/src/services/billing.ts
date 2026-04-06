@@ -387,6 +387,7 @@ export async function createInvoiceFromAppointment(
   | { invoice: any }
   | { error: "not_found" }
   | { error: "conflict"; message: string }
+  | { error: "validation"; message: string }
 > {
   if (!ctx.clinicianProfileId) return { error: "not_found" };
 
