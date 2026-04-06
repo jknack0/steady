@@ -34,6 +34,7 @@ This roadmap assumes the following stack. Adjust prompts if you choose different
 | 12 | Pattern Tracker + Regulation Check-In | ✅ SHIPPED | Stats service, mobile insights, clinician patterns tab |
 | 14 | Steady Work Review + Session Prep | ✅ SHIPPED | Deferred: 24h notification trigger, override merge into participant delivery |
 | 15 | Gamification + Voice + Smart Notifications | ✅ SHIPPED | Deferred: expo-speech-recognition install, voice capture implementation |
+| 17 | Multi-Clinician + Bulk Actions | ✅ SHIPPED | Practice owner dashboard, clinician management, enhanced bulk actions with audit logging |
 | 19 | Appointment Scheduling (Clinician Calendar) | ✅ SHIPPED | Full clinician web calendar + participant mobile appointments |
 
 ### Features Shipped Outside Original Roadmap
@@ -59,7 +60,7 @@ This roadmap assumes the following stack. Adjust prompts if you choose different
 |--------|------|--------|
 | 13 | Calendar Sync + Accountability Partners | ⏳ NOT STARTED — requires Google OAuth |
 | 16 | Maintenance Phase + Unsteadiness Detector | ⏳ NOT STARTED |
-| 17 | Multi-Clinician + Bulk Actions | ⏳ NOT STARTED |
+| 17 | Multi-Clinician + Bulk Actions | ✅ SHIPPED |
 | 18 | Content Versioning + Offline + Polish | ⏳ NOT STARTED |
 | 19+ | Template Marketplace | ⏳ NOT STARTED |
 | 20+ | Self-Guided Tier | ⏳ NOT STARTED |
@@ -174,31 +175,7 @@ Mobile:
 
 ### Sprint 17 (Weeks 33–34): Multi-Clinician + Bulk Actions
 
-**Claude Code Prompt 17.1:**
-```
-Build multi-clinician practice support and bulk actions.
-
-Database:
-1. Create Practice model: (id, name, ownerId FK to User, createdAt)
-2. Create PracticeMembership model: (id, practiceId FK, clinicianId FK, role ENUM [OWNER, CLINICIAN], joinedAt)
-3. Add practiceId nullable FK to Program — programs can belong to a practice for sharing.
-
-API:
-4. POST /api/practices — Create a practice (becomes owner). Body: { name }.
-5. POST /api/practices/:id/invite — Invite a clinician by email. Creates a PracticeMembership with a pending status.
-6. GET /api/practices/:id/members — List clinicians in the practice.
-7. Practice-scoped program sharing: Programs with a practiceId are visible to all practice members as clonable templates. Each clinician's enrollments are still private to them unless the owner views the practice-wide dashboard.
-
-8. Practice owner dashboard:
-   - GET /api/practices/:id/stats — Aggregate across all clinicians: total active participants, total programs, completion rates.
-   - GET /api/practices/:id/participants — All participants across all clinicians (owner only).
-
-Bulk Actions (apps/web):
-9. On the Participant List page, add checkboxes for multi-select:
-   - Selected count shown in a floating action bar at the bottom
-   - Actions: "Unlock Next Module" (for all selected), "Send Nudge" (custom push notification text), "Push Task" (task title — creates the same task for all selected participants)
-   - Confirmation dialog before executing bulk actions
-```
+> **SHIPPED** — See `docs/sdlc/sprint-17-multi-clinician-bulk/` for full pipeline docs.
 
 ---
 
