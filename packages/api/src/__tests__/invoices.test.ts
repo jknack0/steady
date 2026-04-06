@@ -9,7 +9,7 @@ const mdb = vi.hoisted(() => {
     findFirst: vi.fn().mockResolvedValue(null), findUnique: vi.fn().mockResolvedValue(null),
     findUniqueOrThrow: vi.fn(), update: vi.fn(), delete: vi.fn(),
     count: vi.fn().mockResolvedValue(0), upsert: vi.fn(), deleteMany: vi.fn(),
-    createMany: vi.fn(), aggregate: vi.fn(), groupBy: vi.fn(),
+    createMany: vi.fn(), aggregate: vi.fn(), groupBy: vi.fn(), updateMany: vi.fn(),
     ...extra,
   });
   return {
@@ -291,5 +291,76 @@ describe("Invoice Routes", () => {
       const res = await request(app).post("/api/invoices/from-appointment/x").set(...authHeader());
       expect(res.status).toBe(404);
     });
+  });
+
+  describe("GET /api/invoices/:id/pdf", () => {
+    it("returns a PDF for a valid invoice", async () => {
+      own();
+      mdb.invoice.findFirst.mockResolvedValue({
+        ...mockInvoice(),
+        practice: { name: "Test Practice" },
+        clinician: {
+          id: "test-clinician-profile-id",
+          user: { firstName: "Dr.", lastName: "Smith", email: "dr@test.com" },
+          billingProfile: null,
+        },
+      });
+
+      const res = await request(app).get("/api/invoices/inv-1/pdf").set(...authHeader());
+      expect(res.status).toBe(200);
+      expect(res.headers["content-type"]).toContain("application/pdf");
+      expect(res.headers["content-disposition"]).toContain("INV-001.pdf");
+    });
+
+    it("returns 404 for missing invoice", async () => {
+      own();
+      mdb.invoice.findFirst.mockResolvedValue(null);
+      const res = await request(app).get("/api/invoices/inv-x/pdf").set(...authHeader());
+      expect(res.status).toBe(404);
+    });
+  });
+});
+
+describe("markOverdueInvoices", () => {
+  beforeEach(() => {
+    mdb.invoice.findMany.mockReset();
+    mdb.invoice.updateMany.mockReset();
+    mdb.auditLog.create.mockReset();
+  });
+
+  it("transitions SENT invoices past dueAt to OVERDUE", async () => {
+    const pastDue = [
+      { id: "inv-a" },
+      { id: "inv-b" },
+    ];
+    mdb.invoice.findMany.mockResolvedValue(pastDue);
+    mdb.invoice.updateMany.mockResolvedValue({ count: 2 });
+    mdb.auditLog.create.mockResolvedValue({});
+
+    const { markOverdueInvoices } = await import("../services/billing");
+    const count = await markOverdueInvoices();
+
+    expect(count).toBe(2);
+    expect(mdb.invoice.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: "SENT" }),
+      }),
+    );
+    expect(mdb.invoice.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ["inv-a", "inv-b"] } },
+        data: { status: "OVERDUE" },
+      }),
+    );
+  });
+
+  it("returns 0 when no invoices are overdue", async () => {
+    mdb.invoice.findMany.mockResolvedValue([]);
+
+    const { markOverdueInvoices } = await import("../services/billing");
+    const count = await markOverdueInvoices();
+
+    expect(count).toBe(0);
+    expect(mdb.invoice.updateMany).not.toHaveBeenCalled();
   });
 });

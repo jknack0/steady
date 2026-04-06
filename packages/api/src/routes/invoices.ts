@@ -17,7 +17,9 @@ import {
   voidInvoice,
   deleteInvoice,
   createInvoiceFromAppointment,
+  getInvoiceForPdf,
 } from "../services/billing";
+import { generateInvoicePdf } from "../services/invoice-pdf";
 import {
   recordPayment,
   listPayments,
@@ -196,6 +198,27 @@ router.post("/from-appointment/:appointmentId", async (req: Request, res: Respon
   } catch (err) {
     logger.error("Create invoice from appointment error", err);
     res.status(500).json({ success: false, error: "Failed to create invoice" });
+  }
+});
+
+// ── PDF ───────────────────────────────────────────────
+
+router.get("/:id/pdf", async (req: Request, res: Response) => {
+  try {
+    const ctx = res.locals.practiceCtx!;
+    const invoice = await getInvoiceForPdf(ctx, req.params.id);
+    if (!invoice) {
+      res.status(404).json({ success: false, error: "Not found" });
+      return;
+    }
+    const pdf = generateInvoicePdf(invoice);
+    const filename = `${invoice.invoiceNumber}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(pdf);
+  } catch (err) {
+    logger.error("Generate invoice PDF error", err);
+    res.status(500).json({ success: false, error: "Failed to generate PDF" });
   }
 });
 

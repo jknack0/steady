@@ -429,6 +429,70 @@ export async function createInvoiceFromAppointment(
   });
 }
 
+export async function markOverdueInvoices(): Promise<number> {
+  const now = new Date();
+  const overdueInvoices = await prisma.invoice.findMany({
+    where: {
+      status: "SENT",
+      dueAt: { lt: now },
+    },
+    select: { id: true },
+  });
+
+  if (overdueInvoices.length === 0) return 0;
+
+  const ids = overdueInvoices.map((i) => i.id);
+
+  await prisma.invoice.updateMany({
+    where: { id: { in: ids } },
+    data: { status: "OVERDUE" },
+  });
+
+  // Audit each transition (fire-and-forget)
+  for (const inv of overdueInvoices) {
+    try {
+      await prisma.auditLog.create({
+        data: {
+          userId: "system",
+          action: "UPDATE",
+          resourceType: "Invoice",
+          resourceId: inv.id,
+          metadata: { changedFields: ["status"], from: "SENT", to: "OVERDUE", trigger: "cron" },
+        },
+      });
+    } catch {
+      // fire-and-forget
+    }
+  }
+
+  logger.info(`Marked ${ids.length} invoices as OVERDUE`);
+  return ids.length;
+}
+
+export async function getInvoiceForPdf(
+  ctx: ServiceCtx,
+  id: string,
+): Promise<any | null> {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id, practiceId: ctx.practiceId },
+    include: {
+      ...INVOICE_INCLUDE,
+      clinician: {
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true } },
+          billingProfile: true,
+        },
+      },
+      practice: { select: { name: true } },
+    },
+  });
+  if (!invoice) return null;
+  if (!ctx.isAccountOwner && invoice.clinicianId !== ctx.clinicianProfileId) {
+    return null;
+  }
+  return invoice;
+}
+
 export async function getBillingSummary(
   ctx: ServiceCtx,
 ): Promise<{

@@ -25,8 +25,10 @@ import type {
   AppointmentType,
 } from "@/lib/appointment-types";
 import { useCreateAppointment, useUpdateAppointment, useDeleteAppointment } from "@/hooks/use-appointments";
+import { useCreateInvoiceFromAppointment } from "@/hooks/use-invoices";
 import { isTerminal } from "./status-colors";
 import { formatInClinicianTz } from "@/lib/tz";
+import { useRouter } from "next/navigation";
 
 interface Props {
   open: boolean;
@@ -82,9 +84,11 @@ export function AppointmentModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [endAtTouched, setEndAtTouched] = useState(false);
 
+  const router = useRouter();
   const create = useCreateAppointment();
   const update = useUpdateAppointment(existing?.id ?? "");
   const del = useDeleteAppointment();
+  const createInvoiceFromAppt = useCreateInvoiceFromAppointment();
 
   const terminal = mode === "edit" && existing && isTerminal(existing.status);
 
@@ -437,6 +441,38 @@ export function AppointmentModal({
               onClick={() => setShowDeleteConfirm(true)}
             >
               {S.modalDeleteBtn}
+            </Button>
+          )}
+          {mode === "edit" && existing?.status === "ATTENDED" && !existing.invoiceId && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={createInvoiceFromAppt.isPending}
+              onClick={async () => {
+                try {
+                  const result = await createInvoiceFromAppt.mutateAsync(existing.id) as any;
+                  onOpenChange(false);
+                  const invoiceId = result?.id ?? result?.data?.id;
+                  if (invoiceId) router.push(`/billing/${invoiceId}`);
+                  else router.push("/billing");
+                } catch (e) {
+                  setSubmitError((e as Error).message || "Failed to generate invoice");
+                }
+              }}
+            >
+              {createInvoiceFromAppt.isPending ? "Generating..." : "Generate Invoice"}
+            </Button>
+          )}
+          {mode === "edit" && existing?.invoiceId && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                router.push(`/billing/${existing.invoiceId}`);
+              }}
+            >
+              View Invoice
             </Button>
           )}
           <Button type="button" variant="outline" onClick={attemptClose}>

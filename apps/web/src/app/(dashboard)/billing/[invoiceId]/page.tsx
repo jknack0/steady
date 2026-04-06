@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useInvoice, useSendInvoice, useVoidInvoice, useDeleteInvoice } from "@/hooks/use-invoices";
 import { usePayments, useRecordPayment, useDeletePayment } from "@/hooks/use-payments";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, Ban, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Send, Ban, Trash2, Plus, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -268,6 +268,16 @@ export default function InvoiceDetailPage() {
 
       {/* Actions */}
       <div className="flex gap-3">
+        <Button
+          variant="outline"
+          onClick={() => {
+            const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+            window.open(`${apiBase}/api/invoices/${invoiceId}/pdf`, "_blank");
+          }}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Download PDF
+        </Button>
         {canSend && (
           <Button onClick={() => sendInvoice.mutate()} disabled={sendInvoice.isPending}>
             <Send className="mr-2 h-4 w-4" />

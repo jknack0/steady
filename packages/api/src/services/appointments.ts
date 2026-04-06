@@ -37,6 +37,7 @@ const APPOINTMENT_INCLUDE = {
   location: true,
   participant: { include: { user: true } },
   clinician: { include: { user: true } },
+  invoiceLineItems: { select: { invoiceId: true }, take: 1 },
 } as const;
 
 // TODO(sprint-20): participant search + "Add new client" flow is deferred — it needs
@@ -395,6 +396,10 @@ export async function deleteAppointment(
 }
 
 export function toClinicianView(a: any): any {
+  // Resolve invoiceId from line items if available
+  const invoiceId =
+    a.invoiceLineItems?.[0]?.invoiceId ?? null;
+
   return {
     id: a.id,
     practiceId: a.practiceId,
@@ -429,6 +434,7 @@ export function toClinicianView(a: any): any {
     createdById: a.createdById,
     createdAt: toIso(a.createdAt),
     updatedAt: toIso(a.updatedAt),
+    invoiceId,
   };
 }
 

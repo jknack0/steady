@@ -64,6 +64,7 @@ export interface AppointmentView {
   createdById: string;
   createdAt: string;
   updatedAt: string;
+  invoiceId: string | null;
 }
 
 export interface AppointmentWithConflicts {
