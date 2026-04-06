@@ -5,6 +5,7 @@ import {
   FlatList,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
@@ -343,20 +344,34 @@ function SingleProgramView({ enrollment }: { enrollment: Enrollment }) {
           </Text>
         ) : null}
         <View
-          style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}
         >
-          <Ionicons name="time-outline" size={14} color="#8A8A8A" />
-          <Text
-            style={{
-              fontSize: 12,
-              fontFamily: "PlusJakartaSans_500Medium",
-              color: "#8A8A8A",
-              marginLeft: 4,
-              textTransform: "uppercase",
-            }}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Ionicons name="time-outline" size={14} color="#8A8A8A" />
+            <Text
+              style={{
+                fontSize: 12,
+                fontFamily: "PlusJakartaSans_500Medium",
+                color: "#8A8A8A",
+                marginLeft: 4,
+                textTransform: "uppercase",
+              }}
+            >
+              {data.program.cadence}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => router.push("/(app)/insights")}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel="View your insights"
           >
-            {data.program.cadence}
-          </Text>
+            <Ionicons name="analytics-outline" size={14} color="#5B8A8A" />
+            <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A" }}>
+              My Insights
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color="#5B8A8A" />
+          </Pressable>
         </View>
       </View>
 
@@ -580,6 +595,31 @@ export default function ProgramScreen() {
           data={data}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <EnrollmentCard enrollment={item} />}
+          ListHeaderComponent={
+            <Pressable
+              onPress={() => router.push("/(app)/insights")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#FFFFFF",
+                borderRadius: 12,
+                paddingVertical: 12,
+                marginBottom: 12,
+                gap: 6,
+                borderWidth: 1,
+                borderColor: "#F0EDE8",
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="View your insights"
+            >
+              <Ionicons name="analytics-outline" size={16} color="#5B8A8A" />
+              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5B8A8A" }}>
+                My Insights
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="#5B8A8A" />
+            </Pressable>
+          }
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           refreshControl={
             <RefreshControl

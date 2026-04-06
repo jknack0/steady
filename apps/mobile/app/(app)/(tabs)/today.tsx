@@ -1,5 +1,5 @@
 import { useState, createContext, useContext, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Pressable, RefreshControl, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -773,8 +773,17 @@ export default function TodayScreen() {
         </View>
 
         <WeeklyStreakWidget />
-        <StreakBadges />
-        <DailyProgressSummary />
+        <Pressable onPress={() => router.push("/(app)/insights")} accessibilityRole="button" accessibilityLabel="View your insights">
+          <StreakBadges />
+          <DailyProgressSummary />
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 8, gap: 4 }}>
+            <Ionicons name="analytics-outline" size={14} color="#5B8A8A" />
+            <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A" }}>
+              View Insights
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color="#5B8A8A" />
+          </View>
+        </Pressable>
 
         {isModuleEnabled("daily_tracker") && <CheckInSection />}
         <NextAppointmentCard />
