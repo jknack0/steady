@@ -42,7 +42,6 @@ const mainNavItems = [
   { href: "/programs", label: "Programs", icon: BookOpen },
   { href: "/participants", label: "Clients", icon: Users },
   { href: "/appointments", label: "Calendar", icon: Calendar },
-  { href: "/sessions", label: "Sessions", icon: Calendar },
 ];
 
 const billingNavItems = [

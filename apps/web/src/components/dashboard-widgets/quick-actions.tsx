@@ -21,7 +21,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 const DEFAULT_LINKS: QuickActionLink[] = [
   { label: "Create Program", path: "/programs", icon: "BookOpen" },
   { label: "Add Client", path: "/participants", icon: "Users" },
-  { label: "Schedule Session", path: "/sessions", icon: "Calendar" },
+  { label: "Schedule Appointment", path: "/appointments", icon: "Calendar" },
 ];
 
 interface QuickActionsWidgetProps extends WidgetProps {
