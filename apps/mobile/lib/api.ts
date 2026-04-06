@@ -360,6 +360,16 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // Streaks
+  getMyStreaks: () => apiFetch("/api/stats/streaks"),
+
+  // Notification engagement
+  engageNotification: (category: string) =>
+    apiFetch("/api/notifications/engage", {
+      method: "POST",
+      body: JSON.stringify({ category }),
+    }),
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

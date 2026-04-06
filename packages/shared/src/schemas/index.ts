@@ -16,3 +16,5 @@ export * from "./assignment";
 export * from "./session";
 export * from "./review";
 export * from "./enrollment-override";
+export * from "./streak";
+export * from "./notification-escalation";

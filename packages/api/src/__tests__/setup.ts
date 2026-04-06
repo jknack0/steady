@@ -130,6 +130,7 @@ vi.mock("@steady/db", () => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
       upsert: vi.fn(),
+      update: vi.fn(),
     },
     practice: {
       create: vi.fn(),
@@ -288,6 +289,12 @@ vi.mock("@steady/db", () => {
       findUnique: vi.fn(),
       delete: vi.fn(),
       count: vi.fn(),
+    },
+    streakRecord: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
     },
   };
 

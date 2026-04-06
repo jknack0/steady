@@ -261,6 +261,24 @@ export function mockOverride(overrides: Record<string, any> = {}) {
 /**
  * Create a mock PatientInvitation object.
  */
+/**
+ * Create a mock streak record object.
+ */
+export function mockStreakRecord(overrides: Record<string, any> = {}) {
+  return {
+    id: "streak-1",
+    userId: "test-user-id",
+    category: "JOURNAL",
+    currentStreak: 5,
+    longestStreak: 10,
+    lastActiveDate: new Date("2026-04-04"),
+    gapDaysUsed: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
 export function mockInvitation(overrides: Record<string, any> = {}) {
   return {
     id: "invitation-1",

@@ -1,5 +1,6 @@
-import { useState, createContext, useContext } from "react";
+import { useState, createContext, useContext, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +10,9 @@ import { useConfig } from "../../../lib/config-context";
 import { DailyTrackerCards } from "../../../components/daily-tracker-card";
 import { TodaysHomeworkInstances } from "../../../components/homework-instances";
 import { useMyAppointments } from "../../../hooks/use-appointments";
+import { useMyStreaks } from "../../../hooks/use-streaks";
+import { MilestoneCelebration } from "../../../components/completion-animations";
+import { useEngagementTracking } from "../../../lib/engagement-tracker";
 
 // ── Shared styles ────────────
 const CARD = {
@@ -217,6 +221,81 @@ function WeeklyStreakWidget() {
           );
         })}
       </View>
+    </View>
+  );
+}
+
+// ── Streak Badges ────────────
+
+const CATEGORY_LABELS: Record<string, string> = {
+  JOURNAL: "Journal",
+  CHECKIN: "Check-in",
+  HOMEWORK: "Homework",
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  JOURNAL: "book",
+  CHECKIN: "pulse",
+  HOMEWORK: "clipboard",
+};
+
+function StreakBadges() {
+  const { data: streaks } = useMyStreaks();
+  if (!streaks || streaks.length === 0) return null;
+
+  const activeStreaks = streaks.filter((s) => s.currentStreak > 0);
+  if (activeStreaks.length === 0) {
+    return (
+      <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0EDE8" }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Ionicons name="flame-outline" size={18} color="#D4D0CB" />
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 8 }}>
+            Start your streak today!
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flexDirection: "row", marginHorizontal: 16, marginTop: 12, gap: 8 }}>
+      {activeStreaks.map((streak) => (
+        <View
+          key={streak.category}
+          style={{
+            flex: 1,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 12,
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: streak.currentStreak >= 7 ? "#C4A84D40" : "#F0EDE8",
+          }}
+        >
+          <Ionicons
+            name="flame"
+            size={20}
+            color={streak.currentStreak >= 7 ? "#C4A84D" : "#E8783A"}
+          />
+          <Text style={{
+            fontSize: 18,
+            fontFamily: "PlusJakartaSans_700Bold",
+            color: streak.currentStreak >= 7 ? "#C4A84D" : "#E8783A",
+            marginTop: 2,
+          }}>
+            {streak.currentStreak}
+          </Text>
+          <Text style={{
+            fontSize: 11,
+            fontFamily: "PlusJakartaSans_500Medium",
+            color: "#8A8A8A",
+            marginTop: 1,
+          }}>
+            {CATEGORY_LABELS[streak.category] || streak.category}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -552,13 +631,42 @@ function CheckInSection() {
 
 // ── Today View ────────────
 
+const MILESTONES = [7, 14, 21, 30] as const;
+
 export default function TodayScreen() {
   const { user } = useAuth();
   const { isModuleEnabled } = useConfig();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [milestoneVisible, setMilestoneVisible] = useState(false);
+  const [milestoneData, setMilestoneData] = useState<{ milestone: 7 | 14 | 21 | 30; category: string } | null>(null);
 
   const { data, isLoading } = useFetchTodayData();
+  const { data: streaks } = useMyStreaks();
+
+  useEngagementTracking();
+
+  // Milestone detection
+  useEffect(() => {
+    if (!streaks || streaks.length === 0) return;
+
+    (async () => {
+      for (const streak of streaks) {
+        for (const m of MILESTONES) {
+          if (streak.currentStreak === m) {
+            const key = `milestone-seen-${streak.category}-${m}`;
+            const seen = await AsyncStorage.getItem(key);
+            if (!seen) {
+              await AsyncStorage.setItem(key, "true");
+              setMilestoneData({ milestone: m, category: streak.category });
+              setMilestoneVisible(true);
+              return; // Show one at a time
+            }
+          }
+        }
+      }
+    })();
+  }, [streaks]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -596,6 +704,7 @@ export default function TodayScreen() {
         </View>
 
         <WeeklyStreakWidget />
+        <StreakBadges />
         <DailyProgressSummary />
 
         {isModuleEnabled("daily_tracker") && <CheckInSection />}
@@ -607,6 +716,15 @@ export default function TodayScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {milestoneData && (
+        <MilestoneCelebration
+          milestone={milestoneData.milestone}
+          category={milestoneData.category}
+          visible={milestoneVisible}
+          onDismiss={() => setMilestoneVisible(false)}
+        />
+      )}
     </TodayDataContext.Provider>
   );
 }

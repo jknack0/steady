@@ -147,6 +147,12 @@ enum HomeworkInstanceStatus {
   MISSED
 }
 
+enum StreakCategory {
+  JOURNAL
+  CHECKIN
+  HOMEWORK
+}
+
 enum ProviderType {
   THERAPIST
   PSYCHIATRIST
@@ -223,6 +229,7 @@ model User {
   acceptedInvitations  PatientInvitation[]    @relation("InvitationAcceptedBy")
   refreshTokens        RefreshToken[]
   createdAppointments  Appointment[]          @relation("AppointmentCreatedBy")
+  streakRecords        StreakRecord[]
 
   @@map("users")
 }
@@ -602,6 +609,25 @@ model ServiceCode {
   @@unique([practiceId, code])
   @@index([practiceId, isActive])
   @@map("service_codes")
+}
+
+// ── Streaks (Sprint 15) ──────────────────────────────────
+
+model StreakRecord {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  category       StreakCategory
+  currentStreak  Int            @default(0)
+  longestStreak  Int            @default(0)
+  lastActiveDate DateTime?      @db.Date
+  gapDaysUsed    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([userId, category])
+  @@index([userId])
+  @@map("streak_records")
 }
 
 // ── Notifications ──────────────────────────────────────

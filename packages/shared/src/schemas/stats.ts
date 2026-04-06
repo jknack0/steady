@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { StreakResponseSchema } from "./streak";
 
 // ── Request Schemas ─────────────────────────────────────
 
@@ -100,6 +101,7 @@ export const ParticipantStatsSchema = z.object({
   homeworkCompletion: HomeworkCompletionRateSchema,
   regulationTrend: RegulationTrendSchema,
   systemCheckin: SystemCheckinAdherenceSchema,
+  streaks: z.array(StreakResponseSchema).optional(),
 });
 
 export type ParticipantStats = z.infer<typeof ParticipantStatsSchema>;

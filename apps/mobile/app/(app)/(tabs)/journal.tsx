@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
+import { isVoiceCaptureAvailable, startVoiceCapture, stopVoiceCapture, getIsRecording } from "../../../lib/voice-capture";
 
 interface JournalEntry {
   id: string;
@@ -255,7 +257,45 @@ export default function JournalScreen() {
           <View style={cardStyle}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
               <Ionicons name="create-outline" size={18} color="#5B8A8A" />
-              <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginLeft: 8 }}>Daily Reflection</Text>
+              <Text style={{ flex: 1, fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginLeft: 8 }}>Daily Reflection</Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  const available = await isVoiceCaptureAvailable();
+                  if (!available) {
+                    Alert.alert("Voice Input", "Voice input isn't available on this device.");
+                    return;
+                  }
+                  if (getIsRecording()) {
+                    stopVoiceCapture();
+                    return;
+                  }
+                  startVoiceCapture({
+                    onStart: () => {},
+                    onResult: (result) => {
+                      setContent((prev) => (prev ? prev + " " : "") + result.text);
+                    },
+                    onError: (error) => {
+                      Alert.alert("Voice Input", error);
+                    },
+                    onEnd: () => {
+                      debounceSave();
+                    },
+                  });
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F0EDE8",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                activeOpacity={0.7}
+                accessibilityLabel="Dictate journal entry"
+                accessibilityRole="button"
+              >
+                <Ionicons name="mic-outline" size={16} color="#5B8A8A" />
+              </TouchableOpacity>
             </View>
             <TextInput
               style={{ fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", minHeight: 180, lineHeight: 24 }}
