@@ -61,6 +61,7 @@ export interface AppointmentView {
   internalNote: string | null;
   cancelReason: string | null;
   statusChangedAt: string | null;
+  recurringSeriesId: string | null;
   createdById: string;
   createdAt: string;
   updatedAt: string;

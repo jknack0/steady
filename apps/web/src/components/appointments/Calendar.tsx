@@ -8,6 +8,7 @@ import { CalendarWeekView } from "./CalendarWeekView";
 import { CalendarMonthView } from "./CalendarMonthView";
 import { CalendarFilters } from "./CalendarFilters";
 import { AppointmentModal } from "./AppointmentModal";
+import { RecurringSeriesPanel } from "./RecurringSeriesPanel";
 import { useAppointments } from "@/hooks/use-appointments";
 import { useLocations } from "@/hooks/use-locations";
 import { useServiceCodes } from "@/hooks/use-service-codes";
@@ -49,6 +50,7 @@ export function Calendar() {
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [modalInitialStart, setModalInitialStart] = useState<Date | undefined>(undefined);
   const [modalExisting, setModalExisting] = useState<AppointmentView | undefined>(undefined);
+  const [seriesPanelOpen, setSeriesPanelOpen] = useState(false);
 
   const range = useMemo(() => {
     if (view === "day") return dayRangeInTz(anchor, timezone);
@@ -185,6 +187,9 @@ export function Calendar() {
               })
             }
           />
+          <Button variant="outline" size="sm" onClick={() => setSeriesPanelOpen(true)}>
+            ↻ Recurring
+          </Button>
           <Button size="sm" onClick={() => openCreate(new Date())}>
             {S.scheduleBtn}
           </Button>
@@ -256,6 +261,11 @@ export function Calendar() {
         locations={locations}
         timezone={timezone}
         initialStart={modalInitialStart}
+      />
+
+      <RecurringSeriesPanel
+        open={seriesPanelOpen}
+        onOpenChange={setSeriesPanelOpen}
       />
     </div>
   );

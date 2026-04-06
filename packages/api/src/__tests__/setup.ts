@@ -158,6 +158,7 @@ vi.mock("@steady/db", () => {
       findUnique: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
       count: vi.fn(),
     },
     location: {
@@ -319,6 +320,15 @@ vi.mock("@steady/db", () => {
       findMany: vi.fn(),
       findFirst: vi.fn(),
       delete: vi.fn(),
+    },
+    recurringSeries: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
   };
 

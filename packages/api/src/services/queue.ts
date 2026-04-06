@@ -1,6 +1,7 @@
 import PgBoss from "pg-boss";
 import { logger } from "../lib/logger";
 import { markOverdueInvoices } from "./billing";
+import { generateAllSeriesAppointments } from "./recurring-series";
 
 let boss: PgBoss | null = null;
 
@@ -23,6 +24,16 @@ export async function getQueue(): Promise<PgBoss> {
       logger.info(`Overdue invoice cron completed, marked ${count} invoices`);
     } catch (err) {
       logger.error("Overdue invoice cron failed", err);
+    }
+  });
+
+  // Register recurring series generation cron job — runs daily at 1:00 AM UTC
+  await boss.schedule("recurring-series-generate", "0 1 * * *");
+  await boss.work("recurring-series-generate", async () => {
+    try {
+      await generateAllSeriesAppointments();
+    } catch (err) {
+      logger.error("Recurring series generation cron failed", err);
     }
   });
 

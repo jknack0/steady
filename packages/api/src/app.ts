@@ -41,6 +41,7 @@ import sessionPrepRoutes from "./routes/session-prep";
 import enrollmentOverrideRoutes from "./routes/enrollment-overrides";
 import invoiceRoutes from "./routes/invoices";
 import billingRoutes from "./routes/billing";
+import recurringSeriesRoutes from "./routes/recurring-series";
 
 const app = express();
 
@@ -386,6 +387,7 @@ app.use("/api/participant/appointments", participantReviewRouter);
 app.use("/api/enrollments", enrollmentOverrideRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/recurring-series", recurringSeriesRoutes);
 
 // Error handler
 app.use(errorHandler);

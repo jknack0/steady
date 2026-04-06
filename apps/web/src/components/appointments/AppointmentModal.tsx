@@ -25,6 +25,7 @@ import type {
   AppointmentType,
 } from "@/lib/appointment-types";
 import { useCreateAppointment, useUpdateAppointment, useDeleteAppointment } from "@/hooks/use-appointments";
+import { useCreateSeries } from "@/hooks/use-recurring-series";
 import { useCreateInvoiceFromAppointment } from "@/hooks/use-invoices";
 import { isTerminal } from "./status-colors";
 import { formatInClinicianTz } from "@/lib/tz";
@@ -83,9 +84,13 @@ export function AppointmentModal({
   const [showDiscard, setShowDiscard] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [endAtTouched, setEndAtTouched] = useState(false);
+  const [repeatEnabled, setRepeatEnabled] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<"WEEKLY" | "BIWEEKLY" | "MONTHLY">("WEEKLY");
+  const [seriesEndDate, setSeriesEndDate] = useState<string>("");
 
   const router = useRouter();
   const create = useCreateAppointment();
+  const createSeries = useCreateSeries();
   const update = useUpdateAppointment(existing?.id ?? "");
   const del = useDeleteAppointment();
   const createInvoiceFromAppt = useCreateInvoiceFromAppointment();
@@ -99,6 +104,9 @@ export function AppointmentModal({
     setConflictState(null);
     setDirty(false);
     setEndAtTouched(false);
+    setRepeatEnabled(false);
+    setRecurrenceRule("WEEKLY");
+    setSeriesEndDate("");
     if (mode === "edit" && existing) {
       setClient({
         id: existing.participant?.id ?? "",
@@ -157,6 +165,32 @@ export function AppointmentModal({
     try {
       if (mode === "create") {
         if (!client?.id || !serviceCodeId || !locationId) return;
+        if (repeatEnabled) {
+          const startDate = new Date(fromLocalInputValue(startAt));
+          const endDate = new Date(fromLocalInputValue(endAt));
+          const dayOfWeek = startDate.getDay();
+          const pad2 = (n: number) => String(n).padStart(2, "0");
+          const sTime = `${pad2(startDate.getHours())}:${pad2(startDate.getMinutes())}`;
+          const eTime = `${pad2(endDate.getHours())}:${pad2(endDate.getMinutes())}`;
+          const seriesResult = await createSeries.mutateAsync({
+            participantId: client.id,
+            serviceCodeId,
+            locationId,
+            recurrenceRule,
+            dayOfWeek,
+            startTime: sTime,
+            endTime: eTime,
+            seriesStartDate: startDate.toISOString(),
+            seriesEndDate: seriesEndDate ? new Date(seriesEndDate).toISOString() : undefined,
+            appointmentType,
+            internalNote: internalNote || undefined,
+          });
+          if (seriesResult.conflicts && seriesResult.conflicts.length > 0) {
+            setConflictState({ conflictIds: seriesResult.conflicts, newAppointmentId: seriesResult.series.id });
+            return;
+          }
+          onOpenChange(false);
+        } else {
         const result = await create.mutateAsync({
           participantId: client.id,
           serviceCodeId,
@@ -171,6 +205,7 @@ export function AppointmentModal({
           return;
         }
         onOpenChange(false);
+        }
       } else if (existing) {
         const patch = terminal
           ? { internalNote: internalNote || null }
@@ -218,11 +253,12 @@ export function AppointmentModal({
     Date.now() - new Date(existing.createdAt).getTime() < 24 * 60 * 60 * 1000;
 
   const title = mode === "create" ? S.modalCreateTitle : S.modalEditTitle;
+  const isPending = create.isPending || update.isPending || createSeries.isPending;
   const submitLabel =
-    create.isPending || update.isPending
+    isPending
       ? S.modalSavingBtn
       : mode === "create"
-        ? S.modalScheduleBtn
+        ? repeatEnabled ? "Schedule series" : S.modalScheduleBtn
         : S.modalSaveBtn;
 
   return (
@@ -372,6 +408,47 @@ export function AppointmentModal({
               </div>
             </div>
 
+            {mode === "create" && (
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={repeatEnabled}
+                    onChange={(e) => { setRepeatEnabled(e.target.checked); markDirty(); }}
+                  />
+                  Repeat
+                </label>
+                {repeatEnabled && (
+                  <div className="ml-6 space-y-2">
+                    <div>
+                      <Label>Frequency</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={recurrenceRule}
+                        onChange={(e) => { setRecurrenceRule(e.target.value as "WEEKLY" | "BIWEEKLY" | "MONTHLY"); markDirty(); }}
+                      >
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="BIWEEKLY">Every 2 weeks</option>
+                        <option value="MONTHLY">Monthly</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="series-end-date">Series end date (optional)</Label>
+                      <Input
+                        id="series-end-date"
+                        type="date"
+                        value={seriesEndDate}
+                        onChange={(e) => { setSeriesEndDate(e.target.value); markDirty(); }}
+                      />
+                      {!seriesEndDate && (
+                        <p className="text-xs text-muted-foreground mt-1">Ongoing until paused or deleted</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <Label htmlFor="internal-note">{S.modalInternalNoteLabel}</Label>
               <Textarea
@@ -478,7 +555,7 @@ export function AppointmentModal({
           <Button type="button" variant="outline" onClick={attemptClose}>
             {S.modalCancelBtn}
           </Button>
-          <Button type="button" disabled={!canSubmit || create.isPending || update.isPending} onClick={handleSubmit}>
+          <Button type="button" disabled={!canSubmit || isPending} onClick={handleSubmit}>
             {submitLabel}
           </Button>
         </DialogFooter>

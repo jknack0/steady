@@ -177,12 +177,13 @@ model Practice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  PracticeMembership[]
-  programs     Program[]            @relation("PracticePrograms")
-  appointments Appointment[]
-  locations    Location[]
-  serviceCodes ServiceCode[]
-  invoices     Invoice[]
+  memberships      PracticeMembership[]
+  programs         Program[]            @relation("PracticePrograms")
+  appointments     Appointment[]
+  locations        Location[]
+  serviceCodes     ServiceCode[]
+  invoices         Invoice[]
+  recurringSeries  RecurringSeries[]
 
   @@map("practices")
 }
@@ -230,6 +231,7 @@ model User {
   acceptedInvitations  PatientInvitation[]    @relation("InvitationAcceptedBy")
   refreshTokens        RefreshToken[]
   createdAppointments  Appointment[]          @relation("AppointmentCreatedBy")
+  createdRecurringSeries RecurringSeries[]    @relation("RecurringSeriesCreatedBy")
   streakRecords        StreakRecord[]
 
   @@map("users")
@@ -257,6 +259,7 @@ model ClinicianProfile {
   appointments      Appointment[]
   invitations       PatientInvitation[]
   invoices          Invoice[]
+  recurringSeries   RecurringSeries[]
 
   @@map("clinician_profiles")
 }
@@ -277,6 +280,7 @@ model ParticipantProfile {
   appointments      Appointment[]
   sessionReviews    SessionReview[]
   invoices          Invoice[]
+  recurringSeries   RecurringSeries[]
 
   @@map("participant_profiles")
 }
@@ -537,6 +541,12 @@ enum LocationType {
   VIRTUAL
 }
 
+enum RecurrenceRule {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
 model Appointment {
   id               String            @id @default(cuid())
   practiceId       String
@@ -556,6 +566,8 @@ model Appointment {
   internalNote     String?
   cancelReason     String?
   statusChangedAt  DateTime?
+  recurringSeriesId String?
+  recurringSeries   RecurringSeries?  @relation(fields: [recurringSeriesId], references: [id], onDelete: SetNull)
   createdById      String
   createdBy        User              @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
   createdAt        DateTime          @default(now())
@@ -570,6 +582,7 @@ model Appointment {
   @@index([practiceId, participantId])
   @@index([status])
   @@index([createdById])
+  @@index([recurringSeriesId])
   @@map("appointments")
 }
 
@@ -590,7 +603,8 @@ model Location {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  appointments Appointment[]
+  appointments    Appointment[]
+  recurringSeries RecurringSeries[]
 
   @@index([practiceId, isActive])
   @@map("locations")
@@ -610,6 +624,7 @@ model ServiceCode {
 
   appointments     Appointment[]
   invoiceLineItems InvoiceLineItem[]
+  recurringSeries  RecurringSeries[]
 
   @@unique([practiceId, code])
   @@index([practiceId, isActive])
@@ -1195,6 +1210,41 @@ model EnrollmentOverride {
   @@index([enrollmentId, moduleId])
   @@index([enrollmentId])
   @@map("enrollment_overrides")
+}
+
+// ── Recurring Appointments ───────────────────────────
+
+model RecurringSeries {
+  id              String            @id @default(cuid())
+  practiceId      String
+  practice        Practice          @relation(fields: [practiceId], references: [id])
+  clinicianId     String
+  clinician       ClinicianProfile  @relation(fields: [clinicianId], references: [id])
+  participantId   String
+  participant     ParticipantProfile @relation(fields: [participantId], references: [id])
+  serviceCodeId   String
+  serviceCode     ServiceCode       @relation(fields: [serviceCodeId], references: [id])
+  locationId      String
+  location        Location          @relation(fields: [locationId], references: [id])
+  appointmentType AppointmentType   @default(INDIVIDUAL)
+  internalNote    String?
+  recurrenceRule  RecurrenceRule
+  dayOfWeek       Int
+  startTime       String
+  endTime         String
+  seriesStartDate DateTime
+  seriesEndDate   DateTime?
+  isActive        Boolean           @default(true)
+  createdById     String
+  createdBy       User              @relation("RecurringSeriesCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  appointments    Appointment[]
+
+  @@index([practiceId, clinicianId, isActive])
+  @@index([practiceId, participantId])
+  @@map("recurring_series")
 }
 
 model WaitlistEntry {

@@ -279,6 +279,43 @@ export function mockStreakRecord(overrides: Record<string, any> = {}) {
   };
 }
 
+/**
+ * Create a mock recurring series object.
+ */
+export function mockRecurringSeries(overrides: Record<string, any> = {}) {
+  return {
+    id: "series-1",
+    practiceId: "practice-1",
+    clinicianId: "test-clinician-profile-id",
+    participantId: "pp-1",
+    serviceCodeId: "sc-1",
+    locationId: "loc-1",
+    appointmentType: "INDIVIDUAL",
+    internalNote: null,
+    recurrenceRule: "WEEKLY",
+    dayOfWeek: 2, // Tuesday
+    startTime: "14:00",
+    endTime: "14:45",
+    seriesStartDate: new Date("2026-05-05"),
+    seriesEndDate: null,
+    isActive: true,
+    createdById: "test-user-id",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    serviceCode: mockServiceCode(),
+    location: mockLocation(),
+    participant: {
+      id: "pp-1",
+      user: { id: "u-pp-1", firstName: "Jane", lastName: "Doe", email: "jane@test.com" },
+    },
+    clinician: {
+      id: "test-clinician-profile-id",
+      user: { id: "test-user-id", firstName: "Dr.", lastName: "Smith", email: "dr@test.com" },
+    },
+    ...overrides,
+  };
+}
+
 export function mockInvitation(overrides: Record<string, any> = {}) {
   return {
     id: "invitation-1",

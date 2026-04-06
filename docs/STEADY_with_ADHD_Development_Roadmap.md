@@ -53,6 +53,7 @@ This roadmap assumes the following stack. Adjust prompts if you choose different
 | JWT Cookie Migration | httpOnly cookies replacing localStorage tokens |
 | Demo Provisioning | Instant demo accounts with cloned admin data |
 | Landing Page + Waitlist | Marketing page with waitlist signup |
+| Recurring Appointments | Weekly/biweekly/monthly series with auto-generation, pause/resume, series management panel |
 
 ### Remaining Sprints
 

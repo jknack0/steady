@@ -431,6 +431,7 @@ export function toClinicianView(a: any): any {
     internalNote: a.internalNote,
     cancelReason: a.cancelReason,
     statusChangedAt: a.statusChangedAt ? toIso(a.statusChangedAt) : null,
+    recurringSeriesId: a.recurringSeriesId ?? null,
     createdById: a.createdById,
     createdAt: toIso(a.createdAt),
     updatedAt: toIso(a.updatedAt),

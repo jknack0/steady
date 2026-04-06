@@ -35,6 +35,7 @@ const appt: AppointmentView = {
   createdById: "u-1",
   createdAt: "2026-04-06T10:00:00Z",
   updatedAt: "2026-04-06T10:00:00Z",
+  recurringSeriesId: null,
   invoiceId: null,
 };
 

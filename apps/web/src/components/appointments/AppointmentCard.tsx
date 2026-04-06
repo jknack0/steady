@@ -52,6 +52,11 @@ export function AppointmentCard({ appointment, timezone, onClick, hasConflict, c
           {theme.icon && <span className="mr-0.5">{theme.icon}</span>}
           {start}–{end}
         </span>
+        {appointment.recurringSeriesId && (
+          <span className="text-current opacity-60" title="Part of a recurring series" aria-label="recurring">
+            ↻
+          </span>
+        )}
         {hasConflict && (
           <span className="text-yellow-700" title="Overlaps another appointment" aria-label="conflict">
             ⚠
