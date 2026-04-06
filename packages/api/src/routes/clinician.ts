@@ -546,7 +546,15 @@ router.post("/participants/bulk", async (req: Request, res: Response) => {
       return;
     }
 
-    const data = await bulkAction(clinicianProfileId, action, participantIds, actionData);
+    if (participantIds.length > 50) {
+      res.status(400).json({
+        success: false,
+        error: "Maximum 50 participants per bulk action",
+      });
+      return;
+    }
+
+    const data = await bulkAction(clinicianProfileId, req.user!.userId, action, participantIds, actionData);
     res.json({ success: true, data });
   } catch (err) {
     logger.error("Bulk action error", err);

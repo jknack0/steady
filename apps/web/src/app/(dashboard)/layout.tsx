@@ -12,6 +12,7 @@ import {
   Users,
   Calendar,
   Activity,
+  Building2,
   Menu,
   Settings,
   LogOut,
@@ -42,6 +43,7 @@ const mainNavItems = [
   { href: "/programs", label: "Programs", icon: BookOpen },
   { href: "/participants", label: "Clients", icon: Users },
   { href: "/appointments", label: "Calendar", icon: Calendar },
+  { href: "/practice", label: "Practice", icon: Building2 },
 ];
 
 const billingNavItems = [
