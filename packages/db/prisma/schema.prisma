@@ -182,6 +182,7 @@ model Practice {
   appointments Appointment[]
   locations    Location[]
   serviceCodes ServiceCode[]
+  invoices     Invoice[]
 
   @@map("practices")
 }
@@ -255,6 +256,7 @@ model ClinicianProfile {
   clients           ClinicianClient[]
   appointments      Appointment[]
   invitations       PatientInvitation[]
+  invoices          Invoice[]
 
   @@map("clinician_profiles")
 }
@@ -274,6 +276,7 @@ model ParticipantProfile {
   homeworkInstances HomeworkInstance[]
   appointments      Appointment[]
   sessionReviews    SessionReview[]
+  invoices          Invoice[]
 
   @@map("participant_profiles")
 }
@@ -560,6 +563,7 @@ model Appointment {
 
   sessions         Session[]
   sessionReviews   SessionReview[]
+  invoiceLineItems InvoiceLineItem[]
 
   @@index([practiceId, clinicianId, startAt])
   @@index([practiceId, locationId, startAt])
@@ -604,11 +608,92 @@ model ServiceCode {
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
-  appointments Appointment[]
+  appointments     Appointment[]
+  invoiceLineItems InvoiceLineItem[]
 
   @@unique([practiceId, code])
   @@index([practiceId, isActive])
   @@map("service_codes")
+}
+
+// ── Billing & Invoicing ──────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  CREDIT_CARD
+  INSURANCE
+  OTHER
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  practiceId    String
+  practice      Practice      @relation(fields: [practiceId], references: [id])
+  clinicianId   String
+  clinician     ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  participantId String
+  participant   ParticipantProfile @relation(fields: [participantId], references: [id])
+  invoiceNumber String
+  status        InvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  subtotalCents Int
+  taxCents      Int           @default(0)
+  totalCents    Int
+  paidCents     Int           @default(0)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lineItems     InvoiceLineItem[]
+  payments      Payment[]
+
+  @@unique([practiceId, invoiceNumber])
+  @@index([practiceId, participantId])
+  @@index([practiceId, status])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id             String       @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  appointmentId  String?
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  serviceCodeId  String
+  serviceCode    ServiceCode  @relation(fields: [serviceCodeId], references: [id])
+  description    String
+  unitPriceCents Int
+  quantity       Int          @default(1)
+  totalCents     Int
+  createdAt      DateTime     @default(now())
+
+  @@index([invoiceId])
+  @@map("invoice_line_items")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amountCents Int
+  method      PaymentMethod
+  reference   String?
+  receivedAt  DateTime
+  createdAt   DateTime      @default(now())
+
+  @@index([invoiceId])
+  @@map("payments")
 }
 
 // ── Streaks (Sprint 15) ──────────────────────────────────

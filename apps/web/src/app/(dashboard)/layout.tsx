@@ -12,6 +12,7 @@ import {
   Users,
   Calendar,
   Activity,
+  DollarSign,
   Building2,
   Menu,
   Settings,
@@ -47,6 +48,7 @@ const mainNavItems = [
 ];
 
 const billingNavItems = [
+  { href: "/billing", label: "Billing", icon: DollarSign },
   { href: "/rtm", label: "RTM", icon: Activity },
 ];
 

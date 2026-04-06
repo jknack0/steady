@@ -296,6 +296,29 @@ vi.mock("@steady/db", () => {
       findUnique: vi.fn(),
       upsert: vi.fn(),
     },
+    invoice: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
+    },
+    invoiceLineItem: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    payment: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
+    },
   };
 
   return {

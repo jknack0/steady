@@ -39,6 +39,8 @@ import sessionReviewRoutes from "./routes/session-reviews";
 import { participantReviewRouter } from "./routes/session-reviews";
 import sessionPrepRoutes from "./routes/session-prep";
 import enrollmentOverrideRoutes from "./routes/enrollment-overrides";
+import invoiceRoutes from "./routes/invoices";
+import billingRoutes from "./routes/billing";
 
 const app = express();
 
@@ -382,6 +384,8 @@ app.use("/api/invitations", invitationRoutes);
 app.use("/api/programs", reviewTemplateRoutes);
 app.use("/api/participant/appointments", participantReviewRouter);
 app.use("/api/enrollments", enrollmentOverrideRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/billing", billingRoutes);
 
 // Error handler
 app.use(errorHandler);

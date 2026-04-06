@@ -1,0 +1,310 @@
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useInvoice, useSendInvoice, useVoidInvoice, useDeleteInvoice } from "@/hooks/use-invoices";
+import { usePayments, useRecordPayment, useDeletePayment } from "@/hooks/use-payments";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Send, Ban, Trash2, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const STATUS_COLORS: Record<string, string> = {
+  DRAFT: "bg-gray-100 text-gray-700",
+  SENT: "bg-blue-100 text-blue-700",
+  PAID: "bg-green-100 text-green-700",
+  PARTIALLY_PAID: "bg-amber-100 text-amber-700",
+  OVERDUE: "bg-red-100 text-red-700",
+  VOID: "bg-gray-100 text-gray-400",
+};
+
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+export default function InvoiceDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const invoiceId = params.invoiceId as string;
+
+  const { data: invoiceData, isLoading } = useInvoice(invoiceId);
+  const { data: paymentsData } = usePayments(invoiceId);
+  const sendInvoice = useSendInvoice(invoiceId);
+  const voidInvoice = useVoidInvoice(invoiceId);
+  const deleteInvoice = useDeleteInvoice();
+  const recordPayment = useRecordPayment(invoiceId);
+  const deletePaymentMut = useDeletePayment(invoiceId);
+
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CREDIT_CARD");
+  const [paymentRef, setPaymentRef] = useState("");
+
+  const invoice = invoiceData as any;
+  const payments = ((paymentsData as any)?.data ?? paymentsData ?? []) as any[];
+
+  if (isLoading) {
+    return <div className="text-sm text-muted-foreground">Loading...</div>;
+  }
+
+  if (!invoice) {
+    return <div className="text-sm text-muted-foreground">Invoice not found.</div>;
+  }
+
+  const balanceCents = invoice.totalCents - invoice.paidCents;
+  const canSend = invoice.status === "DRAFT";
+  const canVoid = invoice.status !== "VOID";
+  const canDelete = invoice.status === "DRAFT";
+  const canPay = ["SENT", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status);
+
+  function handleRecordPayment() {
+    const amountCents = Math.round(parseFloat(paymentAmount) * 100);
+    if (isNaN(amountCents) || amountCents <= 0) return;
+    recordPayment.mutate(
+      { amountCents, method: paymentMethod, reference: paymentRef || undefined },
+      {
+        onSuccess: () => {
+          setShowPaymentForm(false);
+          setPaymentAmount("");
+          setPaymentRef("");
+        },
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <button
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        onClick={() => router.push("/billing")}
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Billing
+      </button>
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
+          <p className="text-sm text-muted-foreground">
+            Client:{" "}
+            {invoice.participant?.user
+              ? `${invoice.participant.user.firstName} ${invoice.participant.user.lastName}`.trim()
+              : "Unknown"}
+          </p>
+          {invoice.issuedAt && (
+            <p className="text-sm text-muted-foreground">
+              Issued: {new Date(invoice.issuedAt).toLocaleDateString()}
+              {invoice.dueAt && ` | Due: ${new Date(invoice.dueAt).toLocaleDateString()}`}
+            </p>
+          )}
+        </div>
+        <span
+          className={cn(
+            "rounded-full px-3 py-1 text-sm font-medium",
+            STATUS_COLORS[invoice.status] ?? "bg-gray-100",
+          )}
+        >
+          {invoice.status}
+        </span>
+      </div>
+
+      {/* Line items */}
+      <div className="rounded-lg border bg-white">
+        <div className="border-b px-4 py-3 font-medium">Line Items</div>
+        <table className="w-full text-sm">
+          <thead className="border-b bg-gray-50">
+            <tr>
+              <th className="px-4 py-2 text-left">Service</th>
+              <th className="px-4 py-2 text-left">Description</th>
+              <th className="px-4 py-2 text-right">Price</th>
+              <th className="px-4 py-2 text-right">Qty</th>
+              <th className="px-4 py-2 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.lineItems?.map((li: any) => (
+              <tr key={li.id} className="border-b">
+                <td className="px-4 py-2 font-mono text-xs">
+                  {li.serviceCode?.code ?? "-"}
+                </td>
+                <td className="px-4 py-2">{li.description}</td>
+                <td className="px-4 py-2 text-right font-mono">
+                  {formatCents(li.unitPriceCents)}
+                </td>
+                <td className="px-4 py-2 text-right">{li.quantity}</td>
+                <td className="px-4 py-2 text-right font-mono">
+                  {formatCents(li.totalCents)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="border-t px-4 py-3 text-right text-sm space-y-1">
+          <div>Subtotal: {formatCents(invoice.subtotalCents)}</div>
+          {invoice.taxCents > 0 && <div>Tax: {formatCents(invoice.taxCents)}</div>}
+          <div className="font-bold">Total: {formatCents(invoice.totalCents)}</div>
+          <div className="text-green-600">Paid: {formatCents(invoice.paidCents)}</div>
+          <div className="font-bold text-lg">Balance: {formatCents(balanceCents)}</div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {invoice.notes && (
+        <div className="rounded-lg border bg-white p-4">
+          <div className="font-medium mb-1">Notes</div>
+          <p className="text-sm text-muted-foreground">{invoice.notes}</p>
+        </div>
+      )}
+
+      {/* Payments */}
+      <div className="rounded-lg border bg-white">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <span className="font-medium">Payments</span>
+          {canPay && (
+            <Button size="sm" variant="outline" onClick={() => {
+              setPaymentAmount((balanceCents / 100).toFixed(2));
+              setShowPaymentForm(true);
+            }}>
+              <Plus className="mr-1 h-3 w-3" />
+              Record Payment
+            </Button>
+          )}
+        </div>
+        {payments.length > 0 ? (
+          <table className="w-full text-sm">
+            <thead className="border-b bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left">Date</th>
+                <th className="px-4 py-2 text-right">Amount</th>
+                <th className="px-4 py-2 text-left">Method</th>
+                <th className="px-4 py-2 text-left">Reference</th>
+                <th className="px-4 py-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map((p: any) => (
+                <tr key={p.id} className="border-b">
+                  <td className="px-4 py-2">
+                    {new Date(p.receivedAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-2 text-right font-mono">
+                    {formatCents(p.amountCents)}
+                  </td>
+                  <td className="px-4 py-2">{p.method}</td>
+                  <td className="px-4 py-2 text-muted-foreground">
+                    {p.reference || "-"}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    <button
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        if (confirm("Remove this payment?")) {
+                          deletePaymentMut.mutate(p.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+            No payments recorded.
+          </p>
+        )}
+
+        {showPaymentForm && (
+          <div className="border-t p-4 space-y-3">
+            <div className="text-sm font-medium">Record Payment</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Amount ($)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full rounded border px-2 py-1.5 text-sm"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Method</label>
+                <select
+                  className="w-full rounded border px-2 py-1.5 text-sm"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="CASH">Cash</option>
+                  <option value="CHECK">Check</option>
+                  <option value="CREDIT_CARD">Credit Card</option>
+                  <option value="INSURANCE">Insurance</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Reference (optional)</label>
+              <input
+                className="w-full rounded border px-2 py-1.5 text-sm"
+                value={paymentRef}
+                onChange={(e) => setPaymentRef(e.target.value)}
+                placeholder="Check #, transaction ID..."
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleRecordPayment} disabled={recordPayment.isPending}>
+                {recordPayment.isPending ? "Saving..." : "Record"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowPaymentForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        {canSend && (
+          <Button onClick={() => sendInvoice.mutate()} disabled={sendInvoice.isPending}>
+            <Send className="mr-2 h-4 w-4" />
+            Send Invoice
+          </Button>
+        )}
+        {canVoid && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (confirm("Void this invoice? This cannot be undone.")) {
+                voidInvoice.mutate();
+              }
+            }}
+            disabled={voidInvoice.isPending}
+          >
+            <Ban className="mr-2 h-4 w-4" />
+            Void
+          </Button>
+        )}
+        {canDelete && (
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (confirm("Delete this draft invoice?")) {
+                deleteInvoice.mutate(invoiceId, {
+                  onSuccess: () => router.push("/billing"),
+                });
+              }
+            }}
+            disabled={deleteInvoice.isPending}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
