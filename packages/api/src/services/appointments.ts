@@ -6,6 +6,11 @@ import type {
   ListAppointmentsQuery,
   AppointmentStatus as AppointmentStatusType,
 } from "@steady/shared";
+import {
+  createRemindersForAppointment,
+  cancelRemindersForAppointment,
+  rescheduleReminders,
+} from "./appointment-reminders";
 
 export const NotFound = Symbol("NotFound");
 export const Conflict = Symbol("Conflict");
@@ -151,6 +156,9 @@ export async function createAppointment(
     },
     include: APPOINTMENT_INCLUDE,
   });
+
+  // Create reminders (fire-and-forget)
+  createRemindersForAppointment(appointment.id, ctx.clinicianProfileId, startAt).catch(() => {});
 
   return { appointment, conflicts };
 }
@@ -298,6 +306,11 @@ export async function updateAppointment(
     include: APPOINTMENT_INCLUDE,
   });
 
+  // Reschedule reminders if time changed (fire-and-forget)
+  if (data.startAt || data.endAt) {
+    rescheduleReminders(id, existing.clinicianId, appointment.startAt).catch(() => {});
+  }
+
   return { appointment, conflicts };
 }
 
@@ -326,6 +339,11 @@ export async function changeStatus(
     },
     include: APPOINTMENT_INCLUDE,
   });
+
+  // Cancel pending reminders for terminal statuses (fire-and-forget)
+  if (TERMINAL_STATUSES.includes(status)) {
+    cancelRemindersForAppointment(id).catch(() => {});
+  }
 
   // Status transition audit row — value-level exception (COND-4/5)
   try {

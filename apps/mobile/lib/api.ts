@@ -370,6 +370,28 @@ export const api = {
       body: JSON.stringify({ category }),
     }),
 
+  // Participant Invoices
+  getMyInvoices: (params?: { cursor?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.cursor) qs.set("cursor", params.cursor);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    const query = qs.toString();
+    return apiFetch(`/api/participant/invoices${query ? `?${query}` : ""}`);
+  },
+
+  getMyInvoice: (id: string) =>
+    apiFetch(`/api/participant/invoices/${id}`),
+
+  getOutstandingInvoiceCount: () =>
+    apiFetch<{ count: number }>("/api/participant/invoices/count"),
+
+  // Participant Appointment Cancellation
+  cancelMyAppointment: (id: string, cancelReason?: string) =>
+    apiFetch(`/api/participant/appointments/${id}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ cancelReason }),
+    }),
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

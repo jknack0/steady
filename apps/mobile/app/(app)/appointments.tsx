@@ -6,11 +6,13 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
   useMyAppointments,
+  useCancelAppointment,
   type ParticipantAppointment,
   type ParticipantAppointmentStatus,
 } from "../../hooks/use-appointments";
@@ -90,7 +92,7 @@ function isReviewDue(appt: ParticipantAppointment): boolean {
   return hoursUntil <= 24 && hoursUntil > -1; // within 24h before, up to 1h after
 }
 
-function AppointmentCard({ appt }: { appt: ParticipantAppointment }) {
+function AppointmentCard({ appt, onCancel }: { appt: ParticipantAppointment; onCancel: (id: string) => void }) {
   const router = useRouter();
   const start = new Date(appt.startAt);
   const end = new Date(appt.endAt);
@@ -217,6 +219,16 @@ function AppointmentCard({ appt }: { appt: ParticipantAppointment }) {
         </Text>
       </View>
 
+      {/* Reminder indicator */}
+      {appt.status === "SCHEDULED" && (
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+          <Ionicons name="notifications-outline" size={12} color="#5B8A8A" style={{ marginRight: 4 }} />
+          <Text style={{ fontSize: 11, color: "#8A8A8A", fontFamily: "PlusJakartaSans_500Medium" }}>
+            Reminder set
+          </Text>
+        </View>
+      )}
+
       {isReviewDue(appt) && (
         <TouchableOpacity
           onPress={() => router.push(`/review/${appt.id}` as any)}
@@ -239,6 +251,39 @@ function AppointmentCard({ appt }: { appt: ParticipantAppointment }) {
             Complete Review
           </Text>
         </TouchableOpacity>
+      )}
+
+      {/* Cancel button for scheduled appointments */}
+      {appt.status === "SCHEDULED" && (
+        <TouchableOpacity
+          onPress={() => onCancel(appt.id)}
+          accessibilityLabel="Cancel this appointment"
+          style={{
+            marginTop: 8,
+            borderWidth: 1,
+            borderColor: "#D87D7D",
+            borderRadius: 10,
+            paddingVertical: 8,
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: "#D87D7D",
+              fontSize: 13,
+              fontFamily: "PlusJakartaSans_600SemiBold",
+            }}
+          >
+            Cancel Appointment
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Canceled-by-you indicator */}
+      {appt.status === "CLIENT_CANCELED" && (
+        <Text style={{ fontSize: 12, color: "#B0ACA5", marginTop: 6, fontStyle: "italic" }}>
+          Canceled by you
+        </Text>
       )}
     </View>
   );
@@ -270,6 +315,34 @@ function groupByDay(items: ParticipantAppointment[]): DayGroup[] {
 export default function AppointmentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { data, isLoading, error, refetch } = useMyAppointments();
+  const cancelMutation = useCancelAppointment();
+
+  const handleCancel = (appointmentId: string) => {
+    Alert.alert(
+      "Cancel this appointment?",
+      "Your clinician will be notified.",
+      [
+        { text: "Keep Appointment", style: "cancel" },
+        {
+          text: "Cancel",
+          style: "destructive",
+          onPress: () => {
+            cancelMutation.mutate(
+              { id: appointmentId },
+              {
+                onSuccess: () => {
+                  Alert.alert("Appointment canceled");
+                },
+                onError: () => {
+                  Alert.alert("Unable to cancel. Please try again.");
+                },
+              },
+            );
+          },
+        },
+      ],
+    );
+  };
 
   const groups = useMemo(() => groupByDay(data), [data]);
 
@@ -425,7 +498,7 @@ export default function AppointmentsScreen() {
             {group.label}
           </Text>
           {group.items.map((appt) => (
-            <AppointmentCard key={appt.id} appt={appt} />
+            <AppointmentCard key={appt.id} appt={appt} onCancel={handleCancel} />
           ))}
         </View>
       ))}

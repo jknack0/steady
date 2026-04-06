@@ -10,6 +10,7 @@ import { useConfig } from "../../../lib/config-context";
 import { DailyTrackerCards } from "../../../components/daily-tracker-card";
 import { TodaysHomeworkInstances } from "../../../components/homework-instances";
 import { useMyAppointments } from "../../../hooks/use-appointments";
+import { useOutstandingInvoiceCount } from "../../../hooks/use-invoices";
 import { useMyStreaks } from "../../../hooks/use-streaks";
 import { MilestoneCelebration } from "../../../components/completion-animations";
 import { useEngagementTracking } from "../../../lib/engagement-tracker";
@@ -629,6 +630,74 @@ function CheckInSection() {
   );
 }
 
+// ── Portal Cards ────────────
+
+function PendingFormsCard() {
+  const { enrollments } = useTodayData();
+  // Count incomplete intake form parts across all active enrollments
+  // This is a simplified check — intake forms are INTAKE_FORM part types
+  // that haven't been completed in the participant's progress
+  const pendingCount = 0; // TODO: wire up pending intake form count from API
+  if (pendingCount === 0) return null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/(tabs)/program")}
+      style={{
+        marginHorizontal: 16,
+        marginTop: 12,
+        backgroundColor: "#FFF8E1",
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: "#FFE082",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <Ionicons name="clipboard-outline" size={22} color="#F57F17" style={{ marginRight: 12 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_700Bold", color: "#F57F17" }}>Pending Forms</Text>
+        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 2 }}>
+          You have {pendingCount} form{pendingCount > 1 ? "s" : ""} to complete
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#F57F17" />
+    </TouchableOpacity>
+  );
+}
+
+function OutstandingInvoicesCard() {
+  const { data: invoiceCount } = useOutstandingInvoiceCount();
+  if (!invoiceCount || invoiceCount === 0) return null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/invoices" as any)}
+      style={{
+        marginHorizontal: 16,
+        marginTop: 12,
+        backgroundColor: "#E3F2FD",
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: "#90CAF9",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <Ionicons name="receipt-outline" size={22} color="#1565C0" style={{ marginRight: 12 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_700Bold", color: "#1565C0" }}>Outstanding Invoices</Text>
+        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 2 }}>
+          You have {invoiceCount} invoice{invoiceCount > 1 ? "s" : ""} to review
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#1565C0" />
+    </TouchableOpacity>
+  );
+}
+
 // ── Today View ────────────
 
 const MILESTONES = [7, 14, 21, 30] as const;
@@ -713,6 +782,9 @@ export default function TodayScreen() {
         {isModuleEnabled("homework") && <TodaysHomeworkInstances />}
         <ProgramProgressCard />
         <YourDayCard />
+
+        <PendingFormsCard />
+        <OutstandingInvoicesCard />
 
         <View style={{ height: 32 }} />
       </ScrollView>

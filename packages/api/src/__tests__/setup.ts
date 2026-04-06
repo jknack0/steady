@@ -330,6 +330,18 @@ vi.mock("@steady/db", () => {
       delete: vi.fn(),
       count: vi.fn(),
     },
+    appointmentReminder: {
+      create: vi.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      count: vi.fn(),
+    },
   };
 
   return {

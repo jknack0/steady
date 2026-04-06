@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
 export type ParticipantAppointmentStatus =
@@ -64,4 +64,20 @@ export function useMyAppointments(params?: UseMyAppointmentsParams) {
     error: query.error,
     refetch: query.refetch,
   };
+}
+
+export function useCancelAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, cancelReason }: { id: string; cancelReason?: string }) => {
+      const res = await api.cancelMyAppointment(id, cancelReason);
+      if (!res.success) {
+        throw new Error(res.error || "Failed to cancel appointment");
+      }
+      return res.data as ParticipantAppointment;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-appointments"] });
+    },
+  });
 }

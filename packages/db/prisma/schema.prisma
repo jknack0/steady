@@ -547,6 +547,19 @@ enum RecurrenceRule {
   MONTHLY
 }
 
+enum ReminderType {
+  EMAIL
+  PUSH
+  SMS
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELED
+}
+
 model Appointment {
   id               String            @id @default(cuid())
   practiceId       String
@@ -576,6 +589,7 @@ model Appointment {
   sessions         Session[]
   sessionReviews   SessionReview[]
   invoiceLineItems InvoiceLineItem[]
+  reminders        AppointmentReminder[]
 
   @@index([practiceId, clinicianId, startAt])
   @@index([practiceId, locationId, startAt])
@@ -629,6 +643,23 @@ model ServiceCode {
   @@unique([practiceId, code])
   @@index([practiceId, isActive])
   @@map("service_codes")
+}
+
+// ── Appointment Reminders ────────────────────────────────
+
+model AppointmentReminder {
+  id            String         @id @default(cuid())
+  appointmentId String
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  type          ReminderType   @default(PUSH)
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  status        ReminderStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([appointmentId])
+  @@map("appointment_reminders")
 }
 
 // ── Billing & Invoicing ──────────────────────────────────
@@ -1025,6 +1056,7 @@ model ClinicianConfig {
   practiceLogoUrl      String?
   brandColor           String?
   homeworkLabels       Json?
+  reminderSettings     Json?
   setupCompleted       Boolean      @default(false)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt

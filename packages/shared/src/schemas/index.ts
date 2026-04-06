@@ -20,3 +20,4 @@ export * from "./streak";
 export * from "./notification-escalation";
 export * from "./billing";
 export * from "./recurring";
+export * from "./reminder";

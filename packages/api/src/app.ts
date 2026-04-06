@@ -42,6 +42,8 @@ import enrollmentOverrideRoutes from "./routes/enrollment-overrides";
 import invoiceRoutes from "./routes/invoices";
 import billingRoutes from "./routes/billing";
 import recurringSeriesRoutes from "./routes/recurring-series";
+import appointmentReminderRoutes from "./routes/appointment-reminders";
+import participantPortalRoutes from "./routes/participant-portal";
 
 const app = express();
 
@@ -388,6 +390,8 @@ app.use("/api/enrollments", enrollmentOverrideRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/recurring-series", recurringSeriesRoutes);
+app.use("/api/appointments", appointmentReminderRoutes);
+app.use("/api/participant", participantPortalRoutes);
 
 // Error handler
 app.use(errorHandler);

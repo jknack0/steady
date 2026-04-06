@@ -2,6 +2,7 @@ import PgBoss from "pg-boss";
 import { logger } from "../lib/logger";
 import { markOverdueInvoices } from "./billing";
 import { generateAllSeriesAppointments } from "./recurring-series";
+import { processReminders } from "./appointment-reminders";
 
 let boss: PgBoss | null = null;
 
@@ -34,6 +35,19 @@ export async function getQueue(): Promise<PgBoss> {
       await generateAllSeriesAppointments();
     } catch (err) {
       logger.error("Recurring series generation cron failed", err);
+    }
+  });
+
+  // Register appointment reminder processing cron — runs every 5 minutes
+  await boss.schedule("process-appointment-reminders", "*/5 * * * *");
+  await boss.work("process-appointment-reminders", async () => {
+    try {
+      const result = await processReminders();
+      if (result.sent > 0 || result.failed > 0) {
+        logger.info(`Reminder cron completed: ${result.sent} sent, ${result.failed} failed`);
+      }
+    } catch (err) {
+      logger.error("Reminder processing cron failed", err);
     }
   });
 

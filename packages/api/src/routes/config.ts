@@ -7,6 +7,7 @@ import {
   SaveDashboardLayoutSchema,
   SaveClientOverviewLayoutSchema,
   SaveHomeworkLabelsSchema,
+  UpdateReminderSettingsSchema,
 } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
@@ -22,6 +23,10 @@ import {
   resolveClientConfig,
   NotFoundError,
 } from "../services/config";
+import {
+  getReminderSettings,
+  saveReminderSettings,
+} from "../services/appointment-reminders";
 import { z } from "zod";
 
 const router = Router();
@@ -123,6 +128,44 @@ router.post(
         .json({ success: false, error: "Failed to create config from preset" });
     }
   }
+);
+
+// ── Reminder Settings ────────────────────────────────────
+
+// GET /api/config/reminders
+router.get("/reminders", async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user?.clinicianProfileId;
+    if (!clinicianProfileId) {
+      res.status(403).json({ success: false, error: "Clinician profile required" });
+      return;
+    }
+    const settings = await getReminderSettings(clinicianProfileId);
+    res.json({ success: true, data: settings });
+  } catch (err) {
+    logger.error("Get reminder settings error", err);
+    res.status(500).json({ success: false, error: "Failed to get reminder settings" });
+  }
+});
+
+// PUT /api/config/reminders
+router.put(
+  "/reminders",
+  validate(UpdateReminderSettingsSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const clinicianProfileId = req.user?.clinicianProfileId;
+      if (!clinicianProfileId) {
+        res.status(403).json({ success: false, error: "Clinician profile required" });
+        return;
+      }
+      await saveReminderSettings(clinicianProfileId, req.body);
+      res.json({ success: true, data: req.body });
+    } catch (err) {
+      logger.error("Update reminder settings error", err);
+      res.status(500).json({ success: false, error: "Failed to update reminder settings" });
+    }
+  },
 );
 
 // ── Client Config Routes (clinician-facing) ───────────────
