@@ -266,6 +266,7 @@ model ParticipantProfile {
   dailyTrackers     DailyTracker[]
   homeworkInstances HomeworkInstance[]
   appointments      Appointment[]
+  sessionReviews    SessionReview[]
 
   @@map("participant_profiles")
 }
@@ -296,10 +297,11 @@ model Program {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  modules       Module[]
-  enrollments   Enrollment[]
-  dailyTrackers DailyTracker[]
-  invitations   PatientInvitation[]
+  modules        Module[]
+  enrollments    Enrollment[]
+  dailyTrackers  DailyTracker[]
+  invitations    PatientInvitation[]
+  reviewTemplate ReviewTemplate?
 
   @@index([practiceId])
   @@map("programs")
@@ -324,6 +326,7 @@ model Module {
   moduleProgress  ModuleProgress[]
   currentEnrollments Enrollment[] @relation("CurrentModule")
   completedSessions  Session[]    @relation("CompletedModule")
+  enrollmentOverrides EnrollmentOverride[]
 
   @@map("modules")
 }
@@ -341,9 +344,10 @@ model Part {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  partProgress      PartProgress[]
-  journalEntries    JournalEntry[] @relation("PromptPart")
-  homeworkInstances HomeworkInstance[]
+  partProgress        PartProgress[]
+  journalEntries      JournalEntry[] @relation("PromptPart")
+  homeworkInstances   HomeworkInstance[]
+  enrollmentOverrides EnrollmentOverride[]
 
   @@map("parts")
 }
@@ -370,6 +374,8 @@ model Enrollment {
   rtmEngagementEvents RtmEngagementEvent[]
   rtmEnrollments      RtmEnrollment[]
   rtmBillingPeriods   RtmBillingPeriod[]
+  sessionReviews      SessionReview[]
+  enrollmentOverrides EnrollmentOverride[]
 
   @@map("enrollments")
 }
@@ -494,6 +500,13 @@ model Session {
 
 // ── Appointments (Sprint 19) ───────────────────────────
 
+enum OverrideType {
+  HIDE_HOMEWORK_ITEM
+  ADD_HOMEWORK_ITEM
+  ADD_RESOURCE
+  CLINICIAN_NOTE
+}
+
 enum AppointmentStatus {
   SCHEDULED
   ATTENDED
@@ -539,6 +552,7 @@ model Appointment {
   updatedAt        DateTime          @updatedAt
 
   sessions         Session[]
+  sessionReviews   SessionReview[]
 
   @@index([practiceId, clinicianId, startAt])
   @@index([practiceId, locationId, startAt])
@@ -1018,6 +1032,58 @@ model RefreshToken {
   @@index([familyId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// ── Review & Session Prep (Sprint 14) ────────────────
+
+model ReviewTemplate {
+  id        String   @id @default(cuid())
+  programId String   @unique
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  questions Json
+  barriers  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("review_templates")
+}
+
+model SessionReview {
+  id            String             @id @default(cuid())
+  appointmentId String
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  enrollmentId  String
+  enrollment    Enrollment         @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   ParticipantProfile @relation(fields: [participantId], references: [id])
+  responses     Json
+  barriers      String[]
+  submittedAt   DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([appointmentId, enrollmentId])
+  @@index([appointmentId])
+  @@index([participantId])
+  @@map("session_reviews")
+}
+
+model EnrollmentOverride {
+  id           String       @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  overrideType OverrideType
+  moduleId     String?
+  module       Module?      @relation(fields: [moduleId], references: [id])
+  targetPartId String?
+  targetPart   Part?        @relation(fields: [targetPartId], references: [id])
+  payload      Json
+  createdById  String
+  createdAt    DateTime     @default(now())
+
+  @@index([enrollmentId, moduleId])
+  @@index([enrollmentId])
+  @@map("enrollment_overrides")
 }
 
 model WaitlistEntry {

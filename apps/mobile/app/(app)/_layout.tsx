@@ -65,6 +65,10 @@ export default function AppLayout() {
         name="appointments"
         options={{ title: "My Appointments", headerBackTitle: "Back" }}
       />
+      <Stack.Screen
+        name="review/[appointmentId]"
+        options={{ title: "Steady Work Review", headerBackTitle: "Back" }}
+      />
     </Stack>
     </ConfigProvider>
   );

@@ -350,6 +350,16 @@ export const api = {
     return apiFetch(`/api/appointments/mine${query ? `?${query}` : ""}`);
   },
 
+  // Session Reviews (participant)
+  getParticipantReview: (appointmentId: string) =>
+    apiFetch(`/api/participant/appointments/${appointmentId}/review`),
+
+  submitReview: (appointmentId: string, data: any) =>
+    apiFetch(`/api/appointments/${appointmentId}/review`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Stats
   getMyStats: (params?: { start?: string; end?: string }) => {
     const qs = new URLSearchParams();

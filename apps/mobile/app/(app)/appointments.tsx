@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   useMyAppointments,
   type ParticipantAppointment,
@@ -81,7 +82,16 @@ function formatTime(d: Date): string {
 
 // ── Appointment card ────────────
 
+function isReviewDue(appt: ParticipantAppointment): boolean {
+  if (appt.status !== "SCHEDULED") return false;
+  const start = new Date(appt.startAt);
+  const now = new Date();
+  const hoursUntil = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
+  return hoursUntil <= 24 && hoursUntil > -1; // within 24h before, up to 1h after
+}
+
 function AppointmentCard({ appt }: { appt: ParticipantAppointment }) {
+  const router = useRouter();
   const start = new Date(appt.startAt);
   const end = new Date(appt.endAt);
   const visual = statusVisual(appt.status);
@@ -206,6 +216,30 @@ function AppointmentCard({ appt }: { appt: ParticipantAppointment }) {
           {addressLine ? ` · ${addressLine}` : ""}
         </Text>
       </View>
+
+      {isReviewDue(appt) && (
+        <TouchableOpacity
+          onPress={() => router.push(`/review/${appt.id}` as any)}
+          accessibilityLabel="Complete Steady Work Review"
+          style={{
+            marginTop: 12,
+            backgroundColor: "#5B8A8A",
+            borderRadius: 10,
+            paddingVertical: 10,
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: "white",
+              fontSize: 14,
+              fontFamily: "PlusJakartaSans_600SemiBold",
+            }}
+          >
+            Complete Review
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

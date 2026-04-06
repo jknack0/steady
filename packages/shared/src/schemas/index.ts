@@ -14,3 +14,5 @@ export * from "./participant";
 export * from "./invitation";
 export * from "./assignment";
 export * from "./session";
+export * from "./review";
+export * from "./enrollment-override";

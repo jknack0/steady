@@ -186,6 +186,79 @@ export function mockPart(overrides: Record<string, any> = {}) {
 }
 
 /**
+ * Create a mock enrollment object.
+ */
+export function mockEnrollment(overrides: Record<string, any> = {}) {
+  return {
+    id: "enrollment-1",
+    participantId: "test-participant-profile-id",
+    programId: "program-1",
+    status: "ACTIVE",
+    currentModuleId: null,
+    enrolledAt: new Date(),
+    completedAt: null,
+    program: mockProgram(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock review template object.
+ */
+export function mockReviewTemplate(overrides: Record<string, any> = {}) {
+  return {
+    id: "template-1",
+    programId: "program-1",
+    questions: [
+      { id: "q1", text: "What Steady Work did you complete?", enabled: true },
+    ],
+    barriers: [
+      { id: "b1", label: "Forgot to do it", enabled: true },
+    ],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock session review object.
+ */
+export function mockSessionReview(overrides: Record<string, any> = {}) {
+  return {
+    id: "review-1",
+    appointmentId: "appt-1",
+    enrollmentId: "enrollment-1",
+    participantId: "test-participant-profile-id",
+    responses: [
+      { questionId: "q1", question: "What Steady Work did you complete?", answer: "I did all my homework." },
+    ],
+    barriers: ["Forgot to do it"],
+    submittedAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock enrollment override object.
+ */
+export function mockOverride(overrides: Record<string, any> = {}) {
+  return {
+    id: "override-1",
+    enrollmentId: "enrollment-1",
+    overrideType: "ADD_RESOURCE",
+    moduleId: "module-1",
+    targetPartId: null,
+    payload: { title: "Extra Resource", url: "https://example.com", description: "A helpful resource" },
+    createdById: "test-clinician-profile-id",
+    createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+/**
  * Create a mock PatientInvitation object.
  */
 export function mockInvitation(overrides: Record<string, any> = {}) {

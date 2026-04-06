@@ -34,6 +34,11 @@ import locationsRoutes from "./routes/locations";
 import serviceCodesRoutes from "./routes/service-codes";
 import participantsRoutes from "./routes/participants";
 import invitationRoutes from "./routes/invitations";
+import reviewTemplateRoutes from "./routes/review-templates";
+import sessionReviewRoutes from "./routes/session-reviews";
+import { participantReviewRouter } from "./routes/session-reviews";
+import sessionPrepRoutes from "./routes/session-prep";
+import enrollmentOverrideRoutes from "./routes/enrollment-overrides";
 
 const app = express();
 
@@ -367,11 +372,16 @@ app.use("/api/rtm", rtmRoutes);
 app.use("/api/participant/rtm", rtmParticipantRouter);
 app.use("/api/config", configRoutes);
 app.use("/api/participant/config", configParticipantRouter);
+app.use("/api/appointments", sessionReviewRoutes);
+app.use("/api/appointments", sessionPrepRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/locations", locationsRoutes);
 app.use("/api/service-codes", serviceCodesRoutes);
 app.use("/api/participants", participantsRoutes);
 app.use("/api/invitations", invitationRoutes);
+app.use("/api/programs", reviewTemplateRoutes);
+app.use("/api/participant/appointments", participantReviewRouter);
+app.use("/api/enrollments", enrollmentOverrideRoutes);
 
 // Error handler
 app.use(errorHandler);
