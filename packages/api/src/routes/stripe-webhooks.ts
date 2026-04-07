@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import express from "express";
 import { logger } from "../lib/logger";
+import { getStripeClient } from "../services/stripe-client";
 
 const router = Router();
 
@@ -29,8 +30,7 @@ router.post(
         return;
       }
 
-      const Stripe = require("stripe");
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+      const stripe = getStripeClient();
       const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
 
       // Determine practiceId from event metadata

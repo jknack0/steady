@@ -147,6 +147,17 @@ export async function handleSessionCompleted(sessionData: any, practiceId: strin
     },
   });
 
+  // Audit log — COND-6: webhook payment recorded
+  prisma.auditLog.create({
+    data: {
+      userId: "system",
+      action: "CREATE",
+      resourceType: "Payment",
+      resourceId: invoiceId,
+      changedFields: ["amountCents", "method", "stripePaymentIntentId", "invoiceId"],
+    },
+  }).catch(() => {}); // fire-and-forget
+
   // Recalculate invoice status
   const newPaidCents = invoice.paidCents + (amountTotal || 0);
   const newStatus = newPaidCents >= invoice.totalCents ? "PAID" : "PARTIALLY_PAID";

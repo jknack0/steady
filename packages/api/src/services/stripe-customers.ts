@@ -90,6 +90,17 @@ export async function saveCardFromCheckout(
     },
   });
 
+  // Audit log — COND-6: card saved from checkout
+  prisma.auditLog.create({
+    data: {
+      userId: "system",
+      action: "CREATE",
+      resourceType: "SavedPaymentMethod",
+      resourceId: saved.id,
+      changedFields: ["cardBrand", "cardLastFour", "stripePaymentMethodId"],
+    },
+  }).catch(() => {}); // fire-and-forget
+
   return saved;
 }
 
@@ -119,6 +130,17 @@ export async function removeCard(savedPaymentMethodId: string, practiceId: strin
   await prisma.savedPaymentMethod.delete({
     where: { id: savedPaymentMethodId },
   });
+
+  // Audit log — COND-6: card removed
+  prisma.auditLog.create({
+    data: {
+      userId: "system",
+      action: "DELETE",
+      resourceType: "SavedPaymentMethod",
+      resourceId: savedPaymentMethodId,
+      changedFields: ["stripePaymentMethodId"],
+    },
+  }).catch(() => {}); // fire-and-forget
 
   return { success: true };
 }

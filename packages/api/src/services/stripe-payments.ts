@@ -87,6 +87,17 @@ export async function chargeCardOnFile(
         data: { paidCents: newPaidCents, status: newStatus },
       });
 
+      // Audit log — COND-6: charge card on file
+      prisma.auditLog.create({
+        data: {
+          userId: ctx.clinicianProfileId || "system",
+          action: "CREATE",
+          resourceType: "Payment",
+          resourceId: payment.id,
+          changedFields: ["amountCents", "method", "stripePaymentIntentId", "invoiceId"],
+        },
+      }).catch(() => {}); // fire-and-forget
+
       return { data: { payment, status: newStatus } };
     }
 
@@ -94,6 +105,17 @@ export async function chargeCardOnFile(
   } catch (err: any) {
     const declineCode = err?.raw?.decline_code || err?.code || "unknown";
     logger.warn("Card charge failed", declineCode);
+
+    // Audit log — COND-6: charge attempt failed
+    prisma.auditLog.create({
+      data: {
+        userId: ctx.clinicianProfileId || "system",
+        action: "UPDATE",
+        resourceType: "Payment",
+        resourceId: invoiceId,
+        changedFields: ["chargeAttemptFailed"],
+      },
+    }).catch(() => {}); // fire-and-forget
     // Return generic message — never forward Stripe error details which may contain PII
     const safeMessages: Record<string, string> = {
       card_declined: "Card was declined",
