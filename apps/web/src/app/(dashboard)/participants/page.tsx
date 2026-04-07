@@ -441,7 +441,7 @@ export default function ParticipantsPage() {
                 const p = row.data;
                 return (
                   <tr
-                    key={p.enrollmentId}
+                    key={p.participantId}
                     className={cn(
                       "hover:bg-accent/50 transition-colors",
                       selectedIds.has(p.participantId) && "bg-accent/30"

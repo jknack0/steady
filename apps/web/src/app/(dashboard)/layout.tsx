@@ -11,8 +11,8 @@ import {
   BookOpen,
   Users,
   Calendar,
-  Activity,
   DollarSign,
+  FileText,
   Building2,
   Menu,
   Settings,
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { ToastContainer } from "@/components/toast-container";
-import { useRtmDashboard } from "@/hooks/use-rtm";
+// import { useRtmDashboard } from "@/hooks/use-rtm";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { NotificationBell } from "@/components/notification-bell";
 import { CommandPalette } from "@/components/command-palette";
@@ -44,29 +44,10 @@ const mainNavItems = [
   { href: "/programs", label: "Programs", icon: BookOpen },
   { href: "/participants", label: "Clients", icon: Users },
   { href: "/appointments", label: "Calendar", icon: Calendar },
+  { href: "/billing", label: "Billing", icon: DollarSign },
+  { href: "/claims", label: "Claims", icon: FileText },
   { href: "/practice", label: "Practice", icon: Building2 },
 ];
-
-const billingNavItems = [
-  { href: "/billing", label: "Billing", icon: DollarSign },
-  { href: "/rtm", label: "RTM", icon: Activity },
-];
-
-// ── RTM Badge ───────────────────────────────────────
-
-function RtmBadge() {
-  const { isAuthenticated } = useAuth();
-  const { data } = useRtmDashboard(isAuthenticated);
-  const count =
-    (data?.summary.clientsApproaching ?? 0) +
-    (data?.summary.clientsAtRisk ?? 0);
-  if (count <= 0) return null;
-  return (
-    <span className="ml-auto inline-flex items-center justify-center rounded-full bg-red-100 text-red-600 text-[10px] font-semibold h-5 min-w-5 px-1.5">
-      {count}
-    </span>
-  );
-}
 
 // ── Nav Section ─────────────────────────────────────
 
@@ -117,7 +98,6 @@ function NavSection({
             >
               <item.icon className="h-4 w-4" />
               {item.label}
-              {item.href === "/participants" && <RtmBadge />}
             </Link>
             {item.actionHref && item.actionIcon && (
               <Link
@@ -269,7 +249,6 @@ function Sidebar({
       {/* Navigation */}
       <nav className="flex-1 space-y-4 px-2 py-3">
         <NavSection label="Main" items={mainNavItems} />
-        <NavSection label="Billing" items={billingNavItems} />
       </nav>
 
       {/* User */}

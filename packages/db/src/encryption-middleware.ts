@@ -9,6 +9,15 @@ const ENCRYPTED_FIELDS: Record<string, string[]> = {
   RtmEnrollment: ["subscriberId", "groupNumber"],
   ClinicianBillingProfile: ["npiNumber", "taxId", "licenseNumber"],
   PatientInvitation: ["patientName", "patientEmail"],
+  PatientInsurance: [
+    "subscriberId",
+    "groupNumber",
+    "policyHolderFirstName",
+    "policyHolderLastName",
+    "policyHolderDob",
+    "policyHolderGender",
+  ],
+  Practice: ["stediApiKeyEncrypted", "stripeApiKeyEncrypted", "stripeWebhookSecretEncrypted"],
 };
 
 /** Prisma actions that write data and need encryption on input. */

@@ -206,21 +206,12 @@ export function Calendar() {
         </div>
       )}
 
-      {empty && (
-        <div className="rounded-md border border-dashed p-8 text-center">
-          <div className="text-sm text-muted-foreground mb-2">
-            {view === "week" ? S.emptyWeek : view === "day" ? S.emptyDay(formatInClinicianTz(anchor, timezone, "EEEE")) : ""}
-          </div>
-          <Button onClick={() => openCreate(new Date())}>{S.scheduleFirstBtn}</Button>
-        </div>
-      )}
-
-      {!isLoading && !isError && appointments && appointments.length > 0 && (
+      {!isLoading && !isError && (
         <>
           {view === "day" && (
             <CalendarDayView
               anchor={anchor}
-              appointments={appointments}
+              appointments={appointments ?? []}
               timezone={timezone}
               onSlotClick={openCreate}
               onCardClick={openEdit}
@@ -229,7 +220,7 @@ export function Calendar() {
           {view === "week" && (
             <CalendarWeekView
               anchor={anchor}
-              appointments={appointments}
+              appointments={appointments ?? []}
               timezone={timezone}
               onSlotClick={openCreate}
               onCardClick={openEdit}
@@ -238,7 +229,7 @@ export function Calendar() {
           {view === "month" && (
             <CalendarMonthView
               anchor={anchor}
-              appointments={appointments}
+              appointments={appointments ?? []}
               timezone={timezone}
               onDayClick={(d) => {
                 const pad = (n: number) => String(n).padStart(2, "0");

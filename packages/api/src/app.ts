@@ -41,9 +41,15 @@ import sessionPrepRoutes from "./routes/session-prep";
 import enrollmentOverrideRoutes from "./routes/enrollment-overrides";
 import invoiceRoutes from "./routes/invoices";
 import billingRoutes from "./routes/billing";
+import insuranceRoutes from "./routes/insurance";
+import claimsRoutes from "./routes/claims";
+import payersRoutes from "./routes/payers";
+import diagnosisCodesRoutes from "./routes/diagnosis-codes";
 import recurringSeriesRoutes from "./routes/recurring-series";
 import appointmentReminderRoutes from "./routes/appointment-reminders";
 import participantPortalRoutes from "./routes/participant-portal";
+import stripeWebhookRoutes from "./routes/stripe-webhooks";
+import stripePaymentRoutes from "./routes/stripe-payments";
 
 const app = express();
 
@@ -60,6 +66,10 @@ const allowedOrigins = process.env.CORS_ORIGINS
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(cookieParser());
+
+// Stripe webhook route — MUST be before express.json() for raw body signature verification (COND-4)
+app.use("/api/stripe/webhooks", stripeWebhookRoutes);
+
 app.use(express.json({ limit: "1mb" }));
 
 // Security headers — HIPAA compliance
@@ -389,9 +399,14 @@ app.use("/api/participant/appointments", participantReviewRouter);
 app.use("/api/enrollments", enrollmentOverrideRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/billing", billingRoutes);
+app.use("/api/insurance", insuranceRoutes);
+app.use("/api/claims", claimsRoutes);
+app.use("/api/payers", payersRoutes);
+app.use("/api/diagnosis-codes", diagnosisCodesRoutes);
 app.use("/api/recurring-series", recurringSeriesRoutes);
 app.use("/api/appointments", appointmentReminderRoutes);
 app.use("/api/participant", participantPortalRoutes);
+app.use("/api/stripe", stripePaymentRoutes);
 
 // Error handler
 app.use(errorHandler);
