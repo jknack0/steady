@@ -35,7 +35,7 @@ export function useChargeCard() {
 }
 
 export function useStripeConnectionStatus() {
-  return useQuery({
+  return useQuery<{ connected: boolean }>({
     queryKey: ["stripe-connection-status"],
     queryFn: () => api.get("/api/stripe/connection-status"),
   });
