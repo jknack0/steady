@@ -54,8 +54,8 @@ export function useSaveClinicianConfig() {
     mutationFn: (data: {
       providerType: string;
       primaryModality?: string;
-      enabledModules: string[];
-      dashboardLayout: Array<{
+      enabledModules?: string[];
+      dashboardLayout?: Array<{
         widgetId: string;
         visible: boolean;
         column?: string;

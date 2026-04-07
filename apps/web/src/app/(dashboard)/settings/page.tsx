@@ -5,7 +5,6 @@ import { useClinicianConfig, useSaveClinicianConfig, useSaveHomeworkLabels } fro
 import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,15 +15,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  MODULE_REGISTRY,
-  MODULE_CATEGORIES,
-  getModulesForCategory,
   HOMEWORK_TYPE_SYSTEM_LABELS,
 } from "@steady/shared";
-import type { ModuleId, ModuleCategory } from "@steady/shared";
 import type { HomeworkItemType } from "@steady/shared";
-import { Check, Loader2, Plus, Trash2, RotateCcw } from "lucide-react";
+import { Check, Loader2, Plus, Trash2, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useStediConfig, useSetStediKey, useTestStediConnection } from "@/hooks/use-stedi-config";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -71,15 +67,6 @@ const ASSESSMENT_FREQUENCIES = [
   { value: "MONTHLY", label: "Monthly" },
 ] as const;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  MONITORING: "Monitoring",
-  ENGAGEMENT: "Engagement",
-  PRODUCTIVITY: "Productivity",
-  CLINICAL: "Clinical",
-  COMMUNICATION: "Communication",
-  BILLING: "Billing",
-};
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -91,7 +78,6 @@ export default function SettingsPage() {
   const [providerType, setProviderType] = useState("OTHER");
   const [primaryModality, setPrimaryModality] = useState("");
   const [practiceName, setPracticeName] = useState("");
-  const [enabledModules, setEnabledModules] = useState<string[]>([]);
   const [defaultTrackerPreset, setDefaultTrackerPreset] = useState("");
   const [defaultAssessments, setDefaultAssessments] = useState<
     Array<{ instrumentId: string; frequency: string }>
@@ -107,7 +93,6 @@ export default function SettingsPage() {
       setProviderType(config.providerType || "OTHER");
       setPrimaryModality(config.primaryModality || "");
       setPracticeName(config.practiceName || "");
-      setEnabledModules(config.enabledModules || []);
       setDefaultTrackerPreset(config.defaultTrackerPreset || "");
       setDefaultAssessments(
         (config.defaultAssessments || []).map((a: any) => ({
@@ -126,14 +111,6 @@ export default function SettingsPage() {
       return () => clearTimeout(timer);
     }
   }, [saveSuccess]);
-
-  const toggleModule = useCallback((moduleId: string) => {
-    setEnabledModules((prev) =>
-      prev.includes(moduleId)
-        ? prev.filter((id) => id !== moduleId)
-        : [...prev, moduleId]
-    );
-  }, []);
 
   const addAssessment = useCallback(() => {
     setDefaultAssessments((prev) => [
@@ -178,21 +155,11 @@ export default function SettingsPage() {
   );
 
   const handleSave = async () => {
-    // Build dashboard layout from enabled modules that have dashboardWidget
-    const dashboardLayout = enabledModules
-      .filter((id) => {
-        const mod = MODULE_REGISTRY[id as ModuleId];
-        return mod?.dashboardWidget;
-      })
-      .map((widgetId) => ({ widgetId, visible: true }));
-
     await Promise.all([
       saveConfig.mutateAsync({
         providerType,
         primaryModality: primaryModality || undefined,
         practiceName: practiceName || undefined,
-        enabledModules,
-        dashboardLayout,
         defaultTrackerPreset: defaultTrackerPreset || undefined,
         defaultAssessments:
           defaultAssessments.length > 0 ? defaultAssessments : undefined,
@@ -226,6 +193,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Settings" subtitle="Practice configuration and preferences." />
+
 
       <div className="space-y-6">
         {/* ── Provider Profile ───────────────────────────────── */}
@@ -277,63 +245,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* ── Enabled Modules ────────────────────────────────── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Enabled Modules</CardTitle>
-            <CardDescription>
-              Choose which modules are available for your clients.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {MODULE_CATEGORIES.map((category) => {
-              const modules = getModulesForCategory(category as ModuleCategory);
-              if (modules.length === 0) return null;
 
-              return (
-                <div key={category}>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    {CATEGORY_LABELS[category] || category}
-                  </h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {modules.map((mod) => {
-                      const isEnabled = enabledModules.includes(mod.id);
-                      return (
-                        <div
-                          key={mod.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => toggleModule(mod.id)}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleModule(mod.id); } }}
-                          className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer ${
-                            isEnabled
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-muted-foreground/30"
-                          }`}
-                        >
-                          <Checkbox
-                            checked={isEnabled}
-                            onCheckedChange={() => toggleModule(mod.id)}
-                            className="mt-0.5"
-                            aria-label={`Toggle ${mod.label}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium">
-                              {mod.label}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              {mod.description}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
 
         {/* ── Default Client Settings ────────────────────────── */}
         <Card>
@@ -490,11 +402,14 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* ── Integrations ────────────────────────────────────── */}
+        <StediConfigCard />
+
         {/* ── Save Button ────────────────────────────────────── */}
         <div className="flex items-center gap-3 pb-8">
           <Button
             onClick={handleSave}
-            disabled={saveConfig.isPending || enabledModules.length === 0}
+            disabled={saveConfig.isPending}
           >
             {saveConfig.isPending ? (
               <>
@@ -519,13 +434,161 @@ export default function SettingsPage() {
             </span>
           )}
 
-          {enabledModules.length === 0 && (
-            <span className="text-sm text-muted-foreground">
-              Enable at least one module to save.
-            </span>
-          )}
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Stedi Config Card ───────────────────────────────────────────────────────
+
+function StediConfigCard() {
+  const { data: stediConfig, isLoading } = useStediConfig();
+  const setKey = useSetStediKey();
+  const testConnection = useTestStediConnection();
+
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const isConfigured = stediConfig?.configured;
+
+  const handleSaveKey = async () => {
+    if (!apiKey.trim()) return;
+    try {
+      await setKey.mutateAsync(apiKey.trim());
+      setApiKey("");
+      setShowKey(false);
+      setSaveSuccess(true);
+      setTestResult(null);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch {
+      // mutation error handled by TanStack Query
+    }
+  };
+
+  const handleTest = async () => {
+    setTestResult(null);
+    try {
+      await testConnection.mutateAsync();
+      setTestResult({ ok: true, message: "Connection successful" });
+    } catch {
+      setTestResult({ ok: false, message: "Connection failed. Check your API key." });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Integrations</CardTitle>
+        <CardDescription>
+          Connect external services for insurance billing and claims.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Status */}
+        <div>
+          <Label className="text-sm font-medium">Stedi (Insurance / EDI)</Label>
+          {isLoading ? (
+            <div className="flex items-center gap-2 mt-1" aria-busy="true">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Checking...</span>
+            </div>
+          ) : isConfigured ? (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              <span className="text-sm">Connected</span>
+              {stediConfig?.keyLastFour && (
+                <span className="text-xs text-muted-foreground">
+                  (key ····{stediConfig.keyLastFour})
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mt-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-400" />
+              <span className="text-sm text-muted-foreground">Not configured</span>
+            </div>
+          )}
+        </div>
+
+        {/* API Key Input */}
+        <div className="space-y-2">
+          <Label htmlFor="stediApiKey">
+            {isConfigured ? "Update API Key" : "API Key"}
+          </Label>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Input
+                id="stediApiKey"
+                type={showKey ? "text" : "password"}
+                placeholder={isConfigured ? "Enter new key to update" : "Enter your Stedi API key"}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                maxLength={500}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey(!showKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showKey ? "Hide API key" : "Show API key"}
+              >
+                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <Button
+              onClick={handleSaveKey}
+              disabled={!apiKey.trim() || setKey.isPending}
+              size="sm"
+            >
+              {setKey.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Save"
+              )}
+            </Button>
+          </div>
+          {saveSuccess && (
+            <span className="flex items-center gap-1 text-sm text-green-600">
+              <Check className="h-4 w-4" /> API key saved
+            </span>
+          )}
+          {setKey.isError && (
+            <span className="text-sm text-destructive">
+              Failed to save API key. Please try again.
+            </span>
+          )}
+        </div>
+
+        {/* Test Connection */}
+        {isConfigured && (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTest}
+              disabled={testConnection.isPending}
+            >
+              {testConnection.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                "Test Connection"
+              )}
+            </Button>
+            {testResult && (
+              <p className={`text-sm ${testResult.ok ? "text-green-600" : "text-destructive"}`}>
+                {testResult.ok && <Check className="h-4 w-4 inline mr-1" />}
+                {testResult.message}
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

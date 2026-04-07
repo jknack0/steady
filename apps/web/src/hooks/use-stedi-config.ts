@@ -3,10 +3,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 
+interface StediConfig {
+  configured: boolean;
+  keyLastFour: string | null;
+}
+
 export function useStediConfig() {
   return useQuery({
     queryKey: ["stedi-config"],
-    queryFn: () => api.get("/api/config/stedi"),
+    queryFn: () => api.get("/api/config/stedi") as Promise<StediConfig>,
   });
 }
 
