@@ -1042,11 +1042,18 @@ function InsuranceTab({ participantProfileId }: { participantProfileId: string }
           <Label>Insurance Payer</Label>
           <div className="relative">
             <Input
-              placeholder="Search payers..."
+              placeholder="Search payers or enter name..."
               value={payerSearch || form.payerName}
               onChange={(e) => {
                 setPayerSearch(e.target.value);
                 setForm((f) => ({ ...f, payerName: e.target.value, payerId: "" }));
+              }}
+              onBlur={() => {
+                // If user typed a name but didn't select from dropdown, keep it
+                if (payerSearch && !form.payerId) {
+                  setForm((f) => ({ ...f, payerName: payerSearch }));
+                  setPayerSearch("");
+                }
               }}
             />
             {Array.isArray(payers) && payers.length > 0 && payerSearch.length >= 2 && (
@@ -1067,6 +1074,15 @@ function InsuranceTab({ participantProfileId }: { participantProfileId: string }
               </div>
             )}
           </div>
+        </div>
+        {/* Payer ID — auto-filled from search or manual entry */}
+        <div className="space-y-2">
+          <Label>Payer ID {form.payerId && <span className="text-xs text-muted-foreground">(from search)</span>}</Label>
+          <Input
+            placeholder="e.g., 60054 (Aetna)"
+            value={form.payerId}
+            onChange={(e) => setForm((f) => ({ ...f, payerId: e.target.value }))}
+          />
         </div>
 
         {/* Subscriber ID & Group */}
@@ -1155,7 +1171,7 @@ function InsuranceTab({ participantProfileId }: { participantProfileId: string }
         )}
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={!form.payerId || !form.subscriberId || upsertInsurance.isPending}>
+          <Button type="submit" disabled={(!form.payerId && !form.payerName) || !form.subscriberId || upsertInsurance.isPending}>
             {upsertInsurance.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save Insurance
           </Button>
