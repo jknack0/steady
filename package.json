@@ -19,6 +19,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.0",
     "prettier": "^3.2.0",
+    "supertest": "^7.2.2",
     "turbo": "^2.0.0",
     "typescript": "^5.9.3"
   },
@@ -27,8 +28,6 @@
   },
   "packageManager": "npm@10.0.0",
   "dependencies": {
-    "@esbuild/win32-x64": "^0.28.0",
-    "@rollup/rollup-linux-x64-gnu": "^4.60.0",
     "@types/cookie-parser": "^1.4.10",
     "cookie-parser": "^1.4.7",
     "expo-linking": "^8.0.11",
