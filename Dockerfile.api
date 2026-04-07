@@ -12,7 +12,7 @@ COPY packages/api/package.json ./packages/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/mobile/package.json ./apps/mobile/package.json
 # Skip postinstall (expo-router link not needed for API)
-RUN npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 
 # ── Build ──
 FROM deps AS build
