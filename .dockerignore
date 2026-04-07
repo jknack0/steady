@@ -6,4 +6,6 @@ dist
 .git
 .turbo
 apps/mobile
+!apps/mobile/package.json
 apps/web
+!apps/web/package.json
