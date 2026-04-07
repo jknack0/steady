@@ -97,7 +97,7 @@ export async function saveCardFromCheckout(
       action: "CREATE",
       resourceType: "SavedPaymentMethod",
       resourceId: saved.id,
-      changedFields: ["cardBrand", "cardLastFour", "stripePaymentMethodId"],
+      metadata: { changedFields: ["cardBrand", "cardLastFour", "stripePaymentMethodId"] },
     },
   }).catch(() => {}); // fire-and-forget
 
@@ -138,7 +138,7 @@ export async function removeCard(savedPaymentMethodId: string, practiceId: strin
       action: "DELETE",
       resourceType: "SavedPaymentMethod",
       resourceId: savedPaymentMethodId,
-      changedFields: ["stripePaymentMethodId"],
+      metadata: { changedFields: ["stripePaymentMethodId"] },
     },
   }).catch(() => {}); // fire-and-forget
 

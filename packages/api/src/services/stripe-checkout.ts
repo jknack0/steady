@@ -154,7 +154,7 @@ export async function handleSessionCompleted(sessionData: any, practiceId: strin
       action: "CREATE",
       resourceType: "Payment",
       resourceId: invoiceId,
-      changedFields: ["amountCents", "method", "stripePaymentIntentId", "invoiceId"],
+      metadata: { changedFields: ["amountCents", "method", "stripePaymentIntentId", "invoiceId"] },
     },
   }).catch(() => {}); // fire-and-forget
 

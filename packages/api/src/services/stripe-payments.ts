@@ -94,7 +94,7 @@ export async function chargeCardOnFile(
           action: "CREATE",
           resourceType: "Payment",
           resourceId: payment.id,
-          changedFields: ["amountCents", "method", "stripePaymentIntentId", "invoiceId"],
+          metadata: { changedFields: ["amountCents", "method", "stripePaymentIntentId", "invoiceId"] },
         },
       }).catch(() => {}); // fire-and-forget
 
@@ -113,7 +113,7 @@ export async function chargeCardOnFile(
         action: "UPDATE",
         resourceType: "Payment",
         resourceId: invoiceId,
-        changedFields: ["chargeAttemptFailed"],
+        metadata: { changedFields: ["chargeAttemptFailed"] },
       },
     }).catch(() => {}); // fire-and-forget
     // Return generic message — never forward Stripe error details which may contain PII
