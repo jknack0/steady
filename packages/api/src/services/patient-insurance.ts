@@ -4,10 +4,17 @@ import type { ServiceCtx } from "../lib/practice-context";
 import type { UpsertInsuranceInput } from "@steady/shared";
 
 async function verifyOwnership(ctx: ServiceCtx, participantId: string): Promise<boolean> {
+  // participantId is a ParticipantProfile.id, but ClinicianClient.clientId is a User.id
+  const profile = await prisma.participantProfile.findUnique({
+    where: { id: participantId },
+    select: { userId: true },
+  });
+  if (!profile) return false;
+
   const relationship = await prisma.clinicianClient.findFirst({
     where: {
       clinicianId: ctx.clinicianProfileId!,
-      clientId: participantId,
+      clientId: profile.userId,
     },
   });
   return !!relationship;
