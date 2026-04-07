@@ -43,6 +43,7 @@ const APPOINTMENT_INCLUDE = {
   participant: { include: { user: true } },
   clinician: { include: { user: true } },
   invoiceLineItems: { select: { invoiceId: true }, take: 1 },
+  insuranceClaim: { select: { id: true, status: true } },
 } as const;
 
 // TODO(sprint-20): participant search + "Add new client" flow is deferred — it needs
@@ -202,16 +203,22 @@ export async function listAppointments(
 
   const statusList = parseStatusList(query.status);
 
+  // When billable=true, only return ATTENDED appointments with no existing claim
+  const billableFilter = (query as any).billable
+    ? { status: "ATTENDED" as any, insuranceClaim: null }
+    : {};
+
   const items = await prisma.appointment.findMany({
     where: {
       practiceId: ctx.practiceId,
       ...(clinicianFilter ? { clinicianId: clinicianFilter } : {}),
       ...(query.locationId ? { locationId: query.locationId } : {}),
-      ...(statusList ? { status: { in: statusList as any } } : {}),
+      ...(statusList && !billableFilter.status ? { status: { in: statusList as any } } : {}),
+      ...billableFilter,
       AND: [{ startAt: { lt: endAt } }, { endAt: { gt: startAt } }],
     },
     include: APPOINTMENT_INCLUDE,
-    orderBy: [{ startAt: "asc" }, { id: "asc" }],
+    orderBy: [{ startAt: "desc" }, { id: "asc" }],
     take: limit + 1,
     ...(query.cursor ? { skip: 1, cursor: { id: query.cursor } } : {}),
   });
@@ -418,6 +425,10 @@ export function toClinicianView(a: any): any {
   const invoiceId =
     a.invoiceLineItems?.[0]?.invoiceId ?? null;
 
+  // Resolve claimId and claimStatus from insuranceClaim relation
+  const claimId = a.insuranceClaim?.id ?? null;
+  const claimStatus = a.insuranceClaim?.status ?? null;
+
   return {
     id: a.id,
     practiceId: a.practiceId,
@@ -437,6 +448,7 @@ export function toClinicianView(a: any): any {
           code: a.serviceCode.code,
           description: a.serviceCode.description,
           defaultDurationMinutes: a.serviceCode.defaultDurationMinutes,
+          defaultPriceCents: a.serviceCode.defaultPriceCents ?? null,
         }
       : null,
     location: a.location
@@ -454,6 +466,8 @@ export function toClinicianView(a: any): any {
     createdAt: toIso(a.createdAt),
     updatedAt: toIso(a.updatedAt),
     invoiceId,
+    claimId,
+    claimStatus,
   };
 }
 
@@ -505,6 +519,38 @@ export async function listParticipantAppointments(params: {
     orderBy: [{ startAt: "asc" }, { id: "asc" }],
     take: limit + 1,
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+  });
+
+  const hasMore = items.length > limit;
+  const data = hasMore ? items.slice(0, limit) : items;
+  return { data, cursor: hasMore ? data[data.length - 1].id : null };
+}
+
+export async function listUnbilledAppointments(
+  ctx: ServiceCtx,
+  query: { cursor?: string; limit?: number },
+): Promise<{ data: any[]; cursor: string | null }> {
+  const limit = Math.min(query.limit ?? 20, 50);
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+  let clinicianFilter: string | undefined;
+  if (!ctx.isAccountOwner) {
+    clinicianFilter = ctx.clinicianProfileId;
+  }
+
+  const items = await prisma.appointment.findMany({
+    where: {
+      practiceId: ctx.practiceId,
+      ...(clinicianFilter ? { clinicianId: clinicianFilter } : {}),
+      status: "ATTENDED" as any,
+      startAt: { gte: ninetyDaysAgo },
+      invoiceLineItems: { none: {} },
+      insuranceClaim: null,
+    },
+    include: APPOINTMENT_INCLUDE,
+    orderBy: [{ startAt: "desc" }, { id: "asc" }],
+    take: limit + 1,
+    ...(query.cursor ? { skip: 1, cursor: { id: query.cursor } } : {}),
   });
 
   const hasMore = items.length > limit;

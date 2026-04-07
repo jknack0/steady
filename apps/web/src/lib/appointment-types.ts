@@ -38,6 +38,8 @@ export interface ServiceCodeRef {
   isActive?: boolean;
 }
 
+export type ClaimStatus = "DRAFT" | "SUBMITTED" | "ACCEPTED" | "REJECTED" | "DENIED" | "PAID";
+
 export interface LocationRef {
   id: string;
   name: string;
@@ -66,6 +68,10 @@ export interface AppointmentView {
   createdAt: string;
   updatedAt: string;
   invoiceId: string | null;
+  /** Insurance claim ID if a claim exists for this appointment. Added for billing workflow. */
+  claimId?: string | null;
+  /** Insurance claim status. Added for billing workflow. */
+  claimStatus?: ClaimStatus | null;
 }
 
 export interface AppointmentWithConflicts {

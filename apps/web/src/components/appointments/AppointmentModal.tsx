@@ -30,6 +30,9 @@ import { useCreateInvoiceFromAppointment } from "@/hooks/use-invoices";
 import { isTerminal } from "./status-colors";
 import { formatInClinicianTz } from "@/lib/tz";
 import { useRouter } from "next/navigation";
+import { PostSessionBillingPrompt } from "./PostSessionBillingPrompt";
+import { ClaimStatusBadge } from "@/components/claims/ClaimStatusBadge";
+import { useParticipantInsurance } from "@/hooks/use-participant-insurance";
 
 interface Props {
   open: boolean;
@@ -87,6 +90,7 @@ export function AppointmentModal({
   const [repeatEnabled, setRepeatEnabled] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState<"WEEKLY" | "BIWEEKLY" | "MONTHLY">("WEEKLY");
   const [seriesEndDate, setSeriesEndDate] = useState<string>("");
+  const [showBillingPrompt, setShowBillingPrompt] = useState(false);
 
   const router = useRouter();
   const create = useCreateAppointment();
@@ -94,6 +98,9 @@ export function AppointmentModal({
   const update = useUpdateAppointment(existing?.id ?? "");
   const del = useDeleteAppointment();
   const createInvoiceFromAppt = useCreateInvoiceFromAppointment();
+  const { hasInsurance, payerName } = useParticipantInsurance(
+    mode === "edit" ? existing?.participantId : undefined,
+  );
 
   const terminal = mode === "edit" && existing && isTerminal(existing.status);
 
@@ -107,6 +114,7 @@ export function AppointmentModal({
     setRepeatEnabled(false);
     setRecurrenceRule("WEEKLY");
     setSeriesEndDate("");
+    setShowBillingPrompt(false);
     if (mode === "edit" && existing) {
       setClient({
         id: existing.participant?.id ?? "",
@@ -509,6 +517,81 @@ export function AppointmentModal({
             </div>
           )}
         </DialogBody>
+
+        {/* Claim status display for appointments with claims */}
+        {mode === "edit" && existing?.claimId && existing?.claimStatus && (
+          <div className="mx-6 mb-2 flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Claim:</span>
+            <ClaimStatusBadge status={existing.claimStatus} />
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => {
+                onOpenChange(false);
+                router.push("/claims");
+              }}
+            >
+              View Claim
+            </Button>
+          </div>
+        )}
+
+        {/* Existing invoice link */}
+        {mode === "edit" && existing?.invoiceId && (
+          <div className="mx-6 mb-2 flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Invoice:</span>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-xs"
+              onClick={() => {
+                onOpenChange(false);
+                router.push(`/billing/${existing.invoiceId}`);
+              }}
+            >
+              View Invoice
+            </Button>
+          </div>
+        )}
+
+        {/* Post-session billing prompt */}
+        {mode === "edit" &&
+          existing?.status === "ATTENDED" &&
+          !existing.invoiceId &&
+          !existing.claimId &&
+          (showBillingPrompt || true) && (
+          <div className="px-6 pb-2">
+            <PostSessionBillingPrompt
+              appointmentId={existing.id}
+              participantId={existing.participantId}
+              participantName={
+                existing.participant
+                  ? `${existing.participant.firstName ?? ""} ${existing.participant.lastName ?? ""}`.trim() || "Client"
+                  : "Client"
+              }
+              dateOfService={existing.startAt}
+              serviceCode={existing.serviceCode?.code ?? ""}
+              serviceDescription={existing.serviceCode?.description}
+              servicePriceCents={existing.serviceCode?.defaultPriceCents ?? 0}
+              locationTypeName={existing.location?.name ?? ""}
+              placeOfServiceCode={
+                existing.location?.type === "VIRTUAL" ? "02" : "11"
+              }
+              hasInsurance={hasInsurance}
+              payerName={payerName}
+              existingInvoiceId={existing.invoiceId}
+              existingClaimId={existing.claimId}
+              onInvoiceCreated={() => {}}
+              onClaimCreated={() => {}}
+              onDismiss={() => setShowBillingPrompt(false)}
+              onCloseModal={() => onOpenChange(false)}
+            />
+          </div>
+        )}
+
         <DialogFooter className="px-6 py-4 border-t">
           {canDelete && (
             <Button
@@ -518,38 +601,6 @@ export function AppointmentModal({
               onClick={() => setShowDeleteConfirm(true)}
             >
               {S.modalDeleteBtn}
-            </Button>
-          )}
-          {mode === "edit" && existing?.status === "ATTENDED" && !existing.invoiceId && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={createInvoiceFromAppt.isPending}
-              onClick={async () => {
-                try {
-                  const result = await createInvoiceFromAppt.mutateAsync(existing.id) as any;
-                  onOpenChange(false);
-                  const invoiceId = result?.id ?? result?.data?.id;
-                  if (invoiceId) router.push(`/billing/${invoiceId}`);
-                  else router.push("/billing");
-                } catch (e) {
-                  setSubmitError((e as Error).message || "Failed to generate invoice");
-                }
-              }}
-            >
-              {createInvoiceFromAppt.isPending ? "Generating..." : "Generate Invoice"}
-            </Button>
-          )}
-          {mode === "edit" && existing?.invoiceId && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                router.push(`/billing/${existing.invoiceId}`);
-              }}
-            >
-              View Invoice
             </Button>
           )}
           <Button type="button" variant="outline" onClick={attemptClose}>

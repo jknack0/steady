@@ -97,6 +97,19 @@ export function useCreateClaim() {
       api.post("/api/claims", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["claims"] });
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+      qc.invalidateQueries({ queryKey: ["appointment"] });
+    },
+  });
+}
+
+export function useSubmitClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (claimId: string) => api.post(`/api/claims/${claimId}/submit`),
+    onSuccess: (_d, claimId) => {
+      qc.invalidateQueries({ queryKey: ["claims", claimId] });
+      qc.invalidateQueries({ queryKey: ["claims"] });
     },
   });
 }

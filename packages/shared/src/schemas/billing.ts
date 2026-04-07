@@ -29,6 +29,9 @@ export const CreateInvoiceLineItemSchema = z.object({
   description: z.string().max(200).optional(),
   unitPriceCents: z.number().int().min(0).optional(),
   quantity: z.number().int().min(1).default(1),
+  dateOfService: z.string().max(20).optional(),
+  placeOfServiceCode: z.string().max(10).optional(),
+  modifiers: z.array(z.string().max(10)).max(4).default([]),
 });
 export type CreateInvoiceLineItemInput = z.infer<typeof CreateInvoiceLineItemSchema>;
 
@@ -39,6 +42,8 @@ export const CreateInvoiceSchema = z.object({
   lineItems: z.array(CreateInvoiceLineItemSchema).min(1, "At least one line item is required"),
   notes: z.string().max(2000).optional(),
   taxCents: z.number().int().min(0).default(0),
+  diagnosisCodes: z.array(z.string().min(1).max(20)).max(4).default([]),
+  dueDate: z.string().max(20).optional(),
 });
 export type CreateInvoiceInput = z.infer<typeof CreateInvoiceSchema>;
 
@@ -48,6 +53,8 @@ export const UpdateInvoiceSchema = z.object({
   notes: z.string().max(2000).optional(),
   taxCents: z.number().int().min(0).optional(),
   lineItems: z.array(CreateInvoiceLineItemSchema).min(1).optional(),
+  diagnosisCodes: z.array(z.string().min(1).max(20)).max(4).optional(),
+  dueDate: z.string().max(20).optional(),
 });
 export type UpdateInvoiceInput = z.infer<typeof UpdateInvoiceSchema>;
 

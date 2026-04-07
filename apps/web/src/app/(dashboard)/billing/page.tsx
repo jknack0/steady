@@ -10,6 +10,7 @@ import { StripeStatusBadge } from "@/components/billing/StripeStatusBadge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Plus, AlertTriangle, FileText, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UnbilledSessionsSection } from "@/components/billing/UnbilledSessionsSection";
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
@@ -77,6 +78,9 @@ export default function BillingPage() {
           </Button>
         </div>
       </div>
+
+      {/* Unbilled sessions queue */}
+      <UnbilledSessionsSection />
 
       {/* Summary cards */}
       {summary && (

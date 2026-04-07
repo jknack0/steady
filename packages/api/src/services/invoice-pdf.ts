@@ -6,6 +6,9 @@ interface PdfLineItem {
   quantity: number;
   totalCents: number;
   serviceCode?: { code: string } | null;
+  dateOfService?: Date | string | null;
+  placeOfServiceCode?: string | null;
+  modifiers?: string[];
 }
 
 interface PdfPayment {
@@ -24,6 +27,7 @@ interface PdfInvoice {
   totalCents: number;
   paidCents: number;
   notes: string | null;
+  diagnosisCodes?: string[];
   lineItems: PdfLineItem[];
   payments: PdfPayment[];
   participant: {
@@ -111,18 +115,36 @@ export function generateInvoicePdf(invoice: PdfInvoice): Buffer {
   doc.fontSize(10).font("Helvetica").text(clientName, 50, billY + 14);
   doc.text(clientEmail, 50, billY + 28);
 
+  // Diagnosis Codes (if present)
+  let diagY = 185;
+  if (invoice.diagnosisCodes && invoice.diagnosisCodes.length > 0) {
+    doc.fontSize(10).font("Helvetica-Bold").text("Diagnosis Codes (ICD-10)", 50, diagY);
+    diagY += 14;
+    doc.fontSize(9).font("Helvetica").text(invoice.diagnosisCodes.join(", "), 50, diagY);
+    diagY += 18;
+  }
+
   // Line items table
-  const tableTop = 190;
-  const colX = { desc: 50, qty: 340, price: 400, total: 480 };
+  const hasClinicFields = invoice.lineItems.some(
+    (li) => li.dateOfService || li.placeOfServiceCode || (li.modifiers && li.modifiers.length > 0),
+  );
+
+  const tableTop = diagY + 5;
+  const colX = hasClinicFields
+    ? { desc: 50, dos: 220, pos: 290, mod: 330, qty: 400, price: 440, total: 510 }
+    : { desc: 50, dos: 0, pos: 0, mod: 0, qty: 340, price: 400, total: 480 };
 
   // Table header
-  doc
-    .fontSize(9)
-    .font("Helvetica-Bold")
-    .text("Description", colX.desc, tableTop)
-    .text("Qty", colX.qty, tableTop)
-    .text("Unit Price", colX.price, tableTop)
-    .text("Total", colX.total, tableTop);
+  doc.fontSize(9).font("Helvetica-Bold");
+  doc.text("Description", colX.desc, tableTop);
+  if (hasClinicFields) {
+    doc.text("DOS", colX.dos, tableTop);
+    doc.text("POS", colX.pos, tableTop);
+    doc.text("Mod", colX.mod, tableTop);
+  }
+  doc.text("Qty", colX.qty, tableTop);
+  doc.text("Price", colX.price, tableTop);
+  doc.text("Total", colX.total, tableTop);
 
   doc
     .moveTo(50, tableTop + 14)
@@ -133,7 +155,13 @@ export function generateInvoicePdf(invoice: PdfInvoice): Buffer {
   doc.font("Helvetica").fontSize(9);
   for (const li of invoice.lineItems) {
     const codePrefix = li.serviceCode?.code ? `[${li.serviceCode.code}] ` : "";
-    doc.text(`${codePrefix}${li.description}`, colX.desc, y, { width: 280 });
+    const descWidth = hasClinicFields ? 160 : 280;
+    doc.text(`${codePrefix}${li.description}`, colX.desc, y, { width: descWidth });
+    if (hasClinicFields) {
+      doc.text(li.dateOfService ? fmtDate(li.dateOfService) : "-", colX.dos, y);
+      doc.text(li.placeOfServiceCode || "-", colX.pos, y);
+      doc.text(li.modifiers && li.modifiers.length > 0 ? li.modifiers.join(",") : "-", colX.mod, y);
+    }
     doc.text(String(li.quantity), colX.qty, y);
     doc.text(fmt(li.unitPriceCents), colX.price, y);
     doc.text(fmt(li.totalCents), colX.total, y);

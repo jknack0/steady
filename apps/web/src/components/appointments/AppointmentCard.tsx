@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import type { AppointmentView } from "@/lib/appointment-types";
 import { STATUS_THEME } from "./status-colors";
 import { formatInClinicianTz } from "@/lib/tz";
+import { BillingStatusIndicator } from "./BillingStatusIndicator";
 
 interface Props {
   appointment: AppointmentView;
@@ -72,6 +73,12 @@ export function AppointmentCard({ appointment, timezone, onClick, hasConflict, c
       {!compact && notePreview && (
         <div className="truncate text-xs italic opacity-70">&ldquo;{notePreview}&rdquo;</div>
       )}
+      <BillingStatusIndicator
+        invoiceId={appointment.invoiceId}
+        claimId={appointment.claimId}
+        claimStatus={appointment.claimStatus}
+        appointmentStatus={appointment.status}
+      />
     </button>
   );
 }

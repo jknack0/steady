@@ -122,3 +122,45 @@ export function useDeleteAppointment() {
     },
   });
 }
+
+/**
+ * Fetches ATTENDED appointments that do not yet have an insurance claim.
+ * Used by the CreateClaimDialog to populate the appointment picker.
+ */
+export function useBillableAppointments() {
+  const now = new Date();
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+  return useQuery<AppointmentView[]>({
+    queryKey: ["appointments", "billable"],
+    queryFn: () => {
+      const qs = new URLSearchParams();
+      qs.set("startAt", ninetyDaysAgo.toISOString());
+      qs.set("endAt", now.toISOString());
+      qs.set("billable", "true");
+      qs.set("limit", "100");
+      return api.get(`/api/appointments?${qs}`);
+    },
+  });
+}
+
+interface UnbilledResponse {
+  data: AppointmentView[];
+  cursor: string | null;
+}
+
+export function useUnbilledAppointments() {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  return useQuery<AppointmentView[]>({
+    queryKey: ["appointments", "unbilled"],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/appointments/unbilled?limit=20`, {
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Request failed: ${res.status}`);
+      return json.data ?? [];
+    },
+  });
+}

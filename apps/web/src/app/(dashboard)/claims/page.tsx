@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useClaims, useRefreshClaimStatus, useResubmitClaim } from "@/hooks/use-claims";
+import { useClaims, useRefreshClaimStatus, useResubmitClaim, useSubmitClaim } from "@/hooks/use-claims";
 import { ClaimStatusBadge } from "@/components/claims/ClaimStatusBadge";
+import { ClaimDetailPanel } from "@/components/claims/ClaimDetailPanel";
+import { NewClaimFlow } from "@/components/claims/NewClaimFlow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, RefreshCw, Loader2 } from "lucide-react";
+import { FileText, RefreshCw, Loader2, Plus, Send } from "lucide-react";
+import { showToast } from "@/hooks/use-toast";
 
 const STATUS_TABS = [
   { label: "All", value: undefined },
@@ -20,11 +23,13 @@ const STATUS_TABS = [
 export default function ClaimsPage() {
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [showNewClaim, setShowNewClaim] = useState(false);
   const { claims, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useClaims(
     statusFilter ? { status: statusFilter } : undefined,
   );
   const refreshStatus = useRefreshClaimStatus();
   const resubmitClaim = useResubmitClaim();
+  const submitClaim = useSubmitClaim();
 
   return (
     <div className="space-y-6">
@@ -35,6 +40,10 @@ export default function ClaimsPage() {
             Manage insurance claims submitted via Stedi
           </p>
         </div>
+        <Button onClick={() => setShowNewClaim(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Claim
+        </Button>
       </div>
 
       {/* Status filter tabs */}
@@ -65,7 +74,7 @@ export default function ClaimsPage() {
             <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <h3 className="text-lg font-semibold">No claims yet</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Claims will appear here after you submit them from appointments.
+              Click &quot;New Claim&quot; to create your first insurance claim.
             </p>
           </CardContent>
         </Card>
@@ -110,33 +119,51 @@ export default function ClaimsPage() {
                         <ClaimStatusBadge status={claim.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {(claim.status === "SUBMITTED" || claim.status === "ACCEPTED") && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              refreshStatus.mutate(claim.id);
-                            }}
-                            disabled={refreshStatus.isPending}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                            Check
-                          </Button>
-                        )}
-                        {claim.status === "REJECTED" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              resubmitClaim.mutate({ claimId: claim.id });
-                            }}
-                            disabled={resubmitClaim.isPending}
-                          >
-                            Resubmit
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {claim.status === "DRAFT" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                submitClaim.mutate(claim.id, {
+                                  onSuccess: () => showToast("Claim submitted to payer", "success"),
+                                  onError: (err) => showToast(err?.message || "Failed to submit", "error"),
+                                });
+                              }}
+                              disabled={submitClaim.isPending}
+                            >
+                              <Send className="h-3.5 w-3.5 mr-1" />
+                              Submit
+                            </Button>
+                          )}
+                          {(claim.status === "SUBMITTED" || claim.status === "ACCEPTED") && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                refreshStatus.mutate(claim.id);
+                              }}
+                              disabled={refreshStatus.isPending}
+                            >
+                              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                              Check
+                            </Button>
+                          )}
+                          {claim.status === "REJECTED" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedClaimId(claim.id);
+                              }}
+                            >
+                              Edit & Resubmit
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -164,6 +191,15 @@ export default function ClaimsPage() {
           )}
         </Card>
       )}
+
+      {/* New Claim Dialog */}
+      <NewClaimFlow open={showNewClaim} onOpenChange={setShowNewClaim} />
+
+      {/* Claim Detail Slide-Over Panel */}
+      <ClaimDetailPanel
+        claimId={selectedClaimId}
+        onClose={() => setSelectedClaimId(null)}
+      />
     </div>
   );
 }

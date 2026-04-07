@@ -9,6 +9,7 @@ import {
   getClaim,
   refreshClaimStatus,
   resubmitClaim,
+  submitDraftClaim,
 } from "../services/claims";
 import { logger } from "../lib/logger";
 
@@ -84,6 +85,36 @@ router.get("/:id", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Get claim error", err);
     res.status(500).json({ success: false, error: "Failed to get claim" });
+  }
+});
+
+// POST /api/claims/:id/submit — submit DRAFT claim to Stedi via pg-boss
+router.post("/:id/submit", async (req: Request, res: Response) => {
+  try {
+    const ctx = res.locals.practiceCtx!;
+    const result = await submitDraftClaim(ctx, req.params.id);
+
+    if ("error" in result) {
+      if (result.error === "not_found") {
+        res.status(404).json({ success: false, error: "Claim not found" });
+        return;
+      }
+      if (result.error === "invalid_status") {
+        res.status(409).json({ success: false, error: (result as any).message });
+        return;
+      }
+      if (result.error === "not_configured") {
+        res.status(400).json({ success: false, error: (result as any).message || "Insurance billing not configured" });
+        return;
+      }
+      res.status(400).json({ success: false, error: "Request failed" });
+      return;
+    }
+
+    res.json({ success: true, data: result.data });
+  } catch (err) {
+    logger.error("Submit claim error", err);
+    res.status(500).json({ success: false, error: "Failed to submit claim" });
   }
 });
 

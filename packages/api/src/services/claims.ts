@@ -214,6 +214,45 @@ export async function refreshClaimStatus(ctx: ServiceCtx, claimId: string) {
   return { data: updated };
 }
 
+export async function submitDraftClaim(ctx: ServiceCtx, claimId: string) {
+  const where: any = { id: claimId };
+  if (!ctx.isAccountOwner) {
+    where.clinicianId = ctx.clinicianProfileId;
+  } else {
+    where.practiceId = ctx.practiceId;
+  }
+
+  const claim = await prisma.insuranceClaim.findFirst({
+    where,
+    include: {
+      participant: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
+      patientInsurance: { select: { payerName: true } },
+    },
+  });
+
+  if (!claim) return { error: "not_found" as const };
+
+  if (claim.status !== "DRAFT") {
+    return { error: "invalid_status" as const, message: `Only DRAFT claims can be submitted. Current status: ${claim.status}` };
+  }
+
+  // Check practice has Stedi API key configured
+  const { getEncryptedKey } = await import("./stedi-config");
+  const encryptedKey = await getEncryptedKey(ctx.practiceId);
+  if (!encryptedKey) {
+    return { error: "not_configured" as const, message: "Insurance billing not configured" };
+  }
+
+  // Enqueue stedi-claim-submit job via pg-boss
+  const { getQueue } = await import("./queue");
+  const boss = await getQueue();
+  await boss.send("stedi-claim-submit", { claimId });
+
+  logger.info(`Claim ${claimId} enqueued for Stedi submission`);
+
+  return { data: claim };
+}
+
 export async function resubmitClaim(
   ctx: ServiceCtx,
   claimId: string,

@@ -83,6 +83,7 @@ export const ListAppointmentsQuerySchema = z
     locationId: z.string().max(200).optional(),
     status: z.string().max(200).optional(),
     clinicianId: z.string().max(200).optional(),
+    billable: z.coerce.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const start = new Date(data.startAt).getTime();

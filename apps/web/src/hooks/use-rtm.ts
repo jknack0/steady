@@ -88,11 +88,23 @@ export interface RtmEnrollment {
 }
 
 export interface BillingProfile {
-  npiNumber: string | null;
-  taxId: string | null;
-  practiceName: string | null;
-  practiceAddress: string | null;
-  defaultRates: Record<string, number>;
+  id: string;
+  clinicianId: string;
+  providerName: string;
+  credentials: string;
+  npiNumber: string;
+  taxId: string;
+  practiceName: string;
+  practiceAddress: string;
+  practiceCity: string;
+  practiceState: string;
+  practiceZip: string;
+  practicePhone: string;
+  licenseNumber: string;
+  licenseState: string;
+  placeOfServiceCode: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ── Query hooks ─────────────────────────────────────────────────────────────
@@ -260,10 +272,12 @@ export function useSuperbillData(periodId: string) {
   });
 }
 
+export type SaveBillingProfileData = Omit<BillingProfile, "id" | "clinicianId" | "createdAt" | "updatedAt">;
+
 export function useSaveBillingProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<BillingProfile>) =>
+    mutationFn: (data: SaveBillingProfileData) =>
       api.put("/api/rtm/billing-profile", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billing-profile"] });

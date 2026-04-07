@@ -736,6 +736,7 @@ model Invoice {
   totalCents    Int
   paidCents     Int           @default(0)
   notes         String?
+  diagnosisCodes String[]    @default([])
 
   paymentLinkUrl             String?
   paymentLinkExpiresAt       DateTime?
@@ -764,11 +765,14 @@ model InvoiceLineItem {
   appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   serviceCodeId  String
   serviceCode    ServiceCode  @relation(fields: [serviceCodeId], references: [id])
-  description    String
-  unitPriceCents Int
-  quantity       Int          @default(1)
-  totalCents     Int
-  createdAt      DateTime     @default(now())
+  description        String
+  unitPriceCents     Int
+  quantity           Int          @default(1)
+  totalCents         Int
+  dateOfService      DateTime?
+  placeOfServiceCode String?
+  modifiers          String[]     @default([])
+  createdAt          DateTime     @default(now())
 
   @@index([invoiceId])
   @@map("invoice_line_items")

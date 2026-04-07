@@ -78,6 +78,9 @@ export async function createInvoice(
       unitPriceCents: number;
       quantity: number;
       totalCents: number;
+      dateOfService: Date | null;
+      placeOfServiceCode: string | null;
+      modifiers: string[];
     }> = [];
 
     for (const item of input.lineItems) {
@@ -95,6 +98,9 @@ export async function createInvoice(
         unitPriceCents: unitPrice,
         quantity: qty,
         totalCents: unitPrice * qty,
+        dateOfService: item.dateOfService ? new Date(item.dateOfService) : null,
+        placeOfServiceCode: item.placeOfServiceCode ?? null,
+        modifiers: item.modifiers ?? [],
       });
     }
 
@@ -114,6 +120,8 @@ export async function createInvoice(
         totalCents,
         paidCents: 0,
         notes: input.notes ?? null,
+        diagnosisCodes: input.diagnosisCodes ?? [],
+        dueAt: input.dueDate ? new Date(input.dueDate) : null,
         lineItems: {
           create: lineItemsData,
         },
@@ -232,6 +240,9 @@ export async function updateInvoice(
         unitPriceCents: number;
         quantity: number;
         totalCents: number;
+        dateOfService: Date | null;
+        placeOfServiceCode: string | null;
+        modifiers: string[];
       }> = [];
 
       for (const item of patch.lineItems) {
@@ -250,6 +261,9 @@ export async function updateInvoice(
           unitPriceCents: unitPrice,
           quantity: qty,
           totalCents: unitPrice * qty,
+          dateOfService: item.dateOfService ? new Date(item.dateOfService) : null,
+          placeOfServiceCode: item.placeOfServiceCode ?? null,
+          modifiers: item.modifiers ?? [],
         });
       }
 
@@ -261,25 +275,31 @@ export async function updateInvoice(
       const taxCents = patch.taxCents ?? existing.taxCents;
       const totalCents = subtotalCents + taxCents;
 
+      const invoiceData: any = {
+        subtotalCents,
+        taxCents,
+        totalCents,
+        ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+      };
+      if (patch.diagnosisCodes !== undefined) invoiceData.diagnosisCodes = patch.diagnosisCodes;
+      if (patch.dueDate !== undefined) invoiceData.dueAt = patch.dueDate ? new Date(patch.dueDate) : null;
+
       return tx.invoice.update({
         where: { id },
-        data: {
-          subtotalCents,
-          taxCents,
-          totalCents,
-          ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
-        },
+        data: invoiceData,
         include: INVOICE_INCLUDE,
       });
     }
 
-    // No line items update — just notes/tax
+    // No line items update — just notes/tax/diagnosisCodes/dueDate
     const data: any = {};
     if (patch.notes !== undefined) data.notes = patch.notes;
     if (patch.taxCents !== undefined) {
       data.taxCents = patch.taxCents;
       data.totalCents = existing.subtotalCents + patch.taxCents;
     }
+    if (patch.diagnosisCodes !== undefined) data.diagnosisCodes = patch.diagnosisCodes;
+    if (patch.dueDate !== undefined) data.dueAt = patch.dueDate ? new Date(patch.dueDate) : null;
 
     return tx.invoice.update({
       where: { id },
@@ -307,7 +327,7 @@ export async function sendInvoice(
   }
 
   const now = new Date();
-  const dueAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const dueAt = existing.dueAt ?? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   const invoice = await prisma.invoice.update({
     where: { id },
@@ -423,9 +443,11 @@ export async function createInvoiceFromAppointment(
         description: appt.serviceCode.description,
         unitPriceCents: unitPrice,
         quantity: 1,
+        modifiers: [],
       },
     ],
     taxCents: 0,
+    diagnosisCodes: [],
   });
 }
 

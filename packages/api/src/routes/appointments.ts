@@ -13,6 +13,7 @@ import {
 import {
   createAppointment,
   listAppointments,
+  listUnbilledAppointments,
   listParticipantAppointments,
   getAppointment,
   updateAppointment,
@@ -125,6 +126,25 @@ router.get(
 router.use(authenticate);
 router.use(requireRole("CLINICIAN", "ADMIN"));
 router.use(requirePracticeCtx);
+
+// GET /unbilled — attended appointments with no invoice or claim (last 90 days)
+// Must be registered before /:id to avoid route collision.
+router.get("/unbilled", async (req: Request, res: Response) => {
+  try {
+    const ctx = res.locals.practiceCtx!;
+    const cursor = req.query.cursor as string | undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const result = await listUnbilledAppointments(ctx, { cursor, limit });
+    res.json({
+      success: true,
+      data: result.data.map(toClinicianView),
+      cursor: result.cursor,
+    });
+  } catch (err) {
+    logger.error("List unbilled appointments error", err);
+    res.status(500).json({ success: false, error: "Failed to list unbilled appointments" });
+  }
+});
 
 router.post("/", validate(CreateAppointmentSchema), async (req: Request, res: Response) => {
   try {

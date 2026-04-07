@@ -71,6 +71,12 @@ export default function InvoiceDetailPage() {
   const canVoid = invoice.status !== "VOID";
   const canDelete = invoice.status === "DRAFT";
   const canPay = ["SENT", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status);
+  const hasLineItemDetails = invoice.lineItems?.some(
+    (li: any) =>
+      li.dateOfService ||
+      li.placeOfServiceCode ||
+      (li.modifiers && li.modifiers.length > 0),
+  );
 
   function handleRecordPayment() {
     const amountCents = Math.round(parseFloat(paymentAmount) * 100);
@@ -107,10 +113,10 @@ export default function InvoiceDetailPage() {
               ? `${invoice.participant.user.firstName} ${invoice.participant.user.lastName}`.trim()
               : "Unknown"}
           </p>
-          {invoice.issuedAt && (
+          {(invoice.issuedAt || invoice.dueAt) && (
             <p className="text-sm text-muted-foreground">
-              Issued: {new Date(invoice.issuedAt).toLocaleDateString()}
-              {invoice.dueAt && ` | Due: ${new Date(invoice.dueAt).toLocaleDateString()}`}
+              {invoice.issuedAt && `Issued: ${new Date(invoice.issuedAt).toLocaleDateString()}`}
+              {invoice.dueAt && `${invoice.issuedAt ? " | " : ""}Due: ${new Date(invoice.dueAt).toLocaleDateString()}`}
             </p>
           )}
         </div>
@@ -138,6 +144,23 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
+      {/* Diagnosis Codes */}
+      {invoice.diagnosisCodes && invoice.diagnosisCodes.length > 0 && (
+        <div className="rounded-lg border bg-white p-4">
+          <div className="font-medium mb-2">Diagnosis Codes (ICD-10)</div>
+          <div className="flex flex-wrap gap-1.5">
+            {invoice.diagnosisCodes.map((code: string) => (
+              <span
+                key={code}
+                className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 font-mono"
+              >
+                {code}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Line items */}
       <div className="rounded-lg border bg-white">
         <div className="border-b px-4 py-3 font-medium">Line Items</div>
@@ -146,6 +169,13 @@ export default function InvoiceDetailPage() {
             <tr>
               <th className="px-4 py-2 text-left">Service</th>
               <th className="px-4 py-2 text-left">Description</th>
+              {hasLineItemDetails && (
+                <>
+                  <th className="px-3 py-2 text-left">DOS</th>
+                  <th className="px-3 py-2 text-left">POS</th>
+                  <th className="px-3 py-2 text-left">Mod</th>
+                </>
+              )}
               <th className="px-4 py-2 text-right">Price</th>
               <th className="px-4 py-2 text-right">Qty</th>
               <th className="px-4 py-2 text-right">Total</th>
@@ -158,6 +188,23 @@ export default function InvoiceDetailPage() {
                   {li.serviceCode?.code ?? "-"}
                 </td>
                 <td className="px-4 py-2">{li.description}</td>
+                {hasLineItemDetails && (
+                  <>
+                    <td className="px-3 py-2 text-xs">
+                      {li.dateOfService
+                        ? new Date(li.dateOfService).toLocaleDateString()
+                        : "-"}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">
+                      {li.placeOfServiceCode || "-"}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">
+                      {li.modifiers && li.modifiers.length > 0
+                        ? li.modifiers.join(", ")
+                        : "-"}
+                    </td>
+                  </>
+                )}
                 <td className="px-4 py-2 text-right font-mono">
                   {formatCents(li.unitPriceCents)}
                 </td>

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Printer } from "lucide-react";
 import { LoadingState } from "@/components/loading-state";
 import { PageHeader } from "@/components/page-header";
+import Link from "next/link";
 
 export default function SuperbillPage() {
   const params = useParams<{ enrollmentId: string; periodId: string }>();
@@ -25,9 +26,17 @@ export default function SuperbillPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">
-              {error instanceof Error
-                ? error.message
-                : "Failed to generate superbill. Please ensure your billing profile is configured."}
+              {error instanceof Error ? (
+                error.message
+              ) : (
+                <>
+                  Failed to generate superbill.{" "}
+                  <Link href="/settings" className="underline text-primary hover:text-primary/80">
+                    Configure your billing profile
+                  </Link>{" "}
+                  in Settings.
+                </>
+              )}
             </p>
           </CardContent>
         </Card>
