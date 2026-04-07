@@ -50,6 +50,8 @@ import appointmentReminderRoutes from "./routes/appointment-reminders";
 import participantPortalRoutes from "./routes/participant-portal";
 import stripeWebhookRoutes from "./routes/stripe-webhooks";
 import stripePaymentRoutes from "./routes/stripe-payments";
+import telehealthRoutes from "./routes/telehealth";
+import { telehealthWebhookRouter } from "./routes/telehealth";
 
 const app = express();
 
@@ -67,8 +69,9 @@ const allowedOrigins = process.env.CORS_ORIGINS
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(cookieParser());
 
-// Stripe webhook route — MUST be before express.json() for raw body signature verification (COND-4)
+// Webhook routes — MUST be before express.json() for raw body signature verification
 app.use("/api/stripe/webhooks", stripeWebhookRoutes);
+app.use("/api/telehealth/webhooks", telehealthWebhookRouter);
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -407,6 +410,7 @@ app.use("/api/recurring-series", recurringSeriesRoutes);
 app.use("/api/appointments", appointmentReminderRoutes);
 app.use("/api/participant", participantPortalRoutes);
 app.use("/api/stripe", stripePaymentRoutes);
+app.use("/api/telehealth", telehealthRoutes);
 
 // Error handler
 app.use(errorHandler);

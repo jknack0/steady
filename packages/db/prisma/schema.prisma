@@ -631,11 +631,12 @@ model Appointment {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  sessions         Session[]
-  sessionReviews   SessionReview[]
-  invoiceLineItems InvoiceLineItem[]
-  reminders        AppointmentReminder[]
-  insuranceClaim   InsuranceClaim?
+  sessions           Session[]
+  sessionReviews     SessionReview[]
+  invoiceLineItems   InvoiceLineItem[]
+  reminders          AppointmentReminder[]
+  insuranceClaim     InsuranceClaim?
+  telehealthSession  TelehealthSession?
 
   @@index([practiceId, clinicianId, startAt])
   @@index([practiceId, locationId, startAt])
@@ -644,6 +645,33 @@ model Appointment {
   @@index([createdById])
   @@index([recurringSeriesId])
   @@map("appointments")
+}
+
+// ── Telehealth Sessions ─────────────────────────────────
+
+enum TelehealthSessionStatus {
+  WAITING
+  ACTIVE
+  ENDED
+}
+
+model TelehealthSession {
+  id                  String                  @id @default(cuid())
+  appointmentId       String                  @unique
+  appointment         Appointment             @relation(fields: [appointmentId], references: [id])
+  roomName            String                  @unique
+  status              TelehealthSessionStatus @default(WAITING)
+  clinicianJoinedAt   DateTime?
+  participantJoinedAt DateTime?
+  endedAt             DateTime?
+  durationSeconds     Int?
+  endedBy             String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@index([status])
+  @@index([roomName])
+  @@map("telehealth_sessions")
 }
 
 model Location {

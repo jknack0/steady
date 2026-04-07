@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { PostSessionBillingPrompt } from "./PostSessionBillingPrompt";
 import { ClaimStatusBadge } from "@/components/claims/ClaimStatusBadge";
 import { useParticipantInsurance } from "@/hooks/use-participant-insurance";
+import { Video } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -601,6 +602,30 @@ export function AppointmentModal({
               onClick={() => setShowDeleteConfirm(true)}
             >
               {S.modalDeleteBtn}
+            </Button>
+          )}
+          {/* Start Video Session button for virtual appointments within the time window */}
+          {mode === "edit" &&
+            existing &&
+            existing.location?.type === "VIRTUAL" &&
+            ["SCHEDULED", "ATTENDED"].includes(existing.status) &&
+            (() => {
+              const now = Date.now();
+              const start = new Date(existing.startAt).getTime();
+              const end = new Date(existing.endAt).getTime();
+              const fifteenMinMs = 15 * 60 * 1000;
+              return now >= start - fifteenMinMs && now <= end;
+            })() && (
+            <Button
+              type="button"
+              className="bg-emerald-600 text-white hover:bg-emerald-700 mr-auto"
+              onClick={() => {
+                onOpenChange(false);
+                router.push(`/telehealth/${existing!.id}`);
+              }}
+            >
+              <Video className="mr-2 h-4 w-4" />
+              Start Video Session
             </Button>
           )}
           <Button type="button" variant="outline" onClick={attemptClose}>

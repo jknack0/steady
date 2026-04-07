@@ -23,3 +23,4 @@ export * from "./recurring";
 export * from "./reminder";
 export * from "./insurance";
 export * from "./stripe";
+export * from "./telehealth";
