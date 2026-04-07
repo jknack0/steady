@@ -1,6 +1,6 @@
 {
   "buildCommand": "cd ../.. && npx turbo run build --filter=@steady/shared && cd apps/mobile && npx expo export --platform web",
-  "installCommand": "cd ../.. && npm ci",
+  "installCommand": "cd ../.. && npm ci --legacy-peer-deps && ln -sf ../apps/mobile/node_modules/react-native node_modules/react-native",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
