@@ -1,6 +1,7 @@
 import { logger } from "../lib/logger";
 
 const STEDI_BASE_URL = "https://healthcare.us.stedi.com/2024-04-01";
+const STEDI_PAYERS_BASE_URL = "https://payers.us.stedi.com/2024-04-01";
 const STEDI_TIMEOUT_MS = 10_000;
 
 export interface EligibilityResult {
@@ -156,15 +157,42 @@ export async function searchPayers(
   encryptedApiKey: string,
   query: string,
 ): Promise<PayerResult[] | StediError> {
-  const result = await stediRequest(encryptedApiKey, "GET", `/payers?search=${encodeURIComponent(query)}`);
+  // Payer search uses a different base URL than healthcare APIs
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), STEDI_TIMEOUT_MS);
 
-  if (isStediError(result)) return result;
+  try {
+    const url = `${STEDI_PAYERS_BASE_URL}/payers/search?query=${encodeURIComponent(query)}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${encryptedApiKey}`,
+      },
+      signal: controller.signal,
+    });
 
-  const payers = Array.isArray(result) ? result : result?.payers || [];
-  return payers.slice(0, 20).map((p: any) => ({
-    payerId: p.payerId || p.id || "",
-    name: p.payerName || p.name || "",
-  }));
+    const data: any = await response.json();
+
+    if (!response.ok) {
+      logger.warn("Stedi payer search error", `${response.status}`);
+      return { error: "stedi_error", message: data?.message || `Stedi returned ${response.status}` };
+    }
+
+    const payers = Array.isArray(data) ? data : data?.items || data?.payers || [];
+    return payers.slice(0, 20).map((p: any) => ({
+      payerId: p.payerId || p.id || "",
+      name: p.payerName || p.name || "",
+    }));
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return { error: "stedi_timeout", message: "Stedi payer search timed out" };
+    }
+    logger.error("Stedi payer search failed", err);
+    return { error: "stedi_unavailable", message: "Unable to connect to Stedi" };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function testConnection(encryptedApiKey: string): Promise<boolean> {
