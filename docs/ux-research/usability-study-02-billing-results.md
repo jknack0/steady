@@ -56,19 +56,7 @@ Billing, Claims, RTM, and Insurance are four disconnected islands. There is no w
 
 ---
 
-### 2. RTM dashboard is not in sidebar navigation
-
-**All 4 cohorts. B8 completion: 59%. First-click accuracy: 22%.**
-
-The `mainNavItems` array in `layout.tsx:42-50` does not include RTM. The RTM import is commented out (line 33). Users must know the URL `/rtm` directly or stumble upon it through a client detail page link.
-
-**Code location**: [layout.tsx:42-50](apps/web/src/app/(dashboard)/layout.tsx#L42-L50)
-
-RTM represents $100-150/month per enrolled client. Hiding a primary revenue feature behind an undiscoverable URL is a critical oversight.
-
----
-
-### 3. No claim submission entry point in UI
+### 2. No claim submission entry point in UI
 
 **All 4 cohorts. B6 completion: 50%.**
 
@@ -78,7 +66,7 @@ The `useCreateClaim` hook exists in [use-claims.ts:93](apps/web/src/hooks/use-cl
 
 ---
 
-### 4. Claim detail view is non-functional
+### 3. Claim detail view is non-functional
 
 **All 4 cohorts.**
 
@@ -92,7 +80,7 @@ Users cannot see:
 
 ---
 
-### 5. Five billing components are built but never wired into any page
+### 4. Five billing components are built but never wired into any page
 
 **Cohort A discovery, confirmed across all cohorts.**
 
@@ -110,7 +98,7 @@ These represent completed Stripe integration work that users cannot access.
 
 ---
 
-### 6. No billing profile setup page
+### 5. No billing profile setup page
 
 **Cohorts B, C, D.**
 
@@ -120,7 +108,7 @@ The Settings page only has Provider Type, Primary Modality, and Practice Name --
 
 ---
 
-### 7. Invoice form is unusable for insurance billing
+### 6. Invoice form is unusable for insurance billing
 
 **Cohorts C, D (experienced billers).**
 
@@ -255,12 +243,11 @@ The form functions only as a private-pay receipt, not a billing document.
 
 ### Tier 1: Must fix before marketing as a billing solution
 
-1. **Add RTM to sidebar navigation** -- Single line change in layout.tsx. Highest ROI fix.
-2. **Wire up orphaned billing components** -- ChargeCardDialog, SavedCardsSection, PaymentLinkBadge, BalanceDueIndicator, StripeStatusBadge. Already built, just need imports on invoice detail page.
-3. **Build claim creation workflow** -- "Submit Claim" from appointment view. Hook exists, needs UI.
-4. **Build claim detail view** -- Click a claim to see denial reasons, ERA data, correction form.
-5. **Add billing profile page** -- NPI, Tax ID, license, address. Link from Settings and superbill error state.
-6. **Add date-of-service to invoice form** -- Critical for both insurance and private-pay accounting.
+1. **Wire up orphaned billing components** -- ChargeCardDialog, SavedCardsSection, PaymentLinkBadge, BalanceDueIndicator, StripeStatusBadge. Already built, just need imports on invoice detail page.
+2. **Build claim creation workflow** -- "Submit Claim" from appointment view. Hook exists, needs UI.
+3. **Build claim detail view** -- Click a claim to see denial reasons, ERA data, correction form.
+4. **Add billing profile page** -- NPI, Tax ID, license, address. Link from Settings and superbill error state.
+5. **Add date-of-service to invoice form** -- Critical for both insurance and private-pay accounting.
 
 ### Tier 2: Should fix for insurance billing adoption
 
@@ -286,4 +273,4 @@ The form functions only as a private-pay receipt, not a billing document.
 
 ## Key Takeaway
 
-The private-pay invoicing flow is functional and near-complete (satisfaction 6.5/10). The infrastructure for Stripe payments is built but not connected to the UI. The insurance billing flow is fundamentally incomplete -- individual components exist (insurance form, claims table, superbill, Stedi integration) but nothing connects them into a usable workflow. The highest-impact fixes are wiring up already-built components and adding a single sidebar link for RTM.
+The private-pay invoicing flow is functional and near-complete (satisfaction 6.5/10). The infrastructure for Stripe payments is built but not connected to the UI. The insurance billing flow is fundamentally incomplete -- individual components exist (insurance form, claims table, superbill, Stedi integration) but nothing connects them into a usable workflow. The highest-impact fixes are wiring up already-built components and building the claim creation/detail workflows.
