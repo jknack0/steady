@@ -4,8 +4,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useInvoice, useSendInvoice, useVoidInvoice, useDeleteInvoice } from "@/hooks/use-invoices";
 import { usePayments, useRecordPayment, useDeletePayment } from "@/hooks/use-payments";
+import { useStripeConnectionStatus } from "@/hooks/use-stripe-payments";
+import { useSavedCards } from "@/hooks/use-saved-cards";
+import { PaymentLinkBadge } from "@/components/billing/PaymentLinkBadge";
+import { BalanceDueIndicator } from "@/components/billing/BalanceDueIndicator";
+import { ChargeCardDialog } from "@/components/billing/ChargeCardDialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Send, Ban, Trash2, Plus, Download } from "lucide-react";
+import { ArrowLeft, Send, Ban, Trash2, Plus, Download, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,8 +43,19 @@ export default function InvoiceDetailPage() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("CREDIT_CARD");
   const [paymentRef, setPaymentRef] = useState("");
+  const [chargeDialogOpen, setChargeDialogOpen] = useState(false);
 
   const invoice = invoiceData as any;
+
+  const { data: stripeStatus } = useStripeConnectionStatus();
+  const { data: savedCardsData } = useSavedCards(invoice?.participantId as string | undefined);
+  const savedCards = ((savedCardsData ?? []) as Array<{
+    id: string;
+    cardBrand: string;
+    cardLastFour: string;
+    expiryMonth: number;
+    expiryYear: number;
+  }>);
   const payments = ((paymentsData as any)?.data ?? paymentsData ?? []) as any[];
 
   if (isLoading) {
@@ -98,14 +114,28 @@ export default function InvoiceDetailPage() {
             </p>
           )}
         </div>
-        <span
-          className={cn(
-            "rounded-full px-3 py-1 text-sm font-medium",
-            STATUS_COLORS[invoice.status] ?? "bg-gray-100",
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "rounded-full px-3 py-1 text-sm font-medium",
+              STATUS_COLORS[invoice.status] ?? "bg-gray-100",
+            )}
+          >
+            {invoice.status}
+          </span>
+          {invoice.paymentLinkUrl && (
+            <PaymentLinkBadge
+              paymentLinkUrl={invoice.paymentLinkUrl}
+              paymentLinkExpiresAt={invoice.paymentLinkExpiresAt}
+              status={invoice.status}
+            />
           )}
-        >
-          {invoice.status}
-        </span>
+          {invoice.balanceDueSourceInvoiceId && (
+            <BalanceDueIndicator
+              sourceInvoiceNumber={invoice.balanceDueSourceInvoice?.invoiceNumber}
+            />
+          )}
+        </div>
       </div>
 
       {/* Line items */}
@@ -278,6 +308,12 @@ export default function InvoiceDetailPage() {
           <Download className="mr-2 h-4 w-4" />
           Download PDF
         </Button>
+        {canPay && stripeStatus?.connected && savedCards.length > 0 && (
+          <Button onClick={() => setChargeDialogOpen(true)}>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Charge Card
+          </Button>
+        )}
         {canSend && (
           <Button onClick={() => sendInvoice.mutate()} disabled={sendInvoice.isPending}>
             <Send className="mr-2 h-4 w-4" />
@@ -315,6 +351,17 @@ export default function InvoiceDetailPage() {
           </Button>
         )}
       </div>
+
+      {/* Charge Card Dialog */}
+      {savedCards.length > 0 && (
+        <ChargeCardDialog
+          open={chargeDialogOpen}
+          onOpenChange={setChargeDialogOpen}
+          invoiceId={invoiceId}
+          amountCents={balanceCents}
+          cards={savedCards}
+        />
+      )}
     </div>
   );
 }

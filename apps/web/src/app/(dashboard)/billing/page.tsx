@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useInvoices, useDeleteInvoice } from "@/hooks/use-invoices";
 import { useBillingSummary } from "@/hooks/use-billing-summary";
+import { PaymentLinkBadge } from "@/components/billing/PaymentLinkBadge";
+import { BalanceDueIndicator } from "@/components/billing/BalanceDueIndicator";
+import { StripeStatusBadge } from "@/components/billing/StripeStatusBadge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Plus, AlertTriangle, FileText, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,10 +69,13 @@ export default function BillingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Billing</h1>
-        <Button onClick={() => router.push("/billing/new")}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Invoice
-        </Button>
+        <div className="flex items-center gap-4">
+          <StripeStatusBadge />
+          <Button onClick={() => router.push("/billing/new")}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Invoice
+          </Button>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -173,14 +179,26 @@ export default function BillingPage() {
                     {formatCents(inv.totalCents - inv.paidCents)}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                        STATUS_COLORS[inv.status] ?? "bg-gray-100",
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+                          STATUS_COLORS[inv.status] ?? "bg-gray-100",
+                        )}
+                      >
+                        {STATUS_LABELS[inv.status] ?? inv.status}
+                      </span>
+                      {inv.paymentLinkUrl && (
+                        <PaymentLinkBadge
+                          paymentLinkUrl={inv.paymentLinkUrl}
+                          paymentLinkExpiresAt={inv.paymentLinkExpiresAt}
+                          status={inv.status}
+                        />
                       )}
-                    >
-                      {STATUS_LABELS[inv.status] ?? inv.status}
-                    </span>
+                      {inv.balanceDueSourceInvoiceId && (
+                        <BalanceDueIndicator />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {inv.status === "DRAFT" && (

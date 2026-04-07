@@ -80,6 +80,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { SavedCardsSection } from "@/components/billing/SavedCardsSection";
 import { AssignmentModal } from "@/components/assignment";
 import { WidgetGrid } from "@/components/widget-grid";
 import { CLIENT_WIDGET_COMPONENTS } from "@/components/client-widgets";
@@ -1017,13 +1018,16 @@ function InsuranceTab({ participantProfileId }: { participantProfileId: string }
   // No insurance on file — show empty state or form
   if (!ins && !editing) {
     return (
-      <div className="rounded-lg border border-dashed py-12 text-center">
-        <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-        <p className="text-muted-foreground mb-2">No insurance on file for this client.</p>
-        <Button variant="outline" onClick={() => startEditing()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Insurance
-        </Button>
+      <div className="space-y-6">
+        <div className="rounded-lg border border-dashed py-12 text-center">
+          <Shield className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground mb-2">No insurance on file for this client.</p>
+          <Button variant="outline" onClick={() => startEditing()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Insurance
+          </Button>
+        </div>
+        <SavedCardsSection participantId={participantProfileId} />
       </div>
     );
   }
@@ -1284,6 +1288,9 @@ function InsuranceTab({ participantProfileId }: { participantProfileId: string }
           <p className="text-sm text-muted-foreground">Eligibility has not been checked yet.</p>
         )}
       </div>
+
+      {/* Saved Payment Methods */}
+      <SavedCardsSection participantId={participantProfileId} />
     </div>
   );
 }

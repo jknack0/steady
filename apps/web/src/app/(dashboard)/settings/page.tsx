@@ -20,6 +20,7 @@ import {
 import type { HomeworkItemType } from "@steady/shared";
 import { Check, Loader2, Plus, Trash2, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { StripeStatusBadge } from "@/components/billing/StripeStatusBadge";
 import { useStediConfig, useSetStediKey, useTestStediConnection } from "@/hooks/use-stedi-config";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -588,6 +589,12 @@ function StediConfigCard() {
             )}
           </div>
         )}
+
+        {/* Stripe Online Payments */}
+        <div className="border-t pt-4 mt-4">
+          <Label className="text-sm font-medium mb-2 block">Online Payments (Stripe)</Label>
+          <StripeStatusBadge />
+        </div>
       </CardContent>
     </Card>
   );
