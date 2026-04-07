@@ -101,6 +101,7 @@ export async function getQueue(): Promise<PgBoss> {
           })),
           serviceLines: [{
             procedureCode: claim.serviceCode,
+            modifiers: claim.modifiers.length > 0 ? claim.modifiers : undefined,
             chargeAmountCents: claim.servicePriceCents,
             serviceDate: claim.dateOfService.toISOString().split("T")[0],
           }],

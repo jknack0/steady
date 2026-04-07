@@ -55,6 +55,7 @@ export const CreateClaimSchema = z.object({
   appointmentId: z.string().min(1),
   diagnosisCodes: z.array(z.string().min(1).max(20)).min(1, "At least one diagnosis code is required").max(4),
   placeOfServiceCode: z.string().max(10).optional(),
+  modifiers: z.array(z.string().min(1).max(2)).max(4, "Maximum 4 modifiers allowed").default([]),
 });
 export type CreateClaimInput = z.infer<typeof CreateClaimSchema>;
 
@@ -63,6 +64,7 @@ export type CreateClaimInput = z.infer<typeof CreateClaimSchema>;
 export const ResubmitClaimSchema = z.object({
   diagnosisCodes: z.array(z.string().min(1).max(20)).min(1).max(4).optional(),
   serviceCode: z.string().max(20).optional(),
+  modifiers: z.array(z.string().min(1).max(2)).max(4, "Maximum 4 modifiers allowed").optional(),
 });
 export type ResubmitClaimInput = z.infer<typeof ResubmitClaimSchema>;
 

@@ -10,5 +10,15 @@ export const CreateParticipantSchema = z.object({
   email: z.string().email().max(200),
 });
 
+export const UpdateParticipantDemographicsSchema = z.object({
+  dateOfBirth: z.string().max(200).optional().nullable(),
+  gender: z.enum(["M", "F", "U"]).optional().nullable(),
+  addressStreet: z.string().max(200).optional().nullable(),
+  addressCity: z.string().max(200).optional().nullable(),
+  addressState: z.string().max(200).optional().nullable(),
+  addressZip: z.string().max(20).optional().nullable(),
+});
+export type UpdateParticipantDemographicsInput = z.infer<typeof UpdateParticipantDemographicsSchema>;
+
 export type ParticipantSearchQuery = z.infer<typeof ParticipantSearchQuerySchema>;
 export type CreateParticipantInput = z.infer<typeof CreateParticipantSchema>;

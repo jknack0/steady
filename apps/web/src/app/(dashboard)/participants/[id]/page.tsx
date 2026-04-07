@@ -8,6 +8,7 @@ import {
   usePushTask,
   useUnlockModule,
   useManageEnrollment,
+  useUpdateDemographics,
   type ParticipantDetail,
 } from "@/hooks/use-clinician-participants";
 import { useCreateSession } from "@/hooks/use-sessions";
@@ -154,7 +155,7 @@ export default function ParticipantDetailPage() {
       ) : tab === "trackers" ? (
         <TrackersTab participantProfileId={data.participantProfileId} participantUserId={data.participant.id} />
       ) : (
-        <InsuranceTab participantProfileId={data.participantProfileId} />
+        <InsuranceTab participantProfileId={data.participantProfileId} demographics={data.demographics} />
       )}
     </div>
   );
@@ -297,6 +298,7 @@ function OverviewTab({
             </Button>
           </div>
         </div>
+        <DemographicsSection demographics={data.demographics} participantId={participantId} />
         <AssignmentModal
           open={assignModalOpen}
           onOpenChange={setAssignModalOpen}
@@ -371,6 +373,9 @@ function OverviewTab({
           </DropdownMenu>
         )}
       </div>
+
+      {/* Patient Demographics (CMS-1500 Box 3 & 5) */}
+      <DemographicsSection demographics={data.demographics} participantId={participantId} />
 
       {/* Widget Grid */}
       <WidgetGrid
@@ -932,9 +937,207 @@ const CUSTOM_ICD10_PATTERN = /^F\d{2}\.\d{1,2}$/;
 
 const CPT_INFO: Record<string, { description: string; rate: number }> = CPT_CODES;
 
+// ── Demographics Section ─────────────────────────────────────────
+
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY","DC",
+];
+
+function DemographicsSection({
+  demographics,
+  participantId,
+}: {
+  demographics?: ParticipantDetail["demographics"];
+  participantId: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const updateDemographics = useUpdateDemographics(participantId);
+  const [form, setForm] = useState({
+    dateOfBirth: "",
+    gender: "",
+    addressStreet: "",
+    addressCity: "",
+    addressState: "",
+    addressZip: "",
+  });
+
+  const startEditing = () => {
+    setForm({
+      dateOfBirth: demographics?.dateOfBirth
+        ? new Date(demographics.dateOfBirth).toISOString().split("T")[0]
+        : "",
+      gender: demographics?.gender || "",
+      addressStreet: demographics?.addressStreet || "",
+      addressCity: demographics?.addressCity || "",
+      addressState: demographics?.addressState || "",
+      addressZip: demographics?.addressZip || "",
+    });
+    setEditing(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateDemographics.mutateAsync({
+      dateOfBirth: form.dateOfBirth || null,
+      gender: form.gender || null,
+      addressStreet: form.addressStreet || null,
+      addressCity: form.addressCity || null,
+      addressState: form.addressState || null,
+      addressZip: form.addressZip || null,
+    });
+    setEditing(false);
+  };
+
+  const hasDemographics =
+    demographics?.dateOfBirth ||
+    demographics?.gender ||
+    demographics?.addressStreet;
+
+  const genderLabel = (g: string | null | undefined) => {
+    if (g === "M") return "Male";
+    if (g === "F") return "Female";
+    if (g === "U") return "Unknown";
+    return null;
+  };
+
+  if (editing) {
+    return (
+      <form onSubmit={handleSave} className="rounded-lg border p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Patient Demographics
+          </h3>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Date of Birth</Label>
+            <Input
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Sex</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              value={form.gender}
+              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+            >
+              <option value="">Select...</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="U">Unknown</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Street Address</Label>
+          <Input
+            value={form.addressStreet}
+            onChange={(e) => setForm((f) => ({ ...f, addressStreet: e.target.value }))}
+            placeholder="123 Main St"
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs">City</Label>
+            <Input
+              value={form.addressCity}
+              onChange={(e) => setForm((f) => ({ ...f, addressCity: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">State</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              value={form.addressState}
+              onChange={(e) => setForm((f) => ({ ...f, addressState: e.target.value }))}
+            >
+              <option value="">Select...</option>
+              {US_STATES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">ZIP Code</Label>
+            <Input
+              value={form.addressZip}
+              onChange={(e) => setForm((f) => ({ ...f, addressZip: e.target.value }))}
+              placeholder="12345"
+              maxLength={10}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={updateDemographics.isPending}>
+            {updateDemographics.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Save
+          </Button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <ClipboardList className="h-4 w-4" />
+          Patient Demographics
+        </h3>
+        <Button variant="ghost" size="sm" onClick={startEditing}>
+          {hasDemographics ? "Edit" : "Add"}
+        </Button>
+      </div>
+
+      {hasDemographics ? (
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          <div>
+            <p className="text-muted-foreground text-xs">Date of Birth</p>
+            <p className="font-medium">
+              {demographics?.dateOfBirth
+                ? new Date(demographics.dateOfBirth).toLocaleDateString()
+                : <span className="text-muted-foreground italic">Not set</span>}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs">Sex</p>
+            <p className="font-medium">
+              {genderLabel(demographics?.gender) || <span className="text-muted-foreground italic">Not set</span>}
+            </p>
+          </div>
+          {(demographics?.addressStreet || demographics?.addressCity) && (
+            <div className="col-span-2 mt-1">
+              <p className="text-muted-foreground text-xs">Address</p>
+              <p className="font-medium">
+                {[demographics?.addressStreet, [demographics?.addressCity, demographics?.addressState, demographics?.addressZip].filter(Boolean).join(", ")].filter(Boolean).join(", ")}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No demographics on file. Required for insurance billing (CMS-1500).
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Insurance Tab ──────────────────────────────────────────────────
 
-function InsuranceTab({ participantProfileId }: { participantProfileId: string }) {
+function InsuranceTab({ participantProfileId, demographics }: { participantProfileId: string; demographics?: ParticipantDetail["demographics"] }) {
   const { data: insurance, isLoading } = useInsurance(participantProfileId);
   const upsertInsurance = useUpsertInsurance();
   const removeInsurance = useRemoveInsurance();
@@ -1238,6 +1441,43 @@ function InsuranceTab({ participantProfileId }: { participantProfileId: string }
             </p>
           </div>
         )}
+      </div>
+
+      {/* Patient Demographics (CMS-1500 Box 3 & 5) — read-only from profile */}
+      <div className="rounded-lg border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium">Patient Demographics</h4>
+          {(!demographics?.dateOfBirth || !demographics?.gender || !demographics?.addressStreet) && (
+            <span className="text-xs text-amber-600 flex items-center gap-1">
+              <AlertCircle className="h-3.5 w-3.5" />
+              Required for claims
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">Date of Birth (Box 3)</p>
+            <p className="font-medium">
+              {demographics?.dateOfBirth
+                ? new Date(demographics.dateOfBirth).toLocaleDateString()
+                : <span className="text-amber-600 italic">Missing -- edit in Overview tab</span>}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Sex (Box 3)</p>
+            <p className="font-medium">
+              {demographics?.gender === "M" ? "Male" : demographics?.gender === "F" ? "Female" : demographics?.gender === "U" ? "Unknown" : <span className="text-amber-600 italic">Missing -- edit in Overview tab</span>}
+            </p>
+          </div>
+          <div className="col-span-2">
+            <p className="text-muted-foreground">Address (Box 5)</p>
+            <p className="font-medium">
+              {demographics?.addressStreet
+                ? [demographics.addressStreet, [demographics.addressCity, demographics.addressState, demographics.addressZip].filter(Boolean).join(", ")].filter(Boolean).join(", ")
+                : <span className="text-amber-600 italic">Missing -- edit in Overview tab</span>}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Eligibility Section */}

@@ -181,7 +181,6 @@ export function UnbilledSessionsSection() {
             locationTypeName: claimDialogAppt.location?.name ?? "",
             placeOfServiceCode: getPlaceOfServiceCode(claimDialogAppt),
           }}
-          insuranceData={null}
           onSuccess={() => setClaimDialogAppt(null)}
         />
       )}

@@ -17,7 +17,7 @@ const REFRESHABLE_STATUSES = new Set(["SUBMITTED", "ACCEPTED"]);
 
 export async function createClaim(
   ctx: ServiceCtx,
-  input: { appointmentId: string; diagnosisCodes: string[]; placeOfServiceCode?: string },
+  input: { appointmentId: string; diagnosisCodes: string[]; placeOfServiceCode?: string; modifiers?: string[] },
 ) {
   // Verify appointment exists and belongs to clinician's practice
   const appointment = await prisma.appointment.findUnique({
@@ -68,6 +68,7 @@ export async function createClaim(
       patientInsuranceId: insurance.id,
       status: "DRAFT",
       serviceCode: appointment.serviceCode.code,
+      modifiers: input.modifiers ?? [],
       servicePriceCents: appointment.serviceCode.defaultPriceCents || 0,
       placeOfServiceCode: posCode,
       dateOfService: appointment.startAt,
@@ -256,7 +257,7 @@ export async function submitDraftClaim(ctx: ServiceCtx, claimId: string) {
 export async function resubmitClaim(
   ctx: ServiceCtx,
   claimId: string,
-  updates?: { diagnosisCodes?: string[]; serviceCode?: string },
+  updates?: { diagnosisCodes?: string[]; serviceCode?: string; modifiers?: string[] },
 ) {
   const where: any = { id: claimId };
   if (!ctx.isAccountOwner) {
@@ -283,6 +284,7 @@ export async function resubmitClaim(
 
   if (updates?.diagnosisCodes) updateData.diagnosisCodes = updates.diagnosisCodes;
   if (updates?.serviceCode) updateData.serviceCode = updates.serviceCode;
+  if (updates?.modifiers) updateData.modifiers = updates.modifiers;
 
   const updated = await prisma.insuranceClaim.update({
     where: { id: claimId },

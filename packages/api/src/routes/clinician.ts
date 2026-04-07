@@ -2,7 +2,7 @@ import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { z } from "zod";
-import { AssignHomeworkSchema } from "@steady/shared";
+import { AssignHomeworkSchema, UpdateParticipantDemographicsSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
@@ -440,6 +440,47 @@ router.post("/participants/:id/homework", validate(AssignHomeworkSchema), async 
   } catch (err) {
     logger.error("Create standalone homework error", err);
     res.status(500).json({ success: false, error: "Failed to create homework" });
+  }
+});
+
+// PUT /api/clinician/participants/:id/demographics — Update patient demographics
+router.put("/participants/:id/demographics", validate(UpdateParticipantDemographicsSchema), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+
+    const detail = await getParticipantDetail(clinicianProfileId, id);
+    if (!detail || "notFound" in detail) {
+      res.status(404).json({ success: false, error: "Participant not found" });
+      return;
+    }
+
+    const { dateOfBirth, gender, addressStreet, addressCity, addressState, addressZip } = req.body;
+
+    const updated = await prisma.participantProfile.update({
+      where: { id: detail.participantProfileId },
+      data: {
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : dateOfBirth === null ? null : undefined,
+        gender: gender !== undefined ? gender : undefined,
+        addressStreet: addressStreet !== undefined ? addressStreet : undefined,
+        addressCity: addressCity !== undefined ? addressCity : undefined,
+        addressState: addressState !== undefined ? addressState : undefined,
+        addressZip: addressZip !== undefined ? addressZip : undefined,
+      },
+      select: {
+        dateOfBirth: true,
+        gender: true,
+        addressStreet: true,
+        addressCity: true,
+        addressState: true,
+        addressZip: true,
+      },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    logger.error("Update participant demographics error", err);
+    res.status(500).json({ success: false, error: "Failed to update demographics" });
   }
 });
 

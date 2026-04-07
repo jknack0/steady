@@ -28,6 +28,7 @@ interface ClaimDetail {
   id: string;
   status: string;
   serviceCode: string;
+  modifiers: string[];
   servicePriceCents: number;
   placeOfServiceCode: string;
   dateOfService: string;
@@ -143,6 +144,23 @@ export function ClaimDetailPanel({ claimId, onClose }: ClaimDetailPanelProps) {
             label="Service Code"
             value={<span className="font-mono">{claim.serviceCode}</span>}
           />
+          {claim.modifiers && claim.modifiers.length > 0 && (
+            <InfoRow
+              label="Modifiers"
+              value={
+                <div className="flex flex-wrap gap-1">
+                  {claim.modifiers.map((mod: string) => (
+                    <span
+                      key={mod}
+                      className="inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-mono"
+                    >
+                      {mod}
+                    </span>
+                  ))}
+                </div>
+              }
+            />
+          )}
           <InfoRow
             label="Charge Amount"
             value={formatMoney(claim.servicePriceCents / 100)}
@@ -431,6 +449,7 @@ function ClaimActions({
             claimId={claimId}
             currentDiagnosisCodes={claim.diagnosisCodes || []}
             currentServiceCode={claim.serviceCode || ""}
+            currentModifiers={claim.modifiers || []}
             onCancel={onHideResubmitForm}
             onSuccess={() => {
               onHideResubmitForm();

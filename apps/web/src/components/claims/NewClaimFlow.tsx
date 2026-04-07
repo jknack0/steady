@@ -16,7 +16,7 @@ import { DiagnosisCodeSearch } from "./DiagnosisCodeSearch";
 import { Input } from "@/components/ui/input";
 import { useCreateClaim, useSubmitClaim } from "@/hooks/use-claims";
 import { useBillableAppointments } from "@/hooks/use-appointments";
-import { Loader2, FileText, CalendarCheck } from "lucide-react";
+import { Loader2, FileText, CalendarCheck, X } from "lucide-react";
 import { showToast } from "@/hooks/use-toast";
 
 interface DiagnosisCode {
@@ -45,6 +45,8 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
   const { data: appointments, isLoading: appointmentsLoading } = useBillableAppointments();
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [diagnosisCodes, setDiagnosisCodes] = useState<DiagnosisCode[]>([]);
+  const [modifiers, setModifiers] = useState<string[]>([]);
+  const [modifierInput, setModifierInput] = useState("");
   const [placeOfService, setPlaceOfService] = useState("");
   const [error, setError] = useState<string | null>(null);
   const createClaim = useCreateClaim();
@@ -57,12 +59,33 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
   // Auto-populate place of service when appointment is selected
   const effectivePOS = placeOfService || (selectedAppointment?.location?.type === "VIRTUAL" ? "02" : "11");
 
+  const COMMON_MODIFIERS = [
+    { code: "95", label: "Synchronous Telehealth" },
+    { code: "GT", label: "Telehealth" },
+    { code: "HO", label: "Master's level" },
+    { code: "AH", label: "Clinical psychologist" },
+    { code: "AJ", label: "Clinical social worker" },
+  ];
+
   const resetState = () => {
     setSelectedAppointmentId(null);
     setDiagnosisCodes([]);
+    setModifiers([]);
+    setModifierInput("");
     setPlaceOfService("");
     setError(null);
     setIsSubmitting(false);
+  };
+
+  const addModifier = (code: string) => {
+    const upper = code.trim().toUpperCase();
+    if (!upper || modifiers.includes(upper) || modifiers.length >= 4) return;
+    setModifiers((prev) => [...prev, upper]);
+    setModifierInput("");
+  };
+
+  const removeModifier = (code: string) => {
+    setModifiers((prev) => prev.filter((m) => m !== code));
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -85,6 +108,7 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
       await createClaim.mutateAsync({
         appointmentId: selectedAppointmentId,
         diagnosisCodes: diagnosisCodes.map((c) => c.code),
+        modifiers,
       });
       showToast("Claim created as draft", "success");
       handleOpenChange(false);
@@ -110,6 +134,7 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
       const result: any = await createClaim.mutateAsync({
         appointmentId: selectedAppointmentId,
         diagnosisCodes: diagnosisCodes.map((c) => c.code),
+        modifiers,
       });
       const claimId = result?.id ?? result?.data?.id;
       if (claimId) {
@@ -167,7 +192,14 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
                         type="button"
                         onClick={() => {
                           setSelectedAppointmentId(appt.id);
-                          setPlaceOfService(appt.location?.type === "VIRTUAL" ? "02" : "11");
+                          const pos = appt.location?.type === "VIRTUAL" ? "02" : "11";
+                          setPlaceOfService(pos);
+                          // Auto-suggest modifier 95 for telehealth
+                          if (pos === "02" && !modifiers.includes("95")) {
+                            setModifiers((prev) => prev.length < 4 ? [...prev, "95"] : prev);
+                          } else if (pos !== "02") {
+                            setModifiers((prev) => prev.filter((m) => m !== "95"));
+                          }
                         }}
                         className={`w-full px-3 py-2.5 text-left text-sm transition-colors ${
                           isSelected
@@ -239,6 +271,89 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
                   onChange={setDiagnosisCodes}
                   maxCodes={4}
                 />
+              </div>
+            )}
+
+            {/* Modifiers */}
+            {selectedAppointment && (
+              <div className="space-y-2">
+                <Label>Modifiers</Label>
+                {/* Selected modifiers */}
+                {modifiers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {modifiers.map((mod) => {
+                      const common = COMMON_MODIFIERS.find((c) => c.code === mod);
+                      return (
+                        <span
+                          key={mod}
+                          className="inline-flex items-center gap-1 rounded-md border bg-primary/5 px-2 py-1 text-xs font-mono"
+                        >
+                          {mod}
+                          {common && (
+                            <span className="font-sans text-muted-foreground">
+                              ({common.label})
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeModifier(mod)}
+                            className="text-muted-foreground hover:text-destructive ml-0.5"
+                            aria-label={`Remove modifier ${mod}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Suggested modifier chips */}
+                {modifiers.length < 4 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {COMMON_MODIFIERS.filter((c) => !modifiers.includes(c.code)).map((c) => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => addModifier(c.code)}
+                        className="inline-flex items-center gap-1 rounded-md border border-dashed px-2 py-1 text-xs hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="font-mono font-medium">{c.code}</span>
+                        <span className="text-muted-foreground">{c.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Free-text modifier input */}
+                {modifiers.length < 4 && (
+                  <div className="flex gap-2">
+                    <Input
+                      value={modifierInput}
+                      onChange={(e) => setModifierInput(e.target.value.toUpperCase())}
+                      placeholder="Custom modifier (e.g. 59)"
+                      maxLength={2}
+                      className="font-mono w-40 h-8 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addModifier(modifierInput);
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3 text-xs"
+                      onClick={() => addModifier(modifierInput)}
+                      disabled={!modifierInput.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  CMS-1500 Box 24D. Max 4 modifiers per service line.
+                </p>
               </div>
             )}
 

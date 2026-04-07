@@ -302,8 +302,16 @@ model ParticipantProfile {
   id                   String  @id @default(cuid())
   userId               String  @unique
   user                 User    @relation(fields: [userId], references: [id])
-  timezone             String  @default("America/New_York")
-  onboardingCompleted  Boolean @default(false)
+  timezone             String    @default("America/New_York")
+  onboardingCompleted  Boolean   @default(false)
+
+  // Patient demographics (CMS-1500 Box 3 & Box 5)
+  dateOfBirth          DateTime?
+  gender               String?   // M, F, U
+  addressStreet        String?
+  addressCity          String?
+  addressState         String?
+  addressZip           String?
 
   enrollments       Enrollment[]
   tasks             Task[]
@@ -836,6 +844,7 @@ model InsuranceClaim {
   stediTransactionId    String?
   stediIdempotencyKey   String            @default(cuid())
   serviceCode           String
+  modifiers             String[]          @default([])
   servicePriceCents     Int
   placeOfServiceCode    String
   dateOfService         DateTime

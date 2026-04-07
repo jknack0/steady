@@ -35,6 +35,14 @@ export interface ParticipantDetail {
     lastName: string;
   };
   participantProfileId: string;
+  demographics?: {
+    dateOfBirth: string | null;
+    gender: string | null;
+    addressStreet: string | null;
+    addressCity: string | null;
+    addressState: string | null;
+    addressZip: string | null;
+  };
   enrollments: Array<{
     id: string;
     status: string;
@@ -196,6 +204,23 @@ export function useManageEnrollment(participantId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
       queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
+    },
+  });
+}
+
+export function useUpdateDemographics(participantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      dateOfBirth?: string | null;
+      gender?: string | null;
+      addressStreet?: string | null;
+      addressCity?: string | null;
+      addressState?: string | null;
+      addressZip?: string | null;
+    }) => api.put(`/api/clinician/participants/${participantId}/demographics`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
     },
   });
 }

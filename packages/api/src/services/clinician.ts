@@ -495,6 +495,14 @@ export async function getParticipantDetail(
     return {
       participant: participantProfile.user,
       participantProfileId: participantProfile.id,
+      demographics: {
+        dateOfBirth: participantProfile.dateOfBirth,
+        gender: participantProfile.gender,
+        addressStreet: participantProfile.addressStreet,
+        addressCity: participantProfile.addressCity,
+        addressState: participantProfile.addressState,
+        addressZip: participantProfile.addressZip,
+      },
       enrollments: [],
       journalEntries: [],
       smartGoals: [],
@@ -581,6 +589,14 @@ export async function getParticipantDetail(
   return {
     participant: participantProfile.user,
     participantProfileId: participantProfile.id,
+    demographics: {
+      dateOfBirth: participantProfile.dateOfBirth,
+      gender: participantProfile.gender,
+      addressStreet: participantProfile.addressStreet,
+      addressCity: participantProfile.addressCity,
+      addressState: participantProfile.addressState,
+      addressZip: participantProfile.addressZip,
+    },
     enrollments: enrollmentDetails,
     journalEntries,
     smartGoals: smartGoalResponses,
