@@ -52,9 +52,9 @@ describe("Calendar", () => {
     expect(btns.length).toBeGreaterThan(0);
   });
 
-  it("shows empty state CTA when no appointments", async () => {
+  it("shows schedule button when no appointments", async () => {
     const { findByText } = render(<Calendar />, { wrapper });
-    const cta = await findByText(/Schedule your first appointment/i);
+    const cta = await findByText(/Schedule appointment/i);
     expect(cta).toBeTruthy();
   });
 
