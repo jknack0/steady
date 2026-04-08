@@ -72,6 +72,11 @@ function own() {
 function clin() {
   mdb.practiceMembership.findFirst.mockResolvedValue({ practiceId: "practice-1", role: "CLINICIAN" });
 }
+/** Mock the participantProfile → userId lookup + clinicianClient ownership */
+function mockOwnership() {
+  mdb.participantProfile.findUnique.mockResolvedValue({ userId: "user-1" });
+  mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", clientId: "user-1" });
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -83,7 +88,7 @@ describe("Insurance Routes", () => {
   describe("PUT /api/insurance/:participantId", () => {
     it("creates insurance for a participant owned by clinician", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.upsert.mockResolvedValue(mockInsurance());
 
       const res = await request(app)
@@ -105,7 +110,7 @@ describe("Insurance Routes", () => {
 
     it("updates existing insurance for a participant", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.upsert.mockResolvedValue(mockInsurance({ payerName: "Blue Cross" }));
 
       const res = await request(app)
@@ -124,7 +129,7 @@ describe("Insurance Routes", () => {
 
     it("requires policyHolder fields when relationship is SPOUSE", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
 
       const res = await request(app)
         .put("/api/insurance/pp-1")
@@ -143,7 +148,7 @@ describe("Insurance Routes", () => {
 
     it("accepts policyHolder fields when relationship is SPOUSE", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.upsert.mockResolvedValue(
         mockInsurance({
           relationshipToSubscriber: "SPOUSE",
@@ -173,7 +178,7 @@ describe("Insurance Routes", () => {
 
     it("requires policyHolder fields when relationship is CHILD", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
 
       const res = await request(app)
         .put("/api/insurance/pp-1")
@@ -208,6 +213,7 @@ describe("Insurance Routes", () => {
 
     it("returns 404 when clinician does not own participant", async () => {
       clin();
+      mdb.participantProfile.findUnique.mockResolvedValue({ userId: "user-1" });
       mdb.clinicianClient.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
@@ -226,7 +232,7 @@ describe("Insurance Routes", () => {
 
     it("returns 400 for missing payerId", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
 
       const res = await request(app)
         .put("/api/insurance/pp-1")
@@ -243,7 +249,7 @@ describe("Insurance Routes", () => {
 
     it("returns 400 for missing payerName", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
 
       const res = await request(app)
         .put("/api/insurance/pp-1")
@@ -259,7 +265,7 @@ describe("Insurance Routes", () => {
 
     it("returns 400 for missing subscriberId", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
 
       const res = await request(app)
         .put("/api/insurance/pp-1")
@@ -275,7 +281,7 @@ describe("Insurance Routes", () => {
 
     it("returns 400 for missing relationshipToSubscriber", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
 
       const res = await request(app)
         .put("/api/insurance/pp-1")
@@ -295,7 +301,7 @@ describe("Insurance Routes", () => {
   describe("GET /api/insurance/:participantId", () => {
     it("returns insurance for a participant", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.findFirst.mockResolvedValue(mockInsurance());
 
       const res = await request(app)
@@ -309,7 +315,7 @@ describe("Insurance Routes", () => {
 
     it("returns null when participant has no insurance", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
@@ -335,6 +341,7 @@ describe("Insurance Routes", () => {
 
     it("returns 404 when clinician does not own participant", async () => {
       clin();
+      mdb.participantProfile.findUnique.mockResolvedValue({ userId: "user-1" });
       mdb.clinicianClient.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
@@ -351,7 +358,7 @@ describe("Insurance Routes", () => {
   describe("DELETE /api/insurance/:participantId", () => {
     it("soft deletes insurance (sets isActive=false)", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.findFirst.mockResolvedValue(mockInsurance());
       mdb.patientInsurance.update.mockResolvedValue(mockInsurance({ isActive: false }));
 
@@ -370,7 +377,7 @@ describe("Insurance Routes", () => {
 
     it("returns 404 when no active insurance exists", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
@@ -388,6 +395,7 @@ describe("Insurance Routes", () => {
 
     it("returns 404 when clinician does not own participant", async () => {
       clin();
+      mdb.participantProfile.findUnique.mockResolvedValue({ userId: "user-1" });
       mdb.clinicianClient.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
@@ -403,7 +411,7 @@ describe("Insurance Routes", () => {
   describe("POST /api/insurance/:participantId/eligibility", () => {
     it("returns cached eligibility when fresh (< 24h)", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.findFirst.mockResolvedValue(
         mockInsurance({
           cachedEligibility: { coverageActive: true, copayAmountCents: 2500, coinsurancePercent: 20 },
@@ -423,7 +431,7 @@ describe("Insurance Routes", () => {
 
     it("returns 404 when no active insurance exists", async () => {
       clin();
-      mdb.clinicianClient.findFirst.mockResolvedValue({ clinicianId: "test-clinician-profile-id", participantId: "pp-1" });
+      mockOwnership();
       mdb.patientInsurance.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
@@ -441,6 +449,7 @@ describe("Insurance Routes", () => {
 
     it("returns 404 when clinician does not own participant", async () => {
       clin();
+      mdb.participantProfile.findUnique.mockResolvedValue({ userId: "user-1" });
       mdb.clinicianClient.findFirst.mockResolvedValue(null);
 
       const res = await request(app)
