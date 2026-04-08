@@ -3,30 +3,34 @@
 set -e
 
 echo "Generating .amplify-hosting deployment structure..."
-echo "Checking standalone output structure..."
-ls -la .next/standalone/ 2>/dev/null || true
-ls -la .next/standalone/apps/web/ 2>/dev/null || true
 
 rm -rf .amplify-hosting
 mkdir -p .amplify-hosting/compute/default
 mkdir -p .amplify-hosting/static/_next/static
 
-# Copy standalone server
+# In a monorepo, standalone output has server.js at apps/web/server.js
+# Copy the whole standalone output first
 cp -r .next/standalone/. .amplify-hosting/compute/default/
 
-# The .next dir in standalone for monorepo is at apps/web/.next
-# Copy static assets there
-if [ -d ".amplify-hosting/compute/default/apps/web/.next" ]; then
-  cp -r .next/static/. .amplify-hosting/compute/default/apps/web/.next/static/
-  echo "Copied static to monorepo path: apps/web/.next/static"
-elif [ -d ".amplify-hosting/compute/default/.next" ]; then
-  cp -r .next/static/. .amplify-hosting/compute/default/.next/static/
-  echo "Copied static to root path: .next/static"
+# Move server.js and .next from the monorepo nested path to compute root
+if [ -f ".amplify-hosting/compute/default/apps/web/server.js" ]; then
+  # Create a wrapper server.js at root that points to the monorepo path
+  cat > .amplify-hosting/compute/default/run.js << 'WRAPPER'
+// Wrapper to set correct working directory for monorepo standalone
+process.chdir(__dirname + '/apps/web');
+require('./apps/web/server.js');
+WRAPPER
+  # Update entrypoint to run.js
+  ENTRYPOINT="run.js"
+  echo "Using monorepo wrapper: run.js -> apps/web/server.js"
 else
-  mkdir -p .amplify-hosting/compute/default/.next/static
-  cp -r .next/static/. .amplify-hosting/compute/default/.next/static/
-  echo "Created and copied static to .next/static"
+  ENTRYPOINT="server.js"
+  echo "Using root server.js"
 fi
+
+# Copy static assets into the nested .next directory
+cp -r .next/static/. .amplify-hosting/compute/default/apps/web/.next/static/ 2>/dev/null || \
+cp -r .next/static/. .amplify-hosting/compute/default/.next/static/ 2>/dev/null || true
 
 # Copy static assets for CDN serving
 cp -r .next/static/. .amplify-hosting/static/_next/static/
@@ -69,7 +73,7 @@ cat > .amplify-hosting/deploy-manifest.json << MANIFEST
   "computeResources": [
     {
       "name": "default",
-      "entrypoint": "server.js",
+      "entrypoint": "${ENTRYPOINT}",
       "runtime": "nodejs20.x"
     }
   ],
@@ -80,6 +84,6 @@ cat > .amplify-hosting/deploy-manifest.json << MANIFEST
 }
 MANIFEST
 
-echo "Generated .amplify-hosting with deploy-manifest.json"
-ls -la .amplify-hosting/
+echo "Generated .amplify-hosting with deploy-manifest.json (entrypoint: ${ENTRYPOINT})"
+echo "Compute root contents:"
 ls -la .amplify-hosting/compute/default/
