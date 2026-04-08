@@ -22,7 +22,7 @@ jobs:
           cache: npm
       - run: npm install --ignore-scripts
       - run: npx prisma generate --schema=packages/db/prisma/schema.prisma
-      - run: npm run typecheck
+      - run: npx turbo run typecheck --filter=@steady/api --filter=@steady/web --filter=@steady/shared --filter=@steady/db
 
   unit-tests:
     name: Unit Tests
