@@ -43,6 +43,7 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
     ```
   - **Bounded lists** (modules per program, parts per module, trackers per program) use a `take` cap (e.g., `take: 200`).
   - **Naturally tiny lists** (notification preferences, hardcoded templates) are exempt.
+- **Dependency pinning**: All dependencies use **exact versions** (no `^` or `~`). The `.npmrc` has `save-exact=true`. This prevents version drift across environments (Windows, WSL, Docker, Railway, Vercel). When adding a dependency, use `npm install <pkg>` — it will auto-pin. Never use `^` ranges for critical packages (Prisma, React, Express, LiveKit).
 - **Connection pooling**: Never create ad-hoc PrismaClient instances — always use the singleton from `@steady/db`.
 - **Separation of concerns**: Business logic in service functions (`packages/api/src/services/`), not route handlers. Route handlers only parse input, call services, and format output.
 - **Shared validation**: All Zod schemas live in `@steady/shared` so API and frontend validate identically. Never duplicate validation logic.
