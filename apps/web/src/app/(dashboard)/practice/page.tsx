@@ -15,8 +15,10 @@ import { PracticeParticipantTable } from "@/components/practice/PracticeParticip
 import { LoadingState } from "@/components/loading-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function PracticePage() {
+  usePageTitle("Practice");
   const { data: practices, isLoading: practicesLoading } = usePractices();
 
   // Find practice where user is OWNER

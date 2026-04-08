@@ -2,30 +2,34 @@
 
 import { useState } from "react";
 import { useClaims, useRefreshClaimStatus, useResubmitClaim, useSubmitClaim } from "@/hooks/use-claims";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { ClaimStatusBadge } from "@/components/claims/ClaimStatusBadge";
 import { ClaimDetailPanel } from "@/components/claims/ClaimDetailPanel";
 import { NewClaimFlow } from "@/components/claims/NewClaimFlow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs } from "@/components/ui/tabs";
 import { FileText, RefreshCw, Loader2, Plus, Send } from "lucide-react";
 import { showToast } from "@/hooks/use-toast";
 
 const STATUS_TABS = [
-  { label: "All", value: undefined },
-  { label: "Draft", value: "DRAFT" },
-  { label: "Submitted", value: "SUBMITTED" },
-  { label: "Accepted", value: "ACCEPTED" },
-  { label: "Rejected", value: "REJECTED" },
-  { label: "Denied", value: "DENIED" },
-  { label: "Paid", value: "PAID" },
-] as const;
+  { key: "all", label: "All" },
+  { key: "DRAFT", label: "Draft" },
+  { key: "SUBMITTED", label: "Submitted" },
+  { key: "ACCEPTED", label: "Accepted" },
+  { key: "REJECTED", label: "Rejected" },
+  { key: "DENIED", label: "Denied" },
+  { key: "PAID", label: "Paid" },
+];
 
 export default function ClaimsPage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  usePageTitle("Claims");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [showNewClaim, setShowNewClaim] = useState(false);
+  const effectiveFilter = statusFilter === "all" ? undefined : statusFilter;
   const { claims, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useClaims(
-    statusFilter ? { status: statusFilter } : undefined,
+    effectiveFilter ? { status: effectiveFilter } : undefined,
   );
   const refreshStatus = useRefreshClaimStatus();
   const resubmitClaim = useResubmitClaim();
@@ -47,21 +51,11 @@ export default function ClaimsPage() {
       </div>
 
       {/* Status filter tabs */}
-      <div className="flex gap-1 border-b">
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.label}
-            onClick={() => setStatusFilter(tab.value)}
-            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-              statusFilter === tab.value
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={STATUS_TABS}
+        active={statusFilter}
+        onChange={setStatusFilter}
+      />
 
       {/* Claims list */}
       {isLoading ? (

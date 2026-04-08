@@ -198,32 +198,32 @@ Break apart monolithic page files into focused components.
 ## Phase 5: Type Safety & Hook Quality (2-3 days, ~20 hours)
 
 ### 5.1 Type All Hook Returns (~4 hours)
-- [ ] `useInsurance` -- add `InsuranceData` interface
-- [ ] `usePayerSearch` -- add `Payer` interface
-- [ ] `useDiagnosisCodeSearch` -- add `DiagnosisCode` interface
-- [ ] `useSavedCards` -- add `SavedCard` interface
-- [ ] `usePayments` -- add `Payment` interface
-- [ ] `useInvoices` / `useInvoice` -- add `Invoice` interface
-- [ ] `useUpdateSession` -- add `UpdateSessionInput` interface
+- [x] `useInsurance` -- add `InsuranceData` interface
+- [x] `usePayerSearch` -- add `Payer` interface
+- [x] `useDiagnosisCodeSearch` -- add `DiagnosisCode` interface
+- [x] `useSavedCards` -- add `SavedCard` interface
+- [x] `usePayments` -- add `Payment` interface
+- [x] `useInvoices` / `useInvoice` -- add `Invoice` interface
+- [x] `useUpdateSession` -- add `UpdateSessionInput` interface
 
 ### 5.2 Type All Mutation Inputs (~2 hours)
-- [ ] `useCreateInvoice` -- typed input (not `any`)
-- [ ] `useUpdateInvoice` -- typed input
-- [ ] `useRecordPayment` -- typed input
-- [ ] `useUpsertInsurance` -- typed input
-- [ ] `useResubmitClaim` -- typed input
+- [x] `useCreateInvoice` -- typed input (not `any`)
+- [x] `useUpdateInvoice` -- typed input
+- [x] `useRecordPayment` -- typed input
+- [x] `useUpsertInsurance` -- typed input
+- [x] `useResubmitClaim` -- typed input
 
 ### 5.3 Query Key Factory (~3 hours)
-- [ ] Create `lib/query-keys.ts` with typed key factory
-- [ ] Standardize on plural-always convention
-- [ ] Update all 43 hook files to use factory
-- [ ] Fixes: invoice/invoices key split, claims key collision
+- [x] Create `lib/query-keys.ts` with typed key factory
+- [x] Standardize on plural-always convention
+- [x] Update all 43 hook files to use factory
+- [x] Fixes: invoice/invoices key split, claims key collision
 
 ### 5.4 Consolidate Duplicate Hooks (~2 hours)
-- [ ] Merge `useInsurance` + `useParticipantInsurance` (same endpoint, dual cache)
-- [ ] Consolidate `useDeleteModule` (exists in use-modules.ts and use-assignment.ts)
-- [ ] Consolidate `useDeletePart` (same duplication)
-- [ ] Clarify `usePrepareSession` vs `useSessionPrep`
+- [x] Merge `useInsurance` + `useParticipantInsurance` (same endpoint, dual cache)
+- [x] Consolidate `useDeleteModule` (exists in use-modules.ts and use-assignment.ts)
+- [x] Consolidate `useDeletePart` (same duplication)
+- [x] Clarify `usePrepareSession` vs `useSessionPrep`
 
 ### 5.5 Add Optimistic Updates (~2 hours)
 - [ ] `useDeleteInvoice` -- optimistic removal from list
@@ -231,8 +231,8 @@ Break apart monolithic page files into focused components.
 - [ ] `useReorderParts` -- optimistic reorder on drag-drop
 
 ### 5.6 Fix Autosave Status Bug (~30 min)
-- [ ] Move `setStatus("saving")` inside setTimeout callback
-- [ ] Add "pending" status for debounce period
+- [x] Move `setStatus("saving")` inside setTimeout callback
+- [x] Add "pending" status for debounce period
 
 ### 5.7 Eliminate `as any` Casts (~3 hours)
 - [ ] 40+ `as any` casts across codebase
@@ -240,8 +240,8 @@ Break apart monolithic page files into focused components.
 - [ ] Replace with proper types from hooks (after 5.1/5.2)
 
 ### 5.8 Build Query String Utility (~30 min)
-- [ ] Create `lib/query-utils.ts` with generic `buildQueryString()`
-- [ ] Replace 3 duplicate `toQueryString` implementations
+- [x] Create `lib/query-utils.ts` with generic `buildQueryString()`
+- [x] Replace 3 duplicate `toQueryString` implementations
 
 ---
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AuthProvider } from "@/components/auth-provider";
 import { QueryProvider } from "@/lib/query-provider";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/hooks/use-auth";
@@ -268,6 +269,7 @@ export default function DashboardLayout({
   const commandPalette = useCommandPalette();
 
   return (
+    <AuthProvider>
     <QueryProvider>
       <ProtectedRoute>
     <div className="flex h-screen overflow-hidden">
@@ -330,5 +332,6 @@ export default function DashboardLayout({
     </div>
       </ProtectedRoute>
     </QueryProvider>
+    </AuthProvider>
   );
 }

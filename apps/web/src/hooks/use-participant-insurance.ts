@@ -1,35 +1,28 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { useInsurance } from "./use-insurance";
+import type { InsuranceData } from "./use-insurance";
 
-interface InsuranceData {
-  id: string;
-  payerName: string;
-  payerId: string;
-  subscriberId: string;
-  isActive: boolean;
-  [key: string]: unknown;
-}
+export type { InsuranceData };
 
+/**
+ * @deprecated Use `useInsurance(participantId, { suppress404: true })` instead.
+ *
+ * Thin wrapper retained for backward compatibility. Delegates to the
+ * consolidated `useInsurance` hook with 404 suppression enabled.
+ */
 export function useParticipantInsurance(participantId: string | undefined) {
-  const query = useQuery<InsuranceData | null>({
-    queryKey: ["participant-insurance", participantId],
-    queryFn: async () => {
-      try {
-        return await api.get<InsuranceData>(`/api/insurance/${participantId}`);
-      } catch {
-        // 404 means no insurance on file - not an error
-        return null;
-      }
-    },
-    enabled: !!participantId,
-  });
-
+  const result = useInsurance(participantId, { suppress404: true });
+  // The suppress404 overload enriches the result with convenience fields
+  const enriched = result as typeof result & {
+    insurance: InsuranceData | null;
+    hasInsurance: boolean;
+    payerName: string | null;
+  };
   return {
-    insurance: query.data ?? null,
-    hasInsurance: !!query.data && query.data.isActive !== false,
-    payerName: query.data?.payerName ?? null,
-    isLoading: query.isLoading,
+    insurance: enriched.insurance ?? null,
+    hasInsurance: enriched.hasInsurance ?? false,
+    payerName: enriched.payerName ?? null,
+    isLoading: result.isLoading,
   };
 }

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { WidgetShell } from "@/components/dashboard-widgets";
 import type { WidgetProps } from "@/components/dashboard-widgets";
 import { Activity, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParticipantCheckin, useTrackerTrends } from "@/hooks/use-daily-trackers";
-import { TrackerCharts } from "@/components/tracker-charts";
 import { EditCheckinModal } from "@/components/edit-checkin-modal";
+
+const TrackerCharts = dynamic(
+  () =>
+    import("@/components/tracker-charts").then((mod) => mod.TrackerCharts),
+  { ssr: false }
+);
 
 interface ClientTrackersProps extends WidgetProps {
   widgetId: string;

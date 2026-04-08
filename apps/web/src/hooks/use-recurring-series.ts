@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
+import { buildQueryString } from "@/lib/query-utils";
 
 export interface SeriesView {
   id: string;
@@ -52,26 +54,17 @@ export interface ListSeriesParams {
   limit?: number;
 }
 
-function toQueryString(params: ListSeriesParams): string {
-  const qs = new URLSearchParams();
-  if (params.participantId) qs.set("participantId", params.participantId);
-  if (params.isActive !== undefined) qs.set("isActive", String(params.isActive));
-  if (params.cursor) qs.set("cursor", params.cursor);
-  if (params.limit) qs.set("limit", String(params.limit));
-  return qs.toString();
-}
-
 export function useRecurringSeries(params: ListSeriesParams = {}) {
-  const qs = toQueryString(params);
+  const qs = buildQueryString(params as Record<string, string | number | boolean | undefined>);
   return useQuery<SeriesView[]>({
-    queryKey: ["recurring-series", params],
+    queryKey: queryKeys.recurringSeries.all(params),
     queryFn: () => api.get(`/api/recurring-series${qs ? `?${qs}` : ""}`),
   });
 }
 
 export function useRecurringSeriesDetail(id: string) {
   return useQuery<SeriesView>({
-    queryKey: ["recurring-series", id],
+    queryKey: queryKeys.recurringSeries.detail(id),
     queryFn: () => api.get(`/api/recurring-series/${id}`),
     enabled: !!id,
   });

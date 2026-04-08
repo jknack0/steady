@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 // ── Response types ──────────────────────────────────────────────────────────
 
@@ -111,7 +112,7 @@ export interface BillingProfile {
 
 export function useRtmDashboard(enabled = true) {
   return useQuery<RtmDashboardData>({
-    queryKey: ["rtm-dashboard"],
+    queryKey: queryKeys.rtm.dashboard,
     queryFn: () => api.get("/api/rtm/dashboard"),
     enabled,
   });
@@ -119,7 +120,7 @@ export function useRtmDashboard(enabled = true) {
 
 export function useRtmClientDetail(enrollmentId: string) {
   return useQuery<RtmClientDetail>({
-    queryKey: ["rtm-detail", enrollmentId],
+    queryKey: queryKeys.rtm.detail(enrollmentId),
     queryFn: () => api.get(`/api/rtm/enrollments/${enrollmentId}/detail`),
     enabled: !!enrollmentId,
   });
@@ -127,14 +128,14 @@ export function useRtmClientDetail(enrollmentId: string) {
 
 export function useRtmEnrollments() {
   return useQuery<RtmEnrollment[]>({
-    queryKey: ["rtm-enrollments"],
+    queryKey: queryKeys.rtm.enrollments,
     queryFn: () => api.get("/api/rtm/enrollments"),
   });
 }
 
 export function useBillingProfile() {
   return useQuery<BillingProfile>({
-    queryKey: ["billing-profile"],
+    queryKey: queryKeys.billing.profile,
     queryFn: () => api.get("/api/rtm/billing-profile"),
   });
 }
@@ -155,8 +156,8 @@ export function useCreateRtmEnrollment() {
       startDate: string;
     }) => api.post("/api/rtm", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rtm-dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-enrollments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.dashboard });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.enrollments });
     },
   });
 }
@@ -167,9 +168,9 @@ export function useEndRtmEnrollment() {
     mutationFn: (enrollmentId: string) =>
       api.post(`/api/rtm/enrollments/${enrollmentId}/end`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rtm-dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-enrollments"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.dashboard });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.enrollments });
+      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] /* partial match for broad invalidation */ });
     },
   });
 }
@@ -185,8 +186,8 @@ export function useLogRtmTime() {
       isInteractiveCommunication?: boolean;
     }) => api.post("/api/rtm/time", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rtm-dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.dashboard });
+      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] /* partial match for broad invalidation */ });
     },
   });
 }
@@ -197,9 +198,9 @@ export function useUpdateBillingPeriod() {
     mutationFn: ({ id, data }: { id: string; data: { status: string } }) =>
       api.patch(`/api/rtm/periods/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rtm-dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-enrollments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.dashboard });
+      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] /* partial match for broad invalidation */ });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.enrollments });
     },
   });
 }
@@ -210,9 +211,9 @@ export function useRecalculatePeriod() {
     mutationFn: (periodId: string) =>
       api.post(`/api/rtm/periods/${periodId}/recalculate`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rtm-dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] });
-      queryClient.invalidateQueries({ queryKey: ["rtm-enrollments"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.dashboard });
+      queryClient.invalidateQueries({ queryKey: ["rtm-detail"] /* partial match for broad invalidation */ });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rtm.enrollments });
     },
   });
 }
@@ -266,7 +267,7 @@ export interface SuperbillData {
 
 export function useSuperbillData(periodId: string) {
   return useQuery<SuperbillData>({
-    queryKey: ["superbill", periodId],
+    queryKey: queryKeys.rtm.superbill(periodId),
     queryFn: () => api.get(`/api/rtm/periods/${periodId}/superbill`),
     enabled: !!periodId,
   });
@@ -280,7 +281,7 @@ export function useSaveBillingProfile() {
     mutationFn: (data: SaveBillingProfileData) =>
       api.put("/api/rtm/billing-profile", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["billing-profile"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.billing.profile });
     },
   });
 }

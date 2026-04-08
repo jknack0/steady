@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 // ── Response type ──────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ export interface ClinicianConfigData {
 
 export function useClinicianConfig() {
   return useQuery<ClinicianConfigData | null>({
-    queryKey: ["clinician-config"],
+    queryKey: queryKeys.config.clinician,
     queryFn: () => api.get("/api/config"),
   });
 }
@@ -68,7 +69,7 @@ export function useSaveClinicianConfig() {
       brandColor?: string;
     }) => api.put("/api/config", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.config.clinician });
     },
   });
 }
@@ -93,7 +94,7 @@ export function useSaveDashboardLayout() {
       }>;
     }) => api.patch("/api/config/dashboard-layout", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.config.clinician });
     },
   });
 }
@@ -104,8 +105,8 @@ export function useSaveClientOverviewLayout(clientId: string) {
     mutationFn: (layout: Array<{ widgetId: string; visible: boolean; column: string; order: number; settings: Record<string, unknown> }>) =>
       api.patch(`/api/config/clients/${clientId}/overview-layout`, { clientOverviewLayout: layout }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
-      queryClient.invalidateQueries({ queryKey: ["client-config", clientId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.config.clinician });
+      queryClient.invalidateQueries({ queryKey: queryKeys.config.client(clientId) });
     },
   });
 }
@@ -116,7 +117,7 @@ export function useSaveHomeworkLabels() {
     mutationFn: (homeworkLabels: Record<string, string>) =>
       api.patch("/api/config/homework-labels", { homeworkLabels }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.config.clinician });
     },
   });
 }
@@ -126,8 +127,8 @@ export function useCreateConfigFromPreset() {
   return useMutation({
     mutationFn: (presetId: string) => api.post("/api/config/from-preset", { presetId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-config"] });
-      queryClient.invalidateQueries({ queryKey: ["auth-user"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.config.clinician });
+      queryClient.invalidateQueries({ queryKey: queryKeys.auth.user });
     },
   });
 }

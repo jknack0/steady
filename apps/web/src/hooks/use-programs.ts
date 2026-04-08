@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 import type { CreateProgramInput, UpdateProgramInput } from "@steady/shared";
 
 export interface Program {
@@ -41,14 +42,14 @@ export interface Module {
 
 export function usePrograms() {
   return useQuery<Program[]>({
-    queryKey: ["programs"],
+    queryKey: queryKeys.programs.all,
     queryFn: () => api.get("/api/programs"),
   });
 }
 
 export function useProgram(id: string) {
   return useQuery<Program>({
-    queryKey: ["programs", id],
+    queryKey: queryKeys.programs.detail(id),
     queryFn: () => api.get(`/api/programs/${id}`),
     enabled: !!id,
   });
@@ -59,7 +60,7 @@ export function useCreateProgram() {
   return useMutation({
     mutationFn: (data: CreateProgramInput) => api.post<Program>("/api/programs", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
     },
   });
 }
@@ -69,8 +70,8 @@ export function useUpdateProgram(id: string) {
   return useMutation({
     mutationFn: (data: UpdateProgramInput) => api.put<Program>(`/api/programs/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
-      queryClient.invalidateQueries({ queryKey: ["programs", id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.detail(id) });
     },
   });
 }
@@ -80,7 +81,7 @@ export function useDeleteProgram() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/api/programs/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
     },
   });
 }
@@ -91,7 +92,7 @@ export function useCloneProgram() {
     mutationFn: ({ id, title }: { id: string; title?: string }) =>
       api.post<Program>(`/api/programs/${id}/clone`, title ? { title } : {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
     },
   });
 }
@@ -109,7 +110,7 @@ export interface ProgramTemplate {
 
 export function useTemplates() {
   return useQuery<ProgramTemplate[]>({
-    queryKey: ["program-templates"],
+    queryKey: queryKeys.programs.templates,
     queryFn: () => api.get("/api/programs/templates"),
   });
 }
@@ -126,7 +127,7 @@ export interface ClientProgram {
 
 export function useClientPrograms() {
   return useQuery<ClientProgram[]>({
-    queryKey: ["client-programs"],
+    queryKey: queryKeys.programs.clientPrograms,
     queryFn: () => api.get("/api/programs/client-programs"),
   });
 }
@@ -137,7 +138,8 @@ export function useCreateProgramForClient() {
     mutationFn: (data: { title: string; clientId: string }) =>
       api.post<{ program: Program; enrollment: { id: string } }>("/api/programs/for-client", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["client-programs"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.clientPrograms });
+      queryClient.invalidateQueries({ queryKey: queryKeys.programs.all });
     },
   });
 }

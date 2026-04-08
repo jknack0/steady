@@ -2,6 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
+import { buildQueryString } from "@/lib/query-utils";
 import type {
   AppointmentView,
   AppointmentWithConflicts,
@@ -20,29 +22,20 @@ export interface ListAppointmentsParams {
   limit?: number;
 }
 
-function toQueryString(params: ListAppointmentsParams): string {
-  const qs = new URLSearchParams();
-  qs.set("startAt", params.startAt);
-  qs.set("endAt", params.endAt);
-  if (params.locationId) qs.set("locationId", params.locationId);
-  if (params.status) qs.set("status", params.status);
-  if (params.clinicianId) qs.set("clinicianId", params.clinicianId);
-  if (params.cursor) qs.set("cursor", params.cursor);
-  if (params.limit) qs.set("limit", String(params.limit));
-  return qs.toString();
-}
-
 export function useAppointments(params: ListAppointmentsParams | null) {
   return useQuery<AppointmentView[]>({
     queryKey: ["appointments", params],
-    queryFn: () => api.get(`/api/appointments?${toQueryString(params!)}`),
+    queryFn: () =>
+      api.get(
+        `/api/appointments?${buildQueryString(params as Record<string, string | number | undefined>)}`,
+      ),
     enabled: !!params,
   });
 }
 
 export function useAppointment(id: string) {
   return useQuery<AppointmentView>({
-    queryKey: ["appointment", id],
+    queryKey: queryKeys.appointments.detail(id),
     queryFn: () => api.get(`/api/appointments/${id}`),
     enabled: !!id,
   });
@@ -132,7 +125,7 @@ export function useBillableAppointments() {
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
   return useQuery<AppointmentView[]>({
-    queryKey: ["appointments", "billable"],
+    queryKey: queryKeys.appointments.billable,
     queryFn: () => {
       const qs = new URLSearchParams();
       qs.set("startAt", ninetyDaysAgo.toISOString());
@@ -144,23 +137,9 @@ export function useBillableAppointments() {
   });
 }
 
-interface UnbilledResponse {
-  data: AppointmentView[];
-  cursor: string | null;
-}
-
 export function useUnbilledAppointments() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   return useQuery<AppointmentView[]>({
-    queryKey: ["appointments", "unbilled"],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/appointments/unbilled?limit=20`, {
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Request failed: ${res.status}`);
-      return json.data ?? [];
-    },
+    queryKey: queryKeys.appointments.unbilled,
+    queryFn: () => api.get("/api/appointments/unbilled?limit=20"),
   });
 }

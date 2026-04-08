@@ -2,16 +2,17 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
-interface StediConfig {
+export interface StediConfig {
   configured: boolean;
   keyLastFour: string | null;
 }
 
 export function useStediConfig() {
-  return useQuery({
-    queryKey: ["stedi-config"],
-    queryFn: () => api.get("/api/config/stedi") as Promise<StediConfig>,
+  return useQuery<StediConfig>({
+    queryKey: queryKeys.config.stedi,
+    queryFn: () => api.get<StediConfig>("/api/config/stedi"),
   });
 }
 
@@ -21,7 +22,7 @@ export function useSetStediKey() {
     mutationFn: (apiKey: string) =>
       api.put("/api/config/stedi", { apiKey }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["stedi-config"] });
+      qc.invalidateQueries({ queryKey: queryKeys.config.stedi });
     },
   });
 }

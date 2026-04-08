@@ -1,4 +1,4 @@
-import { format as fnsFormat, addDays, startOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import { addDays, startOfDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { formatInTimeZone, toZonedTime, fromZonedTime } from "date-fns-tz";
 
 export const DEFAULT_TZ = "America/New_York";
@@ -63,11 +63,3 @@ export function monthRangeInTz(anchor: Date, tz: string): Range {
   return { startIso, endIso, startDate: start, endDate: end };
 }
 
-export function localDateInTz(utcIso: string | Date, tz: string): Date {
-  const date = typeof utcIso === "string" ? new Date(utcIso) : utcIso;
-  return toZonedTime(date, resolveTz(tz));
-}
-
-export function formatDate(date: Date, fmt: string): string {
-  return fnsFormat(date, fmt);
-}

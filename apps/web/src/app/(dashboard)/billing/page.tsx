@@ -3,36 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useInvoices, useDeleteInvoice } from "@/hooks/use-invoices";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useBillingSummary } from "@/hooks/use-billing-summary";
 import { PaymentLinkBadge } from "@/components/billing/PaymentLinkBadge";
 import { BalanceDueIndicator } from "@/components/billing/BalanceDueIndicator";
 import { StripeStatusBadge } from "@/components/billing/StripeStatusBadge";
+import { InvoiceStatusBadge } from "@/components/billing/InvoiceStatusBadge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Plus, AlertTriangle, FileText, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UnbilledSessionsSection } from "@/components/billing/UnbilledSessionsSection";
+import { formatCents } from "@/lib/format";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  SENT: "bg-blue-100 text-blue-700",
-  PAID: "bg-green-100 text-green-700",
-  PARTIALLY_PAID: "bg-amber-100 text-amber-700",
-  OVERDUE: "bg-red-100 text-red-700",
-  VOID: "bg-gray-100 text-gray-400 line-through",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Draft",
-  SENT: "Sent",
-  PAID: "Paid",
-  PARTIALLY_PAID: "Partial",
-  OVERDUE: "Overdue",
-  VOID: "Void",
-};
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function SummaryCard({
   label,
@@ -57,11 +40,13 @@ function SummaryCard({
 }
 
 export default function BillingPage() {
+  usePageTitle("Billing");
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const { data: summaryData } = useBillingSummary();
   const { data: invoiceData, isLoading } = useInvoices({ status: statusFilter || undefined });
   const deleteInvoice = useDeleteInvoice();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const summary = summaryData;
   const invoices = (invoiceData as any)?.data ?? invoiceData ?? [];
@@ -184,14 +169,7 @@ export default function BillingPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                          STATUS_COLORS[inv.status] ?? "bg-gray-100",
-                        )}
-                      >
-                        {STATUS_LABELS[inv.status] ?? inv.status}
-                      </span>
+                      <InvoiceStatusBadge status={inv.status} />
                       {inv.paymentLinkUrl && (
                         <PaymentLinkBadge
                           paymentLinkUrl={inv.paymentLinkUrl}
@@ -210,9 +188,13 @@ export default function BillingPage() {
                         className="text-red-500 hover:text-red-700"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (confirm("Delete this draft invoice?")) {
-                            deleteInvoice.mutate(inv.id);
-                          }
+                          confirm({
+                            title: "Delete Invoice",
+                            description: "Delete this draft invoice?",
+                            confirmLabel: "Delete",
+                            variant: "danger",
+                            onConfirm: () => deleteInvoice.mutate(inv.id),
+                          });
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -237,6 +219,8 @@ export default function BillingPage() {
           </Button>
         </div>
       )}
+
+      {confirmDialog}
     </div>
   );
 }

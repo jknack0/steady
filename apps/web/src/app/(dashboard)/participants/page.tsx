@@ -8,6 +8,7 @@ import {
   type ParticipantRow,
 } from "@/hooks/use-clinician-participants";
 import { useInvitations } from "@/hooks/use-invitations";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -142,6 +143,7 @@ type ListRow =
   | { kind: "invite"; data: { id: string; patientName: string; patientEmail: string; code: string; status: "PENDING" | "EXPIRED"; createdAt: string } };
 
 export default function ParticipantsPage() {
+  usePageTitle("Clients");
   const [search, setSearch] = useState("");
   const [programFilter, setProgramFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");

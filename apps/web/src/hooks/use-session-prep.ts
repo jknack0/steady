@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface SessionPrepData {
   appointment: {
@@ -43,7 +44,7 @@ export interface SessionPrepData {
 
 export function useSessionPrep(appointmentId: string) {
   return useQuery<SessionPrepData>({
-    queryKey: ["session-prep", appointmentId],
+    queryKey: queryKeys.sessions.prep(appointmentId),
     queryFn: () => api.get(`/api/appointments/${appointmentId}/prep`),
     enabled: !!appointmentId,
   });

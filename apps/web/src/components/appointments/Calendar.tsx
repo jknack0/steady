@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CalendarDayView } from "./CalendarDayView";
@@ -8,7 +9,12 @@ import { CalendarWeekView } from "./CalendarWeekView";
 import { CalendarMonthView } from "./CalendarMonthView";
 import { CalendarFilters } from "./CalendarFilters";
 import { AppointmentModal } from "./AppointmentModal";
-import { RecurringSeriesPanel } from "./RecurringSeriesPanel";
+
+const RecurringSeriesPanel = dynamic(
+  () =>
+    import("./RecurringSeriesPanel").then((mod) => mod.RecurringSeriesPanel),
+  { ssr: false }
+);
 import { useAppointments } from "@/hooks/use-appointments";
 import { useLocations } from "@/hooks/use-locations";
 import { useServiceCodes } from "@/hooks/use-service-codes";

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface ParticipantRow {
   participantId: string;
@@ -108,17 +109,17 @@ export function useClinicianParticipants(params?: {
   const query = qs.toString();
 
   return useQuery<ParticipantListResponse>({
-    queryKey: ["clinician-participants", params],
+    queryKey: queryKeys.participants.all(params),
     queryFn: () =>
       api.get<ParticipantListResponse>(
-        `/api/clinician/participants${query ? `?${query}` : ""}`
+        `/api/clinician/participants${query ? `?${query}` : ""}`,
       ),
   });
 }
 
 export function useClinicianParticipant(id: string) {
   return useQuery<ParticipantDetail>({
-    queryKey: ["clinician-participant", id],
+    queryKey: queryKeys.participants.detail(id),
     queryFn: () => api.get(`/api/clinician/participants/${id}`),
     enabled: !!id,
   });
@@ -130,7 +131,7 @@ export function usePushTask(participantId: string) {
     mutationFn: (data: { title: string; description?: string; dueDate?: string }) =>
       api.post(`/api/clinician/participants/${participantId}/push-task`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.participants.detail(participantId) });
     },
   });
 }
@@ -141,7 +142,7 @@ export function useUnlockModule(participantId: string) {
     mutationFn: (data: { enrollmentId: string; moduleId: string }) =>
       api.post(`/api/clinician/participants/${participantId}/unlock-module`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.participants.detail(participantId) });
     },
   });
 }
@@ -152,8 +153,8 @@ export function useBulkAction() {
     mutationFn: (data: {
       action: "push-task" | "unlock-next-module" | "send-nudge";
       participantIds: string[];
-      data?: Record<string, any>;
-    }) => api.post<any>("/api/clinician/participants/bulk", data),
+      data?: Record<string, unknown>;
+    }) => api.post("/api/clinician/participants/bulk", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
     },
@@ -170,7 +171,7 @@ export interface ClinicianClient {
 
 export function useClinicianClients() {
   return useQuery<ClinicianClient[]>({
-    queryKey: ["clinician-clients"],
+    queryKey: queryKeys.participants.clients,
     queryFn: () => api.get("/api/clinician/clients"),
   });
 }
@@ -182,7 +183,7 @@ export function useAddClient() {
       api.post<{ clinicianClient: { id: string; clientId: string }; isNewUser: boolean }>("/api/clinician/clients", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
-      queryClient.invalidateQueries({ queryKey: ["clinician-clients"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.participants.clients });
     },
   });
 }
@@ -199,10 +200,10 @@ export function useManageEnrollment(participantId: string) {
     }) =>
       api.put(
         `/api/clinician/participants/${participantId}/enrollment/${enrollmentId}`,
-        { action }
+        { action },
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.participants.detail(participantId) });
       queryClient.invalidateQueries({ queryKey: ["clinician-participants"] });
     },
   });
@@ -220,7 +221,7 @@ export function useUpdateDemographics(participantId: string) {
       addressZip?: string | null;
     }) => api.put(`/api/clinician/participants/${participantId}/demographics`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["clinician-participant", participantId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.participants.detail(participantId) });
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthProvider } from "@/components/auth-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api-client";
 import { Loader2 } from "lucide-react";
@@ -21,6 +22,14 @@ interface ProvisionResult {
 }
 
 export function DemoProvisionForm() {
+  return (
+    <AuthProvider>
+      <DemoProvisionFormContent />
+    </AuthProvider>
+  );
+}
+
+function DemoProvisionFormContent() {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const [firstName, setFirstName] = useState("");

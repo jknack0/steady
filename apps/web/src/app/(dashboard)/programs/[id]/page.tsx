@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useProgram, useUpdateProgram, useDeleteProgram } from "@/hooks/use-programs";
 import { useAutosave } from "@/hooks/use-autosave";
@@ -51,10 +52,24 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Module } from "@/hooks/use-programs";
-import { PhonePreviewModal } from "@/components/phone-preview-modal";
-import { AssignmentModal } from "@/components/assignment";
 import { FileUpload } from "@/components/file-upload";
 import Link from "next/link";
+
+const PhonePreviewModal = dynamic(
+  () =>
+    import("@/components/phone-preview-modal").then(
+      (mod) => mod.PhonePreviewModal
+    ),
+  { ssr: false }
+);
+
+const AssignmentModal = dynamic(
+  () =>
+    import("@/components/assignment/AssignmentModal").then(
+      (mod) => mod.AssignmentModal
+    ),
+  { ssr: false }
+);
 
 function SortableModuleCard({
   module,

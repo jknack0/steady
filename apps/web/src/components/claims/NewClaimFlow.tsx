@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { DiagnosisCodeSearch } from "./DiagnosisCodeSearch";
-import { Input } from "@/components/ui/input";
+import { DiagnosisCodePicker } from "./DiagnosisCodePicker";
+import { ModifierInput } from "@/components/billing/ModifierInput";
+import { AlertBanner } from "@/components/ui/alert-banner";
 import { useCreateClaim, useSubmitClaim } from "@/hooks/use-claims";
 import { useBillableAppointments } from "@/hooks/use-appointments";
-import { Loader2, FileText, CalendarCheck, X } from "lucide-react";
+import { Loader2, FileText, CalendarCheck } from "lucide-react";
 import { showToast } from "@/hooks/use-toast";
+import { formatDate } from "@/lib/format";
 
 interface DiagnosisCode {
   code: string;
@@ -29,24 +31,11 @@ interface NewClaimFlowProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function formatDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
 export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
   const { data: appointments, isLoading: appointmentsLoading } = useBillableAppointments();
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [diagnosisCodes, setDiagnosisCodes] = useState<DiagnosisCode[]>([]);
   const [modifiers, setModifiers] = useState<string[]>([]);
-  const [modifierInput, setModifierInput] = useState("");
   const [placeOfService, setPlaceOfService] = useState("");
   const [error, setError] = useState<string | null>(null);
   const createClaim = useCreateClaim();
@@ -59,33 +48,13 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
   // Auto-populate place of service when appointment is selected
   const effectivePOS = placeOfService || (selectedAppointment?.location?.type === "VIRTUAL" ? "02" : "11");
 
-  const COMMON_MODIFIERS = [
-    { code: "95", label: "Synchronous Telehealth" },
-    { code: "GT", label: "Telehealth" },
-    { code: "HO", label: "Master's level" },
-    { code: "AH", label: "Clinical psychologist" },
-    { code: "AJ", label: "Clinical social worker" },
-  ];
-
   const resetState = () => {
     setSelectedAppointmentId(null);
     setDiagnosisCodes([]);
     setModifiers([]);
-    setModifierInput("");
     setPlaceOfService("");
     setError(null);
     setIsSubmitting(false);
-  };
-
-  const addModifier = (code: string) => {
-    const upper = code.trim().toUpperCase();
-    if (!upper || modifiers.includes(upper) || modifiers.length >= 4) return;
-    setModifiers((prev) => [...prev, upper]);
-    setModifierInput("");
-  };
-
-  const removeModifier = (code: string) => {
-    setModifiers((prev) => prev.filter((m) => m !== code));
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -213,7 +182,7 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
                             {appt.participant?.lastName ?? ""}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {formatDateShort(appt.startAt)}
+                            {formatDate(appt.startAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
@@ -245,7 +214,7 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Date:</span>{" "}
-                    <span className="font-medium">{formatDateShort(selectedAppointment.startAt)}</span>
+                    <span className="font-medium">{formatDate(selectedAppointment.startAt)}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -265,10 +234,15 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
             {selectedAppointment && (
               <div className="space-y-2">
                 <Label>Diagnosis Codes (ICD-10) *</Label>
-                <DiagnosisCodeSearch
+                <DiagnosisCodePicker
+                  selectedCodes={diagnosisCodes.map((c) => c.code)}
+                  onCodesChange={(codes) =>
+                    setDiagnosisCodes(codes.map((code) => {
+                      const existing = diagnosisCodes.find((d) => d.code === code);
+                      return existing ?? { code, description: "" };
+                    }))
+                  }
                   participantId={selectedAppointment.participantId}
-                  selectedCodes={diagnosisCodes}
-                  onChange={setDiagnosisCodes}
                   maxCodes={4}
                 />
               </div>
@@ -278,94 +252,12 @@ export function NewClaimFlow({ open, onOpenChange }: NewClaimFlowProps) {
             {selectedAppointment && (
               <div className="space-y-2">
                 <Label>Modifiers</Label>
-                {/* Selected modifiers */}
-                {modifiers.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {modifiers.map((mod) => {
-                      const common = COMMON_MODIFIERS.find((c) => c.code === mod);
-                      return (
-                        <span
-                          key={mod}
-                          className="inline-flex items-center gap-1 rounded-md border bg-primary/5 px-2 py-1 text-xs font-mono"
-                        >
-                          {mod}
-                          {common && (
-                            <span className="font-sans text-muted-foreground">
-                              ({common.label})
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeModifier(mod)}
-                            className="text-muted-foreground hover:text-destructive ml-0.5"
-                            aria-label={`Remove modifier ${mod}`}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-                {/* Suggested modifier chips */}
-                {modifiers.length < 4 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {COMMON_MODIFIERS.filter((c) => !modifiers.includes(c.code)).map((c) => (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => addModifier(c.code)}
-                        className="inline-flex items-center gap-1 rounded-md border border-dashed px-2 py-1 text-xs hover:bg-muted/50 transition-colors"
-                      >
-                        <span className="font-mono font-medium">{c.code}</span>
-                        <span className="text-muted-foreground">{c.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {/* Free-text modifier input */}
-                {modifiers.length < 4 && (
-                  <div className="flex gap-2">
-                    <Input
-                      value={modifierInput}
-                      onChange={(e) => setModifierInput(e.target.value.toUpperCase())}
-                      placeholder="Custom modifier (e.g. 59)"
-                      maxLength={2}
-                      className="font-mono w-40 h-8 text-xs"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addModifier(modifierInput);
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 px-3 text-xs"
-                      onClick={() => addModifier(modifierInput)}
-                      disabled={!modifierInput.trim()}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  CMS-1500 Box 24D. Max 4 modifiers per service line.
-                </p>
+                <ModifierInput modifiers={modifiers} onChange={setModifiers} />
               </div>
             )}
 
             {/* Error display */}
-            {error && (
-              <div
-                role="alert"
-                className="rounded-md border border-red-300 bg-red-50 p-2 text-xs text-red-900"
-              >
-                {error}
-              </div>
-            )}
+            {error && <AlertBanner variant="error">{error}</AlertBanner>}
           </div>
         </DialogBody>
 

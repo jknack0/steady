@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 import type { CreateOverrideInput, OverrideType } from "@steady/shared";
 
 export interface EnrollmentOverride {
@@ -18,7 +19,7 @@ export interface EnrollmentOverride {
 export function useOverrides(enrollmentId: string, moduleId?: string) {
   const qs = moduleId ? `?moduleId=${moduleId}` : "";
   return useQuery<EnrollmentOverride[]>({
-    queryKey: ["overrides", enrollmentId, moduleId],
+    queryKey: queryKeys.enrollments.overrides(enrollmentId, moduleId),
     queryFn: () => api.get(`/api/enrollments/${enrollmentId}/overrides${qs}`),
     enabled: !!enrollmentId,
   });

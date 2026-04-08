@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 import { useClinicianConfig, useSaveDashboardLayout } from "@/hooks/use-config";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { LoadingState } from "@/components/loading-state";
 import { PageHeader } from "@/components/page-header";
 import { WidgetGrid } from "@/components/widget-grid";
@@ -52,6 +53,7 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
+  usePageTitle("Dashboard");
   const { user } = useAuth();
   const { data: config } = useClinicianConfig();
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({

@@ -9,22 +9,11 @@ import { useSavedCards } from "@/hooks/use-saved-cards";
 import { PaymentLinkBadge } from "@/components/billing/PaymentLinkBadge";
 import { BalanceDueIndicator } from "@/components/billing/BalanceDueIndicator";
 import { ChargeCardDialog } from "@/components/billing/ChargeCardDialog";
+import { InvoiceStatusBadge } from "@/components/billing/InvoiceStatusBadge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Send, Ban, Trash2, Plus, Download, CreditCard } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  SENT: "bg-blue-100 text-blue-700",
-  PAID: "bg-green-100 text-green-700",
-  PARTIALLY_PAID: "bg-amber-100 text-amber-700",
-  OVERDUE: "bg-red-100 text-red-700",
-  VOID: "bg-gray-100 text-gray-400",
-};
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
+import { formatCents } from "@/lib/format";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -44,6 +33,7 @@ export default function InvoiceDetailPage() {
   const [paymentMethod, setPaymentMethod] = useState("CREDIT_CARD");
   const [paymentRef, setPaymentRef] = useState("");
   const [chargeDialogOpen, setChargeDialogOpen] = useState(false);
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
 
   const invoice = invoiceData as any;
 
@@ -121,14 +111,7 @@ export default function InvoiceDetailPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "rounded-full px-3 py-1 text-sm font-medium",
-              STATUS_COLORS[invoice.status] ?? "bg-gray-100",
-            )}
-          >
-            {invoice.status}
-          </span>
+          <InvoiceStatusBadge status={invoice.status} />
           {invoice.paymentLinkUrl && (
             <PaymentLinkBadge
               paymentLinkUrl={invoice.paymentLinkUrl}
@@ -275,9 +258,13 @@ export default function InvoiceDetailPage() {
                     <button
                       className="text-red-500 hover:text-red-700"
                       onClick={() => {
-                        if (confirm("Remove this payment?")) {
-                          deletePaymentMut.mutate(p.id);
-                        }
+                        confirm({
+                          title: "Remove Payment",
+                          description: "Remove this payment?",
+                          confirmLabel: "Remove",
+                          variant: "danger",
+                          onConfirm: () => deletePaymentMut.mutate(p.id),
+                        });
                       }}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -371,9 +358,13 @@ export default function InvoiceDetailPage() {
           <Button
             variant="outline"
             onClick={() => {
-              if (confirm("Void this invoice? This cannot be undone.")) {
-                voidInvoice.mutate();
-              }
+              confirm({
+                title: "Void Invoice",
+                description: "Void this invoice? This cannot be undone.",
+                confirmLabel: "Void",
+                variant: "danger",
+                onConfirm: () => voidInvoice.mutate(),
+              });
             }}
             disabled={voidInvoice.isPending}
           >
@@ -385,11 +376,16 @@ export default function InvoiceDetailPage() {
           <Button
             variant="destructive"
             onClick={() => {
-              if (confirm("Delete this draft invoice?")) {
-                deleteInvoice.mutate(invoiceId, {
-                  onSuccess: () => router.push("/billing"),
-                });
-              }
+              confirm({
+                title: "Delete Invoice",
+                description: "Delete this draft invoice?",
+                confirmLabel: "Delete",
+                variant: "danger",
+                onConfirm: () =>
+                  deleteInvoice.mutate(invoiceId, {
+                    onSuccess: () => router.push("/billing"),
+                  }),
+              });
             }}
             disabled={deleteInvoice.isPending}
           >
@@ -409,6 +405,8 @@ export default function InvoiceDetailPage() {
           cards={savedCards}
         />
       )}
+
+      {confirmDialog}
     </div>
   );
 }

@@ -1,12 +1,28 @@
 "use client";
 
 import { use } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { AuthProvider } from "@/components/auth-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { QueryProvider } from "@/lib/query-provider";
 import { ProtectedRoute } from "@/components/protected-route";
-import { TelehealthSession } from "@/components/telehealth/TelehealthSession";
 import { Loader2 } from "lucide-react";
+
+const TelehealthSession = dynamic(
+  () =>
+    import("@/components/telehealth/TelehealthSession").then(
+      (mod) => mod.TelehealthSession
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-screen items-center justify-center bg-[var(--steady-warm-50)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--steady-teal)]" />
+      </div>
+    ),
+  }
+);
 
 interface Props {
   params: Promise<{ appointmentId: string }>;
@@ -16,11 +32,13 @@ export default function TelehealthPage({ params }: Props) {
   const { appointmentId } = use(params);
 
   return (
+    <AuthProvider>
     <QueryProvider>
       <ProtectedRoute>
         <TelehealthPageContent appointmentId={appointmentId} />
       </ProtectedRoute>
     </QueryProvider>
+    </AuthProvider>
   );
 }
 

@@ -8,18 +8,7 @@ import { CreateClaimDialog } from "@/components/claims/CreateClaimDialog";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, CheckCircle2, DollarSign, FileText } from "lucide-react";
 import type { AppointmentView } from "@/lib/appointment-types";
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { formatCents, formatDate } from "@/lib/format";
 
 function getParticipantName(appt: AppointmentView): string {
   if (!appt.participant) return "Unknown";

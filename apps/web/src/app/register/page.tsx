@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthProvider } from "@/components/auth-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
+  return (
+    <AuthProvider>
+      <RegisterPageContent />
+    </AuthProvider>
+  );
+}
+
+function RegisterPageContent() {
   const router = useRouter();
   const { register, isAuthenticated } = useAuth();
   const [firstName, setFirstName] = useState("");

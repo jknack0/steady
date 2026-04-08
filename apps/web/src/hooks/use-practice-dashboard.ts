@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 // ── Types ───────────────────────────────────────────────
 
@@ -68,14 +69,14 @@ interface PracticeInfo {
 
 export function usePractices() {
   return useQuery<PracticeInfo[]>({
-    queryKey: ["practices"],
+    queryKey: queryKeys.practices.all,
     queryFn: () => api.get("/api/practices"),
   });
 }
 
 export function usePracticeStats(practiceId: string | undefined) {
   return useQuery<PracticeStatsData>({
-    queryKey: ["practice-stats", practiceId],
+    queryKey: queryKeys.practices.stats(practiceId ?? ""),
     queryFn: () => api.get(`/api/practices/${practiceId}/stats`),
     enabled: !!practiceId,
   });
@@ -86,21 +87,15 @@ export function usePracticeParticipants(
   params?: { search?: string; cursor?: string },
 ) {
   return useQuery<PracticeParticipantsResponse>({
-    queryKey: ["practice-participants", practiceId, params],
-    queryFn: async () => {
+    queryKey: queryKeys.practices.participants(practiceId ?? "", params),
+    queryFn: () => {
       const qs = new URLSearchParams();
       if (params?.search) qs.set("search", params.search);
       if (params?.cursor) qs.set("cursor", params.cursor);
       const query = qs.toString();
-      // The API returns { success, data, cursor } and api.get returns .data
-      // But the data here is the array, and cursor is at top level
-      const result = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/practices/${practiceId}/participants${query ? `?${query}` : ""}`,
-        { credentials: "include", headers: { "Content-Type": "application/json" } },
+      return api.getRaw<PracticeParticipantsResponse>(
+        `/api/practices/${practiceId}/participants${query ? `?${query}` : ""}`,
       );
-      const json = await result.json();
-      if (!result.ok) throw new Error(json.error || "Failed to fetch");
-      return { data: json.data, cursor: json.cursor };
     },
     enabled: !!practiceId,
   });
@@ -112,8 +107,8 @@ export function useInviteClinician(practiceId: string) {
     mutationFn: (data: { email: string }) =>
       api.post(`/api/practices/${practiceId}/invite`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["practices"] });
-      queryClient.invalidateQueries({ queryKey: ["practice-stats", practiceId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.practices.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.practices.stats(practiceId) });
     },
   });
 }
@@ -124,8 +119,8 @@ export function useRemoveMember(practiceId: string) {
     mutationFn: (memberId: string) =>
       api.delete(`/api/practices/${practiceId}/members/${memberId}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["practices"] });
-      queryClient.invalidateQueries({ queryKey: ["practice-stats", practiceId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.practices.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.practices.stats(practiceId) });
     },
   });
 }
@@ -136,7 +131,7 @@ export function useUpdatePracticeName(practiceId: string) {
     mutationFn: (data: { name: string }) =>
       api.put(`/api/practices/${practiceId}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["practices"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.practices.all });
     },
   });
 }
