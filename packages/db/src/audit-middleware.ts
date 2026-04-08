@@ -137,7 +137,7 @@ export function registerAuditMiddleware(client: PrismaClient): void {
       params.model,
       resourceId,
       metadata ? JSON.stringify(metadata) : null
-    ).catch((err) => {
+    ).catch((err: unknown) => {
       // Never let audit logging break the application
       // Log only error name/message — never the full object which may contain SQL with PHI
       const msg = err instanceof Error ? `${err.name}: ${err.message}` : "Unknown error";
