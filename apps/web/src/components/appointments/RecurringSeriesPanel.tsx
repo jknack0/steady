@@ -129,7 +129,7 @@ export function RecurringSeriesPanel({ open, onOpenChange }: Props) {
           <DialogTitle>Recurring series</DialogTitle>
         </DialogHeader>
         <DialogBody className="overflow-y-auto">
-          {series.length === 0 ? (
+          {!series || series.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-6">
               No recurring series yet. Create one by toggling "Repeat" when scheduling an appointment.
             </div>
