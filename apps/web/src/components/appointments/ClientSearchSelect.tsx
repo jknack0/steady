@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParticipantSearch, useCreateParticipant } from "@/hooks/use-participant-search";
+import { usePractices } from "@/hooks/use-practice-dashboard";
 import { appointmentStrings as S } from "@/lib/strings/appointments";
 import type { ParticipantSearchResult } from "@/lib/appointment-types";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,27 @@ export function ClientSearchSelect({ value, onChange, readOnly }: Props) {
 
   const search = useParticipantSearch(debounced, !readOnly && !value);
   const createParticipant = useCreateParticipant();
+  const { data: practices } = usePractices();
+
+  // Filter practice clinicians by search query
+  const matchingClinicians = useMemo(() => {
+    if (!practices || debounced.length < 2) return [];
+    const q = debounced.toLowerCase();
+    return practices.flatMap((p) =>
+      p.members
+        .filter((m) => m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q))
+        .map((m) => {
+          const [firstName, ...rest] = m.name.split(" ");
+          return {
+            id: m.clinicianId,
+            firstName: firstName || m.name,
+            lastName: rest.join(" ") || "",
+            email: m.email,
+            _isClinician: true,
+          };
+        }),
+    );
+  }, [practices, debounced]);
 
   const tooShort = useMemo(() => raw.length > 0 && raw.length < 2, [raw]);
   const rateLimited = (search.error as Error | null)?.message?.toLowerCase().includes("rate");
@@ -130,25 +152,51 @@ export function ClientSearchSelect({ value, onChange, readOnly }: Props) {
       {debounced.length >= 2 && (
         <div className="mt-1 max-h-60 overflow-y-auto rounded-md border bg-white shadow-sm">
           {search.isLoading && <div className="p-2 text-sm text-muted-foreground">Loading…</div>}
-          {!search.isLoading && search.data && search.data.length > 0 && (
-            <ul>
-              {search.data.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
-                    onClick={() => {
-                      onChange(p);
-                      setRaw("");
-                    }}
-                  >
-                    {p.firstName} {p.lastName} — {p.email}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {matchingClinicians.length > 0 && (
+            <>
+              <div className="px-3 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">Clinicians</div>
+              <ul>
+                {matchingClinicians.map((c) => (
+                  <li key={`clinician-${c.id}`}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                      onClick={() => {
+                        onChange(c);
+                        setRaw("");
+                      }}
+                    >
+                      {c.firstName} {c.lastName} — {c.email}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
-          {!search.isLoading && search.data && search.data.length === 0 && (
+          {!search.isLoading && search.data && search.data.length > 0 && (
+            <>
+              {matchingClinicians.length > 0 && (
+                <div className="px-3 py-1 text-xs font-semibold text-muted-foreground bg-muted/50">Clients</div>
+              )}
+              <ul>
+                {search.data.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent"
+                      onClick={() => {
+                        onChange(p);
+                        setRaw("");
+                      }}
+                    >
+                      {p.firstName} {p.lastName} — {p.email}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {!search.isLoading && search.data && search.data.length === 0 && matchingClinicians.length === 0 && (
             <div className="p-2 text-sm text-muted-foreground">{S.modalClientNoMatches}</div>
           )}
           <button

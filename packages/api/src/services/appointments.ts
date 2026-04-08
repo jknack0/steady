@@ -92,11 +92,38 @@ async function verifyParticipant(ctx: ServiceCtx, participantId: string) {
   // Participant is considered visible if they belong to a user who has a
   // ClinicianClient link to any clinician in the same practice, OR if any
   // existing appointment/enrollment connects them to the practice.
-  const participant = await prisma.participantProfile.findUnique({
+  let participant = await prisma.participantProfile.findUnique({
     where: { id: participantId },
     include: { user: true },
   });
-  if (!participant) return null;
+
+  // If not found by participant profile ID, check if it's a clinician profile ID
+  // (allows scheduling appointments with other clinicians, e.g. for telehealth)
+  if (!participant) {
+    const clinicianProfile = await prisma.clinicianProfile.findUnique({
+      where: { id: participantId },
+      include: { user: true },
+    });
+    if (clinicianProfile) {
+      // Find or create a participant profile for this clinician's user
+      participant = await prisma.participantProfile.findUnique({
+        where: { userId: clinicianProfile.userId },
+        include: { user: true },
+      });
+      if (!participant) {
+        participant = await prisma.participantProfile.create({
+          data: { userId: clinicianProfile.userId },
+          include: { user: true },
+        });
+      }
+      // Return early — same-practice clinician is always authorized
+      const samePractice = await prisma.practiceMembership.findFirst({
+        where: { practiceId: ctx.practiceId, clinicianId: participantId },
+      });
+      if (samePractice) return participant;
+    }
+    return null;
+  }
 
   const link = await prisma.clinicianClient.findFirst({
     where: {
@@ -147,7 +174,7 @@ export async function createAppointment(
     data: {
       practiceId: ctx.practiceId,
       clinicianId: ctx.clinicianProfileId,
-      participantId: input.participantId,
+      participantId: participant.id,
       serviceCodeId: input.serviceCodeId,
       locationId: input.locationId,
       startAt,
