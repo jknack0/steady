@@ -67,7 +67,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
-app.use(cookieParser());
+app.use(cookieParser() as any);
 
 // Webhook routes — MUST be before express.json() for raw body signature verification
 app.use("/api/stripe/webhooks", stripeWebhookRoutes);
@@ -111,7 +111,7 @@ const waitlistLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, error: "Too many requests. Please try again later." },
 });
-app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
+app.post("/api/waitlist", waitlistLimiter as any, async (req, res) => {
   try {
     const email = req.body?.email?.trim()?.toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -149,7 +149,7 @@ const demoLimiter = rateLimit({
   message: { success: false, error: "Too many requests. Please try again later." },
 });
 
-app.post("/api/demo/provision", demoLimiter, async (req, res) => {
+app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
   try {
     const firstName = req.body?.firstName?.trim();
     const lastName = req.body?.lastName?.trim();
