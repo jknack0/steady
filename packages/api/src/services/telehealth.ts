@@ -47,13 +47,22 @@ export async function generateToken(
     throw new TelehealthError("Appointment not found", 404);
   }
 
-  // 2. Verify ownership — clinician or participant must match requesting user
+  // 2. Verify ownership — clinician (or same-practice clinician) or participant must match
   const clinicianUserId = appointment.clinician.user.id;
   const participantUserId = appointment.participant.user.id;
 
   if (role === "CLINICIAN" && userId !== clinicianUserId) {
-    logger.warn("Telehealth token denied — clinician ownership mismatch", appointmentId);
-    throw new TelehealthError("Not authorized for this appointment", 403);
+    // Allow any clinician from the same practice to join
+    const sameClinic = await prisma.practiceMembership.findFirst({
+      where: {
+        practiceId: appointment.practiceId,
+        clinician: { userId },
+      },
+    });
+    if (!sameClinic) {
+      logger.warn("Telehealth token denied — clinician ownership mismatch", appointmentId);
+      throw new TelehealthError("Not authorized for this appointment", 403);
+    }
   }
   if (role === "PARTICIPANT" && userId !== participantUserId) {
     logger.warn("Telehealth token denied — participant ownership mismatch", appointmentId);
