@@ -86,4 +86,4 @@ jobs:
           cache: npm
       - run: npm install --ignore-scripts
       - run: npx prisma generate --schema=packages/db/prisma/schema.prisma
-      - run: npm run lint
+      - run: npx turbo run lint --filter=@steady/api --filter=@steady/web --filter=@steady/shared --filter=@steady/db
