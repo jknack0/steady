@@ -24,8 +24,8 @@ export function CalendarMonthView({ anchor, appointments, timezone, onDayClick }
   }
 
   return (
-    <div role="grid" aria-colcount={7} aria-rowcount={7} aria-label="Month view">
-      <div className="grid grid-cols-7 border rounded-md overflow-hidden bg-white text-xs">
+    <div role="grid" aria-colcount={7} aria-rowcount={7} aria-label="Month view" className="h-[calc(100vh-12rem)]">
+      <div className="grid grid-cols-7 grid-rows-[auto_repeat(6,1fr)] h-full border rounded-md overflow-hidden bg-white text-xs">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="border-b border-r last:border-r-0 p-1 text-center font-semibold">
             {d}
@@ -41,7 +41,7 @@ export function CalendarMonthView({ anchor, appointments, timezone, onDayClick }
               type="button"
               role="gridcell"
               onClick={() => onDayClick(d)}
-              className={`min-h-16 border-b border-r last:border-r-0 p-1 text-left hover:bg-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${inMonth ? "" : "opacity-40"}`}
+              className={`border-b border-r last:border-r-0 p-1 text-left hover:bg-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${inMonth ? "" : "opacity-40"}`}
               aria-label={formatInClinicianTz(d, timezone, "MMMM d, yyyy") + (count > 0 ? `, ${count} appointments` : "")}
             >
               <div className="text-right font-medium">{formatInClinicianTz(d, timezone, "d")}</div>

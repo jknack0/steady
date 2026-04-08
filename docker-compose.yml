@@ -24,7 +24,7 @@ services:
       - ./infra/livekit.yaml:/etc/livekit.yaml
     command: ["--config", "/etc/livekit.yaml"]
     environment:
-      LIVEKIT_KEYS: "devkey:devsecret"
+      LIVEKIT_KEYS: "devkey: devsecret"
 
 volumes:
   pgdata:
