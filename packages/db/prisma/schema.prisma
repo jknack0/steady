@@ -628,6 +628,7 @@ model Appointment {
   recurringSeries   RecurringSeries?  @relation(fields: [recurringSeriesId], references: [id], onDelete: SetNull)
   createdById      String
   createdBy        User              @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+  deletedAt        DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 

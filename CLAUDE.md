@@ -50,6 +50,13 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 - **File uploads**: Never store files locally. Use pre-signed S3 URLs for upload/download. API never touches the file bytes.
 - **Environment separation**: All environment-specific values come from env vars. Never hardcode URLs, secrets, or feature flags.
 
+### Soft Deletes — MANDATORY
+- **Never hard-delete records.** All deletes must be soft deletes using a `deletedAt DateTime?` field.
+- Set `deletedAt: new Date()` instead of calling `prisma.model.delete()`.
+- All queries must filter with `deletedAt: null` to exclude soft-deleted records.
+- This applies to all models — clinical data, appointments, enrollments, billing records, etc.
+- HIPAA requires audit trails and data retention; hard deletes destroy evidence.
+
 ### API Design
 - RESTful with consistent response shape: `{ success: boolean, data?: T, error?: string }`
 - All mutations require authentication. Use `authenticate` + `requireRole()` middleware.

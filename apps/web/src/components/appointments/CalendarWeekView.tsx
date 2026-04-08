@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { AppointmentView } from "@/lib/appointment-types";
 import { AppointmentCard } from "./AppointmentCard";
 import { formatInClinicianTz } from "@/lib/tz";
@@ -34,8 +35,8 @@ export function CalendarWeekView({ anchor, appointments, timezone, onSlotClick, 
           </div>
         ))}
         {HOURS.map((h) => (
-          <>
-            <div key={`h-${h}`} className="border-b last:border-b-0 border-r p-1 text-muted-foreground text-right pr-2">
+          <React.Fragment key={`h-${h}`}>
+            <div className="border-b last:border-b-0 border-r p-1 text-muted-foreground text-right pr-2">
               {h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`}
             </div>
             {days.map((d) => {
@@ -46,15 +47,23 @@ export function CalendarWeekView({ anchor, appointments, timezone, onSlotClick, 
                 return aDay === dayStr && aHour === h;
               });
               return (
-                <button
+                <div
                   key={`${h}-${d.toISOString()}`}
-                  type="button"
                   role="gridcell"
-                  className="min-h-14 border-b last:border-b-0 border-r last:border-r-0 p-0.5 text-left hover:bg-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                  tabIndex={0}
+                  className="min-h-14 border-b last:border-b-0 border-r last:border-r-0 p-0.5 text-left hover:bg-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary cursor-pointer"
                   onClick={() => {
                     const slotDate = new Date(d);
                     slotDate.setHours(h, 0, 0, 0);
                     onSlotClick(slotDate);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      const slotDate = new Date(d);
+                      slotDate.setHours(h, 0, 0, 0);
+                      onSlotClick(slotDate);
+                    }
                   }}
                   aria-label={`Empty slot ${formatInClinicianTz(d, timezone, "EEE")} ${h}:00`}
                 >
@@ -65,10 +74,10 @@ export function CalendarWeekView({ anchor, appointments, timezone, onSlotClick, 
                       </div>
                     ))}
                   </div>
-                </button>
+                </div>
               );
             })}
-          </>
+          </React.Fragment>
         ))}
       </div>
     </div>

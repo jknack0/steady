@@ -58,6 +58,7 @@ export async function detectConflicts(
 ): Promise<string[]> {
   const rows = await prisma.appointment.findMany({
     where: {
+      deletedAt: null,
       practiceId: ctx.practiceId,
       clinicianId,
       ...(excludeId ? { id: { not: excludeId } } : {}),
@@ -210,6 +211,7 @@ export async function listAppointments(
 
   const items = await prisma.appointment.findMany({
     where: {
+      deletedAt: null,
       practiceId: ctx.practiceId,
       ...(clinicianFilter ? { clinicianId: clinicianFilter } : {}),
       ...(query.locationId ? { locationId: query.locationId } : {}),
@@ -416,7 +418,10 @@ export async function deleteAppointment(
     };
   }
 
-  await prisma.appointment.delete({ where: { id } });
+  await prisma.appointment.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
   return { ok: true };
 }
 
@@ -511,6 +516,7 @@ export async function listParticipantAppointments(params: {
   const { participantProfileId, from, to, status, limit, cursor } = params;
   const items = await prisma.appointment.findMany({
     where: {
+      deletedAt: null,
       participantId: participantProfileId,
       status: { in: status as any },
       AND: [{ startAt: { lt: to } }, { endAt: { gt: from } }],
@@ -540,6 +546,7 @@ export async function listUnbilledAppointments(
 
   const items = await prisma.appointment.findMany({
     where: {
+      deletedAt: null,
       practiceId: ctx.practiceId,
       ...(clinicianFilter ? { clinicianId: clinicianFilter } : {}),
       status: "ATTENDED" as any,

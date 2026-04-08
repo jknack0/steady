@@ -279,7 +279,7 @@ export function AppointmentModal({
       }}
     >
       <DialogContent
-        className="max-w-lg"
+        className="max-w-2xl w-full p-0 flex flex-col"
         onKeyDown={handleKeyDown}
         onEscapeKeyDown={(e) => {
           if (dirty) {
@@ -593,18 +593,8 @@ export function AppointmentModal({
           </div>
         )}
 
-        <DialogFooter className="px-6 py-4 border-t">
-          {canDelete && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-red-600 hover:text-red-700 mr-auto"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              {S.modalDeleteBtn}
-            </Button>
-          )}
-          {/* Start Video Session button for virtual appointments within the time window */}
+        <div className="px-6 py-3 border-t space-y-2 shrink-0">
+          {/* Start Video Session -- full width when available */}
           {mode === "edit" &&
             existing &&
             existing.location?.type === "VIRTUAL" &&
@@ -618,7 +608,8 @@ export function AppointmentModal({
             })() && (
             <Button
               type="button"
-              className="bg-emerald-600 text-white hover:bg-emerald-700 mr-auto"
+              size="sm"
+              className="w-full bg-emerald-600 text-white hover:bg-emerald-700"
               onClick={() => {
                 onOpenChange(false);
                 router.push(`/telehealth/${existing!.id}`);
@@ -628,13 +619,28 @@ export function AppointmentModal({
               Start Video Session
             </Button>
           )}
-          <Button type="button" variant="outline" onClick={attemptClose}>
-            {S.modalCancelBtn}
-          </Button>
-          <Button type="button" disabled={!canSubmit || isPending} onClick={handleSubmit}>
-            {submitLabel}
-          </Button>
-        </DialogFooter>
+          <div className="flex items-center gap-2">
+            {canDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-red-600 hover:text-red-700"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                {S.modalDeleteBtn}
+              </Button>
+            )}
+            <div className="ml-auto flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={attemptClose}>
+                {S.modalCancelBtn}
+              </Button>
+              <Button type="button" size="sm" disabled={!canSubmit || isPending} onClick={handleSubmit}>
+                {submitLabel}
+              </Button>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
