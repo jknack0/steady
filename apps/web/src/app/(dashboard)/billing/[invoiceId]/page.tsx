@@ -30,7 +30,7 @@ export default function InvoiceDetailPage() {
 
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("CREDIT_CARD");
+  const [paymentMethod, setPaymentMethod] = useState<"OTHER" | "CASH" | "CHECK" | "CREDIT_CARD" | "INSURANCE">("CREDIT_CARD");
   const [paymentRef, setPaymentRef] = useState("");
   const [chargeDialogOpen, setChargeDialogOpen] = useState(false);
   const { confirm, dialog: confirmDialog } = useConfirmDialog();
@@ -299,7 +299,7 @@ export default function InvoiceDetailPage() {
                 <select
                   className="w-full rounded border px-2 py-1.5 text-sm"
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  onChange={(e) => setPaymentMethod(e.target.value as "OTHER" | "CASH" | "CHECK" | "CREDIT_CARD" | "INSURANCE")}
                 >
                   <option value="CASH">Cash</option>
                   <option value="CHECK">Check</option>

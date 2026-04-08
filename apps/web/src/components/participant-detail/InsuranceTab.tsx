@@ -78,6 +78,7 @@ export function InsuranceTab({ participantProfileId, demographics }: InsuranceTa
       participantId: participantProfileId,
       data: {
         ...form,
+        relationshipToSubscriber: form.relationshipToSubscriber as "SELF" | "SPOUSE" | "CHILD" | "OTHER",
         groupNumber: form.groupNumber || undefined,
         policyHolderFirstName: form.policyHolderFirstName || undefined,
         policyHolderLastName: form.policyHolderLastName || undefined,

@@ -109,10 +109,10 @@ export interface ListInvoicesParams {
 
 export function useInvoices(params: ListInvoicesParams) {
   return useQuery<InvoiceListItem[]>({
-    queryKey: queryKeys.invoices.all(params),
+    queryKey: queryKeys.invoices.all(params as Record<string, unknown>),
     queryFn: () =>
       api.get<InvoiceListItem[]>(
-        `/api/invoices?${buildQueryString(params as Record<string, string | number | undefined>)}`,
+        `/api/invoices?${buildQueryString(params as unknown as Record<string, string | number | undefined>)}`,
       ),
   });
 }

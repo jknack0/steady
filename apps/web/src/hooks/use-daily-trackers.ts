@@ -98,9 +98,11 @@ export function useCreateDailyTracker() {
     mutationFn: (data: CreateDailyTrackerInput) =>
       api.post<DailyTracker>("/api/daily-trackers", data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dailyTrackers.byProgram(variables.programId),
-      });
+      if (variables.programId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyTrackers.byProgram(variables.programId),
+        });
+      }
     },
   });
 }
@@ -111,9 +113,11 @@ export function useCreateTrackerFromTemplate() {
     mutationFn: (data: CreateTrackerFromTemplateInput) =>
       api.post<DailyTracker>("/api/daily-trackers/from-template", data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dailyTrackers.byProgram(variables.programId),
-      });
+      if (variables.programId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyTrackers.byProgram(variables.programId),
+        });
+      }
     },
   });
 }

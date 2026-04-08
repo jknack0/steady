@@ -55,9 +55,9 @@ export interface ListSeriesParams {
 }
 
 export function useRecurringSeries(params: ListSeriesParams = {}) {
-  const qs = buildQueryString(params as Record<string, string | number | boolean | undefined>);
+  const qs = buildQueryString(params as unknown as Record<string, string | number | boolean | undefined>);
   return useQuery<SeriesView[]>({
-    queryKey: queryKeys.recurringSeries.all(params),
+    queryKey: queryKeys.recurringSeries.all(params as Record<string, unknown>),
     queryFn: () => api.get(`/api/recurring-series${qs ? `?${qs}` : ""}`),
   });
 }

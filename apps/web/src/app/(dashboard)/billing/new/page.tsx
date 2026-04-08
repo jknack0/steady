@@ -96,7 +96,7 @@ export default function NewInvoicePage() {
       quantity: parseInt(r.quantity) || 1,
       dateOfService: r.dateOfService || undefined,
       placeOfServiceCode: r.placeOfServiceCode || undefined,
-      modifiers: r.modifiers.length > 0 ? r.modifiers : undefined,
+      modifiers: r.modifiers,
     }));
 
   const subtotalCents = rows.reduce((sum, r) => {
@@ -117,7 +117,7 @@ export default function NewInvoicePage() {
         lineItems,
         notes: notes || undefined,
         taxCents: 0,
-        diagnosisCodes: diagnosisCodes.length > 0 ? diagnosisCodes : undefined,
+        diagnosisCodes,
         dueDate: dueDate || undefined,
       });
       const invoiceId = (result as any)?.id ?? (result as any)?.data?.id;

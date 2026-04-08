@@ -27,7 +27,7 @@ export function useAppointments(params: ListAppointmentsParams | null) {
     queryKey: ["appointments", params],
     queryFn: () =>
       api.get(
-        `/api/appointments?${buildQueryString(params as Record<string, string | number | undefined>)}`,
+        `/api/appointments?${buildQueryString(params as unknown as Record<string, string | number | undefined>)}`,
       ),
     enabled: !!params,
   });

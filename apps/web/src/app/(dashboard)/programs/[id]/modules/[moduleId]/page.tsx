@@ -163,7 +163,7 @@ export default function ModuleEditorPage() {
       type: part.type as any,
       title: `${part.title} (Copy)`,
       isRequired: part.isRequired,
-      content: part.content,
+      content: part.content as any,
     });
   };
 
