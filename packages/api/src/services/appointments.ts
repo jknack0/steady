@@ -236,11 +236,22 @@ export async function listAppointments(
     ? { status: "ATTENDED" as any, insuranceClaim: null }
     : {};
 
+  // Also show appointments where this clinician is the participant
+  const participantProfile = ctx.clinicianProfileId
+    ? await prisma.participantProfile.findUnique({ where: { userId: ctx.userId } })
+    : null;
+
+  const ownershipFilter = clinicianFilter
+    ? participantProfile
+      ? { OR: [{ clinicianId: clinicianFilter }, { participantId: participantProfile.id }] }
+      : { clinicianId: clinicianFilter }
+    : {};
+
   const items = await prisma.appointment.findMany({
     where: {
       deletedAt: null,
       practiceId: ctx.practiceId,
-      ...(clinicianFilter ? { clinicianId: clinicianFilter } : {}),
+      ...ownershipFilter,
       ...(query.locationId ? { locationId: query.locationId } : {}),
       ...(statusList && !billableFilter.status ? { status: { in: statusList as any } } : {}),
       ...billableFilter,
