@@ -6,7 +6,7 @@ applications:
         preBuild:
           commands:
             - nvm use 20
-            - cd ../.. && npm ci --cache .npm --prefer-offline && npx prisma generate --schema=packages/db/prisma/schema.prisma && cd packages/shared && npm run build && cd ../db && npm run build
+            - (cd ../.. && npm ci --cache .npm --prefer-offline && npx prisma generate --schema=packages/db/prisma/schema.prisma && cd packages/shared && npm run build && cd ../db && npm run build)
         build:
           commands:
             - npm run build
