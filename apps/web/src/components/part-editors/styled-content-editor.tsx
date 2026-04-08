@@ -200,7 +200,7 @@ export function StyledContentPartEditor({ content, onChange }: StyledContentEdit
               <Sparkles className="h-8 w-8 text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">No styled content yet</p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                Write your content in the Write tab, then click "Style with AI"
+                Write your content in the Write tab, then click &quot;Style with AI&quot;
               </p>
             </div>
           )}

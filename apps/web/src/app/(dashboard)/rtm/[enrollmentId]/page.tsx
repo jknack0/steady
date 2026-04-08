@@ -41,7 +41,7 @@ const CPT_INFO: Record<string, { description: string; rate: number }> = CPT_CODE
 
 // ── Detail Page ─────────────────────────────────────────────────────────────
 
-export function RtmClientDetailContent({ enrollmentId, hideHeader = false }: { enrollmentId: string; hideHeader?: boolean }) {
+function RtmClientDetailContent({ enrollmentId, hideHeader = false }: { enrollmentId: string; hideHeader?: boolean }) {
 
   const { data, isLoading, error } = useRtmClientDetail(enrollmentId);
   const logTime = useLogRtmTime();

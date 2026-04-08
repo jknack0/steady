@@ -413,7 +413,7 @@ function ClientCard({ client, status, onLogTime, onSendReminder }: ClientCardPro
 
 // ── Main Dashboard Page ─────────────────────────────────────────────────────
 
-export function RtmDashboardContent() {
+function RtmDashboardContent() {
   const { data, isLoading, error } = useRtmDashboard();
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [logDialogOpen, setLogDialogOpen] = useState(false);
