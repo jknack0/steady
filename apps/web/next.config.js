@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   transpilePackages: ["@steady/shared", "@steady/db", "react-native-web"],
 
   async headers() {
