@@ -190,25 +190,11 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if any enrollment has progress on this part (COND-2)
-    const progressCount = await prisma.partProgress.count({
-      where: {
-        partId: req.params.id,
-        status: { not: "NOT_STARTED" },
-      },
-    });
-
-    const deleteType = progressCount > 0 ? "soft" : "hard";
-
     await prisma.$transaction(async (tx) => {
-      if (deleteType === "soft") {
-        await tx.part.update({
-          where: { id: req.params.id },
-          data: { deletedAt: new Date() },
-        });
-      } else {
-        await tx.part.delete({ where: { id: req.params.id } });
-      }
+      await tx.part.update({
+        where: { id: req.params.id },
+        data: { deletedAt: new Date() },
+      });
 
       // Re-number remaining active parts
       const remaining = await tx.part.findMany({
@@ -227,7 +213,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       }
     }, { timeout: 15000 });
 
-    res.json({ success: true, data: { deleted: deleteType } });
+    res.json({ success: true, data: { deleted: "soft" } });
   } catch (err) {
     logger.error("Delete part error", err);
     res.status(500).json({ success: false, error: "Failed to delete part" });
