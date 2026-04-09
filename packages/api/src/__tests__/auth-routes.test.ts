@@ -7,11 +7,17 @@ import { authHeader } from "./helpers";
 const db = vi.mocked(prisma);
 
 // Mock bcryptjs for legacy fallback (Cognito not configured in test env)
+const { mockHash, mockCompare } = vi.hoisted(() => ({
+  mockHash: vi.fn().mockResolvedValue("hashed-password"),
+  mockCompare: vi.fn(),
+}));
 vi.mock("bcryptjs", () => ({
   default: {
-    hash: vi.fn().mockResolvedValue("hashed-password"),
-    compare: vi.fn(),
+    hash: mockHash,
+    compare: mockCompare,
   },
+  hash: mockHash,
+  compare: mockCompare,
 }));
 
 beforeEach(() => {

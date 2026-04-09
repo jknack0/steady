@@ -324,7 +324,7 @@ describe("POST /api/ai/parse-homework-pdf", () => {
     const res = await request(app)
       .post("/api/ai/parse-homework-pdf")
       .set(...authHeader())
-      .send({ fileKey: "uploads/test.pdf" });
+      .send({ fileKey: "uploads/test-user-id/homework/test.pdf" });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -343,7 +343,7 @@ describe("POST /api/ai/parse-homework-pdf", () => {
     const res = await request(app)
       .post("/api/ai/parse-homework-pdf")
       .set(...authHeader())
-      .send({ fileKey: "uploads/test.pdf" });
+      .send({ fileKey: "uploads/test-user-id/homework/test.pdf" });
 
     expect(res.status).toBe(200);
     expect(res.body.data.items[0].sortOrder).toBe(0);
@@ -358,7 +358,7 @@ describe("POST /api/ai/parse-homework-pdf", () => {
     const res = await request(app)
       .post("/api/ai/parse-homework-pdf")
       .set(...authHeader())
-      .send({ fileKey: "uploads/test.pdf" });
+      .send({ fileKey: "uploads/test-user-id/homework/test.pdf" });
 
     expect(res.status).toBe(500);
     expect(res.body.error).toMatch(/parse/i);
@@ -372,7 +372,7 @@ describe("POST /api/ai/parse-homework-pdf", () => {
     const res = await request(app)
       .post("/api/ai/parse-homework-pdf")
       .set(...authHeader())
-      .send({ fileKey: "uploads/test.pdf" });
+      .send({ fileKey: "uploads/test-user-id/homework/test.pdf" });
 
     expect(res.status).toBe(500);
   });

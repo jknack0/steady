@@ -307,14 +307,14 @@ describe("PATCH /api/recurring-series/:id", () => {
     (db.recurringSeries.update as any).mockResolvedValue(
       mockRecurringSeries({ startTime: "15:00" }),
     );
-    (db.appointment.deleteMany as any).mockResolvedValue({ count: 3 });
+    (db.appointment.updateMany as any).mockResolvedValue({ count: 3 });
     const res = await request(app)
       .patch("/api/recurring-series/series-1")
       .set(...authHeader())
       .send({ startTime: "15:00" });
     expect(res.status).toBe(200);
     expect(typeof res.body.data.appointmentsRegenerated).toBe("number");
-    expect((db.appointment.deleteMany as any)).toHaveBeenCalled();
+    expect((db.appointment.updateMany as any)).toHaveBeenCalled();
   });
 });
 
@@ -392,14 +392,14 @@ describe("POST /api/recurring-series/:id/resume", () => {
 describe("DELETE /api/recurring-series/:id", () => {
   it("deletes series and future appointments", async () => {
     (db.recurringSeries.findFirst as any).mockResolvedValue(mockRecurringSeries());
-    (db.appointment.deleteMany as any).mockResolvedValue({ count: 3 });
+    (db.appointment.updateMany as any).mockResolvedValue({ count: 3 });
     (db.recurringSeries.delete as any).mockResolvedValue({});
     const res = await request(app)
       .delete("/api/recurring-series/series-1")
       .set(...authHeader());
     expect(res.status).toBe(204);
     expect((db.recurringSeries.delete as any)).toHaveBeenCalled();
-    expect((db.appointment.deleteMany as any)).toHaveBeenCalled();
+    expect((db.appointment.updateMany as any)).toHaveBeenCalled();
   });
 
   it("returns 404 for unknown series", async () => {

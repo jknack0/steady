@@ -68,7 +68,7 @@ describe("POST /api/notifications/push-token", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.error).toMatch(/pushToken/i);
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 if pushToken is not a string", async () => {
@@ -316,7 +316,7 @@ describe("PUT /api/notifications/preferences", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.error).toMatch(/preferences array/i);
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 if preferences key is missing", async () => {
@@ -337,7 +337,7 @@ describe("PUT /api/notifications/preferences", () => {
       .put("/api/notifications/preferences")
       .set(...authHeader())
       .send({
-        preferences: [{ category: "TASK" }],
+        preferences: [{ category: "TASK", enabled: true }],
       });
 
     expect(res.status).toBe(200);
