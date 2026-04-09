@@ -312,13 +312,14 @@ async function handleEgressEnded(event: any): Promise<void> {
 
   const session = await prisma.telehealthSession.findUnique({
     where: { roomName },
+    include: { appointment: { select: { clinicianId: true } } },
   });
   if (!session) return;
 
-  // Update database with audio path and set status to pending transcription
-  await onSessionEnd(session.id, audioPath);
+  // Update database with audio path and queue transcription via SQS
+  await onSessionEnd(session.id, audioPath, session.appointment.clinicianId);
 
-  logger.info("Egress completed — audio saved", `room=${roomName} path=recordings/***`);
+  logger.info("Egress completed — audio saved and transcription queued", `room=${roomName}`);
 }
 
 function parseMetadata(raw: string | undefined): Record<string, unknown> | null {
