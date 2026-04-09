@@ -1,18 +1,32 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import {
   getPracticeStats,
   getPracticeParticipants,
 } from "../services/practice-management";
+
+const CreatePracticeSchema = z.object({
+  name: z.string().min(1).max(200),
+});
+
+const UpdatePracticeSchema = z.object({
+  name: z.string().min(1).max(200),
+});
+
+const InviteToPracticeSchema = z.object({
+  email: z.string().email().max(200),
+});
 
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN", "ADMIN"));
 
 // POST /api/practices — Create a practice
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", validate(CreatePracticeSchema), async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
     const clinicianProfileId = req.user!.clinicianProfileId!;
@@ -92,7 +106,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // PUT /api/practices/:id — Update practice (owner only)
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", validate(UpdatePracticeSchema), async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
     const { name } = req.body;
@@ -124,7 +138,7 @@ router.put("/:id", async (req: Request, res: Response) => {
 });
 
 // POST /api/practices/:id/invite — Invite a clinician by email
-router.post("/:id/invite", async (req: Request, res: Response) => {
+router.post("/:id/invite", validate(InviteToPracticeSchema), async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
     const { email } = req.body;

@@ -132,10 +132,11 @@ interface RedeemData {
   lastName: string;
   email: string;
   password: string;
+  cognitoId?: string | null;
 }
 
 export async function redeemInvitation(data: RedeemData) {
-  const { inviteCode: code, firstName, lastName, email, password } = data;
+  const { inviteCode: code, firstName, lastName, email, password, cognitoId } = data;
 
   // Look up invitation by code
   const invitation = await prisma.patientInvitation.findUnique({
@@ -176,6 +177,7 @@ export async function redeemInvitation(data: RedeemData) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         role: "PARTICIPANT",
+        ...(cognitoId ? { cognitoId } : {}),
         participantProfile: { create: {} },
       },
       include: {

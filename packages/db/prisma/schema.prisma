@@ -353,6 +353,7 @@ model Program {
   templateSource   Program?         @relation("ProgramTemplate", fields: [templateSourceId], references: [id])
   clones           Program[]        @relation("ProgramTemplate")
   status           ProgramStatus    @default(DRAFT)
+  deletedAt        DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
@@ -424,6 +425,7 @@ model Enrollment {
   currentModule   Module?          @relation("CurrentModule", fields: [currentModuleId], references: [id])
   enrolledAt      DateTime         @default(now())
   completedAt     DateTime?
+  deletedAt       DateTime?
 
   moduleProgress      ModuleProgress[]
   partProgress        PartProgress[]
@@ -489,6 +491,7 @@ model Task {
   sourceType       TaskSourceType?
   sourceId         String?
   sortOrder        Int             @default(0)
+  deletedAt        DateTime?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -510,6 +513,7 @@ model CalendarEvent {
   eventType          EventType
   color              String?
   externalCalendarId String?
+  deletedAt          DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -527,6 +531,7 @@ model JournalEntry {
   freeformContent       String?
   regulationScore       Int?
   isSharedWithClinician Boolean             @default(false)
+  deletedAt             DateTime?
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
@@ -549,6 +554,7 @@ model Session {
   moduleCompleted    Module?       @relation("CompletedModule", fields: [moduleCompletedId], references: [id])
   appointmentId      String?
   appointment        Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  deletedAt          DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -781,6 +787,7 @@ model Invoice {
   balanceDueSourceInvoice    Invoice?  @relation("BalanceDueSource", fields: [balanceDueSourceInvoiceId], references: [id])
   balanceDueInvoices         Invoice[] @relation("BalanceDueSource")
 
+  deletedAt     DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -809,6 +816,7 @@ model InvoiceLineItem {
   dateOfService      DateTime?
   placeOfServiceCode String?
   modifiers          String[]     @default([])
+  deletedAt          DateTime?
   createdAt          DateTime     @default(now())
 
   @@index([invoiceId])
@@ -824,6 +832,7 @@ model Payment {
   reference   String?
   receivedAt  DateTime
   stripePaymentIntentId String? @unique
+  deletedAt   DateTime?
   createdAt   DateTime      @default(now())
 
   @@index([invoiceId])
@@ -848,6 +857,7 @@ model PatientInsurance {
   isActive                  Boolean                 @default(true)
   cachedEligibility         Json?
   eligibilityCheckedAt      DateTime?
+  deletedAt                 DateTime?
   createdAt                 DateTime                @default(now())
   updatedAt                 DateTime                @updatedAt
 
@@ -883,6 +893,7 @@ model InsuranceClaim {
   rejectionReason       String?
   retentionExpiresAt    DateTime?
   retryCount            Int               @default(0)
+  deletedAt             DateTime?
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 
@@ -1023,6 +1034,7 @@ model HomeworkInstance {
   status        HomeworkInstanceStatus  @default(PENDING)
   completedAt   DateTime?
   response      Json?
+  deletedAt     DateTime?
   createdAt     DateTime               @default(now())
   createdById   String?
 
@@ -1049,6 +1061,7 @@ model DailyTracker {
   description   String?
   reminderTime  String              @default("20:00")
   isActive      Boolean             @default(true)
+  deletedAt     DateTime?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
@@ -1083,6 +1096,7 @@ model DailyTrackerEntry {
   date        DateTime     @db.Date
   responses   Json
   completedAt DateTime
+  deletedAt   DateTime?
   createdAt   DateTime     @default(now())
 
   @@unique([trackerId, userId, date])
@@ -1156,6 +1170,7 @@ model RtmEngagementEvent {
   eventDate       DateTime     @db.Date
   eventTimestamp   DateTime     @default(now())
   metadata        Json?
+  deletedAt       DateTime?
   createdAt       DateTime     @default(now())
 
   @@index([userId, eventDate])
@@ -1182,6 +1197,7 @@ model RtmEnrollment {
   startDate          DateTime            @db.Date
   endDate            DateTime?           @db.Date
   setupBilled        Boolean             @default(false)
+  deletedAt          DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -1214,6 +1230,7 @@ model RtmBillingPeriod {
   eligibleCodes                Json               @default("[]")
   notes                        String?
   superbillUrl                 String?
+  deletedAt                    DateTime?
   createdAt                    DateTime           @default(now())
   updatedAt                    DateTime           @updatedAt
 
@@ -1239,6 +1256,7 @@ model RtmClinicianTimeLog {
   description                String
   activityDate               DateTime         @db.Date
   isInteractiveCommunication Boolean          @default(false)
+  deletedAt                  DateTime?
   createdAt                  DateTime         @default(now())
 
   @@index([billingPeriodId])

@@ -104,6 +104,7 @@ export async function listClinicianSessions(
   const programIds = programs.map((p) => p.id);
 
   const where: any = {
+    deletedAt: null,
     enrollment: { programId: { in: programIds } },
   };
   if (status) where.status = status;

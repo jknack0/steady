@@ -42,6 +42,7 @@ router.get("/templates", async (req: Request, res: Response) => {
       where: {
         isTemplate: true,
         status: { not: "ARCHIVED" },
+        deletedAt: null,
         ...(systemProfile ? { clinicianId: systemProfile.id } : { clinicianId: "none" }),
       },
       include: {
@@ -79,6 +80,7 @@ router.get("/", async (req: Request, res: Response) => {
       where: {
         clinicianId: req.user!.clinicianProfileId!,
         status: { not: "ARCHIVED" },
+        deletedAt: null,
         NOT: {
           isTemplate: false,
           templateSourceId: { not: null },
@@ -123,6 +125,7 @@ router.get("/client-programs", async (req: Request, res: Response) => {
         isTemplate: false,
         templateSourceId: { not: null },
         status: { not: "ARCHIVED" },
+        deletedAt: null,
       },
       include: {
         _count: {

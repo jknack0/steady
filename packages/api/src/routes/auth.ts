@@ -3,7 +3,7 @@ import { Router, Request, Response, type CookieOptions } from "express";
 import jwt from "jsonwebtoken";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { prisma } from "@steady/db";
-import { RegisterSchema, LoginSchema, RegisterWithInviteSchema } from "@steady/shared";
+import { RegisterSchema, LoginSchema, RegisterWithInviteSchema, ForgotPasswordSchema, ConfirmResetPasswordSchema } from "@steady/shared";
 import { validate } from "../middleware/validate";
 import { authenticate, isCognitoEnabled, type AuthUser } from "../middleware/auth";
 import { JWT_SECRET } from "../lib/env";
@@ -148,9 +148,9 @@ async function cognitoLogin(email: string, password: string) {
   return cognitoClient.send(command);
 }
 
-async function cognitoCreateUser(email: string, password: string) {
+async function cognitoCreateUser(email: string, password: string): Promise<string> {
   // Create user with suppressed welcome message
-  await cognitoClient.send(
+  const createRes = await cognitoClient.send(
     new AdminCreateUserCommand({
       UserPoolId: userPoolId,
       Username: email,
@@ -162,6 +162,12 @@ async function cognitoCreateUser(email: string, password: string) {
     })
   );
 
+  // Extract Cognito sub (UUID) from the response
+  const cognitoSub = createRes.User?.Username ?? null;
+  if (!cognitoSub) {
+    throw new Error("Cognito user created but no sub returned");
+  }
+
   // Set permanent password (skips FORCE_CHANGE_PASSWORD state)
   await cognitoClient.send(
     new AdminSetUserPasswordCommand({
@@ -171,6 +177,8 @@ async function cognitoCreateUser(email: string, password: string) {
       Permanent: true,
     })
   );
+
+  return cognitoSub;
 }
 
 async function cognitoRefresh(refreshToken: string) {
@@ -205,8 +213,9 @@ router.post("/register", registerLimiter as any, validate(RegisterSchema), async
 
     if (isCognitoEnabled()) {
       // Create Cognito user
+      let cognitoSub: string;
       try {
-        await cognitoCreateUser(email, password);
+        cognitoSub = await cognitoCreateUser(email, password);
       } catch (err: any) {
         const mapped = mapCognitoError(err);
         res.status(mapped.status).json({ success: false, error: mapped.message });
@@ -236,7 +245,7 @@ router.post("/register", registerLimiter as any, validate(RegisterSchema), async
           firstName,
           lastName,
           role,
-          cognitoId: null, // Will be populated on first token verification if needed
+          cognitoId: cognitoSub,
           ...(role === "CLINICIAN"
             ? { clinicianProfile: { create: {} } }
             : { participantProfile: { create: {} } }),
@@ -588,8 +597,9 @@ router.post("/register-with-invite", inviteRegisterLimiter as any, validate(Regi
       const { email, password } = req.body;
 
       // Create Cognito user
+      let cognitoSub: string;
       try {
-        await cognitoCreateUser(email, password);
+        cognitoSub = await cognitoCreateUser(email, password);
       } catch (err: any) {
         const mapped = mapCognitoError(err);
         res.status(mapped.status).json({ success: false, error: mapped.message });
@@ -599,7 +609,7 @@ router.post("/register-with-invite", inviteRegisterLimiter as any, validate(Regi
       // Redeem invitation (creates DB user, enrollment, etc.)
       let result;
       try {
-        result = await redeemInvitation(req.body);
+        result = await redeemInvitation({ ...req.body, cognitoId: cognitoSub });
       } catch (err) {
         // Clean up Cognito user on invitation redemption failure
         try {
@@ -694,7 +704,7 @@ router.post("/register-with-invite", inviteRegisterLimiter as any, validate(Regi
 });
 
 // POST /api/auth/forgot-password
-router.post("/forgot-password", forgotPasswordLimiter as any, async (req: Request, res: Response) => {
+router.post("/forgot-password", forgotPasswordLimiter as any, validate(ForgotPasswordSchema), async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -727,7 +737,7 @@ router.post("/forgot-password", forgotPasswordLimiter as any, async (req: Reques
 });
 
 // POST /api/auth/confirm-reset-password
-router.post("/confirm-reset-password", forgotPasswordLimiter as any, async (req: Request, res: Response) => {
+router.post("/confirm-reset-password", forgotPasswordLimiter as any, validate(ConfirmResetPasswordSchema), async (req: Request, res: Response) => {
   try {
     const { email, code, newPassword } = req.body;
     if (!email || !code || !newPassword) {

@@ -10,19 +10,22 @@ import { logger } from "../lib/logger";
 
 const INVOICE_INCLUDE = {
   lineItems: {
+    where: { deletedAt: null },
     include: {
       serviceCode: true,
       appointment: true,
     },
   },
-  payments: true,
+  payments: {
+    where: { deletedAt: null },
+  },
   participant: {
     include: { user: { select: { firstName: true, lastName: true, email: true } } },
   },
   clinician: {
     include: { user: { select: { firstName: true, lastName: true } } },
   },
-} as const;
+};
 
 async function generateInvoiceNumber(
   practiceId: string,
@@ -156,6 +159,7 @@ export async function listInvoices(
 
   const where: any = {
     practiceId: ctx.practiceId,
+    deletedAt: null,
     ...(statusList ? { status: { in: statusList } } : {}),
     ...(query.participantId ? { participantId: query.participantId } : {}),
   };
@@ -230,7 +234,7 @@ export async function updateInvoice(
   const invoice = await prisma.$transaction(async (tx) => {
     // If line items provided, rebuild them
     if (patch.lineItems) {
-      await tx.invoiceLineItem.deleteMany({ where: { invoiceId: id } });
+      await tx.invoiceLineItem.updateMany({ where: { invoiceId: id, deletedAt: null }, data: { deletedAt: new Date() } });
 
       const lineItemsData: Array<{
         invoiceId: string;
@@ -396,7 +400,7 @@ export async function deleteInvoice(
     return { error: "conflict", message: "Only draft invoices can be deleted" };
   }
 
-  await prisma.invoice.delete({ where: { id } });
+  await prisma.invoice.update({ where: { id }, data: { deletedAt: new Date() } });
   return { ok: true };
 }
 

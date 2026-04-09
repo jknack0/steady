@@ -30,7 +30,7 @@ router.get("/", async (req: Request, res: Response) => {
     const take = Math.min(parseInt(limit as string) || 50, 100);
 
     const enrollments = await prisma.enrollment.findMany({
-      where: { programId: req.params.programId },
+      where: { programId: req.params.programId, deletedAt: null },
       include: {
         participant: {
           include: {
@@ -267,13 +267,15 @@ router.post("/:enrollmentId/parts/:partId/stop-recurrence", async (req: Request,
       });
 
       // Cancel future PENDING instances for this enrollment
-      await tx.homeworkInstance.deleteMany({
+      await tx.homeworkInstance.updateMany({
         where: {
           partId: part.id,
           enrollmentId: req.params.enrollmentId,
           status: "PENDING",
           dueDate: { gte: new Date() },
+          deletedAt: null,
         },
+        data: { deletedAt: new Date() },
       });
     });
 

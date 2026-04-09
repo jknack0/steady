@@ -168,13 +168,15 @@ export async function cancelFutureInstances(
 ): Promise<void> {
   const today = startOfDay(new Date());
 
-  await prisma.homeworkInstance.deleteMany({
+  await prisma.homeworkInstance.updateMany({
     where: {
       partId,
       ...(enrollmentId ? { enrollmentId } : {}),
       status: "PENDING",
       dueDate: { gte: today },
+      deletedAt: null,
     },
+    data: { deletedAt: new Date() },
   });
 }
 
@@ -238,7 +240,7 @@ export async function getStreakData(
   enrollmentId: string
 ): Promise<StreakResult> {
   const instances = await prisma.homeworkInstance.findMany({
-    where: { partId, enrollmentId },
+    where: { partId, enrollmentId, deletedAt: null },
     orderBy: { dueDate: "desc" },
   });
 

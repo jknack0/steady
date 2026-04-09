@@ -23,6 +23,27 @@ const AddClientSchema = z.object({
   lastName: z.string().min(1).max(100),
 });
 
+const PushTaskSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional().nullable(),
+  dueDate: z.string().max(100).optional().nullable(),
+});
+
+const UnlockModuleSchema = z.object({
+  moduleId: z.string().min(1).max(200),
+  enrollmentId: z.string().min(1).max(200),
+});
+
+const ManageEnrollmentSchema = z.object({
+  action: z.enum(["pause", "resume", "drop", "reset-progress"]),
+});
+
+const BulkActionSchema = z.object({
+  action: z.string().min(1).max(100),
+  participantIds: z.array(z.string().max(200)).min(1).max(50),
+  data: z.record(z.unknown()).optional(),
+});
+
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN", "ADMIN"));
@@ -103,6 +124,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
           { enrollmentId: { in: enrollmentIds } },
           { participantId: { in: participantProfileIds } },
         ],
+        deletedAt: null,
         status: "COMPLETED",
         completedAt: { gte: sevenDaysAgo },
       },
@@ -130,6 +152,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
           { enrollmentId: { in: enrollmentIds } },
           { participantId: { in: participantProfileIds } },
         ],
+        deletedAt: null,
         status: "PENDING",
         dueDate: { lt: today },
       },
@@ -392,6 +415,7 @@ router.get("/participants/:id/homework", async (req: Request, res: Response) => 
           { enrollmentId: { in: enrollmentIds } },
           { participantId: participantProfileId },
         ],
+        deletedAt: null,
       },
       include: {
         part: {
@@ -485,7 +509,7 @@ router.put("/participants/:id/demographics", validate(UpdateParticipantDemograph
 });
 
 // POST /api/clinician/participants/:id/push-task — Push a task to participant
-router.post("/participants/:id/push-task", async (req: Request, res: Response) => {
+router.post("/participants/:id/push-task", validate(PushTaskSchema), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const owned = await verifyParticipantOwnership(id, req.user!.clinicianProfileId!);
@@ -510,7 +534,7 @@ router.post("/participants/:id/push-task", async (req: Request, res: Response) =
 });
 
 // POST /api/clinician/participants/:id/unlock-module — Unlock next module
-router.post("/participants/:id/unlock-module", async (req: Request, res: Response) => {
+router.post("/participants/:id/unlock-module", validate(UnlockModuleSchema), async (req: Request, res: Response) => {
   try {
     const owned = await verifyParticipantOwnership(req.params.id, req.user!.clinicianProfileId!);
     if (!owned) {
@@ -540,7 +564,7 @@ router.post("/participants/:id/unlock-module", async (req: Request, res: Respons
 });
 
 // PUT /api/clinician/participants/:id/enrollment/:enrollmentId — Manage enrollment (pause, drop, reset)
-router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, res: Response) => {
+router.put("/participants/:id/enrollment/:enrollmentId", validate(ManageEnrollmentSchema), async (req: Request, res: Response) => {
   try {
     const { enrollmentId } = req.params;
 
@@ -574,7 +598,7 @@ router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, re
 // ── Bulk Actions ────────────────────────────────────────
 
 // POST /api/clinician/participants/bulk — Bulk action on multiple participants
-router.post("/participants/bulk", async (req: Request, res: Response) => {
+router.post("/participants/bulk", validate(BulkActionSchema), async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
     const { action, participantIds, data: actionData } = req.body;

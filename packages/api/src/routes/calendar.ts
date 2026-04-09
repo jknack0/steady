@@ -1,8 +1,28 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import { queueNotification } from "../services/notifications";
+
+const CreateCalendarEventSchema = z.object({
+  title: z.string().min(1).max(200),
+  startTime: z.string().max(100),
+  endTime: z.string().max(100),
+  eventType: z.string().max(50).optional(),
+  color: z.string().max(20).optional().nullable(),
+  taskId: z.string().max(200).optional().nullable(),
+});
+
+const UpdateCalendarEventSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  startTime: z.string().max(100).optional(),
+  endTime: z.string().max(100).optional(),
+  eventType: z.string().max(50).optional(),
+  color: z.string().max(20).optional().nullable(),
+  taskId: z.string().max(200).optional().nullable(),
+});
 
 const router = Router();
 
@@ -30,6 +50,7 @@ router.get("/", async (req: Request, res: Response) => {
     const events = await prisma.calendarEvent.findMany({
       where: {
         participantId,
+        deletedAt: null,
         startTime: { gte: startDate },
         endTime: { lte: endDate },
       },
@@ -50,7 +71,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // POST /api/participant/calendar — Create a calendar event
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", validate(CreateCalendarEventSchema), async (req: Request, res: Response) => {
   try {
     const participantId = req.user!.participantProfileId!;
     const { title, startTime, endTime, eventType, color, taskId } = req.body;
@@ -124,12 +145,12 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // PATCH /api/participant/calendar/:id — Update a calendar event
-router.patch("/:id", async (req: Request, res: Response) => {
+router.patch("/:id", validate(UpdateCalendarEventSchema), async (req: Request, res: Response) => {
   try {
     const participantId = req.user!.participantProfileId!;
 
     const existing = await prisma.calendarEvent.findFirst({
-      where: { id: req.params.id, participantId },
+      where: { id: req.params.id, participantId, deletedAt: null },
     });
 
     if (!existing) {
@@ -168,7 +189,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
     const participantId = req.user!.participantProfileId!;
 
     const existing = await prisma.calendarEvent.findFirst({
-      where: { id: req.params.id, participantId },
+      where: { id: req.params.id, participantId, deletedAt: null },
     });
 
     if (!existing) {
@@ -176,8 +197,9 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.calendarEvent.delete({
+    await prisma.calendarEvent.update({
       where: { id: req.params.id },
+      data: { deletedAt: new Date() },
     });
 
     res.json({ success: true });

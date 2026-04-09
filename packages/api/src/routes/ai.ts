@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
+import { verifyFileOwnership } from "../lib/s3-ownership";
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN"));
@@ -333,6 +334,13 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
 
     if (!fileKey || typeof fileKey !== "string") {
       res.status(400).json({ success: false, error: "fileKey is required" });
+      return;
+    }
+
+    // Verify the authenticated user owns or has clinical access to this file
+    const hasAccess = await verifyFileOwnership(fileKey, req.user!);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, error: "Access denied" });
       return;
     }
 

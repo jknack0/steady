@@ -157,7 +157,7 @@ router.get("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const where: any = {};
+    const where: any = { deletedAt: null };
 
     if (programId) {
       const program = await verifyProgramOwnership(programId as string, req.user!.clinicianProfileId!);
@@ -358,7 +358,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.dailyTracker.delete({ where: { id: req.params.id } });
+    await prisma.dailyTracker.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
     res.json({ success: true });
   } catch (err) {
     logger.error("Delete daily tracker error", err);

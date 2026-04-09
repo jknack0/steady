@@ -349,6 +349,7 @@ export async function getHomeworkInstances(
         { enrollmentId: { in: enrollmentIds }, dueDate: targetDate },
         { participantId: participantProfileId, dueDate: targetDate },
       ],
+      deletedAt: null,
     },
     include: {
       part: {

@@ -62,7 +62,7 @@ router.get("/enrollments", async (req: Request, res: Response) => {
     const take = Math.min(parseInt(limit as string) || 50, 100);
 
     const enrollments = await prisma.rtmEnrollment.findMany({
-      where: { clinicianId },
+      where: { clinicianId, deletedAt: null },
       include: {
         client: {
           select: { id: true, firstName: true, lastName: true },
