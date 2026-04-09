@@ -90,7 +90,7 @@ jobs:
 
   deploy-dev:
     name: Deploy API (Dev)
-    needs: [typecheck, unit-tests, lint]
+    needs: [typecheck, unit-tests, integration-tests, lint]
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     steps:
@@ -113,7 +113,7 @@ jobs:
 
   deploy-prod:
     name: Deploy API (Prod)
-    needs: [typecheck, unit-tests, lint]
+    needs: [typecheck, unit-tests, integration-tests, lint]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
