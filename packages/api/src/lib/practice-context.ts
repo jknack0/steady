@@ -34,6 +34,9 @@ export async function requirePracticeCtx(
       return;
     }
 
+    // TODO: Single-practice assumption — findFirst returns an arbitrary membership
+    // when a clinician belongs to multiple practices. A future fix should accept a
+    // practice-selection header (e.g. X-Practice-Id) and validate membership.
     const membership = await prisma.practiceMembership.findFirst({
       where: { clinicianId: clinicianProfileId },
       select: { practiceId: true, role: true },

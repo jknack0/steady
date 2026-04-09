@@ -222,13 +222,13 @@ model Practice {
 }
 
 model PracticeMembership {
-  id           String       @id @default(cuid())
-  practiceId   String
-  practice     Practice     @relation(fields: [practiceId], references: [id])
-  clinicianId  String
-  clinician    ClinicianProfile @relation(fields: [clinicianId], references: [id])
-  role         PracticeRole @default(CLINICIAN)
-  joinedAt     DateTime     @default(now())
+  id          String           @id @default(cuid())
+  practiceId  String
+  practice    Practice         @relation(fields: [practiceId], references: [id])
+  clinicianId String
+  clinician   ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  role        PracticeRole     @default(CLINICIAN)
+  joinedAt    DateTime         @default(now())
 
   @@unique([practiceId, clinicianId])
   @@index([practiceId])
@@ -249,31 +249,31 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  pushToken    String?
+  pushToken          String?
   pushTokenUpdatedAt DateTime?
 
-  clinicianProfile      ClinicianProfile?
-  participantProfile    ParticipantProfile?
+  clinicianProfile        ClinicianProfile?
+  participantProfile      ParticipantProfile?
   notificationPreferences NotificationPreference[]
 
-  rtmEngagementEvents  RtmEngagementEvent[]
-  rtmEnrollmentsAsClient RtmEnrollment[]      @relation("RtmClient")
-  rtmBillingPeriodsAsClient RtmBillingPeriod[] @relation("RtmBillingClient")
-  rtmTimeLogsAsClient  RtmClinicianTimeLog[]  @relation("RtmTimeLogClient")
-  clientConfigs        ClientConfig[]         @relation("ClientConfigs")
-  clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
-  acceptedInvitations  PatientInvitation[]    @relation("InvitationAcceptedBy")
-  createdAppointments  Appointment[]          @relation("AppointmentCreatedBy")
-  createdRecurringSeries RecurringSeries[]    @relation("RecurringSeriesCreatedBy")
-  streakRecords        StreakRecord[]
+  rtmEngagementEvents       RtmEngagementEvent[]
+  rtmEnrollmentsAsClient    RtmEnrollment[]       @relation("RtmClient")
+  rtmBillingPeriodsAsClient RtmBillingPeriod[]    @relation("RtmBillingClient")
+  rtmTimeLogsAsClient       RtmClinicianTimeLog[] @relation("RtmTimeLogClient")
+  clientConfigs             ClientConfig[]        @relation("ClientConfigs")
+  clinicianClients          ClinicianClient[]     @relation("ClinicianClientUser")
+  acceptedInvitations       PatientInvitation[]   @relation("InvitationAcceptedBy")
+  createdAppointments       Appointment[]         @relation("AppointmentCreatedBy")
+  createdRecurringSeries    RecurringSeries[]     @relation("RecurringSeriesCreatedBy")
+  streakRecords             StreakRecord[]
 
   @@map("users")
 }
 
 model ClinicianProfile {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id])
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id])
   practiceName String?
   licenseType  String?
   bio          String?
@@ -287,7 +287,7 @@ model ClinicianProfile {
   rtmTimeLogs       RtmClinicianTimeLog[]
   billingProfile    ClinicianBillingProfile?
   config            ClinicianConfig?
-  clientConfigs     ClientConfig[]   @relation("ClinicianClientConfigs")
+  clientConfigs     ClientConfig[]           @relation("ClinicianClientConfigs")
   clients           ClinicianClient[]
   appointments      Appointment[]
   invitations       PatientInvitation[]
@@ -299,19 +299,19 @@ model ClinicianProfile {
 }
 
 model ParticipantProfile {
-  id                   String  @id @default(cuid())
-  userId               String  @unique
-  user                 User    @relation(fields: [userId], references: [id])
-  timezone             String    @default("America/New_York")
-  onboardingCompleted  Boolean   @default(false)
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id])
+  timezone            String  @default("America/New_York")
+  onboardingCompleted Boolean @default(false)
 
   // Patient demographics (CMS-1500 Box 3 & Box 5)
-  dateOfBirth          DateTime?
-  gender               String?   // M, F, U
-  addressStreet        String?
-  addressCity          String?
-  addressState         String?
-  addressZip           String?
+  dateOfBirth   DateTime?
+  gender        String? // M, F, U
+  addressStreet String?
+  addressCity   String?
+  addressState  String?
+  addressZip    String?
 
   enrollments       Enrollment[]
   tasks             Task[]
@@ -364,6 +364,7 @@ model Program {
   reviewTemplate ReviewTemplate?
 
   @@index([practiceId])
+  @@index([clinicianId])
   @@map("programs")
 }
 
@@ -382,30 +383,30 @@ model Module {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  parts           Part[]
-  moduleProgress  ModuleProgress[]
-  currentEnrollments Enrollment[] @relation("CurrentModule")
-  completedSessions  Session[]    @relation("CompletedModule")
+  parts               Part[]
+  moduleProgress      ModuleProgress[]
+  currentEnrollments  Enrollment[]         @relation("CurrentModule")
+  completedSessions   Session[]            @relation("CompletedModule")
   enrollmentOverrides EnrollmentOverride[]
 
   @@map("modules")
 }
 
 model Part {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   moduleId   String
-  module     Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module     Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   type       PartType
   title      String
   sortOrder  Int
-  isRequired Boolean  @default(true)
+  isRequired Boolean   @default(true)
   content    Json
   deletedAt  DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   partProgress        PartProgress[]
-  journalEntries      JournalEntry[] @relation("PromptPart")
+  journalEntries      JournalEntry[]       @relation("PromptPart")
   homeworkInstances   HomeworkInstance[]
   enrollmentOverrides EnrollmentOverride[]
 
@@ -415,15 +416,15 @@ model Part {
 // ── Enrollment & Progress ──────────────────────────────
 
 model Enrollment {
-  id              String           @id @default(cuid())
+  id              String             @id @default(cuid())
   participantId   String
   participant     ParticipantProfile @relation(fields: [participantId], references: [id])
   programId       String
-  program         Program          @relation(fields: [programId], references: [id])
-  status          EnrollmentStatus @default(INVITED)
+  program         Program            @relation(fields: [programId], references: [id])
+  status          EnrollmentStatus   @default(INVITED)
   currentModuleId String?
-  currentModule   Module?          @relation("CurrentModule", fields: [currentModuleId], references: [id])
-  enrolledAt      DateTime         @default(now())
+  currentModule   Module?            @relation("CurrentModule", fields: [currentModuleId], references: [id])
+  enrolledAt      DateTime           @default(now())
   completedAt     DateTime?
   deletedAt       DateTime?
 
@@ -438,6 +439,9 @@ model Enrollment {
   sessionReviews      SessionReview[]
   enrollmentOverrides EnrollmentOverride[]
 
+  @@index([programId])
+  @@index([participantId])
+  @@index([status])
   @@map("enrollments")
 }
 
@@ -475,7 +479,7 @@ model PartProgress {
 // ── Steady System ──────────────────────────────────────
 
 model Task {
-  id               String          @id @default(cuid())
+  id               String             @id @default(cuid())
   participantId    String
   participant      ParticipantProfile @relation(fields: [participantId], references: [id])
   title            String
@@ -484,56 +488,58 @@ model Task {
   dueDate          DateTime?
   energyLevel      EnergyLevel?
   category         String?
-  isRecurring      Boolean         @default(false)
+  isRecurring      Boolean            @default(false)
   recurrenceRule   Json?
-  status           TaskStatus      @default(TODO)
+  status           TaskStatus         @default(TODO)
   completedAt      DateTime?
   sourceType       TaskSourceType?
   sourceId         String?
-  sortOrder        Int             @default(0)
+  sortOrder        Int                @default(0)
   deletedAt        DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   calendarEvents CalendarEvent[]
 
   @@index([participantId])
+  @@index([status])
   @@map("tasks")
 }
 
 model CalendarEvent {
-  id                 String    @id @default(cuid())
+  id                 String             @id @default(cuid())
   participantId      String
   participant        ParticipantProfile @relation(fields: [participantId], references: [id])
   title              String
   startTime          DateTime
   endTime            DateTime
   taskId             String?
-  task               Task?     @relation(fields: [taskId], references: [id])
+  task               Task?              @relation(fields: [taskId], references: [id])
   eventType          EventType
   color              String?
   externalCalendarId String?
   deletedAt          DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
+  @@index([participantId])
   @@map("calendar_events")
 }
 
 model JournalEntry {
-  id                    String              @id @default(cuid())
+  id                    String             @id @default(cuid())
   participantId         String
-  participant           ParticipantProfile  @relation(fields: [participantId], references: [id])
-  entryDate             DateTime            @db.Date
+  participant           ParticipantProfile @relation(fields: [participantId], references: [id])
+  entryDate             DateTime           @db.Date
   promptPartId          String?
-  promptPart            Part?               @relation("PromptPart", fields: [promptPartId], references: [id])
+  promptPart            Part?              @relation("PromptPart", fields: [promptPartId], references: [id])
   responses             Json?
   freeformContent       String?
   regulationScore       Int?
-  isSharedWithClinician Boolean             @default(false)
+  isSharedWithClinician Boolean            @default(false)
   deletedAt             DateTime?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   @@unique([participantId, entryDate])
   @@map("journal_entries")
@@ -558,6 +564,7 @@ model Session {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
+  @@index([enrollmentId])
   @@index([scheduledAt])
   @@index([appointmentId])
   @@map("sessions")
@@ -612,38 +619,38 @@ enum ReminderStatus {
 }
 
 model Appointment {
-  id               String            @id @default(cuid())
-  practiceId       String
-  practice         Practice          @relation(fields: [practiceId], references: [id])
-  clinicianId      String
-  clinician        ClinicianProfile  @relation(fields: [clinicianId], references: [id])
-  participantId    String
-  participant      ParticipantProfile @relation(fields: [participantId], references: [id])
-  serviceCodeId    String
-  serviceCode      ServiceCode       @relation(fields: [serviceCodeId], references: [id])
-  locationId       String
-  location         Location          @relation(fields: [locationId], references: [id])
-  startAt          DateTime
-  endAt            DateTime
-  status           AppointmentStatus @default(SCHEDULED)
-  appointmentType  AppointmentType   @default(INDIVIDUAL)
-  internalNote     String?
-  cancelReason     String?
-  statusChangedAt  DateTime?
+  id                String             @id @default(cuid())
+  practiceId        String
+  practice          Practice           @relation(fields: [practiceId], references: [id])
+  clinicianId       String
+  clinician         ClinicianProfile   @relation(fields: [clinicianId], references: [id])
+  participantId     String
+  participant       ParticipantProfile @relation(fields: [participantId], references: [id])
+  serviceCodeId     String
+  serviceCode       ServiceCode        @relation(fields: [serviceCodeId], references: [id])
+  locationId        String
+  location          Location           @relation(fields: [locationId], references: [id])
+  startAt           DateTime
+  endAt             DateTime
+  status            AppointmentStatus  @default(SCHEDULED)
+  appointmentType   AppointmentType    @default(INDIVIDUAL)
+  internalNote      String?
+  cancelReason      String?
+  statusChangedAt   DateTime?
   recurringSeriesId String?
-  recurringSeries   RecurringSeries?  @relation(fields: [recurringSeriesId], references: [id], onDelete: SetNull)
-  createdById      String
-  createdBy        User              @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
-  deletedAt        DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  recurringSeries   RecurringSeries?   @relation(fields: [recurringSeriesId], references: [id], onDelete: SetNull)
+  createdById       String
+  createdBy         User               @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+  deletedAt         DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  sessions           Session[]
-  sessionReviews     SessionReview[]
-  invoiceLineItems   InvoiceLineItem[]
-  reminders          AppointmentReminder[]
-  insuranceClaim     InsuranceClaim?
-  telehealthSession  TelehealthSession?
+  sessions          Session[]
+  sessionReviews    SessionReview[]
+  invoiceLineItems  InvoiceLineItem[]
+  reminders         AppointmentReminder[]
+  insuranceClaim    InsuranceClaim?
+  telehealthSession TelehealthSession?
 
   @@index([practiceId, clinicianId, startAt])
   @@index([practiceId, locationId, startAt])
@@ -682,9 +689,9 @@ model TelehealthSession {
 }
 
 model Location {
-  id           String        @id @default(cuid())
+  id           String       @id @default(cuid())
   practiceId   String
-  practice     Practice      @relation(fields: [practiceId], references: [id])
+  practice     Practice     @relation(fields: [practiceId], references: [id])
   name         String
   type         LocationType
   addressLine1 String?
@@ -693,10 +700,10 @@ model Location {
   state        String?
   postalCode   String?
   timezone     String?
-  isDefault    Boolean       @default(false)
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  isDefault    Boolean      @default(false)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   appointments    Appointment[]
   recurringSeries RecurringSeries[]
@@ -706,16 +713,16 @@ model Location {
 }
 
 model ServiceCode {
-  id                     String        @id @default(cuid())
+  id                     String   @id @default(cuid())
   practiceId             String
-  practice               Practice      @relation(fields: [practiceId], references: [id])
+  practice               Practice @relation(fields: [practiceId], references: [id])
   code                   String
   description            String
   defaultDurationMinutes Int
   defaultPriceCents      Int?
-  isActive               Boolean       @default(true)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   appointments     Appointment[]
   invoiceLineItems InvoiceLineItem[]
@@ -763,33 +770,33 @@ enum PaymentMethod {
 }
 
 model Invoice {
-  id            String        @id @default(cuid())
-  practiceId    String
-  practice      Practice      @relation(fields: [practiceId], references: [id])
-  clinicianId   String
-  clinician     ClinicianProfile @relation(fields: [clinicianId], references: [id])
-  participantId String
-  participant   ParticipantProfile @relation(fields: [participantId], references: [id])
-  invoiceNumber String
-  status        InvoiceStatus @default(DRAFT)
-  issuedAt      DateTime?
-  dueAt         DateTime?
-  subtotalCents Int
-  taxCents      Int           @default(0)
-  totalCents    Int
-  paidCents     Int           @default(0)
-  notes         String?
-  diagnosisCodes String[]    @default([])
+  id             String             @id @default(cuid())
+  practiceId     String
+  practice       Practice           @relation(fields: [practiceId], references: [id])
+  clinicianId    String
+  clinician      ClinicianProfile   @relation(fields: [clinicianId], references: [id])
+  participantId  String
+  participant    ParticipantProfile @relation(fields: [participantId], references: [id])
+  invoiceNumber  String
+  status         InvoiceStatus      @default(DRAFT)
+  issuedAt       DateTime?
+  dueAt          DateTime?
+  subtotalCents  Int
+  taxCents       Int                @default(0)
+  totalCents     Int
+  paidCents      Int                @default(0)
+  notes          String?
+  diagnosisCodes String[]           @default([])
 
-  paymentLinkUrl             String?
-  paymentLinkExpiresAt       DateTime?
-  balanceDueSourceInvoiceId  String?
-  balanceDueSourceInvoice    Invoice?  @relation("BalanceDueSource", fields: [balanceDueSourceInvoiceId], references: [id])
-  balanceDueInvoices         Invoice[] @relation("BalanceDueSource")
+  paymentLinkUrl            String?
+  paymentLinkExpiresAt      DateTime?
+  balanceDueSourceInvoiceId String?
+  balanceDueSourceInvoice   Invoice?  @relation("BalanceDueSource", fields: [balanceDueSourceInvoiceId], references: [id])
+  balanceDueInvoices        Invoice[] @relation("BalanceDueSource")
 
-  deletedAt     DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   lineItems        InvoiceLineItem[]
   payments         Payment[]
@@ -802,13 +809,13 @@ model Invoice {
 }
 
 model InvoiceLineItem {
-  id             String       @id @default(cuid())
-  invoiceId      String
-  invoice        Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  appointmentId  String?
-  appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  serviceCodeId  String
-  serviceCode    ServiceCode  @relation(fields: [serviceCodeId], references: [id])
+  id                 String       @id @default(cuid())
+  invoiceId          String
+  invoice            Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  appointmentId      String?
+  appointment        Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  serviceCodeId      String
+  serviceCode        ServiceCode  @relation(fields: [serviceCodeId], references: [id])
   description        String
   unitPriceCents     Int
   quantity           Int          @default(1)
@@ -824,16 +831,16 @@ model InvoiceLineItem {
 }
 
 model Payment {
-  id          String        @id @default(cuid())
-  invoiceId   String
-  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  amountCents Int
-  method      PaymentMethod
-  reference   String?
-  receivedAt  DateTime
-  stripePaymentIntentId String? @unique
-  deletedAt   DateTime?
-  createdAt   DateTime      @default(now())
+  id                    String        @id @default(cuid())
+  invoiceId             String
+  invoice               Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amountCents           Int
+  method                PaymentMethod
+  reference             String?
+  receivedAt            DateTime
+  stripePaymentIntentId String?       @unique
+  deletedAt             DateTime?
+  createdAt             DateTime      @default(now())
 
   @@index([invoiceId])
   @@map("payments")
@@ -842,24 +849,24 @@ model Payment {
 // ── Insurance Billing (Stedi) ───────────────────────────
 
 model PatientInsurance {
-  id                        String                  @id @default(cuid())
-  participantId             String                  @unique
-  participant               ParticipantProfile      @relation(fields: [participantId], references: [id])
-  payerId                   String
-  payerName                 String
-  subscriberId              String
-  groupNumber               String?
-  relationshipToSubscriber  SubscriberRelationship  @default(SELF)
-  policyHolderFirstName     String?
-  policyHolderLastName      String?
-  policyHolderDob           String?
-  policyHolderGender        String?
-  isActive                  Boolean                 @default(true)
-  cachedEligibility         Json?
-  eligibilityCheckedAt      DateTime?
-  deletedAt                 DateTime?
-  createdAt                 DateTime                @default(now())
-  updatedAt                 DateTime                @updatedAt
+  id                       String                 @id @default(cuid())
+  participantId            String                 @unique
+  participant              ParticipantProfile     @relation(fields: [participantId], references: [id])
+  payerId                  String
+  payerName                String
+  subscriberId             String
+  groupNumber              String?
+  relationshipToSubscriber SubscriberRelationship @default(SELF)
+  policyHolderFirstName    String?
+  policyHolderLastName     String?
+  policyHolderDob          String?
+  policyHolderGender       String?
+  isActive                 Boolean                @default(true)
+  cachedEligibility        Json?
+  eligibilityCheckedAt     DateTime?
+  deletedAt                DateTime?
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
 
   claims InsuranceClaim[]
 
@@ -868,34 +875,34 @@ model PatientInsurance {
 }
 
 model InsuranceClaim {
-  id                    String            @id @default(cuid())
-  practiceId            String
-  practice              Practice          @relation(fields: [practiceId], references: [id])
-  clinicianId           String
-  clinician             ClinicianProfile  @relation(fields: [clinicianId], references: [id])
-  participantId         String
-  participant           ParticipantProfile @relation(fields: [participantId], references: [id])
-  appointmentId         String            @unique
-  appointment           Appointment       @relation(fields: [appointmentId], references: [id])
-  patientInsuranceId    String
-  patientInsurance      PatientInsurance   @relation(fields: [patientInsuranceId], references: [id])
-  status                ClaimStatus       @default(DRAFT)
-  stediTransactionId    String?
-  stediIdempotencyKey   String            @default(cuid())
-  serviceCode           String
-  modifiers             String[]          @default([])
-  servicePriceCents     Int
-  placeOfServiceCode    String
-  dateOfService         DateTime
-  diagnosisCodes        String[]
-  submittedAt           DateTime?
-  respondedAt           DateTime?
-  rejectionReason       String?
-  retentionExpiresAt    DateTime?
-  retryCount            Int               @default(0)
-  deletedAt             DateTime?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  id                  String             @id @default(cuid())
+  practiceId          String
+  practice            Practice           @relation(fields: [practiceId], references: [id])
+  clinicianId         String
+  clinician           ClinicianProfile   @relation(fields: [clinicianId], references: [id])
+  participantId       String
+  participant         ParticipantProfile @relation(fields: [participantId], references: [id])
+  appointmentId       String             @unique
+  appointment         Appointment        @relation(fields: [appointmentId], references: [id])
+  patientInsuranceId  String
+  patientInsurance    PatientInsurance   @relation(fields: [patientInsuranceId], references: [id])
+  status              ClaimStatus        @default(DRAFT)
+  stediTransactionId  String?
+  stediIdempotencyKey String             @default(cuid())
+  serviceCode         String
+  modifiers           String[]           @default([])
+  servicePriceCents   Int
+  placeOfServiceCode  String
+  dateOfService       DateTime
+  diagnosisCodes      String[]
+  submittedAt         DateTime?
+  respondedAt         DateTime?
+  rejectionReason     String?
+  retentionExpiresAt  DateTime?
+  retryCount          Int                @default(0)
+  deletedAt           DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
   statusHistory ClaimStatusHistory[]
 
@@ -906,14 +913,14 @@ model InsuranceClaim {
 }
 
 model ClaimStatusHistory {
-  id         String       @id @default(cuid())
+  id         String         @id @default(cuid())
   claimId    String
   claim      InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
   fromStatus ClaimStatus?
   toStatus   ClaimStatus
   changedBy  String
   reason     String?
-  createdAt  DateTime     @default(now())
+  createdAt  DateTime       @default(now())
 
   @@index([claimId])
   @@map("claim_status_history")
@@ -934,14 +941,14 @@ model DiagnosisCode {
 // ── Stripe Payment Integration ──────────────────────────
 
 model StripeCustomer {
-  id               String              @id @default(cuid())
+  id               String             @id @default(cuid())
   practiceId       String
-  practice         Practice            @relation(fields: [practiceId], references: [id])
+  practice         Practice           @relation(fields: [practiceId], references: [id])
   participantId    String
-  participant      ParticipantProfile  @relation(fields: [participantId], references: [id])
+  participant      ParticipantProfile @relation(fields: [participantId], references: [id])
   stripeCustomerId String
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   savedPaymentMethods SavedPaymentMethod[]
 
@@ -1031,7 +1038,7 @@ model HomeworkInstance {
   title         String?
   content       Json?
   dueDate       DateTime               @db.Date
-  status        HomeworkInstanceStatus  @default(PENDING)
+  status        HomeworkInstanceStatus @default(PENDING)
   completedAt   DateTime?
   response      Json?
   deletedAt     DateTime?
@@ -1161,17 +1168,17 @@ enum RtmEnrollmentStatus {
 }
 
 model RtmEngagementEvent {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id])
-  enrollmentId    String?
-  enrollment      Enrollment?  @relation(fields: [enrollmentId], references: [id])
-  eventType       RtmEventType
-  eventDate       DateTime     @db.Date
-  eventTimestamp   DateTime     @default(now())
-  metadata        Json?
-  deletedAt       DateTime?
-  createdAt       DateTime     @default(now())
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  enrollmentId   String?
+  enrollment     Enrollment?  @relation(fields: [enrollmentId], references: [id])
+  eventType      RtmEventType
+  eventDate      DateTime     @db.Date
+  eventTimestamp DateTime     @default(now())
+  metadata       Json?
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
 
   @@index([userId, eventDate])
   @@index([enrollmentId, eventDate])
@@ -1209,30 +1216,30 @@ model RtmEnrollment {
 }
 
 model RtmBillingPeriod {
-  id                           String             @id @default(cuid())
+  id                           String              @id @default(cuid())
   rtmEnrollmentId              String
-  rtmEnrollment                RtmEnrollment      @relation(fields: [rtmEnrollmentId], references: [id], onDelete: Cascade)
+  rtmEnrollment                RtmEnrollment       @relation(fields: [rtmEnrollmentId], references: [id], onDelete: Cascade)
   clinicianId                  String
-  clinician                    ClinicianProfile   @relation(fields: [clinicianId], references: [id])
+  clinician                    ClinicianProfile    @relation(fields: [clinicianId], references: [id])
   clientId                     String
-  client                       User               @relation("RtmBillingClient", fields: [clientId], references: [id])
+  client                       User                @relation("RtmBillingClient", fields: [clientId], references: [id])
   enrollmentId                 String?
-  enrollment                   Enrollment?        @relation(fields: [enrollmentId], references: [id])
-  periodStart                  DateTime           @db.Date
-  periodEnd                    DateTime           @db.Date
-  engagementDays               Int                @default(0)
-  clinicianMinutes             Int                @default(0)
-  hasInteractiveCommunication  Boolean            @default(false)
-  interactiveCommunicationDate DateTime?          @db.Date
+  enrollment                   Enrollment?         @relation(fields: [enrollmentId], references: [id])
+  periodStart                  DateTime            @db.Date
+  periodEnd                    DateTime            @db.Date
+  engagementDays               Int                 @default(0)
+  clinicianMinutes             Int                 @default(0)
+  hasInteractiveCommunication  Boolean             @default(false)
+  interactiveCommunicationDate DateTime?           @db.Date
   interactiveCommunicationType RtmInteractionType?
-  status                       RtmPeriodStatus    @default(ACTIVE)
-  billingTier                  RtmBillingTier     @default(NONE)
-  eligibleCodes                Json               @default("[]")
+  status                       RtmPeriodStatus     @default(ACTIVE)
+  billingTier                  RtmBillingTier      @default(NONE)
+  eligibleCodes                Json                @default("[]")
   notes                        String?
   superbillUrl                 String?
   deletedAt                    DateTime?
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @updatedAt
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
 
   timeLogs RtmClinicianTimeLog[]
 
@@ -1265,24 +1272,24 @@ model RtmClinicianTimeLog {
 }
 
 model ClinicianBillingProfile {
-  id                  String           @id @default(cuid())
-  clinicianId         String           @unique
-  clinician           ClinicianProfile @relation(fields: [clinicianId], references: [id])
-  providerName        String
-  credentials         String
-  npiNumber           String
-  taxId               String
-  practiceName        String
-  practiceAddress     String
-  practiceCity        String
-  practiceState       String
-  practiceZip         String
-  practicePhone       String
-  licenseNumber       String
-  licenseState        String
-  placeOfServiceCode  String           @default("02")
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id                 String           @id @default(cuid())
+  clinicianId        String           @unique
+  clinician          ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  providerName       String
+  credentials        String
+  npiNumber          String
+  taxId              String
+  practiceName       String
+  practiceAddress    String
+  practiceCity       String
+  practiceState      String
+  practiceZip        String
+  practicePhone      String
+  licenseNumber      String
+  licenseState       String
+  placeOfServiceCode String           @default("02")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@map("clinician_billing_profiles")
 }
@@ -1290,10 +1297,10 @@ model ClinicianBillingProfile {
 // ── Clinician & Client Configs ────────────────────────
 
 model ClinicianConfig {
-  id                   String       @id @default(cuid())
-  clinicianId          String       @unique
+  id                   String           @id @default(cuid())
+  clinicianId          String           @unique
   clinician            ClinicianProfile @relation(fields: [clinicianId], references: [id])
-  providerType         ProviderType @default(OTHER)
+  providerType         ProviderType     @default(OTHER)
   presetId             String?
   primaryModality      String?
   enabledModules       Json
@@ -1306,27 +1313,27 @@ model ClinicianConfig {
   brandColor           String?
   homeworkLabels       Json?
   reminderSettings     Json?
-  setupCompleted       Boolean      @default(false)
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  setupCompleted       Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   @@map("clinician_configs")
 }
 
 model ClientConfig {
-  id                  String   @id @default(cuid())
-  clientId            String
-  client              User     @relation("ClientConfigs", fields: [clientId], references: [id])
-  clinicianId         String
-  clinician           ClinicianProfile @relation("ClinicianClientConfigs", fields: [clinicianId], references: [id])
-  enabledModules      Json?
-  activeTrackers      Json?
-  activeAssessments   Json?
-  activeMedications   Json?
-  customConfig        Json?
+  id                   String           @id @default(cuid())
+  clientId             String
+  client               User             @relation("ClientConfigs", fields: [clientId], references: [id])
+  clinicianId          String
+  clinician            ClinicianProfile @relation("ClinicianClientConfigs", fields: [clinicianId], references: [id])
+  enabledModules       Json?
+  activeTrackers       Json?
+  activeAssessments    Json?
+  activeMedications    Json?
+  customConfig         Json?
   clientOverviewLayout Json?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   @@unique([clientId, clinicianId])
   @@index([clinicianId])
@@ -1482,18 +1489,18 @@ model EnrollmentOverride {
 // ── Recurring Appointments ───────────────────────────
 
 model RecurringSeries {
-  id              String            @id @default(cuid())
+  id              String             @id @default(cuid())
   practiceId      String
-  practice        Practice          @relation(fields: [practiceId], references: [id])
+  practice        Practice           @relation(fields: [practiceId], references: [id])
   clinicianId     String
-  clinician       ClinicianProfile  @relation(fields: [clinicianId], references: [id])
+  clinician       ClinicianProfile   @relation(fields: [clinicianId], references: [id])
   participantId   String
   participant     ParticipantProfile @relation(fields: [participantId], references: [id])
   serviceCodeId   String
-  serviceCode     ServiceCode       @relation(fields: [serviceCodeId], references: [id])
+  serviceCode     ServiceCode        @relation(fields: [serviceCodeId], references: [id])
   locationId      String
-  location        Location          @relation(fields: [locationId], references: [id])
-  appointmentType AppointmentType   @default(INDIVIDUAL)
+  location        Location           @relation(fields: [locationId], references: [id])
+  appointmentType AppointmentType    @default(INDIVIDUAL)
   internalNote    String?
   recurrenceRule  RecurrenceRule
   dayOfWeek       Int
@@ -1501,13 +1508,13 @@ model RecurringSeries {
   endTime         String
   seriesStartDate DateTime
   seriesEndDate   DateTime?
-  isActive        Boolean           @default(true)
+  isActive        Boolean            @default(true)
   createdById     String
-  createdBy       User              @relation("RecurringSeriesCreatedBy", fields: [createdById], references: [id])
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdBy       User               @relation("RecurringSeriesCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
-  appointments    Appointment[]
+  appointments Appointment[]
 
   @@index([practiceId, clinicianId, isActive])
   @@index([practiceId, participantId])

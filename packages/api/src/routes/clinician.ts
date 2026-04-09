@@ -79,6 +79,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
     const programs = await prisma.program.findMany({
       where: { clinicianId: clinicianProfileId },
       select: { id: true, title: true, status: true },
+      take: 200,
     });
     const programIds = programs.map((p) => p.id);
 
@@ -93,6 +94,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
         },
         program: { select: { title: true } },
       },
+      take: 200,
     });
 
     // Today's sessions
@@ -112,6 +114,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
         },
       },
       orderBy: { scheduledAt: "asc" },
+      take: 100,
     });
 
     // Recent homework submissions (completed in last 7 days)
@@ -189,6 +192,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       include: {
         fields: { where: { fieldType: "SCALE" }, select: { id: true, label: true, options: true } },
       },
+      take: 200,
     });
 
     const trackerIds = trackers.map((t) => t.id);
@@ -207,6 +211,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
         },
       },
       orderBy: { date: "desc" },
+      take: 200,
     }) : [];
 
     // Find low scores (below 4 on a 1-10 scale)

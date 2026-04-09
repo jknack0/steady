@@ -37,17 +37,6 @@ const SKIP_MODELS = new Set([
 ]);
 
 // Map Prisma actions to our audit actions
-const ACTION_MAP: Record<string, "CREATE" | "UPDATE" | "DELETE" | null> = {
-  create: "CREATE",
-  createMany: "CREATE",
-  update: "CREATE", // mapped below
-  updateMany: "UPDATE",
-  upsert: "UPDATE",
-  delete: "DELETE",
-  deleteMany: "DELETE",
-};
-
-// Fix: update should map to UPDATE, not CREATE
 const PRISMA_TO_AUDIT: Record<string, "CREATE" | "UPDATE" | "DELETE" | null> = {
   create: "CREATE",
   createMany: "CREATE",
@@ -141,7 +130,7 @@ export function registerAuditMiddleware(client: PrismaClient): void {
       // Never let audit logging break the application
       // Log only error name/message — never the full object which may contain SQL with PHI
       const msg = err instanceof Error ? `${err.name}: ${err.message}` : "Unknown error";
-      console.error(`[AUDIT] Audit log write failed — ${msg}`);
+      console.warn(`[AUDIT] Audit log write failed — ${msg}`);
     });
 
     return result;

@@ -109,6 +109,8 @@ router.post("/", validate(CreateCalendarEventSchema), async (req: Request, res: 
       }
     }
 
+    const validColor = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
+
     const event = await prisma.calendarEvent.create({
       data: {
         participantId,
@@ -116,7 +118,7 @@ router.post("/", validate(CreateCalendarEventSchema), async (req: Request, res: 
         startTime: start,
         endTime: end,
         eventType: eventType || "TIME_BLOCK",
-        color: color || null,
+        color: validColor,
         taskId: taskId || null,
       },
       include: {
@@ -165,7 +167,7 @@ router.patch("/:id", validate(UpdateCalendarEventSchema), async (req: Request, r
     if (startTime !== undefined) data.startTime = new Date(startTime);
     if (endTime !== undefined) data.endTime = new Date(endTime);
     if (eventType !== undefined) data.eventType = eventType;
-    if (color !== undefined) data.color = color;
+    if (color !== undefined) data.color = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
     if (taskId !== undefined) data.taskId = taskId;
 
     const event = await prisma.calendarEvent.update({

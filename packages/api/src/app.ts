@@ -66,6 +66,9 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+if (!process.env.CORS_ORIGINS && process.env.NODE_ENV !== "test") {
+  console.warn("[WARN] CORS_ORIGINS not set — CORS is permissive. Set CORS_ORIGINS in production.");
+}
 app.use(cookieParser() as any);
 
 // Webhook routes — MUST be before express.json() for raw body signature verification
