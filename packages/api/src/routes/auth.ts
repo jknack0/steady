@@ -411,13 +411,15 @@ router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Re
         return;
       }
 
-      // For legacy mode, check passwordHash if it exists
-      if (user.passwordHash) {
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) {
-          res.status(401).json({ success: false, error: "Invalid email or password" });
-          return;
-        }
+      // For legacy mode, passwordHash is required
+      if (!user.passwordHash) {
+        res.status(401).json({ success: false, error: "Invalid email or password" });
+        return;
+      }
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) {
+        res.status(401).json({ success: false, error: "Invalid email or password" });
+        return;
       }
 
       const authUser = buildAuthUser(user);

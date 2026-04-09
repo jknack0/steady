@@ -130,7 +130,7 @@ app.post("/api/waitlist", waitlistLimiter as any, async (req, res) => {
 
 // Demo provisioning — create account, clone admin's data, log in
 const DEMO_SOURCE_EMAIL = "admin@admin.com";
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? "" : "dev-secret-change-in-production");
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
 const demoCookieOptions: CookieOptions = {
