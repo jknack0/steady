@@ -495,6 +495,14 @@ export async function getParticipantDetail(
     return {
       participant: participantProfile.user,
       participantProfileId: participantProfile.id,
+      demographics: {
+        dateOfBirth: participantProfile.dateOfBirth,
+        gender: participantProfile.gender,
+        addressStreet: participantProfile.addressStreet,
+        addressCity: participantProfile.addressCity,
+        addressState: participantProfile.addressState,
+        addressZip: participantProfile.addressZip,
+      },
       enrollments: [],
       journalEntries: [],
       smartGoals: [],
@@ -581,6 +589,14 @@ export async function getParticipantDetail(
   return {
     participant: participantProfile.user,
     participantProfileId: participantProfile.id,
+    demographics: {
+      dateOfBirth: participantProfile.dateOfBirth,
+      gender: participantProfile.gender,
+      addressStreet: participantProfile.addressStreet,
+      addressCity: participantProfile.addressCity,
+      addressState: participantProfile.addressState,
+      addressZip: participantProfile.addressZip,
+    },
     enrollments: enrollmentDetails,
     journalEntries,
     smartGoals: smartGoalResponses,
@@ -729,6 +745,7 @@ export async function manageEnrollment(
 
 export async function bulkAction(
   clinicianProfileId: string,
+  userId: string,
   action: string,
   participantIds: string[],
   actionData?: Record<string, any>
@@ -750,7 +767,7 @@ export async function bulkAction(
           results.push({ participantId: pid, success: false, error: "Title required" });
           continue;
         }
-        await prisma.task.create({
+        const task = await prisma.task.create({
           data: {
             participantId: profileId,
             title: title.trim(),
@@ -758,6 +775,18 @@ export async function bulkAction(
             sourceType: "CLINICIAN_PUSH",
           },
         });
+        // Audit log per participant (never log task content — COND-2)
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId,
+              action: "CREATE",
+              resourceType: "Task",
+              resourceId: task.id,
+              metadata: { bulkAction: true, participantId: profileId },
+            },
+          });
+        } catch { /* fire-and-forget */ }
         results.push({ participantId: pid, success: true });
 
       } else if (action === "unlock-next-module") {
@@ -816,17 +845,45 @@ export async function bulkAction(
           data: { currentModuleId: nextLocked.id },
         });
 
+        // Audit log per participant
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId,
+              action: "UPDATE",
+              resourceType: "ModuleProgress",
+              resourceId: nextLocked.id,
+              metadata: { bulkAction: true, participantId: profileId },
+            },
+          });
+        } catch { /* fire-and-forget */ }
         results.push({ participantId: pid, success: true });
 
       } else if (action === "send-nudge") {
+        // Truncate message at 500 characters
+        const message = actionData?.message
+          ? String(actionData.message).slice(0, 500)
+          : "Your clinician sent you a nudge — check in when you can!";
         // Create a gentle nudge task
-        await prisma.task.create({
+        const task = await prisma.task.create({
           data: {
             participantId: profileId,
-            title: actionData?.message || "Your clinician sent you a nudge — check in when you can!",
+            title: message,
             sourceType: "CLINICIAN_PUSH",
           },
         });
+        // Audit log per participant (never log message content — COND-2)
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId,
+              action: "CREATE",
+              resourceType: "Task",
+              resourceId: task.id,
+              metadata: { bulkAction: true, participantId: profileId },
+            },
+          });
+        } catch { /* fire-and-forget */ }
         results.push({ participantId: pid, success: true });
 
       } else {

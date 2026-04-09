@@ -4,7 +4,8 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "build": "echo 'Use EAS Build for mobile'",
+    "build": "expo export --platform web",
+    "build:native": "echo 'Use EAS Build for native mobile'",
     "dev": "expo start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
@@ -13,7 +14,9 @@
     "deploy:web": "expo export --platform web && npx vercel deploy --prod --yes"
   },
   "dependencies": {
+    "color": "^4.2.3",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
+    "@react-native-async-storage/async-storage": "^3.0.2",
     "@steady/shared": "*",
     "@tanstack/react-query": "^5.91.0",
     "expo": "^54.0.0",

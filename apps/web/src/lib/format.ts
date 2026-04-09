@@ -5,6 +5,8 @@
  * defined locally across multiple dashboard pages.
  */
 
+import { MS_PER_DAY } from "@/lib/constants";
+
 /**
  * Returns a human-readable "X days ago" label and a staleness flag.
  * Used on RTM dashboard cards to show last engagement.
@@ -65,6 +67,28 @@ export function formatMoney(amount: number): string {
 }
 
 /**
+ * Formats an amount in cents as a dollar string with two decimal places.
+ * e.g. 15050 -> "$150.50"
+ */
+export function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+/**
+ * Formats a date string as MM/DD/YYYY (numeric).
+ * e.g. "2026-03-15" -> "03/15/2026"
+ * Used in superbill / CMS-1500 contexts.
+ */
+export function formatDateNumeric(dateStr: string): string {
+  const date = new Date(dateStr + "T00:00:00");
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
+/**
  * Formats a date string as a compact "last active" label.
  * Used on the participants list page.
  */
@@ -73,7 +97,7 @@ export function formatLastActive(dateStr: string | null): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / 86400000);
+  const diffDays = Math.floor(diffMs / MS_PER_DAY);
 
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";

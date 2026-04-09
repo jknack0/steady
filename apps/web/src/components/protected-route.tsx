@@ -16,19 +16,19 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  // Redirect clinicians who haven't completed setup to the onboarding wizard
-  useEffect(() => {
-    if (
-      !isLoading &&
-      isAuthenticated &&
-      user &&
-      user.role === "CLINICIAN" &&
-      !user.hasCompletedSetup &&
-      pathname !== "/setup"
-    ) {
-      router.replace("/setup");
-    }
-  }, [isLoading, isAuthenticated, user, pathname, router]);
+  // TODO: revisit setup onboarding wizard
+  // useEffect(() => {
+  //   if (
+  //     !isLoading &&
+  //     isAuthenticated &&
+  //     user &&
+  //     user.role === "CLINICIAN" &&
+  //     !user.hasCompletedSetup &&
+  //     pathname !== "/setup"
+  //   ) {
+  //     router.replace("/setup");
+  //   }
+  // }, [isLoading, isAuthenticated, user, pathname, router]);
 
   if (isLoading) {
     return (

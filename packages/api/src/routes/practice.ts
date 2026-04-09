@@ -2,6 +2,10 @@ import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
+import {
+  getPracticeStats,
+  getPracticeParticipants,
+} from "../services/practice-management";
 
 const router = Router();
 
@@ -398,6 +402,76 @@ router.get("/:id/dashboard", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Practice dashboard error", err);
     res.status(500).json({ success: false, error: "Failed to load dashboard" });
+  }
+});
+
+// GET /api/practices/:id/stats — Owner-only aggregate stats (Sprint 17)
+router.get("/:id/stats", async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+
+    const membership = await prisma.practiceMembership.findUnique({
+      where: {
+        practiceId_clinicianId: {
+          practiceId: req.params.id,
+          clinicianId: clinicianProfileId,
+        },
+      },
+    });
+
+    if (!membership) {
+      res.status(404).json({ success: false, error: "Practice not found" });
+      return;
+    }
+
+    if (membership.role !== "OWNER") {
+      res.status(403).json({ success: false, error: "Only practice owners can view stats" });
+      return;
+    }
+
+    const stats = await getPracticeStats(req.params.id);
+    res.json({ success: true, data: stats });
+  } catch (err) {
+    logger.error("Practice stats error", err);
+    res.status(500).json({ success: false, error: "Failed to load practice stats" });
+  }
+});
+
+// GET /api/practices/:id/participants — Owner-only practice-wide participant list (Sprint 17)
+router.get("/:id/participants", async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user!.clinicianProfileId!;
+
+    const membership = await prisma.practiceMembership.findUnique({
+      where: {
+        practiceId_clinicianId: {
+          practiceId: req.params.id,
+          clinicianId: clinicianProfileId,
+        },
+      },
+    });
+
+    if (!membership) {
+      res.status(404).json({ success: false, error: "Practice not found" });
+      return;
+    }
+
+    if (membership.role !== "OWNER") {
+      res.status(403).json({ success: false, error: "Only practice owners can view all participants" });
+      return;
+    }
+
+    const { cursor, search, limit } = req.query;
+    const result = await getPracticeParticipants(req.params.id, {
+      cursor: cursor as string | undefined,
+      search: search as string | undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+    });
+
+    res.json({ success: true, data: result.data, cursor: result.cursor });
+  } catch (err) {
+    logger.error("Practice participants error", err);
+    res.status(500).json({ success: false, error: "Failed to load practice participants" });
   }
 });
 

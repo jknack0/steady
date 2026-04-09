@@ -1,20 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { usePrograms, useTemplates, useCloneProgram, useClientPrograms } from "@/hooks/use-programs";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs } from "@/components/ui/tabs";
 import { Plus, BookOpen, Users, Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/loading-state";
 import { CreateProgramDialog } from "./create-program-dialog";
-import { AssignmentModal } from "@/components/assignment";
 import { PageHeader } from "@/components/page-header";
+
+const AssignmentModal = dynamic(
+  () =>
+    import("@/components/assignment/AssignmentModal").then(
+      (mod) => mod.AssignmentModal
+    ),
+  { ssr: false }
+);
 
 type Tab = "my-programs" | "client-programs" | "templates";
 
 export default function ProgramsPage() {
+  usePageTitle("Programs");
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab");
@@ -61,25 +72,16 @@ export default function ProgramsPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b mb-6">
-        {([
-          { key: "my-programs" as Tab, label: "My Programs" },
-          { key: "client-programs" as Tab, label: "Client Programs" },
-          { key: "templates" as Tab, label: "Template Library" },
-        ]).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === t.key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { key: "my-programs", label: "My Programs" },
+          { key: "client-programs", label: "Client Programs" },
+          { key: "templates", label: "Template Library" },
+        ]}
+        active={activeTab}
+        onChange={(key) => setTab(key as Tab)}
+        className="mb-6"
+      />
 
       {isLoading && <LoadingState />}
 

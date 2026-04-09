@@ -7,9 +7,17 @@ import {
   SaveDashboardLayoutSchema,
   SaveClientOverviewLayoutSchema,
   SaveHomeworkLabelsSchema,
+  UpdateReminderSettingsSchema,
 } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
+import { requirePracticeCtx } from "../lib/practice-context";
 import { validate } from "../middleware/validate";
+import { StediApiKeySchema } from "@steady/shared";
+import {
+  getStediConfig,
+  setStediKey,
+  testStediConnection,
+} from "../services/stedi-config";
 import {
   getClinicianConfig,
   saveClinicianConfig,
@@ -22,6 +30,10 @@ import {
   resolveClientConfig,
   NotFoundError,
 } from "../services/config";
+import {
+  getReminderSettings,
+  saveReminderSettings,
+} from "../services/appointment-reminders";
 import { z } from "zod";
 
 const router = Router();
@@ -123,6 +135,44 @@ router.post(
         .json({ success: false, error: "Failed to create config from preset" });
     }
   }
+);
+
+// ── Reminder Settings ────────────────────────────────────
+
+// GET /api/config/reminders
+router.get("/reminders", async (req: Request, res: Response) => {
+  try {
+    const clinicianProfileId = req.user?.clinicianProfileId;
+    if (!clinicianProfileId) {
+      res.status(403).json({ success: false, error: "Clinician profile required" });
+      return;
+    }
+    const settings = await getReminderSettings(clinicianProfileId);
+    res.json({ success: true, data: settings });
+  } catch (err) {
+    logger.error("Get reminder settings error", err);
+    res.status(500).json({ success: false, error: "Failed to get reminder settings" });
+  }
+});
+
+// PUT /api/config/reminders
+router.put(
+  "/reminders",
+  validate(UpdateReminderSettingsSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const clinicianProfileId = req.user?.clinicianProfileId;
+      if (!clinicianProfileId) {
+        res.status(403).json({ success: false, error: "Clinician profile required" });
+        return;
+      }
+      await saveReminderSettings(clinicianProfileId, req.body);
+      res.json({ success: true, data: req.body });
+    } catch (err) {
+      logger.error("Update reminder settings error", err);
+      res.status(500).json({ success: false, error: "Failed to update reminder settings" });
+    }
+  },
 );
 
 // ── Client Config Routes (clinician-facing) ───────────────
@@ -229,6 +279,60 @@ router.patch(
     }
   }
 );
+
+// ── Stedi Config Routes ─────────────────────────────────
+
+// GET /api/config/stedi — check if Stedi is configured
+router.get("/stedi", requirePracticeCtx, async (req: Request, res: Response) => {
+  try {
+    const ctx = res.locals.practiceCtx!;
+    const config = await getStediConfig(ctx);
+    res.json({ success: true, data: config });
+  } catch (err) {
+    logger.error("Get Stedi config error", err);
+    res.status(500).json({ success: false, error: "Failed to get Stedi config" });
+  }
+});
+
+// PUT /api/config/stedi — save API key (owner only)
+router.put("/stedi", requirePracticeCtx, validate(StediApiKeySchema), async (req: Request, res: Response) => {
+  try {
+    const ctx = res.locals.practiceCtx!;
+    const result = await setStediKey(ctx, req.body.apiKey);
+
+    if ("error" in result) {
+      if (result.error === "forbidden") {
+        res.status(403).json({ success: false, error: result.message });
+        return;
+      }
+    }
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    logger.error("Set Stedi key error", err);
+    res.status(500).json({ success: false, error: "Failed to save Stedi API key" });
+  }
+});
+
+// POST /api/config/stedi/test — test connection
+router.post("/stedi/test", requirePracticeCtx, async (req: Request, res: Response) => {
+  try {
+    const ctx = res.locals.practiceCtx!;
+    const result = await testStediConnection(ctx);
+
+    if ("error" in result) {
+      if (result.error === "not_configured") {
+        res.status(404).json({ success: false, error: "No Stedi API key configured" });
+        return;
+      }
+    }
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    logger.error("Test Stedi connection error", err);
+    res.status(500).json({ success: false, error: "Failed to test Stedi connection" });
+  }
+});
 
 export default router;
 

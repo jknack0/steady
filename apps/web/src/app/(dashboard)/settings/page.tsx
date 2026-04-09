@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useClinicianConfig, useSaveClinicianConfig, useSaveHomeworkLabels } from "@/hooks/use-config";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { LoadingState } from "@/components/loading-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,15 +16,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  MODULE_REGISTRY,
-  MODULE_CATEGORIES,
-  getModulesForCategory,
   HOMEWORK_TYPE_SYSTEM_LABELS,
 } from "@steady/shared";
-import type { ModuleId, ModuleCategory } from "@steady/shared";
 import type { HomeworkItemType } from "@steady/shared";
 import { Check, Loader2, Plus, Trash2, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { useBillingProfile, useSaveBillingProfile } from "@/hooks/use-rtm";
+import type { SaveBillingProfileData } from "@/hooks/use-rtm";
+import { BillingProfileCard } from "@/components/settings/BillingProfileCard";
+import { StediConfigCard } from "@/components/settings/StediConfigCard";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -71,27 +71,39 @@ const ASSESSMENT_FREQUENCIES = [
   { value: "MONTHLY", label: "Monthly" },
 ] as const;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  MONITORING: "Monitoring",
-  ENGAGEMENT: "Engagement",
-  PRODUCTIVITY: "Productivity",
-  CLINICAL: "Clinical",
-  COMMUNICATION: "Communication",
-  BILLING: "Billing",
-};
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  usePageTitle("Settings");
   const { data: config, isLoading, isError } = useClinicianConfig();
   const saveConfig = useSaveClinicianConfig();
   const saveHomeworkLabelsMutation = useSaveHomeworkLabels();
+  const { data: billingProfile, isLoading: billingProfileLoading } = useBillingProfile();
+  const saveBillingProfile = useSaveBillingProfile();
 
   // Form state
   const [providerType, setProviderType] = useState("OTHER");
   const [primaryModality, setPrimaryModality] = useState("");
   const [practiceName, setPracticeName] = useState("");
-  const [enabledModules, setEnabledModules] = useState<string[]>([]);
+
+  // Billing profile form state
+  const [billingForm, setBillingForm] = useState<SaveBillingProfileData>({
+    providerName: "",
+    credentials: "",
+    npiNumber: "",
+    taxId: "",
+    practiceName: "",
+    practiceAddress: "",
+    practiceCity: "",
+    practiceState: "",
+    practiceZip: "",
+    practicePhone: "",
+    licenseNumber: "",
+    licenseState: "",
+    placeOfServiceCode: "02",
+  });
+  const [billingErrors, setBillingErrors] = useState<Record<string, string>>({});
+  const [showTaxId, setShowTaxId] = useState(false);
   const [defaultTrackerPreset, setDefaultTrackerPreset] = useState("");
   const [defaultAssessments, setDefaultAssessments] = useState<
     Array<{ instrumentId: string; frequency: string }>
@@ -107,7 +119,6 @@ export default function SettingsPage() {
       setProviderType(config.providerType || "OTHER");
       setPrimaryModality(config.primaryModality || "");
       setPracticeName(config.practiceName || "");
-      setEnabledModules(config.enabledModules || []);
       setDefaultTrackerPreset(config.defaultTrackerPreset || "");
       setDefaultAssessments(
         (config.defaultAssessments || []).map((a: any) => ({
@@ -119,6 +130,27 @@ export default function SettingsPage() {
     }
   }, [config]);
 
+  // Populate billing profile form when data loads
+  useEffect(() => {
+    if (billingProfile) {
+      setBillingForm({
+        providerName: billingProfile.providerName || "",
+        credentials: billingProfile.credentials || "",
+        npiNumber: billingProfile.npiNumber || "",
+        taxId: billingProfile.taxId || "",
+        practiceName: billingProfile.practiceName || "",
+        practiceAddress: billingProfile.practiceAddress || "",
+        practiceCity: billingProfile.practiceCity || "",
+        practiceState: billingProfile.practiceState || "",
+        practiceZip: billingProfile.practiceZip || "",
+        practicePhone: billingProfile.practicePhone || "",
+        licenseNumber: billingProfile.licenseNumber || "",
+        licenseState: billingProfile.licenseState || "",
+        placeOfServiceCode: billingProfile.placeOfServiceCode || "02",
+      });
+    }
+  }, [billingProfile]);
+
   // Clear success indicator after 3 seconds
   useEffect(() => {
     if (saveSuccess) {
@@ -127,13 +159,64 @@ export default function SettingsPage() {
     }
   }, [saveSuccess]);
 
-  const toggleModule = useCallback((moduleId: string) => {
-    setEnabledModules((prev) =>
-      prev.includes(moduleId)
-        ? prev.filter((id) => id !== moduleId)
-        : [...prev, moduleId]
+  const updateBillingField = useCallback(
+    (field: keyof SaveBillingProfileData, value: string) => {
+      setBillingForm((prev) => ({ ...prev, [field]: value }));
+      // Clear error for this field when user edits
+      setBillingErrors((prev) => {
+        if (prev[field]) {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        }
+        return prev;
+      });
+    },
+    []
+  );
+
+  const validateBillingProfile = useCallback((): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    const requiredFields: Array<{ key: keyof SaveBillingProfileData; label: string }> = [
+      { key: "providerName", label: "Provider Name" },
+      { key: "credentials", label: "Credentials" },
+      { key: "npiNumber", label: "NPI Number" },
+      { key: "taxId", label: "Tax ID" },
+      { key: "practiceName", label: "Practice Name" },
+      { key: "practiceAddress", label: "Street Address" },
+      { key: "practiceCity", label: "City" },
+      { key: "practiceState", label: "State" },
+      { key: "practiceZip", label: "ZIP Code" },
+      { key: "practicePhone", label: "Phone Number" },
+      { key: "licenseNumber", label: "License Number" },
+      { key: "licenseState", label: "License State" },
+    ];
+
+    for (const { key, label } of requiredFields) {
+      if (!billingForm[key]?.trim()) {
+        errors[key] = `${label} is required`;
+      }
+    }
+
+    // Format validations (only if field is non-empty)
+    if (billingForm.npiNumber && !/^\d{10}$/.test(billingForm.npiNumber)) {
+      errors.npiNumber = "NPI must be exactly 10 digits";
+    }
+    if (billingForm.taxId && !/^\d{9}$/.test(billingForm.taxId)) {
+      errors.taxId = "Tax ID must be exactly 9 digits";
+    }
+    if (billingForm.practiceZip && !/^\d{5}(-\d{4})?$/.test(billingForm.practiceZip)) {
+      errors.practiceZip = "Invalid ZIP code format";
+    }
+
+    return errors;
+  }, [billingForm]);
+
+  const isBillingFormPopulated = useCallback((): boolean => {
+    return Object.entries(billingForm).some(
+      ([key, value]) => key !== "placeOfServiceCode" && value.trim() !== ""
     );
-  }, []);
+  }, [billingForm]);
 
   const addAssessment = useCallback(() => {
     setDefaultAssessments((prev) => [
@@ -178,28 +261,34 @@ export default function SettingsPage() {
   );
 
   const handleSave = async () => {
-    // Build dashboard layout from enabled modules that have dashboardWidget
-    const dashboardLayout = enabledModules
-      .filter((id) => {
-        const mod = MODULE_REGISTRY[id as ModuleId];
-        return mod?.dashboardWidget;
-      })
-      .map((widgetId) => ({ widgetId, visible: true }));
+    // Validate billing profile if any field is populated
+    if (isBillingFormPopulated()) {
+      const errors = validateBillingProfile();
+      if (Object.keys(errors).length > 0) {
+        setBillingErrors(errors);
+        return;
+      }
+    }
 
-    await Promise.all([
+    const promises: Promise<unknown>[] = [
       saveConfig.mutateAsync({
         providerType,
         primaryModality: primaryModality || undefined,
         practiceName: practiceName || undefined,
-        enabledModules,
-        dashboardLayout,
         defaultTrackerPreset: defaultTrackerPreset || undefined,
         defaultAssessments:
           defaultAssessments.length > 0 ? defaultAssessments : undefined,
       }),
       saveHomeworkLabelsMutation.mutateAsync(homeworkLabels),
-    ]);
+    ];
 
+    // Only save billing profile if at least one field is populated
+    if (isBillingFormPopulated()) {
+      promises.push(saveBillingProfile.mutateAsync(billingForm));
+    }
+
+    await Promise.all(promises);
+    setBillingErrors({});
     setSaveSuccess(true);
   };
 
@@ -226,6 +315,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl">
       <PageHeader title="Settings" subtitle="Practice configuration and preferences." />
+
 
       <div className="space-y-6">
         {/* ── Provider Profile ───────────────────────────────── */}
@@ -277,63 +367,18 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* ── Enabled Modules ────────────────────────────────── */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Enabled Modules</CardTitle>
-            <CardDescription>
-              Choose which modules are available for your clients.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {MODULE_CATEGORIES.map((category) => {
-              const modules = getModulesForCategory(category as ModuleCategory);
-              if (modules.length === 0) return null;
 
-              return (
-                <div key={category}>
-                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    {CATEGORY_LABELS[category] || category}
-                  </h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {modules.map((mod) => {
-                      const isEnabled = enabledModules.includes(mod.id);
-                      return (
-                        <div
-                          key={mod.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => toggleModule(mod.id)}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleModule(mod.id); } }}
-                          className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer ${
-                            isEnabled
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-muted-foreground/30"
-                          }`}
-                        >
-                          <Checkbox
-                            checked={isEnabled}
-                            onCheckedChange={() => toggleModule(mod.id)}
-                            className="mt-0.5"
-                            aria-label={`Toggle ${mod.label}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium">
-                              {mod.label}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              {mod.description}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+
+        {/* ── Billing Profile ─────────────────────────────────── */}
+        <BillingProfileCard
+          form={billingForm}
+          errors={billingErrors}
+          showTaxId={showTaxId}
+          onToggleTaxId={() => setShowTaxId((v) => !v)}
+          onFieldChange={updateBillingField}
+          isLoading={billingProfileLoading}
+          hasProfile={!!billingProfile}
+        />
 
         {/* ── Default Client Settings ────────────────────────── */}
         <Card>
@@ -490,13 +535,16 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* ── Integrations ────────────────────────────────────── */}
+        <StediConfigCard />
+
         {/* ── Save Button ────────────────────────────────────── */}
         <div className="flex items-center gap-3 pb-8">
           <Button
             onClick={handleSave}
-            disabled={saveConfig.isPending || enabledModules.length === 0}
+            disabled={saveConfig.isPending || saveBillingProfile.isPending}
           >
-            {saveConfig.isPending ? (
+            {saveConfig.isPending || saveBillingProfile.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Saving...
@@ -513,19 +561,15 @@ export default function SettingsPage() {
             </span>
           )}
 
-          {saveConfig.isError && (
+          {(saveConfig.isError || saveBillingProfile.isError) && (
             <span className="text-sm text-destructive">
               Failed to save. Please try again.
             </span>
           )}
 
-          {enabledModules.length === 0 && (
-            <span className="text-sm text-muted-foreground">
-              Enable at least one module to save.
-            </span>
-          )}
         </div>
       </div>
     </div>
   );
 }
+/* BillingProfileCard and StediConfigCard extracted to components/settings/ */

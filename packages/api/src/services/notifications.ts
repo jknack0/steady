@@ -14,6 +14,7 @@ import {
   generateAllPendingInstances,
   markMissedInstances,
 } from "./homework-instances";
+import { calculateAllStreaks } from "./streaks";
 
 const expo = new Expo();
 
@@ -130,6 +131,24 @@ export async function recordDismissal(
   });
 }
 
+export async function resetDismissals(
+  userId: string,
+  category: string
+): Promise<void> {
+  const pref = await prisma.notificationPreference.findUnique({
+    where: { userId_category: { userId, category: category as any } },
+  });
+  if (!pref) return;
+
+  const existingSettings = (pref.customSettings as any) || {};
+  await prisma.notificationPreference.update({
+    where: { id: pref.id },
+    data: {
+      customSettings: { ...existingSettings, dismissals: [] },
+    },
+  });
+}
+
 // ── Queue Registration ───────────────────────────────
 
 export async function registerNotificationWorkers(): Promise<void> {
@@ -142,6 +161,7 @@ export async function registerNotificationWorkers(): Promise<void> {
   await boss.createQueue("schedule-homework-reminders");
   await boss.createQueue("generate-homework-instances");
   await boss.createQueue("schedule-tracker-reminders");
+  await boss.createQueue("calculate-streaks");
 
   await boss.work<SendNotificationJob>("send-notification", async (jobs) => {
     for (const job of jobs) {
@@ -170,12 +190,17 @@ export async function registerNotificationWorkers(): Promise<void> {
     await scheduleTrackerRemindersForAll();
   });
 
+  await boss.work("calculate-streaks", async () => {
+    await calculateAllStreaks();
+  });
+
   // Schedule recurring jobs
   await boss.schedule("schedule-morning-checkins", "0 5 * * *"); // 5am UTC daily
   await boss.schedule("schedule-weekly-reviews", "0 14 * * 0");  // 2pm UTC Sundays
   await boss.schedule("schedule-homework-reminders", "0 6 * * *"); // 6am UTC daily
   await boss.schedule("generate-homework-instances", "0 3 * * *"); // 3am UTC daily (before reminders)
   await boss.schedule("schedule-tracker-reminders", "0 17 * * *"); // 5pm UTC daily
+  await boss.schedule("calculate-streaks", "0 2 * * *"); // 2am UTC daily
 
   logger.info("Notification workers registered");
 }

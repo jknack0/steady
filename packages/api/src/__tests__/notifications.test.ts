@@ -379,7 +379,7 @@ describe("POST /api/notifications/dismiss", () => {
   it("records a dismissal for a valid category", async () => {
     const res = await request(app)
       .post("/api/notifications/dismiss")
-      .set(...authHeader())
+      .set(...participantAuthHeader())
       .send({ category: "HOMEWORK" });
 
     expect(res.status).toBe(200);
@@ -395,7 +395,7 @@ describe("POST /api/notifications/dismiss", () => {
 
       const res = await request(app)
         .post("/api/notifications/dismiss")
-        .set(...authHeader())
+        .set(...participantAuthHeader())
         .send({ category });
 
       expect(res.status).toBe(200);
@@ -406,7 +406,7 @@ describe("POST /api/notifications/dismiss", () => {
   it("returns 400 for invalid category", async () => {
     const res = await request(app)
       .post("/api/notifications/dismiss")
-      .set(...authHeader())
+      .set(...participantAuthHeader())
       .send({ category: "INVALID" });
 
     expect(res.status).toBe(400);
@@ -418,7 +418,7 @@ describe("POST /api/notifications/dismiss", () => {
   it("returns 400 if category is missing", async () => {
     const res = await request(app)
       .post("/api/notifications/dismiss")
-      .set(...authHeader())
+      .set(...participantAuthHeader())
       .send({});
 
     expect(res.status).toBe(400);
@@ -433,12 +433,21 @@ describe("POST /api/notifications/dismiss", () => {
     expect(res.status).toBe(401);
   });
 
+  it("returns 403 for clinician role", async () => {
+    const res = await request(app)
+      .post("/api/notifications/dismiss")
+      .set(...authHeader())
+      .send({ category: "HOMEWORK" });
+
+    expect(res.status).toBe(403);
+  });
+
   it("returns 500 if recordDismissal throws", async () => {
     mockRecordDismissal.mockRejectedValue(new Error("Service error"));
 
     const res = await request(app)
       .post("/api/notifications/dismiss")
-      .set(...authHeader())
+      .set(...participantAuthHeader())
       .send({ category: "HOMEWORK" });
 
     expect(res.status).toBe(500);

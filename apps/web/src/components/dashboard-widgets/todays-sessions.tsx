@@ -33,7 +33,7 @@ export function TodaysSessionsWidget({
 
   const headerAction = (
     <Link
-      href="/sessions"
+      href="/appointments"
       className="text-xs text-primary hover:underline flex items-center gap-1"
     >
       View all <ArrowRight className="h-3 w-3" />
@@ -116,7 +116,7 @@ export function TodaysSessionsWidget({
                 })}
               </span>
               {session.status === "SCHEDULED" && (
-                <Link href={`/sessions/${session.id}/prepare`}>
+                <Link href={`/appointments/prep/${session.id}`}>
                   <Button
                     size="sm"
                     variant="outline"

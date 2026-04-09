@@ -1,92 +1,188 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  RefreshControl,
-} from "react-native";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { View, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
 
-interface CalendarEvent {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  eventType: string;
-  color: string | null;
-  task: { id: string; title: string; status: string } | null;
-}
+import { SegmentedControl } from "../../../components/calendar/segmented-control";
+import { NavigationRow } from "../../../components/calendar/navigation-row";
+import { DayPills } from "../../../components/calendar/day-pills";
+import { MonthView } from "../../../components/calendar/month-view";
+import { WeekTimeGrid } from "../../../components/calendar/week-time-grid";
+import { DayView } from "../../../components/calendar/day-view";
+import { MiniAgendaSheet } from "../../../components/calendar/mini-agenda-sheet";
+import { CreateEventModal } from "../../../components/calendar/create-event-modal";
+import { TEAL, BG_PAGE, BG_CARD, GRID_LINE_COLOR } from "../../../components/calendar/constants";
+import {
+  type ViewMode,
+  type CalendarEvent,
+  getViewDateRange,
+  getAdjacentPeriodRange,
+  formatPeriodLabel,
+  groupEventsByDate,
+  getEventsForDay,
+  getWeekDates,
+  addDays,
+  addWeeks,
+  addMonths,
+} from "../../../components/calendar/helpers";
 
-const EVENT_COLORS: Record<string, { bg: string; border: string; text: string; icon: string }> = {
-  TIME_BLOCK: { bg: "#E3EDED", border: "#5B8A8A", text: "#4A7272", icon: "time-outline" },
-  SESSION: { bg: "#F5ECD7", border: "#C4A84D", text: "#9A8340", icon: "people-outline" },
-  CATCH_UP: { bg: "#E8F0E7", border: "#8FAE8B", text: "#729070", icon: "chatbubbles-outline" },
-  EXTERNAL_SYNC: { bg: "#E1EBF1", border: "#89B4C8", text: "#6A97AD", icon: "sync-outline" },
-};
-
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6am to 9pm
-
-function getWeekDays(baseDate: Date): Date[] {
-  const start = new Date(baseDate);
-  start.setDate(start.getDate() - start.getDay()); // Sunday
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-}
-
-function formatHour(h: number) {
-  if (h === 0 || h === 12) return h === 0 ? "12 AM" : "12 PM";
-  return h < 12 ? `${h} AM` : `${h - 12} PM`;
-}
+const STALE_TIME = 5 * 60 * 1000;
+const GC_TIME = 30 * 60 * 1000;
 
 export default function CalendarScreen() {
   const queryClient = useQueryClient();
   const { date: dateParam } = useLocalSearchParams<{ date?: string }>();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [anchorDate, setAnchorDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [agendaDate, setAgendaDate] = useState<Date | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   useEffect(() => {
     if (dateParam) {
-      setSelectedDate(new Date(dateParam));
+      const d = new Date(dateParam);
+      setAnchorDate(d);
+      setSelectedDate(d);
     }
   }, [dateParam]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [title, setTitle] = useState("");
-  const [startHour, setStartHour] = useState(9);
-  const [durationMinutes, setDurationMinutes] = useState(60);
 
-  const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate.toDateString()]);
+  // Date range for current view
+  const dateRange = useMemo(
+    () => getViewDateRange(viewMode, anchorDate),
+    [viewMode, anchorDate.toDateString()],
+  );
 
-  const weekStart = weekDays[0].toISOString();
-  const weekEnd = new Date(weekDays[6].getTime() + 86400000).toISOString();
-
-  const { data: events, isLoading, refetch } = useQuery({
-    queryKey: ["calendar", weekStart],
+  // Primary query
+  const {
+    data: events,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["calendar", dateRange.start.toISOString(), dateRange.end.toISOString()],
     queryFn: async () => {
-      const res = await api.getCalendarEvents(weekStart, weekEnd);
+      const res = await api.getCalendarEvents(
+        dateRange.start.toISOString(),
+        dateRange.end.toISOString(),
+      );
       if (!res.success) throw new Error(res.error);
       return res.data as CalendarEvent[];
     },
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const start = new Date(selectedDate);
-      start.setHours(startHour, 0, 0, 0);
-      const end = new Date(start.getTime() + durationMinutes * 60000);
+  // Prefetch adjacent periods
+  useEffect(() => {
+    const { prev, next } = getAdjacentPeriodRange(viewMode, anchorDate);
+    const fetchRange = (range: { start: Date; end: Date }) =>
+      api
+        .getCalendarEvents(range.start.toISOString(), range.end.toISOString())
+        .then((r) => {
+          if (!r.success) throw new Error(r.error);
+          return r.data;
+        });
 
+    queryClient.prefetchQuery({
+      queryKey: ["calendar", prev.start.toISOString(), prev.end.toISOString()],
+      queryFn: () => fetchRange(prev),
+      staleTime: STALE_TIME,
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["calendar", next.start.toISOString(), next.end.toISOString()],
+      queryFn: () => fetchRange(next),
+      staleTime: STALE_TIME,
+    });
+  }, [viewMode, anchorDate.toDateString()]);
+
+  // Group events by date
+  const eventsByDate = useMemo(
+    () => groupEventsByDate(events || []),
+    [events],
+  );
+
+  // Day events for day view
+  const dayEvents = useMemo(() => {
+    if (!events || !selectedDate) return [];
+    return getEventsForDay(events, selectedDate);
+  }, [events, selectedDate?.toDateString()]);
+
+  // Agenda events
+  const agendaEvents = useMemo(() => {
+    if (!events || !agendaDate) return [];
+    return getEventsForDay(events, agendaDate);
+  }, [events, agendaDate?.toDateString()]);
+
+  // Week dates for day pills
+  const weekDates = useMemo(
+    () => getWeekDates(anchorDate),
+    [anchorDate.toDateString()],
+  );
+
+  // Navigation
+  const navigatePeriod = useCallback(
+    (dir: number) => {
+      setSelectedDate(null);
+      switch (viewMode) {
+        case "day":
+          setAnchorDate((d) => addDays(d, dir));
+          break;
+        case "week":
+          setAnchorDate((d) => addWeeks(d, dir));
+          break;
+        case "month":
+          setAnchorDate((d) => addMonths(d, dir));
+          break;
+      }
+    },
+    [viewMode],
+  );
+
+  const goToToday = useCallback(() => {
+    const today = new Date();
+    setAnchorDate(today);
+    setSelectedDate(today);
+  }, []);
+
+  const handleViewChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode);
+    // Anchor stays — view re-renders around the same date
+  }, []);
+
+  const handleDayPress = useCallback(
+    (date: Date) => {
+      if (viewMode === "day") {
+        setSelectedDate(date);
+        setAnchorDate(date);
+      } else {
+        // Open mini agenda sheet in week/month views
+        setSelectedDate(date);
+        setAgendaDate(date);
+      }
+    },
+    [viewMode],
+  );
+
+  const handleAgendaEventPress = useCallback((event: CalendarEvent) => {
+    const d = new Date(event.startTime);
+    setAgendaDate(null);
+    setViewMode("day");
+    setAnchorDate(d);
+    setSelectedDate(d);
+  }, []);
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: async (data: { title: string; startHour: number; durationMinutes: number }) => {
+      const date = selectedDate || anchorDate;
+      const start = new Date(date);
+      start.setHours(data.startHour, 0, 0, 0);
+      const end = new Date(start.getTime() + data.durationMinutes * 60000);
       const res = await api.createCalendarEvent({
-        title,
+        title: data.title,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         eventType: "TIME_BLOCK",
@@ -97,7 +193,6 @@ export default function CalendarScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       setShowAdd(false);
-      setTitle("");
     },
   });
 
@@ -111,302 +206,117 @@ export default function CalendarScreen() {
     },
   });
 
-  const todayEvents = useMemo(() => {
-    if (!events) return [];
-    const dateStr = selectedDate.toDateString();
-    return events
-      .filter((e) => new Date(e.startTime).toDateString() === dateStr)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  }, [events, selectedDate.toDateString()]);
+  const periodLabel = formatPeriodLabel(viewMode, anchorDate);
 
-  const isToday = (d: Date) => d.toDateString() === new Date().toDateString();
-  const isSelected = (d: Date) => d.toDateString() === selectedDate.toDateString();
-
-  const navigateWeek = (dir: number) => {
-    const next = new Date(selectedDate);
-    next.setDate(next.getDate() + dir * 7);
-    setSelectedDate(next);
-  };
+  if (isLoading && !events) {
+    return (
+      <View testID="calendar-loading" style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: BG_PAGE }}>
+        <ActivityIndicator size="large" color={TEAL} />
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F7F5F2" }}>
-      {/* Week navigation */}
-      <View style={{ backgroundColor: "#FFFFFF", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F0EDE8" }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <TouchableOpacity
-            onPress={() => navigateWeek(-1)}
-            style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: "#F0EDE8" }}
-          >
-            <Ionicons name="chevron-back" size={18} color="#5B8A8A" />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D" }}>
-            {selectedDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigateWeek(1)}
-            style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 8, backgroundColor: "#F0EDE8" }}
-          >
-            <Ionicons name="chevron-forward" size={18} color="#5B8A8A" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Day pills */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          {weekDays.map((d) => {
-            const selected = isSelected(d);
-            const today = isToday(d);
-            return (
-              <TouchableOpacity
-                key={d.toISOString()}
-                style={{
-                  alignItems: "center",
-                  paddingVertical: 8,
-                  paddingHorizontal: 10,
-                  borderRadius: 16,
-                  backgroundColor: selected ? "#5B8A8A" : today ? "#E3EDED" : "transparent",
-                }}
-                onPress={() => setSelectedDate(d)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontFamily: "PlusJakartaSans_500Medium",
-                    marginBottom: 4,
-                    color: selected ? "rgba(255,255,255,0.7)" : "#8A8A8A",
-                  }}
-                >
-                  {d.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2)}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontFamily: "PlusJakartaSans_700Bold",
-                    color: selected ? "#FFFFFF" : today ? "#5B8A8A" : "#2D2D2D",
-                  }}
-                >
-                  {d.getDate()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+    <View style={{ flex: 1, backgroundColor: BG_PAGE }}>
+      {/* Header */}
+      <View
+        style={{
+          backgroundColor: BG_CARD,
+          paddingHorizontal: 16,
+          paddingTop: 8,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: GRID_LINE_COLOR,
+        }}
+      >
+        <SegmentedControl value={viewMode} onChange={handleViewChange} />
+        <NavigationRow
+          label={periodLabel}
+          onPrev={() => navigatePeriod(-1)}
+          onNext={() => navigatePeriod(1)}
+          onToday={goToToday}
+        />
+        {viewMode === "day" && (
+          <DayPills
+            weekDates={weekDates}
+            selectedDate={selectedDate}
+            onDayPress={(d) => {
+              setSelectedDate(d);
+              setAnchorDate(d);
+            }}
+          />
+        )}
       </View>
 
-      {/* Day view */}
-      <ScrollView
-        style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#5B8A8A" />}
-      >
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_600SemiBold", color: "#8A8A8A", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
-            {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-          </Text>
+      {/* View content */}
+      {viewMode === "month" && (
+        <MonthView
+          anchorDate={anchorDate}
+          selectedDate={selectedDate}
+          eventsByDate={eventsByDate}
+          onDayPress={handleDayPress}
+        />
+      )}
+      {viewMode === "week" && (
+        <WeekTimeGrid
+          anchorDate={anchorDate}
+          eventsByDate={eventsByDate}
+          onDayPress={handleDayPress}
+          onEventPress={(e) => handleAgendaEventPress(e)}
+        />
+      )}
+      {viewMode === "day" && (
+        <DayView
+          selectedDate={selectedDate || anchorDate}
+          events={dayEvents}
+          isLoading={isLoading}
+          onRefresh={() => refetch()}
+          onDeleteEvent={(id) => deleteMutation.mutate(id)}
+        />
+      )}
 
-          {todayEvents.length === 0 ? (
-            <View style={{ alignItems: "center", paddingVertical: 64 }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: "#E3EDED", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                <Ionicons name="calendar-outline" size={28} color="#5B8A8A" />
-              </View>
-              <Text style={{ fontSize: 18, fontFamily: "PlusJakartaSans_600SemiBold", color: "#2D2D2D", marginBottom: 4 }}>No events today</Text>
-              <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A" }}>Tap + to schedule a time block</Text>
-            </View>
-          ) : (
-            <View>
-              {todayEvents.map((event) => {
-                const start = new Date(event.startTime);
-                const end = new Date(event.endTime);
-                const config = EVENT_COLORS[event.eventType] || EVENT_COLORS.TIME_BLOCK;
-
-                return (
-                  <TouchableOpacity
-                    key={event.id}
-                    style={{
-                      borderRadius: 16,
-                      overflow: "hidden",
-                      marginBottom: 12,
-                      backgroundColor: config.bg,
-                      borderLeftWidth: 4,
-                      borderLeftColor: config.border,
-                    }}
-                    onLongPress={() => {
-                      Alert.alert("Delete Event", `Delete "${event.title}"?`, [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Delete", style: "destructive", onPress: () => deleteMutation.mutate(event.id) },
-                      ]);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                        <Text style={{ fontSize: 16, fontFamily: "PlusJakartaSans_600SemiBold", color: config.text }}>
-                          {event.title}
-                        </Text>
-                        <Ionicons name={config.icon as any} size={16} color={config.text} />
-                      </View>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}>
-                        <Ionicons name="time-outline" size={13} color={config.text} />
-                        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_400Regular", marginLeft: 6, color: config.text, opacity: 0.8 }}>
-                          {start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                          {" - "}
-                          {end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                        </Text>
-                      </View>
-                      {event.task && (
-                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
-                          <Ionicons name="link-outline" size={13} color={config.text} />
-                          <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", marginLeft: 6, color: config.text, opacity: 0.7 }}>
-                            {event.task.title}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* FAB */}
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          bottom: 24,
-          right: 24,
-          width: 56,
-          height: 56,
-          borderRadius: 18,
-          backgroundColor: "#5B8A8A",
-          alignItems: "center",
-          justifyContent: "center",
-          shadowColor: "#5B8A8A",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 6,
-        }}
-        onPress={() => setShowAdd(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color="white" />
-      </TouchableOpacity>
-
-      {/* Add Event Modal */}
-      <Modal visible={showAdd} transparent animationType="slide">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1, justifyContent: "flex-end" }}
+      {/* FAB — day view only */}
+      {viewMode === "day" && (
+        <TouchableOpacity
+          testID="create-event-fab"
+          style={{
+            position: "absolute",
+            bottom: 24,
+            right: 24,
+            width: 56,
+            height: 56,
+            borderRadius: 18,
+            backgroundColor: TEAL,
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: TEAL,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 6,
+          }}
+          onPress={() => setShowAdd(true)}
+          activeOpacity={0.8}
         >
-          <TouchableOpacity
-            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }}
-            onPress={() => setShowAdd(false)}
-            activeOpacity={1}
-          />
-          <View style={{
-            backgroundColor: "#FFFFFF",
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 20,
-            paddingBottom: 32,
-            paddingTop: 20,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -4 },
-            shadowOpacity: 0.08,
-            shadowRadius: 16,
-            elevation: 10,
-          }}>
-            {/* Handle bar */}
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#D4D0CB", alignSelf: "center", marginBottom: 20 }} />
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
+      )}
 
-            <Text style={{ fontSize: 20, fontFamily: "PlusJakartaSans_700Bold", color: "#2D2D2D", marginBottom: 20 }}>New Time Block</Text>
+      {/* Mini Agenda Sheet */}
+      <MiniAgendaSheet
+        visible={agendaDate !== null}
+        date={agendaDate}
+        events={agendaEvents}
+        onEventPress={handleAgendaEventPress}
+        onClose={() => setAgendaDate(null)}
+      />
 
-            <TextInput
-              style={{ borderWidth: 1, borderColor: "#D4D0CB", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 16, fontFamily: "PlusJakartaSans_400Regular", color: "#2D2D2D", marginBottom: 16, backgroundColor: "#F7F5F2" }}
-              placeholder="What are you working on?"
-              placeholderTextColor="#D4D0CB"
-              value={title}
-              onChangeText={setTitle}
-              autoFocus
-            />
-
-            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Start Time</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                {HOURS.map((h) => (
-                  <TouchableOpacity
-                    key={h}
-                    style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderRadius: 12,
-                      backgroundColor: startHour === h ? "#5B8A8A" : "#F0EDE8",
-                    }}
-                    onPress={() => setStartHour(h)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={{
-                      fontSize: 14,
-                      fontFamily: "PlusJakartaSans_500Medium",
-                      color: startHour === h ? "#FFFFFF" : "#5A5A5A",
-                    }}>
-                      {formatHour(h)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-
-            <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_600SemiBold", color: "#5A5A5A", marginBottom: 8 }}>Duration</Text>
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 24 }}>
-              {[30, 60, 90, 120].map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    alignItems: "center",
-                    backgroundColor: durationMinutes === d ? "#5B8A8A" : "#F0EDE8",
-                  }}
-                  onPress={() => setDurationMinutes(d)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{
-                    fontSize: 14,
-                    fontFamily: "PlusJakartaSans_600SemiBold",
-                    color: durationMinutes === d ? "#FFFFFF" : "#5A5A5A",
-                  }}>
-                    {d < 60 ? `${d}m` : `${d / 60}h`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={{
-                backgroundColor: "#5B8A8A",
-                borderRadius: 12,
-                paddingVertical: 16,
-                alignItems: "center",
-                shadowColor: "#5B8A8A",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 4,
-              }}
-              onPress={() => {
-                if (!title.trim()) return;
-                createMutation.mutate();
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={{ color: "white", fontFamily: "PlusJakartaSans_700Bold", fontSize: 16 }}>Add Event</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Create Event Modal */}
+      <CreateEventModal
+        visible={showAdd}
+        onClose={() => setShowAdd(false)}
+        onSubmit={(data) => createMutation.mutate(data)}
+      />
     </View>
   );
 }

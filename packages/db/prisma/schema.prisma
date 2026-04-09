@@ -147,6 +147,12 @@ enum HomeworkInstanceStatus {
   MISSED
 }
 
+enum StreakCategory {
+  JOURNAL
+  CHECKIN
+  HOMEWORK
+}
+
 enum ProviderType {
   THERAPIST
   PSYCHIATRIST
@@ -155,6 +161,28 @@ enum ProviderType {
   PSYCH_NP
   COACH
   OTHER
+}
+
+enum ClaimStatus {
+  DRAFT
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  DENIED
+  PAID
+}
+
+enum SubscriberRelationship {
+  SELF
+  SPOUSE
+  CHILD
+  OTHER
+}
+
+enum CheckoutSessionStatus {
+  OPEN
+  COMPLETED
+  EXPIRED
 }
 
 // ── Practices ─────────────────────────────────────────
@@ -171,8 +199,24 @@ model Practice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships PracticeMembership[]
-  programs    Program[]            @relation("PracticePrograms")
+  stediApiKeyEncrypted String?
+  stediApiKeyLastFour  String?
+
+  stripeConnectedAccountId     String?
+  stripeApiKeyEncrypted        String?
+  stripeApiKeyLastFour         String?
+  stripeWebhookSecretEncrypted String?
+
+  memberships      PracticeMembership[]
+  programs         Program[]            @relation("PracticePrograms")
+  appointments     Appointment[]
+  locations        Location[]
+  serviceCodes     ServiceCode[]
+  invoices         Invoice[]
+  recurringSeries  RecurringSeries[]
+  insuranceClaims  InsuranceClaim[]
+  stripeCustomers  StripeCustomer[]
+  checkoutSessions CheckoutSession[]
 
   @@map("practices")
 }
@@ -219,6 +263,9 @@ model User {
   clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
   acceptedInvitations  PatientInvitation[]    @relation("InvitationAcceptedBy")
   refreshTokens        RefreshToken[]
+  createdAppointments  Appointment[]          @relation("AppointmentCreatedBy")
+  createdRecurringSeries RecurringSeries[]    @relation("RecurringSeriesCreatedBy")
+  streakRecords        StreakRecord[]
 
   @@map("users")
 }
@@ -242,7 +289,11 @@ model ClinicianProfile {
   config            ClinicianConfig?
   clientConfigs     ClientConfig[]   @relation("ClinicianClientConfigs")
   clients           ClinicianClient[]
+  appointments      Appointment[]
   invitations       PatientInvitation[]
+  invoices          Invoice[]
+  recurringSeries   RecurringSeries[]
+  insuranceClaims   InsuranceClaim[]
 
   @@map("clinician_profiles")
 }
@@ -251,8 +302,16 @@ model ParticipantProfile {
   id                   String  @id @default(cuid())
   userId               String  @unique
   user                 User    @relation(fields: [userId], references: [id])
-  timezone             String  @default("America/New_York")
-  onboardingCompleted  Boolean @default(false)
+  timezone             String    @default("America/New_York")
+  onboardingCompleted  Boolean   @default(false)
+
+  // Patient demographics (CMS-1500 Box 3 & Box 5)
+  dateOfBirth          DateTime?
+  gender               String?   // M, F, U
+  addressStreet        String?
+  addressCity          String?
+  addressState         String?
+  addressZip           String?
 
   enrollments       Enrollment[]
   tasks             Task[]
@@ -260,6 +319,13 @@ model ParticipantProfile {
   journalEntries    JournalEntry[]
   dailyTrackers     DailyTracker[]
   homeworkInstances HomeworkInstance[]
+  appointments      Appointment[]
+  sessionReviews    SessionReview[]
+  invoices          Invoice[]
+  recurringSeries   RecurringSeries[]
+  patientInsurance  PatientInsurance?
+  insuranceClaims   InsuranceClaim[]
+  stripeCustomers   StripeCustomer[]
 
   @@map("participant_profiles")
 }
@@ -290,10 +356,11 @@ model Program {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  modules       Module[]
-  enrollments   Enrollment[]
-  dailyTrackers DailyTracker[]
-  invitations   PatientInvitation[]
+  modules        Module[]
+  enrollments    Enrollment[]
+  dailyTrackers  DailyTracker[]
+  invitations    PatientInvitation[]
+  reviewTemplate ReviewTemplate?
 
   @@index([practiceId])
   @@map("programs")
@@ -318,6 +385,7 @@ model Module {
   moduleProgress  ModuleProgress[]
   currentEnrollments Enrollment[] @relation("CurrentModule")
   completedSessions  Session[]    @relation("CompletedModule")
+  enrollmentOverrides EnrollmentOverride[]
 
   @@map("modules")
 }
@@ -335,9 +403,10 @@ model Part {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  partProgress      PartProgress[]
-  journalEntries    JournalEntry[] @relation("PromptPart")
-  homeworkInstances HomeworkInstance[]
+  partProgress        PartProgress[]
+  journalEntries      JournalEntry[] @relation("PromptPart")
+  homeworkInstances   HomeworkInstance[]
+  enrollmentOverrides EnrollmentOverride[]
 
   @@map("parts")
 }
@@ -364,6 +433,8 @@ model Enrollment {
   rtmEngagementEvents RtmEngagementEvent[]
   rtmEnrollments      RtmEnrollment[]
   rtmBillingPeriods   RtmBillingPeriod[]
+  sessionReviews      SessionReview[]
+  enrollmentOverrides EnrollmentOverride[]
 
   @@map("enrollments")
 }
@@ -476,11 +547,449 @@ model Session {
   participantSummary String?
   moduleCompletedId  String?
   moduleCompleted    Module?       @relation("CompletedModule", fields: [moduleCompletedId], references: [id])
+  appointmentId      String?
+  appointment        Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
   @@index([scheduledAt])
+  @@index([appointmentId])
   @@map("sessions")
+}
+
+// ── Appointments (Sprint 19) ───────────────────────────
+
+enum OverrideType {
+  HIDE_HOMEWORK_ITEM
+  ADD_HOMEWORK_ITEM
+  ADD_RESOURCE
+  CLINICIAN_NOTE
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  ATTENDED
+  NO_SHOW
+  LATE_CANCELED
+  CLIENT_CANCELED
+  CLINICIAN_CANCELED
+}
+
+enum AppointmentType {
+  INDIVIDUAL
+  COUPLE
+  GROUP
+}
+
+enum LocationType {
+  IN_PERSON
+  VIRTUAL
+}
+
+enum RecurrenceRule {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum ReminderType {
+  EMAIL
+  PUSH
+  SMS
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELED
+}
+
+model Appointment {
+  id               String            @id @default(cuid())
+  practiceId       String
+  practice         Practice          @relation(fields: [practiceId], references: [id])
+  clinicianId      String
+  clinician        ClinicianProfile  @relation(fields: [clinicianId], references: [id])
+  participantId    String
+  participant      ParticipantProfile @relation(fields: [participantId], references: [id])
+  serviceCodeId    String
+  serviceCode      ServiceCode       @relation(fields: [serviceCodeId], references: [id])
+  locationId       String
+  location         Location          @relation(fields: [locationId], references: [id])
+  startAt          DateTime
+  endAt            DateTime
+  status           AppointmentStatus @default(SCHEDULED)
+  appointmentType  AppointmentType   @default(INDIVIDUAL)
+  internalNote     String?
+  cancelReason     String?
+  statusChangedAt  DateTime?
+  recurringSeriesId String?
+  recurringSeries   RecurringSeries?  @relation(fields: [recurringSeriesId], references: [id], onDelete: SetNull)
+  createdById      String
+  createdBy        User              @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+  deletedAt        DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  sessions           Session[]
+  sessionReviews     SessionReview[]
+  invoiceLineItems   InvoiceLineItem[]
+  reminders          AppointmentReminder[]
+  insuranceClaim     InsuranceClaim?
+  telehealthSession  TelehealthSession?
+
+  @@index([practiceId, clinicianId, startAt])
+  @@index([practiceId, locationId, startAt])
+  @@index([practiceId, participantId])
+  @@index([status])
+  @@index([createdById])
+  @@index([recurringSeriesId])
+  @@map("appointments")
+}
+
+// ── Telehealth Sessions ─────────────────────────────────
+
+enum TelehealthSessionStatus {
+  WAITING
+  ACTIVE
+  ENDED
+}
+
+model TelehealthSession {
+  id                  String                  @id @default(cuid())
+  appointmentId       String                  @unique
+  appointment         Appointment             @relation(fields: [appointmentId], references: [id])
+  roomName            String                  @unique
+  status              TelehealthSessionStatus @default(WAITING)
+  clinicianJoinedAt   DateTime?
+  participantJoinedAt DateTime?
+  endedAt             DateTime?
+  durationSeconds     Int?
+  endedBy             String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@index([status])
+  @@index([roomName])
+  @@map("telehealth_sessions")
+}
+
+model Location {
+  id           String        @id @default(cuid())
+  practiceId   String
+  practice     Practice      @relation(fields: [practiceId], references: [id])
+  name         String
+  type         LocationType
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  timezone     String?
+  isDefault    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  appointments    Appointment[]
+  recurringSeries RecurringSeries[]
+
+  @@index([practiceId, isActive])
+  @@map("locations")
+}
+
+model ServiceCode {
+  id                     String        @id @default(cuid())
+  practiceId             String
+  practice               Practice      @relation(fields: [practiceId], references: [id])
+  code                   String
+  description            String
+  defaultDurationMinutes Int
+  defaultPriceCents      Int?
+  isActive               Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  appointments     Appointment[]
+  invoiceLineItems InvoiceLineItem[]
+  recurringSeries  RecurringSeries[]
+
+  @@unique([practiceId, code])
+  @@index([practiceId, isActive])
+  @@map("service_codes")
+}
+
+// ── Appointment Reminders ────────────────────────────────
+
+model AppointmentReminder {
+  id            String         @id @default(cuid())
+  appointmentId String
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  type          ReminderType   @default(PUSH)
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  status        ReminderStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+
+  @@index([status, scheduledFor])
+  @@index([appointmentId])
+  @@map("appointment_reminders")
+}
+
+// ── Billing & Invoicing ──────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIALLY_PAID
+  OVERDUE
+  VOID
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  CREDIT_CARD
+  INSURANCE
+  OTHER
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  practiceId    String
+  practice      Practice      @relation(fields: [practiceId], references: [id])
+  clinicianId   String
+  clinician     ClinicianProfile @relation(fields: [clinicianId], references: [id])
+  participantId String
+  participant   ParticipantProfile @relation(fields: [participantId], references: [id])
+  invoiceNumber String
+  status        InvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  subtotalCents Int
+  taxCents      Int           @default(0)
+  totalCents    Int
+  paidCents     Int           @default(0)
+  notes         String?
+  diagnosisCodes String[]    @default([])
+
+  paymentLinkUrl             String?
+  paymentLinkExpiresAt       DateTime?
+  balanceDueSourceInvoiceId  String?
+  balanceDueSourceInvoice    Invoice?  @relation("BalanceDueSource", fields: [balanceDueSourceInvoiceId], references: [id])
+  balanceDueInvoices         Invoice[] @relation("BalanceDueSource")
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lineItems        InvoiceLineItem[]
+  payments         Payment[]
+  checkoutSessions CheckoutSession[]
+
+  @@unique([practiceId, invoiceNumber])
+  @@index([practiceId, participantId])
+  @@index([practiceId, status])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id             String       @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  appointmentId  String?
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  serviceCodeId  String
+  serviceCode    ServiceCode  @relation(fields: [serviceCodeId], references: [id])
+  description        String
+  unitPriceCents     Int
+  quantity           Int          @default(1)
+  totalCents         Int
+  dateOfService      DateTime?
+  placeOfServiceCode String?
+  modifiers          String[]     @default([])
+  createdAt          DateTime     @default(now())
+
+  @@index([invoiceId])
+  @@map("invoice_line_items")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amountCents Int
+  method      PaymentMethod
+  reference   String?
+  receivedAt  DateTime
+  stripePaymentIntentId String? @unique
+  createdAt   DateTime      @default(now())
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+// ── Insurance Billing (Stedi) ───────────────────────────
+
+model PatientInsurance {
+  id                        String                  @id @default(cuid())
+  participantId             String                  @unique
+  participant               ParticipantProfile      @relation(fields: [participantId], references: [id])
+  payerId                   String
+  payerName                 String
+  subscriberId              String
+  groupNumber               String?
+  relationshipToSubscriber  SubscriberRelationship  @default(SELF)
+  policyHolderFirstName     String?
+  policyHolderLastName      String?
+  policyHolderDob           String?
+  policyHolderGender        String?
+  isActive                  Boolean                 @default(true)
+  cachedEligibility         Json?
+  eligibilityCheckedAt      DateTime?
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+
+  claims InsuranceClaim[]
+
+  @@index([participantId])
+  @@map("patient_insurance")
+}
+
+model InsuranceClaim {
+  id                    String            @id @default(cuid())
+  practiceId            String
+  practice              Practice          @relation(fields: [practiceId], references: [id])
+  clinicianId           String
+  clinician             ClinicianProfile  @relation(fields: [clinicianId], references: [id])
+  participantId         String
+  participant           ParticipantProfile @relation(fields: [participantId], references: [id])
+  appointmentId         String            @unique
+  appointment           Appointment       @relation(fields: [appointmentId], references: [id])
+  patientInsuranceId    String
+  patientInsurance      PatientInsurance   @relation(fields: [patientInsuranceId], references: [id])
+  status                ClaimStatus       @default(DRAFT)
+  stediTransactionId    String?
+  stediIdempotencyKey   String            @default(cuid())
+  serviceCode           String
+  modifiers             String[]          @default([])
+  servicePriceCents     Int
+  placeOfServiceCode    String
+  dateOfService         DateTime
+  diagnosisCodes        String[]
+  submittedAt           DateTime?
+  respondedAt           DateTime?
+  rejectionReason       String?
+  retentionExpiresAt    DateTime?
+  retryCount            Int               @default(0)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  statusHistory ClaimStatusHistory[]
+
+  @@index([practiceId, status])
+  @@index([practiceId, clinicianId])
+  @@index([appointmentId])
+  @@map("insurance_claims")
+}
+
+model ClaimStatusHistory {
+  id         String       @id @default(cuid())
+  claimId    String
+  claim      InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fromStatus ClaimStatus?
+  toStatus   ClaimStatus
+  changedBy  String
+  reason     String?
+  createdAt  DateTime     @default(now())
+
+  @@index([claimId])
+  @@map("claim_status_history")
+}
+
+model DiagnosisCode {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  description String
+  category    String
+  isCommon    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([category, isCommon])
+  @@map("diagnosis_codes")
+}
+
+// ── Stripe Payment Integration ──────────────────────────
+
+model StripeCustomer {
+  id               String              @id @default(cuid())
+  practiceId       String
+  practice         Practice            @relation(fields: [practiceId], references: [id])
+  participantId    String
+  participant      ParticipantProfile  @relation(fields: [participantId], references: [id])
+  stripeCustomerId String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  savedPaymentMethods SavedPaymentMethod[]
+
+  @@unique([practiceId, participantId])
+  @@unique([practiceId, stripeCustomerId])
+  @@index([participantId])
+  @@map("stripe_customers")
+}
+
+model SavedPaymentMethod {
+  id                    String         @id @default(cuid())
+  stripeCustomerId      String
+  stripeCustomer        StripeCustomer @relation(fields: [stripeCustomerId], references: [id], onDelete: Cascade)
+  stripePaymentMethodId String         @unique
+  cardBrand             String
+  cardLastFour          String
+  expiryMonth           Int
+  expiryYear            Int
+  isDefault             Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+
+  @@index([stripeCustomerId])
+  @@map("saved_payment_methods")
+}
+
+model CheckoutSession {
+  id                    String                @id @default(cuid())
+  invoiceId             String
+  invoice               Invoice               @relation(fields: [invoiceId], references: [id])
+  practiceId            String
+  practice              Practice              @relation(fields: [practiceId], references: [id])
+  stripeSessionId       String                @unique
+  stripePaymentIntentId String?
+  status                CheckoutSessionStatus @default(OPEN)
+  expiresAt             DateTime
+  createdAt             DateTime              @default(now())
+
+  @@index([invoiceId])
+  @@index([status, expiresAt])
+  @@map("checkout_sessions")
+}
+
+// ── Streaks (Sprint 15) ──────────────────────────────────
+
+model StreakRecord {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  category       StreakCategory
+  currentStreak  Int            @default(0)
+  longestStreak  Int            @default(0)
+  lastActiveDate DateTime?      @db.Date
+  gapDaysUsed    Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([userId, category])
+  @@index([userId])
+  @@map("streak_records")
 }
 
 // ── Notifications ──────────────────────────────────────
@@ -778,6 +1287,7 @@ model ClinicianConfig {
   practiceLogoUrl      String?
   brandColor           String?
   homeworkLabels       Json?
+  reminderSettings     Json?
   setupCompleted       Boolean      @default(false)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
@@ -911,6 +1421,93 @@ model RefreshToken {
   @@index([familyId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// ── Review & Session Prep (Sprint 14) ────────────────
+
+model ReviewTemplate {
+  id        String   @id @default(cuid())
+  programId String   @unique
+  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  questions Json
+  barriers  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("review_templates")
+}
+
+model SessionReview {
+  id            String             @id @default(cuid())
+  appointmentId String
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  enrollmentId  String
+  enrollment    Enrollment         @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   ParticipantProfile @relation(fields: [participantId], references: [id])
+  responses     Json
+  barriers      String[]
+  submittedAt   DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([appointmentId, enrollmentId])
+  @@index([appointmentId])
+  @@index([participantId])
+  @@map("session_reviews")
+}
+
+model EnrollmentOverride {
+  id           String       @id @default(cuid())
+  enrollmentId String
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  overrideType OverrideType
+  moduleId     String?
+  module       Module?      @relation(fields: [moduleId], references: [id])
+  targetPartId String?
+  targetPart   Part?        @relation(fields: [targetPartId], references: [id])
+  payload      Json
+  createdById  String
+  createdAt    DateTime     @default(now())
+
+  @@index([enrollmentId, moduleId])
+  @@index([enrollmentId])
+  @@map("enrollment_overrides")
+}
+
+// ── Recurring Appointments ───────────────────────────
+
+model RecurringSeries {
+  id              String            @id @default(cuid())
+  practiceId      String
+  practice        Practice          @relation(fields: [practiceId], references: [id])
+  clinicianId     String
+  clinician       ClinicianProfile  @relation(fields: [clinicianId], references: [id])
+  participantId   String
+  participant     ParticipantProfile @relation(fields: [participantId], references: [id])
+  serviceCodeId   String
+  serviceCode     ServiceCode       @relation(fields: [serviceCodeId], references: [id])
+  locationId      String
+  location        Location          @relation(fields: [locationId], references: [id])
+  appointmentType AppointmentType   @default(INDIVIDUAL)
+  internalNote    String?
+  recurrenceRule  RecurrenceRule
+  dayOfWeek       Int
+  startTime       String
+  endTime         String
+  seriesStartDate DateTime
+  seriesEndDate   DateTime?
+  isActive        Boolean           @default(true)
+  createdById     String
+  createdBy       User              @relation("RecurringSeriesCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  appointments    Appointment[]
+
+  @@index([practiceId, clinicianId, isActive])
+  @@index([practiceId, participantId])
+  @@map("recurring_series")
 }
 
 model WaitlistEntry {

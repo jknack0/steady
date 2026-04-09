@@ -7,6 +7,7 @@ import type {
   RegulationTrend,
   SystemCheckinAdherence,
   ParticipantStats,
+  StreakResponse,
 } from "@steady/shared";
 
 interface DateRange {
@@ -312,6 +313,35 @@ export async function getParticipantStats(
 
   const homeworkCompletion = await getHomeworkCompletionRate(enrollments);
 
+  // Fetch streaks for this participant via their userId
+  let streaks: StreakResponse[] = [];
+  try {
+    const profile = await prisma.participantProfile.findUnique({
+      where: { id: participantId },
+      select: { userId: true },
+    });
+
+    if (profile) {
+      const records = await prisma.streakRecord.findMany({
+        where: { userId: profile.userId },
+        select: {
+          category: true,
+          currentStreak: true,
+          longestStreak: true,
+          lastActiveDate: true,
+        },
+      });
+      streaks = (records || []).map((s) => ({
+        category: s.category as StreakResponse["category"],
+        currentStreak: s.currentStreak,
+        longestStreak: s.longestStreak,
+        lastActiveDate: s.lastActiveDate ? s.lastActiveDate.toISOString().split("T")[0] : null,
+      }));
+    }
+  } catch {
+    // Streaks are non-critical; don't fail the entire stats response
+  }
+
   return {
     taskCompletion,
     timeEstimation,
@@ -319,5 +349,6 @@ export async function getParticipantStats(
     homeworkCompletion,
     regulationTrend,
     systemCheckin,
+    streaks,
   };
 }

@@ -4,6 +4,7 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
+  Pressable,
   TextInput,
   Modal,
   KeyboardAvoidingView,
@@ -17,6 +18,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../../lib/api";
 import { AnimatedCheckbox } from "../../../components/animated-checkbox";
+import { isVoiceCaptureAvailable, startVoiceCapture, stopVoiceCapture } from "../../../lib/voice-capture";
 
 interface Task {
   id: string;
@@ -383,8 +385,8 @@ export default function TasksScreen() {
         }
       />
 
-      {/* FAB */}
-      <TouchableOpacity
+      {/* FAB — tap to add task, long-press for voice capture */}
+      <Pressable
         style={{
           position: "absolute",
           bottom: 24,
@@ -406,10 +408,32 @@ export default function TasksScreen() {
           resetForm();
           setShowAdd(true);
         }}
-        activeOpacity={0.8}
+        onLongPress={async () => {
+          const available = await isVoiceCaptureAvailable();
+          if (!available) {
+            Alert.alert("Voice Input", "Voice input isn't available on this device.");
+            return;
+          }
+          startVoiceCapture({
+            onStart: () => {},
+            onResult: (result) => {
+              setTitle(result.text);
+              stopVoiceCapture();
+              setEditingTask(null);
+              setShowAdd(true);
+            },
+            onError: (error) => {
+              Alert.alert("Voice Input", error);
+            },
+            onEnd: () => {},
+          });
+        }}
+        delayLongPress={500}
+        accessibilityLabel="Add task. Long press to record task by voice."
+        accessibilityRole="button"
       >
         <Ionicons name="add" size={28} color="white" />
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Schedule Modal */}
       <Modal visible={!!schedulingTask} transparent animationType="slide">

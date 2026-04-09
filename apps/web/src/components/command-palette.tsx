@@ -42,7 +42,7 @@ const PAGE_ITEMS: PaletteItem[] = [
   { id: "page-dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, group: "Pages" },
   { id: "page-programs", label: "Programs", href: "/programs", icon: BookOpen, group: "Pages" },
   { id: "page-clients", label: "Clients", href: "/participants", icon: Users, group: "Pages" },
-  { id: "page-sessions", label: "Sessions", href: "/sessions", icon: Calendar, group: "Pages" },
+  { id: "page-calendar", label: "Calendar", href: "/appointments", icon: Calendar, group: "Pages" },
   { id: "page-rtm", label: "RTM", href: "/rtm", icon: Activity, group: "Pages" },
   { id: "page-settings", label: "Settings", href: "/settings", icon: Settings, group: "Pages" },
 ];

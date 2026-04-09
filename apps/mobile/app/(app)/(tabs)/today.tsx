@@ -1,5 +1,6 @@
-import { useState, createContext, useContext } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from "react-native";
+import { useState, createContext, useContext, useEffect } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Pressable, RefreshControl, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +9,11 @@ import { useAuth } from "../../../lib/auth-context";
 import { useConfig } from "../../../lib/config-context";
 import { DailyTrackerCards } from "../../../components/daily-tracker-card";
 import { TodaysHomeworkInstances } from "../../../components/homework-instances";
+import { useMyAppointments } from "../../../hooks/use-appointments";
+import { useOutstandingInvoiceCount } from "../../../hooks/use-invoices";
+import { useMyStreaks } from "../../../hooks/use-streaks";
+import { MilestoneCelebration } from "../../../components/completion-animations";
+import { useEngagementTracking } from "../../../lib/engagement-tracker";
 
 // ── Shared styles ────────────
 const CARD = {
@@ -220,6 +226,81 @@ function WeeklyStreakWidget() {
   );
 }
 
+// ── Streak Badges ────────────
+
+const CATEGORY_LABELS: Record<string, string> = {
+  JOURNAL: "Journal",
+  CHECKIN: "Check-in",
+  HOMEWORK: "Homework",
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  JOURNAL: "book",
+  CHECKIN: "pulse",
+  HOMEWORK: "clipboard",
+};
+
+function StreakBadges() {
+  const { data: streaks } = useMyStreaks();
+  if (!streaks || streaks.length === 0) return null;
+
+  const activeStreaks = streaks.filter((s) => s.currentStreak > 0);
+  if (activeStreaks.length === 0) {
+    return (
+      <View style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#F0EDE8" }}>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Ionicons name="flame-outline" size={18} color="#D4D0CB" />
+          <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_500Medium", color: "#8A8A8A", marginLeft: 8 }}>
+            Start your streak today!
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flexDirection: "row", marginHorizontal: 16, marginTop: 12, gap: 8 }}>
+      {activeStreaks.map((streak) => (
+        <View
+          key={streak.category}
+          style={{
+            flex: 1,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 12,
+            alignItems: "center",
+            borderWidth: 1,
+            borderColor: streak.currentStreak >= 7 ? "#C4A84D40" : "#F0EDE8",
+          }}
+        >
+          <Ionicons
+            name="flame"
+            size={20}
+            color={streak.currentStreak >= 7 ? "#C4A84D" : "#E8783A"}
+          />
+          <Text style={{
+            fontSize: 18,
+            fontFamily: "PlusJakartaSans_700Bold",
+            color: streak.currentStreak >= 7 ? "#C4A84D" : "#E8783A",
+            marginTop: 2,
+          }}>
+            {streak.currentStreak}
+          </Text>
+          <Text style={{
+            fontSize: 11,
+            fontFamily: "PlusJakartaSans_500Medium",
+            color: "#8A8A8A",
+            marginTop: 1,
+          }}>
+            {CATEGORY_LABELS[streak.category] || streak.category}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ── Daily Progress Summary ────────────
 
 function DailyProgressSummary() {
@@ -258,6 +339,126 @@ function DailyProgressSummary() {
         </View>
       ))}
     </View>
+  );
+}
+
+// ── Next Appointment Card ────────────
+
+function NextAppointmentCard() {
+  // Query a 7-day window and take the earliest SCHEDULED appointment.
+  const now = new Date();
+  const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const { data } = useMyAppointments({
+    from: now.toISOString(),
+    to: sevenDays.toISOString(),
+    status: "SCHEDULED",
+  });
+
+  const next = data[0];
+  if (!next) return null;
+
+  const start = new Date(next.startAt);
+  const timeStr = start.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const today0 = new Date();
+  today0.setHours(0, 0, 0, 0);
+  const target0 = new Date(start);
+  target0.setHours(0, 0, 0, 0);
+  const diffDays = Math.round(
+    (target0.getTime() - today0.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  let whenLabel: string;
+  if (diffDays === 0) whenLabel = `Today at ${timeStr}`;
+  else if (diffDays === 1) whenLabel = `Tomorrow at ${timeStr}`;
+  else {
+    const weekday = start.toLocaleDateString(undefined, { weekday: "long" });
+    whenLabel = `${weekday} at ${timeStr}`;
+  }
+
+  const clinicianName = next.clinician
+    ? `${next.clinician.firstName ?? ""} ${next.clinician.lastName ?? ""}`.trim()
+    : "Your clinician";
+  const serviceLabel = next.serviceCode?.description ?? "Session";
+  const isVirtual = next.location?.type === "VIRTUAL";
+  const locationLabel = next.location
+    ? isVirtual
+      ? "Video visit"
+      : next.location.name
+    : "";
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/appointments")}
+      accessibilityLabel={`Next appointment: ${whenLabel}, ${clinicianName}, ${serviceLabel}, ${locationLabel}`}
+      style={{ ...CARD, marginHorizontal: 16, marginTop: 12 }}
+      activeOpacity={0.7}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            backgroundColor: "#5B8A8A",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 12,
+          }}
+        >
+          <Ionicons
+            name={isVirtual ? "videocam-outline" : "calendar-outline"}
+            size={18}
+            color="#FFFFFF"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: "PlusJakartaSans_600SemiBold",
+              color: "#2D2D2D",
+            }}
+          >
+            Next appointment
+          </Text>
+          <Text
+            style={{
+              fontSize: 12,
+              fontFamily: "PlusJakartaSans_400Regular",
+              color: "#8A8A8A",
+            }}
+          >
+            {whenLabel}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#D4D0CB" />
+      </View>
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: "PlusJakartaSans_500Medium",
+          color: "#2D2D2D",
+          marginBottom: 2,
+        }}
+        numberOfLines={1}
+      >
+        {serviceLabel}
+      </Text>
+      <Text
+        style={{
+          fontSize: 12,
+          fontFamily: "PlusJakartaSans_400Regular",
+          color: "#5A5A5A",
+        }}
+        numberOfLines={1}
+      >
+        with {clinicianName}
+        {locationLabel ? ` · ${locationLabel}` : ""}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -429,15 +630,112 @@ function CheckInSection() {
   );
 }
 
+// ── Portal Cards ────────────
+
+function PendingFormsCard() {
+  const { enrollments } = useTodayData();
+  // Count incomplete intake form parts across all active enrollments
+  // This is a simplified check — intake forms are INTAKE_FORM part types
+  // that haven't been completed in the participant's progress
+  const pendingCount = 0; // TODO: wire up pending intake form count from API
+  if (pendingCount === 0) return null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/(tabs)/program")}
+      style={{
+        marginHorizontal: 16,
+        marginTop: 12,
+        backgroundColor: "#FFF8E1",
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: "#FFE082",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <Ionicons name="clipboard-outline" size={22} color="#F57F17" style={{ marginRight: 12 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_700Bold", color: "#F57F17" }}>Pending Forms</Text>
+        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 2 }}>
+          You have {pendingCount} form{pendingCount > 1 ? "s" : ""} to complete
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#F57F17" />
+    </TouchableOpacity>
+  );
+}
+
+function OutstandingInvoicesCard() {
+  const { data: invoiceCount } = useOutstandingInvoiceCount();
+  if (!invoiceCount || invoiceCount === 0) return null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/invoices" as any)}
+      style={{
+        marginHorizontal: 16,
+        marginTop: 12,
+        backgroundColor: "#E3F2FD",
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: "#90CAF9",
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <Ionicons name="receipt-outline" size={22} color="#1565C0" style={{ marginRight: 12 }} />
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, fontFamily: "PlusJakartaSans_700Bold", color: "#1565C0" }}>Outstanding Invoices</Text>
+        <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", color: "#8A8A8A", marginTop: 2 }}>
+          You have {invoiceCount} invoice{invoiceCount > 1 ? "s" : ""} to review
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#1565C0" />
+    </TouchableOpacity>
+  );
+}
+
 // ── Today View ────────────
+
+const MILESTONES = [7, 14, 21, 30] as const;
 
 export default function TodayScreen() {
   const { user } = useAuth();
   const { isModuleEnabled } = useConfig();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [milestoneVisible, setMilestoneVisible] = useState(false);
+  const [milestoneData, setMilestoneData] = useState<{ milestone: 7 | 14 | 21 | 30; category: string } | null>(null);
 
   const { data, isLoading } = useFetchTodayData();
+  const { data: streaks } = useMyStreaks();
+
+  useEngagementTracking();
+
+  // Milestone detection
+  useEffect(() => {
+    if (!streaks || streaks.length === 0) return;
+
+    (async () => {
+      for (const streak of streaks) {
+        for (const m of MILESTONES) {
+          if (streak.currentStreak === m) {
+            const key = `milestone-seen-${streak.category}-${m}`;
+            const seen = await AsyncStorage.getItem(key);
+            if (!seen) {
+              await AsyncStorage.setItem(key, "true");
+              setMilestoneData({ milestone: m, category: streak.category });
+              setMilestoneVisible(true);
+              return; // Show one at a time
+            }
+          }
+        }
+      }
+    })();
+  }, [streaks]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -475,16 +773,39 @@ export default function TodayScreen() {
         </View>
 
         <WeeklyStreakWidget />
-        <DailyProgressSummary />
+        <Pressable onPress={() => router.push("/(app)/insights")} accessibilityRole="button" accessibilityLabel="View your insights">
+          <StreakBadges />
+          <DailyProgressSummary />
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 8, gap: 4 }}>
+            <Ionicons name="analytics-outline" size={14} color="#5B8A8A" />
+            <Text style={{ fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: "#5B8A8A" }}>
+              View Insights
+            </Text>
+            <Ionicons name="chevron-forward" size={12} color="#5B8A8A" />
+          </View>
+        </Pressable>
 
         {isModuleEnabled("daily_tracker") && <CheckInSection />}
+        <NextAppointmentCard />
         <UpcomingSessionCard />
         {isModuleEnabled("homework") && <TodaysHomeworkInstances />}
         <ProgramProgressCard />
         <YourDayCard />
 
+        <PendingFormsCard />
+        <OutstandingInvoicesCard />
+
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {milestoneData && (
+        <MilestoneCelebration
+          milestone={milestoneData.milestone}
+          category={milestoneData.category}
+          visible={milestoneVisible}
+          onDismiss={() => setMilestoneVisible(false)}
+        />
+      )}
     </TodayDataContext.Provider>
   );
 }

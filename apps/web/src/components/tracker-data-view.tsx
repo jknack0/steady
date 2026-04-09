@@ -1,12 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TrackerCharts } from "@/components/tracker-charts";
 import { getEmotionLabel, getEmotionColor } from "@steady/shared";
+
+const TrackerCharts = dynamic(
+  () =>
+    import("@/components/tracker-charts").then((mod) => mod.TrackerCharts),
+  { ssr: false }
+);
 
 // ── Types ────────────────────────────────────────────
 

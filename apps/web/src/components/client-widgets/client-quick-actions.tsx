@@ -19,7 +19,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 const DEFAULT_LINKS: QuickActionLink[] = [
-  { label: "Schedule Session", path: "/sessions/new", icon: "Calendar" },
+  { label: "Schedule Appointment", path: "/appointments", icon: "Calendar" },
   { label: "Assign Homework", path: "/programs", icon: "ClipboardList" },
 ];
 

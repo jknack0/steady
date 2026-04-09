@@ -4,12 +4,12 @@ import { Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SaveIndicatorProps {
-  status: "idle" | "saving" | "saved" | "error";
+  status: "idle" | "pending" | "saving" | "saved" | "error";
   className?: string;
 }
 
 export function SaveIndicator({ status, className }: SaveIndicatorProps) {
-  if (status === "idle") return null;
+  if (status === "idle" || status === "pending") return null;
 
   return (
     <div

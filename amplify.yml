@@ -1,0 +1,23 @@
+version: 1
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - nvm use 20
+            - (cd ../.. && npm ci --cache .npm --prefer-offline && npx prisma generate --schema=packages/db/prisma/schema.prisma && cd packages/shared && npm run build && cd ../db && npm run build)
+        build:
+          commands:
+            - npm run build
+        postBuild:
+          commands:
+            - bash amplify-post-build.sh
+      artifacts:
+        baseDirectory: .amplify-hosting
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - ../../node_modules/**/*
+          - .next/cache/**/*

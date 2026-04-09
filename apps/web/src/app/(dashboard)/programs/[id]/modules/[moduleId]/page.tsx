@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
@@ -55,7 +56,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import type { Module } from "@/hooks/use-programs";
-import { PhonePreviewModal } from "@/components/phone-preview-modal";
+
+const PhonePreviewModal = dynamic(
+  () =>
+    import("@/components/phone-preview-modal").then(
+      (mod) => mod.PhonePreviewModal
+    ),
+  { ssr: false }
+);
 
 
 export default function ModuleEditorPage() {
@@ -155,7 +163,7 @@ export default function ModuleEditorPage() {
       type: part.type as any,
       title: `${part.title} (Copy)`,
       isRequired: part.isRequired,
-      content: part.content,
+      content: part.content as any,
     });
   };
 

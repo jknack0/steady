@@ -10,3 +10,8 @@ function requireEnv(name: string, devFallback: string): string {
 }
 
 export const JWT_SECRET = requireEnv("JWT_SECRET", "dev-secret-change-in-production");
+
+// LiveKit (telehealth video) — optional, telehealth endpoints return 503 if not configured
+export const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || "devkey";
+export const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || "devsecret";
+export const LIVEKIT_URL = process.env.LIVEKIT_URL || "ws://localhost:7880";

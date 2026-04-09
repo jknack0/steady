@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { encryptField, decryptField } from "./crypto";
 
 /**
@@ -9,6 +9,15 @@ const ENCRYPTED_FIELDS: Record<string, string[]> = {
   RtmEnrollment: ["subscriberId", "groupNumber"],
   ClinicianBillingProfile: ["npiNumber", "taxId", "licenseNumber"],
   PatientInvitation: ["patientName", "patientEmail"],
+  PatientInsurance: [
+    "subscriberId",
+    "groupNumber",
+    "policyHolderFirstName",
+    "policyHolderLastName",
+    "policyHolderDob",
+    "policyHolderGender",
+  ],
+  Practice: ["stediApiKeyEncrypted", "stripeApiKeyEncrypted", "stripeWebhookSecretEncrypted"],
 };
 
 /** Prisma actions that write data and need encryption on input. */
@@ -63,7 +72,7 @@ function decryptResult(result: any, fields: string[]): any {
  * Transparently encrypts on write, decrypts on read.
  */
 export function registerEncryptionMiddleware(client: PrismaClient): void {
-  client.$use(async (params: Prisma.MiddlewareParams, next) => {
+  client.$use(async (params: { model?: string; action: string; args: any }, next: (params: any) => Promise<any>) => {
     const model = params.model;
     if (!model || !ENCRYPTED_FIELDS[model]) {
       return next(params);

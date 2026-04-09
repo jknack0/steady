@@ -18,18 +18,11 @@ import {
 } from "@/hooks/use-invitations";
 import { showToast } from "@/hooks/use-toast";
 import { Copy, Check, Loader2, Mail, XCircle, Send } from "lucide-react";
+import { formatDate } from "@/lib/format";
 
 interface InviteWidgetProps {
   invitation: Invitation;
   onRefresh?: () => void;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 function daysRemaining(expiresAt: string): number {

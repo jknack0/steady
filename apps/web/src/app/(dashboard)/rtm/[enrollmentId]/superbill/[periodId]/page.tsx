@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Printer } from "lucide-react";
 import { LoadingState } from "@/components/loading-state";
 import { PageHeader } from "@/components/page-header";
+import Link from "next/link";
+import { formatDateNumeric } from "@/lib/format";
 
 export default function SuperbillPage() {
   const params = useParams<{ enrollmentId: string; periodId: string }>();
@@ -25,9 +27,17 @@ export default function SuperbillPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">
-              {error instanceof Error
-                ? error.message
-                : "Failed to generate superbill. Please ensure your billing profile is configured."}
+              {error instanceof Error ? (
+                error.message
+              ) : (
+                <>
+                  Failed to generate superbill.{" "}
+                  <Link href="/settings" className="underline text-primary hover:text-primary/80">
+                    Configure your billing profile
+                  </Link>{" "}
+                  in Settings.
+                </>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -83,7 +93,7 @@ export default function SuperbillPage() {
               <h2 className="text-xl font-semibold">SUPERBILL</h2>
               <p className="text-sm text-muted-foreground">
                 Remote Therapeutic Monitoring — Billing Period:{" "}
-                {formatDate(data.period.startDate)} to {formatDate(data.period.endDate)}
+                {formatDateNumeric(data.period.startDate)} to {formatDateNumeric(data.period.endDate)}
               </p>
             </div>
 
@@ -169,7 +179,7 @@ export default function SuperbillPage() {
                           className="border-t"
                         >
                           <td className="px-4 py-2">
-                            {formatDate(item.dateOfService)}
+                            {formatDateNumeric(item.dateOfService)}
                           </td>
                           <td className="px-4 py-2 font-mono">
                             {item.cptCode}
@@ -243,7 +253,7 @@ export default function SuperbillPage() {
                     </span>{" "}
                     <span className="font-medium">
                       {data.period.hasInteractiveCommunication
-                        ? formatDate(data.period.interactiveCommunicationDate!)
+                        ? formatDateNumeric(data.period.interactiveCommunicationDate!)
                         : "None recorded"}
                     </span>
                   </p>
@@ -282,7 +292,7 @@ export default function SuperbillPage() {
                     {data.provider.credentials}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(data.generatedAt.split("T")[0])}
+                    {formatDateNumeric(data.generatedAt.split("T")[0])}
                   </p>
                 </div>
               </div>
@@ -301,11 +311,3 @@ export default function SuperbillPage() {
   );
 }
 
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + "T00:00:00");
-  return date.toLocaleDateString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-  });
-}

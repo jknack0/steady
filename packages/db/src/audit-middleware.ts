@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 /**
  * Prisma middleware that logs all create/update/delete mutations to the audit_logs table.
@@ -111,7 +111,7 @@ function buildMetadata(action: string, args: any, result: any): Record<string, a
  * Register the audit middleware on a PrismaClient instance.
  */
 export function registerAuditMiddleware(client: PrismaClient): void {
-  client.$use(async (params: Prisma.MiddlewareParams, next) => {
+  client.$use(async (params: { model?: string; action: string; args: any }, next: (params: any) => Promise<any>) => {
     const auditAction = PRISMA_TO_AUDIT[params.action];
 
     // Skip non-mutation actions (findMany, aggregate, etc.) and skipped models
@@ -137,7 +137,7 @@ export function registerAuditMiddleware(client: PrismaClient): void {
       params.model,
       resourceId,
       metadata ? JSON.stringify(metadata) : null
-    ).catch((err) => {
+    ).catch((err: unknown) => {
       // Never let audit logging break the application
       // Log only error name/message — never the full object which may contain SQL with PHI
       const msg = err instanceof Error ? `${err.name}: ${err.message}` : "Unknown error";

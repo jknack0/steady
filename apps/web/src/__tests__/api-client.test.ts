@@ -4,21 +4,8 @@ import { api } from "@/lib/api-client";
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// jsdom doesn't always provide localStorage — mock it
-const storage: Record<string, string> = {};
-Object.defineProperty(global, "localStorage", {
-  value: {
-    getItem: (key: string) => storage[key] ?? null,
-    setItem: (key: string, value: string) => { storage[key] = value; },
-    removeItem: (key: string) => { delete storage[key]; },
-    clear: () => { for (const k in storage) delete storage[k]; },
-  },
-  writable: true,
-});
-
 beforeEach(() => {
   vi.clearAllMocks();
-  localStorage.clear();
 });
 
 function mockResponse(data: unknown, ok = true, status = 200) {
@@ -38,6 +25,7 @@ describe("api client", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       "http://localhost:4000/api/programs",
       expect.objectContaining({
+        credentials: "include",
         headers: expect.objectContaining({
           "Content-Type": "application/json",
         }),
@@ -45,29 +33,14 @@ describe("api client", () => {
     );
   });
 
-  it("includes auth token from localStorage", async () => {
-    localStorage.setItem("token", "my-jwt-token");
+  it("uses credentials include instead of Authorization header", async () => {
     mockResponse({ id: "1" });
 
     await api.get("/api/programs");
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: "Bearer my-jwt-token",
-        }),
-      })
-    );
-  });
-
-  it("omits Authorization header when no token", async () => {
-    mockResponse({ id: "1" });
-
-    await api.get("/api/programs");
-
-    const headers = mockFetch.mock.calls[0][1].headers;
-    expect(headers.Authorization).toBeUndefined();
+    const callArgs = mockFetch.mock.calls[0][1];
+    expect(callArgs.credentials).toBe("include");
+    expect(callArgs.headers.Authorization).toBeUndefined();
   });
 
   it("makes POST request with JSON body", async () => {
@@ -137,10 +110,7 @@ describe("api client", () => {
     );
   });
 
-  it("retries with refreshed token on 401", async () => {
-    localStorage.setItem("token", "expired-token");
-    localStorage.setItem("refreshToken", "valid-refresh");
-
+  it("retries with cookie refresh on 401", async () => {
     // First call returns 401
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -148,14 +118,14 @@ describe("api client", () => {
       json: () => Promise.resolve({ error: "Token expired" }),
     });
 
-    // Refresh call succeeds
+    // Refresh call succeeds (cookie-based, no token in response needed)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ data: { accessToken: "new-token", refreshToken: "new-refresh" } }),
+      json: () => Promise.resolve({ data: {} }),
     });
 
-    // Retry with new token succeeds
+    // Retry succeeds
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -166,13 +136,9 @@ describe("api client", () => {
 
     expect(result).toEqual({ id: "1" });
     expect(mockFetch).toHaveBeenCalledTimes(3);
-    expect(localStorage.getItem("token")).toBe("new-token");
   });
 
-  it("clears tokens when refresh fails", async () => {
-    localStorage.setItem("token", "expired-token");
-    localStorage.setItem("refreshToken", "bad-refresh");
-
+  it("throws when refresh fails on 401", async () => {
     // First call returns 401
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -188,19 +154,17 @@ describe("api client", () => {
     });
 
     await expect(api.get("/api/programs")).rejects.toThrow();
-    expect(localStorage.getItem("token")).toBeNull();
-    expect(localStorage.getItem("refreshToken")).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it("does not attempt refresh without a token", async () => {
-    // No token set — 401 should not trigger refresh
+  it("does not retry non-401 errors", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
-      status: 401,
-      json: () => Promise.resolve({ error: "Not authenticated" }),
+      status: 500,
+      json: () => Promise.resolve({ error: "Server error" }),
     });
 
-    await expect(api.get("/api/programs")).rejects.toThrow("Not authenticated");
+    await expect(api.get("/api/programs")).rejects.toThrow("Server error");
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

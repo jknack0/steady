@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface Invitation {
   id: string;
@@ -43,17 +44,17 @@ export function useInvitations(params?: { status?: string }) {
   const query = qs.toString();
 
   return useQuery<InvitationListResponse[]>({
-    queryKey: ["invitations", params],
+    queryKey: queryKeys.invitations.all(params),
     queryFn: () =>
       api.get<InvitationListResponse[]>(
-        `/api/invitations${query ? `?${query}` : ""}`
+        `/api/invitations${query ? `?${query}` : ""}`,
       ),
   });
 }
 
 export function useInvitation(id: string) {
   return useQuery<Invitation>({
-    queryKey: ["invitation", id],
+    queryKey: queryKeys.invitations.detail(id),
     queryFn: () => api.get<Invitation>(`/api/invitations/${id}`),
     enabled: !!id,
   });

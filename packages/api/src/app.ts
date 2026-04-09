@@ -29,7 +29,29 @@ import rtmRoutes from "./routes/rtm";
 import { rtmParticipantRouter } from "./routes/rtm";
 import configRoutes from "./routes/config";
 import { configParticipantRouter } from "./routes/config";
+import appointmentsRoutes from "./routes/appointments";
+import locationsRoutes from "./routes/locations";
+import serviceCodesRoutes from "./routes/service-codes";
+import participantsRoutes from "./routes/participants";
 import invitationRoutes from "./routes/invitations";
+import reviewTemplateRoutes from "./routes/review-templates";
+import sessionReviewRoutes from "./routes/session-reviews";
+import { participantReviewRouter } from "./routes/session-reviews";
+import sessionPrepRoutes from "./routes/session-prep";
+import enrollmentOverrideRoutes from "./routes/enrollment-overrides";
+import invoiceRoutes from "./routes/invoices";
+import billingRoutes from "./routes/billing";
+import insuranceRoutes from "./routes/insurance";
+import claimsRoutes from "./routes/claims";
+import payersRoutes from "./routes/payers";
+import diagnosisCodesRoutes from "./routes/diagnosis-codes";
+import recurringSeriesRoutes from "./routes/recurring-series";
+import appointmentReminderRoutes from "./routes/appointment-reminders";
+import participantPortalRoutes from "./routes/participant-portal";
+import stripeWebhookRoutes from "./routes/stripe-webhooks";
+import stripePaymentRoutes from "./routes/stripe-payments";
+import telehealthRoutes from "./routes/telehealth";
+import { telehealthWebhookRouter } from "./routes/telehealth";
 
 const app = express();
 
@@ -45,7 +67,12 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
-app.use(cookieParser());
+app.use(cookieParser() as any);
+
+// Webhook routes — MUST be before express.json() for raw body signature verification
+app.use("/api/stripe/webhooks", stripeWebhookRoutes);
+app.use("/api/telehealth/webhooks", telehealthWebhookRouter);
+
 app.use(express.json({ limit: "1mb" }));
 
 // Security headers — HIPAA compliance
@@ -84,7 +111,7 @@ const waitlistLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, error: "Too many requests. Please try again later." },
 });
-app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
+app.post("/api/waitlist", waitlistLimiter as any, async (req, res) => {
   try {
     const email = req.body?.email?.trim()?.toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -122,7 +149,7 @@ const demoLimiter = rateLimit({
   message: { success: false, error: "Too many requests. Please try again later." },
 });
 
-app.post("/api/demo/provision", demoLimiter, async (req, res) => {
+app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
   try {
     const firstName = req.body?.firstName?.trim();
     const lastName = req.body?.lastName?.trim();
@@ -363,7 +390,27 @@ app.use("/api/rtm", rtmRoutes);
 app.use("/api/participant/rtm", rtmParticipantRouter);
 app.use("/api/config", configRoutes);
 app.use("/api/participant/config", configParticipantRouter);
+app.use("/api/appointments", sessionReviewRoutes);
+app.use("/api/appointments", sessionPrepRoutes);
+app.use("/api/appointments", appointmentsRoutes);
+app.use("/api/locations", locationsRoutes);
+app.use("/api/service-codes", serviceCodesRoutes);
+app.use("/api/participants", participantsRoutes);
 app.use("/api/invitations", invitationRoutes);
+app.use("/api/programs", reviewTemplateRoutes);
+app.use("/api/participant/appointments", participantReviewRouter);
+app.use("/api/enrollments", enrollmentOverrideRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/billing", billingRoutes);
+app.use("/api/insurance", insuranceRoutes);
+app.use("/api/claims", claimsRoutes);
+app.use("/api/payers", payersRoutes);
+app.use("/api/diagnosis-codes", diagnosisCodesRoutes);
+app.use("/api/recurring-series", recurringSeriesRoutes);
+app.use("/api/appointments", appointmentReminderRoutes);
+app.use("/api/participant", participantPortalRoutes);
+app.use("/api/stripe", stripePaymentRoutes);
+app.use("/api/telehealth", telehealthRoutes);
 
 // Error handler
 app.use(errorHandler);

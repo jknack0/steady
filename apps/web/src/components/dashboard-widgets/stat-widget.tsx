@@ -26,7 +26,7 @@ const STAT_CONFIGS: Record<
     icon: Calendar,
     dataKey: "todaySessionCount",
     label: "Sessions Today",
-    href: "/sessions",
+    href: "/appointments",
   },
   stat_homework_rate: {
     icon: TrendingUp,

@@ -1,8 +1,8 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
-import { authenticate } from "../middleware/auth";
-import { recordDismissal } from "../services/notifications";
+import { authenticate, requireRole } from "../middleware/auth";
+import { recordDismissal, resetDismissals } from "../services/notifications";
 
 const router = Router();
 
@@ -126,7 +126,7 @@ router.put("/preferences", async (req: Request, res: Response) => {
 });
 
 // POST /api/notifications/dismiss — Record a notification dismissal (for smart escalation)
-router.post("/dismiss", async (req: Request, res: Response) => {
+router.post("/dismiss", requireRole("PARTICIPANT"), async (req: Request, res: Response) => {
   try {
     const { category } = req.body;
 
@@ -141,6 +141,25 @@ router.post("/dismiss", async (req: Request, res: Response) => {
   } catch (err) {
     logger.error("Record dismissal error", err);
     res.status(500).json({ success: false, error: "Failed to record dismissal" });
+  }
+});
+
+// POST /api/notifications/engage — Reset escalation counter for a category
+router.post("/engage", requireRole("PARTICIPANT"), async (req: Request, res: Response) => {
+  try {
+    const { category } = req.body;
+
+    const validCategories = ["MORNING_CHECKIN", "HOMEWORK", "SESSION", "TASK", "WEEKLY_REVIEW"];
+    if (!category || !validCategories.includes(category)) {
+      res.status(400).json({ success: false, error: "Valid category is required" });
+      return;
+    }
+
+    await resetDismissals(req.user!.userId, category);
+    res.json({ success: true });
+  } catch (err) {
+    logger.error("Reset dismissals error", err);
+    res.status(500).json({ success: false, error: "Failed to reset dismissals" });
   }
 });
 

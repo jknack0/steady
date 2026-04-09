@@ -3,10 +3,22 @@ import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
 import { getParticipantStats } from "../services/stats";
+import { getStreaks } from "../services/streaks";
 
 const router = Router();
 
 router.use(authenticate);
+
+// GET /api/stats/streaks — Participant's streak records
+router.get("/streaks", requireRole("PARTICIPANT"), async (req: Request, res: Response) => {
+  try {
+    const streaks = await getStreaks(req.user!.userId);
+    res.json({ success: true, data: streaks });
+  } catch (err) {
+    logger.error("Get streaks error", err);
+    res.status(500).json({ success: false, error: "Failed to get streaks" });
+  }
+});
 
 // GET /api/stats/participant — Own stats (participant)
 router.get("/participant", requireRole("PARTICIPANT"), async (req: Request, res: Response) => {

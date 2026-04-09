@@ -20,7 +20,7 @@ const loginLimiter = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { success: false, error: "Too many login attempts. Please try again in 15 minutes." },
-  keyGenerator: (req: Request) => req.body?.email?.toLowerCase() || ipKeyGenerator(req.ip ?? "unknown"),
+  keyGenerator: (req: any) => req.body?.email?.toLowerCase() || ipKeyGenerator(req.ip ?? "unknown"),
   skip: () => isTest,
 });
 
@@ -112,7 +112,7 @@ function buildAuthUser(user: {
 }
 
 // POST /api/auth/register
-router.post("/register", registerLimiter, validate(RegisterSchema), async (req: Request, res: Response) => {
+router.post("/register", registerLimiter as any, validate(RegisterSchema), async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, role } = req.body;
 
@@ -168,7 +168,7 @@ router.post("/register", registerLimiter, validate(RegisterSchema), async (req: 
 });
 
 // POST /api/auth/login
-router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, res: Response) => {
+router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -235,7 +235,7 @@ router.post("/login", loginLimiter, validate(LoginSchema), async (req: Request, 
 });
 
 // POST /api/auth/refresh
-router.post("/refresh", refreshLimiter, async (req: Request, res: Response) => {
+router.post("/refresh", refreshLimiter as any, async (req: Request, res: Response) => {
   try {
     // Read from body (mobile) or cookie (web)
     const refreshToken = req.body.refreshToken || req.cookies?.refresh_token;
@@ -375,7 +375,7 @@ const inviteRegisterLimiter = rateLimit({
 });
 
 // POST /api/auth/register-with-invite
-router.post("/register-with-invite", inviteRegisterLimiter, validate(RegisterWithInviteSchema), async (req: Request, res: Response) => {
+router.post("/register-with-invite", inviteRegisterLimiter as any, validate(RegisterWithInviteSchema), async (req: Request, res: Response) => {
   try {
     const { redeemInvitation } = await import("../services/invitations");
     const { ExpiredError } = await import("../services/invitations");

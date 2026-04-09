@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type SaveStatus = "idle" | "saving" | "saved" | "error";
+type SaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
 
 export function useAutosave<T>(
   saveFn: (data: T) => Promise<unknown>,
-  debounceMs = 2000
+  debounceMs = 2000,
 ) {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -18,9 +18,12 @@ export function useAutosave<T>(
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
 
-      setStatus("saving");
+      // Show "pending" while waiting for the debounce period to elapse
+      setStatus("pending");
 
       timeoutRef.current = setTimeout(async () => {
+        // Only set "saving" when the save actually starts
+        setStatus("saving");
         try {
           await saveFn(data);
           setStatus("saved");
@@ -30,7 +33,7 @@ export function useAutosave<T>(
         }
       }, debounceMs);
     },
-    [saveFn, debounceMs]
+    [saveFn, debounceMs],
   );
 
   // Cleanup on unmount

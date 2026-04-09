@@ -1,45 +1,23 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useRtmDashboard,
-  useLogRtmTime,
   type RtmClientRow,
 } from "@/hooks/use-rtm";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePageTitle } from "@/hooks/use-page-title";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Tabs } from "@/components/ui/tabs";
+import { LogTimeDialog } from "@/components/rtm/LogTimeDialog";
 import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Loader2,
   DollarSign,
-  Users,
   CheckCircle2,
-  Clock,
   Timer,
-  Check,
   X,
   Bell,
   FileText,
@@ -48,8 +26,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { daysAgoLabel, formatCurrency } from "@/lib/format";
-import { ACTIVITY_TYPES, TIME_PRESETS, type TimePreset } from "@/lib/rtm-constants";
+import { daysAgoLabel } from "@/lib/format";
 import { LoadingState } from "@/components/loading-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
@@ -153,242 +130,6 @@ function EngagementProgressBar({ days }: { days: number }) {
         title="16-day threshold"
       />
     </div>
-  );
-}
-
-// ── Log Time Dialog ─────────────────────────────────────────────────────────
-
-interface LogTimeDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  clients: RtmClientRow[];
-  preselectedEnrollmentId?: string;
-  presetInteractive?: boolean;
-}
-
-function LogTimeDialog({
-  open,
-  onOpenChange,
-  clients,
-  preselectedEnrollmentId,
-  presetInteractive,
-}: LogTimeDialogProps) {
-  const [enrollmentId, setEnrollmentId] = useState(preselectedEnrollmentId || "");
-  const [duration, setDuration] = useState("");
-  const [activityType, setActivityType] = useState("");
-  const [description, setDescription] = useState("");
-  const [isInteractive, setIsInteractive] = useState(presetInteractive || false);
-  const logTime = useLogRtmTime();
-
-  const effectiveEnrollmentId = preselectedEnrollmentId || enrollmentId;
-
-  // Find the selected client to show progress
-  const selectedClient = clients.find(
-    (c) => c.rtmEnrollmentId === effectiveEnrollmentId
-  );
-  const currentMinutes = selectedClient?.currentPeriod?.clinicianMinutes ?? 0;
-
-  useEffect(() => {
-    if (preselectedEnrollmentId) setEnrollmentId(preselectedEnrollmentId);
-  }, [preselectedEnrollmentId]);
-
-  useEffect(() => {
-    if (presetInteractive) {
-      setIsInteractive(true);
-      setActivityType("INTERACTIVE_COMMUNICATION");
-    }
-  }, [presetInteractive]);
-
-  function resetForm() {
-    setEnrollmentId(preselectedEnrollmentId || "");
-    setDuration("");
-    setActivityType("");
-    setDescription("");
-    setIsInteractive(presetInteractive || false);
-  }
-
-  function applyPreset(preset: TimePreset) {
-    setDuration(String(preset.duration));
-    setActivityType(preset.activityType);
-    setDescription(preset.description);
-    setIsInteractive(preset.isInteractive ?? false);
-  }
-
-  function handleSubmit() {
-    if (!effectiveEnrollmentId || !duration || !activityType) return;
-    logTime.mutate(
-      {
-        rtmEnrollmentId: effectiveEnrollmentId,
-        durationMinutes: parseInt(duration, 10),
-        activityType,
-        description: description.trim() || undefined,
-        isInteractiveCommunication: isInteractive,
-      },
-      {
-        onSuccess: () => {
-          resetForm();
-          onOpenChange(false);
-        },
-      }
-    );
-  }
-
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (!v) resetForm();
-        onOpenChange(v);
-      }}
-    >
-      <DialogContent size="md">
-        <DialogHeader className="shrink-0 px-6 pt-6 pb-4">
-          <DialogTitle>Log Monitoring Time</DialogTitle>
-          <DialogDescription>
-            Record time spent on RTM monitoring activities.
-          </DialogDescription>
-        </DialogHeader>
-
-        <DialogBody>
-          {/* Progress indicator */}
-          {effectiveEnrollmentId && (
-            <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                {currentMinutes}/20 min logged this period
-              </span>
-              <div className="ml-auto h-1.5 w-20 rounded-full bg-gray-200">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all",
-                    currentMinutes >= 20 ? "bg-green-500" : "bg-blue-500"
-                  )}
-                  style={{ width: `${Math.min((currentMinutes / 20) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Quick presets */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-              Quick Presets
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {TIME_PRESETS.map((preset) => (
-                <Button
-                  key={preset.label}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start text-xs h-auto py-2"
-                  onClick={() => applyPreset(preset)}
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            {/* Client select */}
-            {!preselectedEnrollmentId && (
-              <div className="space-y-2">
-                <Label htmlFor="log-client">Client</Label>
-                <Select value={effectiveEnrollmentId} onValueChange={setEnrollmentId}>
-                  <SelectTrigger id="log-client">
-                    <SelectValue placeholder="Select a client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.rtmEnrollmentId} value={c.rtmEnrollmentId}>
-                        {c.clientName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Duration */}
-            <div className="space-y-2">
-              <Label htmlFor="log-duration">Duration (minutes)</Label>
-              <Input
-                id="log-duration"
-                type="number"
-                min="1"
-                max="120"
-                placeholder="e.g. 15"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-              />
-            </div>
-
-            {/* Activity type */}
-            <div className="space-y-2">
-              <Label htmlFor="log-activity">Activity Type</Label>
-              <Select value={activityType} onValueChange={setActivityType}>
-                <SelectTrigger id="log-activity">
-                  <SelectValue placeholder="Select activity type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTIVITY_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="log-description">Description</Label>
-              <Textarea
-                id="log-description"
-                placeholder="Brief description of the activity..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            {/* Interactive communication checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="log-interactive"
-                checked={isInteractive}
-                onCheckedChange={(checked) => setIsInteractive(checked === true)}
-              />
-              <Label htmlFor="log-interactive" className="text-sm font-normal cursor-pointer">
-                This included a live interaction with the client
-              </Label>
-            </div>
-          </div>
-        </DialogBody>
-
-        <DialogFooter className="shrink-0 px-6 py-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              logTime.isPending ||
-              !effectiveEnrollmentId ||
-              !duration ||
-              !activityType
-            }
-          >
-            {logTime.isPending && (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            )}
-            Log Time
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -672,7 +413,7 @@ function ClientCard({ client, status, onLogTime, onSendReminder }: ClientCardPro
 
 // ── Main Dashboard Page ─────────────────────────────────────────────────────
 
-export function RtmDashboardContent() {
+function RtmDashboardContent() {
   const { data, isLoading, error } = useRtmDashboard();
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [logDialogOpen, setLogDialogOpen] = useState(false);
@@ -760,34 +501,12 @@ export function RtmDashboardContent() {
           </div>
 
           {/* ── Tab Filters ──────────────────────────────────────────── */}
-          <div className="flex items-center gap-1 mb-6 border-b">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={cn(
-                  "px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
-                  activeTab === tab.key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30"
-                )}
-              >
-                {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span
-                    className={cn(
-                      "ml-1.5 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-medium",
-                      activeTab === tab.key
-                        ? "bg-primary/10 text-primary"
-                        : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            tabs={tabs}
+            active={activeTab}
+            onChange={(key) => setActiveTab(key as TabFilter)}
+            className="mb-6"
+          />
 
           {/* ── Client Cards ─────────────────────────────────────────── */}
           {data.clients.length === 0 ? (
@@ -839,5 +558,6 @@ export function RtmDashboardContent() {
 }
 
 export default function RtmDashboardPage() {
+  usePageTitle("RTM Dashboard");
   return <RtmDashboardContent />;
 }

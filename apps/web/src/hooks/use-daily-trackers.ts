@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-keys";
 import type {
   CreateDailyTrackerInput,
   UpdateDailyTrackerInput,
@@ -70,14 +71,14 @@ export interface TrackerTrends {
 
 export function useTrackerTemplates() {
   return useQuery<TrackerTemplate[]>({
-    queryKey: ["tracker-templates"],
+    queryKey: queryKeys.dailyTrackers.templates,
     queryFn: () => api.get("/api/daily-trackers/templates"),
   });
 }
 
 export function useDailyTrackers(programId: string) {
   return useQuery<DailyTracker[]>({
-    queryKey: ["daily-trackers", programId],
+    queryKey: queryKeys.dailyTrackers.byProgram(programId),
     queryFn: () => api.get(`/api/daily-trackers?programId=${programId}`),
     enabled: !!programId,
   });
@@ -85,7 +86,7 @@ export function useDailyTrackers(programId: string) {
 
 export function useDailyTracker(trackerId: string) {
   return useQuery<DailyTracker>({
-    queryKey: ["daily-tracker", trackerId],
+    queryKey: queryKeys.dailyTrackers.detail(trackerId),
     queryFn: () => api.get(`/api/daily-trackers/${trackerId}`),
     enabled: !!trackerId,
   });
@@ -97,9 +98,11 @@ export function useCreateDailyTracker() {
     mutationFn: (data: CreateDailyTrackerInput) =>
       api.post<DailyTracker>("/api/daily-trackers", data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["daily-trackers", variables.programId],
-      });
+      if (variables.programId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyTrackers.byProgram(variables.programId),
+        });
+      }
     },
   });
 }
@@ -110,9 +113,11 @@ export function useCreateTrackerFromTemplate() {
     mutationFn: (data: CreateTrackerFromTemplateInput) =>
       api.post<DailyTracker>("/api/daily-trackers/from-template", data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["daily-trackers", variables.programId],
-      });
+      if (variables.programId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyTrackers.byProgram(variables.programId),
+        });
+      }
     },
   });
 }
@@ -123,7 +128,7 @@ export function useUpdateDailyTracker(trackerId: string) {
     mutationFn: (data: UpdateDailyTrackerInput) =>
       api.put<DailyTracker>(`/api/daily-trackers/${trackerId}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["daily-tracker", trackerId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyTrackers.detail(trackerId) });
       queryClient.invalidateQueries({ queryKey: ["daily-trackers"] });
     },
   });
@@ -136,6 +141,7 @@ export function useDeleteDailyTracker() {
       api.delete(`/api/daily-trackers/${trackerId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["daily-trackers"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-tracker"] });
     },
   });
 }
@@ -143,14 +149,14 @@ export function useDeleteDailyTracker() {
 export function useTrackerEntries(
   trackerId: string,
   userId: string,
-  dateRange?: { startDate?: string; endDate?: string }
+  dateRange?: { startDate?: string; endDate?: string },
 ) {
   const params = new URLSearchParams({ userId });
   if (dateRange?.startDate) params.set("startDate", dateRange.startDate);
   if (dateRange?.endDate) params.set("endDate", dateRange.endDate);
 
   return useQuery<TrackerEntry[]>({
-    queryKey: ["tracker-entries", trackerId, userId, dateRange],
+    queryKey: queryKeys.dailyTrackers.entries(trackerId, userId, dateRange),
     queryFn: () =>
       api.get(`/api/daily-trackers/${trackerId}/entries?${params.toString()}`),
     enabled: !!trackerId && !!userId,
@@ -159,7 +165,7 @@ export function useTrackerEntries(
 
 export function useTrackerTrends(trackerId: string, userId: string) {
   return useQuery<TrackerTrends>({
-    queryKey: ["tracker-trends", trackerId, userId],
+    queryKey: queryKeys.dailyTrackers.trends(trackerId, userId),
     queryFn: () =>
       api.get(`/api/daily-trackers/${trackerId}/trends?userId=${userId}`),
     enabled: !!trackerId && !!userId,
@@ -168,7 +174,7 @@ export function useTrackerTrends(trackerId: string, userId: string) {
 
 export function useParticipantCheckin(participantId: string | undefined) {
   return useQuery<DailyTracker>({
-    queryKey: ["participant-checkin", participantId],
+    queryKey: queryKeys.participants.checkin(participantId ?? ""),
     queryFn: () => api.get(`/api/daily-trackers/participant/${participantId}`),
     enabled: !!participantId,
   });
