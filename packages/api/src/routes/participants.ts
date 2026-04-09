@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { createHash, randomBytes } from "crypto";
+import { createHash } from "crypto";
 import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
 import { requirePracticeCtx } from "../lib/practice-context";
@@ -107,14 +107,11 @@ router.post("/", validate(CreateParticipantSchema), async (req: Request, res: Re
       return;
     }
 
-    // Random passwordHash placeholder — clinician-initiated clients don't log in
-    // until they accept the invite (which would set their password via existing flow).
-    const passwordHash = randomBytes(32).toString("hex");
-
+    // No passwordHash needed — Cognito handles password storage.
+    // Clinician-initiated clients don't log in until they accept the invite.
     const user = await prisma.user.create({
       data: {
         email,
-        passwordHash,
         role: "PARTICIPANT",
         firstName,
         lastName,

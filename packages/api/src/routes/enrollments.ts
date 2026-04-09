@@ -1,6 +1,5 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
-import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
 import { CreateEnrollmentSchema, UpdateEnrollmentSchema, type HomeworkContent } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
@@ -92,12 +91,10 @@ router.post("/", validate(CreateEnrollmentSchema), async (req: Request, res: Res
     }
 
     if (!user) {
-      // Create a placeholder participant account
-      const tempPassword = await bcrypt.hash(Math.random().toString(36), 10);
+      // Create a placeholder participant account (no password — Cognito handles auth)
       user = await prisma.user.create({
         data: {
           email: participantEmail,
-          passwordHash: tempPassword,
           firstName: firstName || "Participant",
           lastName: lastName || "",
           role: "PARTICIPANT",

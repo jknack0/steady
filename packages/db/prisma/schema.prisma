@@ -241,7 +241,8 @@ model PracticeMembership {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String
+  passwordHash String?
+  cognitoId    String?
   role         UserRole
   firstName    String
   lastName     String
@@ -262,7 +263,6 @@ model User {
   clientConfigs        ClientConfig[]         @relation("ClientConfigs")
   clinicianClients     ClinicianClient[]      @relation("ClinicianClientUser")
   acceptedInvitations  PatientInvitation[]    @relation("InvitationAcceptedBy")
-  refreshTokens        RefreshToken[]
   createdAppointments  Appointment[]          @relation("AppointmentCreatedBy")
   createdRecurringSeries RecurringSeries[]    @relation("RecurringSeriesCreatedBy")
   streakRecords        StreakRecord[]
@@ -1407,21 +1407,7 @@ model AuditLog {
 
 // ── Refresh Tokens ──────────────────────────────────────
 
-model RefreshToken {
-  id             String    @id @default(cuid())
-  token          String    @unique
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  familyId       String
-  revoked        Boolean   @default(false)
-  expiresAt      DateTime
-  createdAt      DateTime  @default(now())
-
-  @@index([userId])
-  @@index([familyId])
-  @@index([expiresAt])
-  @@map("refresh_tokens")
-}
+// RefreshToken model removed — Cognito handles token lifecycle
 
 // ── Review & Session Prep (Sprint 14) ────────────────
 

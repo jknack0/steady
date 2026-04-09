@@ -1,6 +1,4 @@
 import { prisma } from "@steady/db";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { logger } from "../lib/logger";
 
 // ── Error Classes ────────────────────────────────────
@@ -944,12 +942,10 @@ export async function addClient(
   }
 
   if (!user) {
-    // Create a placeholder participant account
-    const tempPassword = await bcrypt.hash(crypto.randomUUID(), 10);
+    // Create a placeholder participant account (no password — Cognito handles auth)
     user = await prisma.user.create({
       data: {
         email: email.toLowerCase().trim(),
-        passwordHash: tempPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         role: "PARTICIPANT",

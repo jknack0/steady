@@ -3,7 +3,6 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
 import { APP_NAME } from "@steady/shared";
 import { errorHandler } from "./middleware/errorHandler";
@@ -178,14 +177,12 @@ app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
 
     if (!user) {
       isNewAccount = true;
-      const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10);
 
       user = await prisma.user.create({
         data: {
           email,
           firstName,
           lastName,
-          passwordHash,
           role: "CLINICIAN",
           clinicianProfile: { create: {} },
         },
@@ -325,22 +322,64 @@ app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
       }
     }
 
-    // Issue tokens
-    const authPayload = {
-      userId: user.id,
-      role: "CLINICIAN" as const,
-      clinicianProfileId: user.clinicianProfile!.id,
-    };
-    const accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
-    const refreshToken = crypto.randomBytes(48).toString("base64url");
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
+    // Issue tokens — use Cognito if configured, else fall back to legacy JWT
+    let accessToken: string;
+    let refreshToken = "demo-no-refresh";
+
+    const cognitoPoolId = process.env.COGNITO_USER_POOL_ID;
+    const cognitoClientIdVal = process.env.COGNITO_CLIENT_ID;
+
+    if (cognitoPoolId && cognitoClientIdVal) {
+      // Cognito path: create user in Cognito if new, then authenticate
+      const { cognitoClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminInitiateAuthCommand } = await import("./lib/cognito");
+      const tempPassword = crypto.randomUUID();
+
+      if (isNewAccount) {
+        try {
+          await cognitoClient.send(
+            new AdminCreateUserCommand({
+              UserPoolId: cognitoPoolId,
+              Username: email,
+              UserAttributes: [
+                { Name: "email", Value: email },
+                { Name: "email_verified", Value: "true" },
+              ],
+              MessageAction: "SUPPRESS",
+            })
+          );
+          await cognitoClient.send(
+            new AdminSetUserPasswordCommand({
+              UserPoolId: cognitoPoolId,
+              Username: email,
+              Password: tempPassword,
+              Permanent: true,
+            })
+          );
+        } catch (cognitoErr: any) {
+          // If user already exists in Cognito, continue
+          if (cognitoErr?.name !== "UsernameExistsException") {
+            throw cognitoErr;
+          }
+        }
+      }
+
+      // Authenticate to get tokens (for existing Cognito users, we need their actual password)
+      // For demo provisioning, use legacy JWT as fallback
+      const authPayload = {
         userId: user.id,
-        familyId: crypto.randomUUID(),
-        expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
-      },
-    });
+        role: "CLINICIAN" as const,
+        clinicianProfileId: user.clinicianProfile!.id,
+      };
+      accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
+    } else {
+      // Legacy JWT path
+      const authPayload = {
+        userId: user.id,
+        role: "CLINICIAN" as const,
+        clinicianProfileId: user.clinicianProfile!.id,
+      };
+      accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
+    }
 
     // Set cookies
     res.cookie("access_token", accessToken, { ...demoCookieOptions, maxAge: 30 * 60 * 1000 });

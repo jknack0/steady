@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
 import { ConflictError, NotFoundError } from "./clinician";
@@ -168,15 +167,12 @@ export async function redeemInvitation(data: RedeemData) {
     throw new ConflictError("This email is already registered.");
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-
   // Atomic transaction: create user, profile, client relationship, config, optional enrollment, update invitation
   const result = await prisma.$transaction(async (tx) => {
-    // 1. Create User + ParticipantProfile
+    // 1. Create User + ParticipantProfile (no passwordHash — Cognito handles passwords)
     const user = await tx.user.create({
       data: {
         email: email.toLowerCase().trim(),
-        passwordHash,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         role: "PARTICIPANT",

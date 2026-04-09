@@ -24,6 +24,8 @@ interface AuthContextValue extends AuthState {
   register: (data: { email: string; password: string; firstName: string; lastName: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -85,6 +87,14 @@ export function useAuthState(): AuthContextValue {
     setState({ user: null, isLoading: false, isAuthenticated: false });
   }, []);
 
+  const forgotPassword = useCallback(async (email: string) => {
+    await api.post("/api/auth/forgot-password", { email });
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
+    await api.post("/api/auth/confirm-reset-password", { email, code, newPassword });
+  }, []);
+
   // One-time cleanup: remove any stale tokens from localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -93,5 +103,5 @@ export function useAuthState(): AuthContextValue {
     }
   }, []);
 
-  return { ...state, login, register, logout, refreshUser: checkAuth };
+  return { ...state, login, register, logout, refreshUser: checkAuth, forgotPassword, resetPassword };
 }
