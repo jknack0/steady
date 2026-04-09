@@ -5,7 +5,6 @@ import { toDateKey } from "../lib/date-utils";
 import { markOverdueInvoices } from "./billing";
 import { generateAllSeriesAppointments } from "./recurring-series";
 import { processReminders } from "./appointment-reminders";
-import { GPU_WORKER_URL, INTERNAL_API_SECRET, LIVEKIT_EGRESS_S3_BUCKET } from "../lib/env";
 
 let boss: PgBoss | null = null;
 
@@ -248,62 +247,6 @@ export async function getQueue(): Promise<PgBoss> {
     } catch (err) {
       logger.error("Balance-due check failed", err);
       throw err;
-    }
-  });
-
-  // Register transcription worker — dispatches to GPU worker via HTTP
-  await boss.work("transcribe-session", async (job: any) => {
-    const { telehealthSessionId, audioPath } = job.data as {
-      telehealthSessionId: string;
-      audioPath: string;
-    };
-
-    if (!GPU_WORKER_URL) {
-      logger.warn("GPU_WORKER_URL not configured — skipping transcription");
-      return;
-    }
-
-    try {
-      // Update status to TRANSCRIBING
-      await prisma.telehealthSession.update({
-        where: { id: telehealthSessionId },
-        data: { transcriptStatus: "TRANSCRIBING" },
-      });
-
-      // Dispatch to GPU worker
-      const response = await fetch(`${GPU_WORKER_URL}/transcribe`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${INTERNAL_API_SECRET}`,
-        },
-        body: JSON.stringify({
-          telehealthSessionId,
-          audioPath,
-          bucket: LIVEKIT_EGRESS_S3_BUCKET,
-          callbackUrl: `${process.env.API_BASE_URL || "http://localhost:4000"}/internal/transcripts`,
-          callbackSecret: INTERNAL_API_SECRET,
-        }),
-        signal: AbortSignal.timeout(300000), // 5 min timeout
-      });
-
-      if (!response.ok) {
-        throw new Error(`GPU worker returned ${response.status}`);
-      }
-
-      logger.info("Transcription dispatched to GPU worker", `sessionId=${telehealthSessionId}`);
-    } catch (err) {
-      // Update attempt count and set error
-      await prisma.telehealthSession.update({
-        where: { id: telehealthSessionId },
-        data: {
-          transcriptionAttempts: { increment: 1 },
-          transcriptError: err instanceof Error ? err.message : "Unknown error",
-          transcriptStatus: "FAILED",
-        },
-      });
-      logger.error("Transcription dispatch failed", err);
-      throw err; // rethrow for pg-boss retry
     }
   });
 

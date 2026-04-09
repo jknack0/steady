@@ -51,7 +51,6 @@ import stripeWebhookRoutes from "./routes/stripe-webhooks";
 import stripePaymentRoutes from "./routes/stripe-payments";
 import telehealthRoutes from "./routes/telehealth";
 import { telehealthWebhookRouter } from "./routes/telehealth";
-import internalRoutes from "./routes/internal";
 
 const app = express();
 
@@ -455,7 +454,6 @@ app.use("/api/appointments", appointmentReminderRoutes);
 app.use("/api/participant", participantPortalRoutes);
 app.use("/api/stripe", stripePaymentRoutes);
 app.use("/api/telehealth", telehealthRoutes);
-app.use("/internal", internalRoutes);
 
 // Error handler
 app.use(errorHandler);

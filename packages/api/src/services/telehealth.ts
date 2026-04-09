@@ -2,8 +2,6 @@ import { AccessToken, WebhookReceiver } from "livekit-server-sdk";
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
 import { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } from "../lib/env";
-import { startAudioEgress, stopEgress } from "./egress";
-import { queueTranscriptionJob } from "./transcription";
 
 // ── Types ────────────────────────────────────────────
 
@@ -163,9 +161,6 @@ export async function handleWebhookEvent(
     case "room_finished":
       await handleRoomFinished(event);
       break;
-    case "egress_ended":
-      await handleEgressEnded(event);
-      break;
     default:
       logger.info("Unhandled LiveKit webhook event", eventType);
   }
@@ -217,13 +212,6 @@ async function handleParticipantJoined(event: any): Promise<void> {
   // Transition to ACTIVE when either participant joins
   if (session.status === "WAITING") {
     updates.status = "ACTIVE";
-
-    // Start audio recording for transcription when room becomes ACTIVE
-    const egressId = await startAudioEgress(roomName, session.id, session.appointmentId);
-    if (egressId) {
-      updates.egressId = egressId;
-      updates.transcriptStatus = "RECORDING";
-    }
   }
 
   if (Object.keys(updates).length > 0) {
@@ -262,11 +250,6 @@ async function handleRoomFinished(event: any): Promise<void> {
   });
   if (!session) return;
 
-  // Safety net: stop egress if still active when room finishes
-  if (session.egressId && session.transcriptStatus === "RECORDING") {
-    await stopEgress(session.egressId);
-  }
-
   // Calculate duration from creation (or first join) to now
   const now = new Date();
   const startedAt = session.clinicianJoinedAt || session.participantJoinedAt || session.createdAt;
@@ -285,53 +268,6 @@ async function handleRoomFinished(event: any): Promise<void> {
     "Telehealth room finished",
     `room=${roomName} durationSeconds=${durationSeconds}`,
   );
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- LiveKit webhook event type
-async function handleEgressEnded(event: any): Promise<void> {
-  const egressId = event.egressInfo?.egressId as string | undefined;
-  if (!egressId) return;
-
-  const session = await prisma.telehealthSession.findFirst({
-    where: { egressId },
-  });
-  if (!session) {
-    logger.warn("Egress ended for unknown session", `egressId=${egressId}`);
-    return;
-  }
-
-  const egressStatus = event.egressInfo?.status;
-  const fileResults = event.egressInfo?.fileResults;
-  const egressError = event.egressInfo?.error;
-
-  // EgressStatus: EGRESS_COMPLETE = 2
-  if (egressStatus === 2 || egressStatus === "EGRESS_COMPLETE") {
-    // Egress succeeded — extract file path and queue transcription
-    const filePath = fileResults?.[0]?.filename || `recordings/${session.appointmentId}/${session.id}.ogg`;
-
-    await prisma.telehealthSession.update({
-      where: { id: session.id },
-      data: {
-        audioPath: filePath,
-        transcriptStatus: "PENDING",
-      },
-    });
-
-    await queueTranscriptionJob(session.id, filePath);
-
-    logger.info("Egress completed, transcription queued", `sessionId=${session.id}`);
-  } else {
-    // Egress failed
-    await prisma.telehealthSession.update({
-      where: { id: session.id },
-      data: {
-        transcriptStatus: "FAILED",
-        transcriptError: egressError || `Egress failed with status ${egressStatus}`,
-      },
-    });
-
-    logger.error("Egress failed", `sessionId=${session.id} status=${egressStatus}`);
-  }
 }
 
 function parseMetadata(raw: string | undefined): Record<string, unknown> | null {

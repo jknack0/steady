@@ -26,7 +26,6 @@ const ENCRYPTED_FIELDS: Record<string, string[]> = {
     "addressZip",
   ],
   Practice: ["stediApiKeyEncrypted", "stripeApiKeyEncrypted", "stripeWebhookSecretEncrypted"],
-  TelehealthSession: ["transcript"],
 };
 
 /**
