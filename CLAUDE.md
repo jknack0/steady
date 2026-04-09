@@ -2,19 +2,19 @@
 
 ## Project Overview
 
-HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Next.js 16 web app (clinician CAS), Expo 54 mobile app (participant), Express API with pg-boss job queue, Prisma + PostgreSQL, and shared Zod validation package.
+HIPAA-compliant clinical platform for ADHD treatment. Turborepo monorepo with Next.js 15 web app (clinician CAS), Expo 54 mobile app (participant), Express API with pg-boss job queue, Prisma + PostgreSQL, and shared Zod validation package.
 
-**Tech stack**: React 19, TypeScript strict, TanStack Query, Tailwind CSS / NativeWind, JWT auth, S3 file storage, Railway deployment.
+**Tech stack**: React 19, TypeScript strict, TanStack Query, Tailwind CSS / NativeWind, JWT auth (cookie-based), S3 file storage, AWS deployment.
 
 **Database env vars** (in `.env`):
 - `DATABASE_URL` — local dev (localhost:5432)
-- `DATABASE_URL_DEV` — Railway dev/staging database
-- `DATABASE_URL_PROD` — Railway production database
+- `DATABASE_URL_DEV` — Railway dev/staging database (legacy, migrating off)
+- `DATABASE_URL_PROD` — Railway production database (legacy, migrating off)
 
 ## Monorepo Structure
 
 ```
-apps/web          → Next.js 16 clinician dashboard (port 3000)
+apps/web          → Next.js 15 clinician dashboard (port 3000)
 apps/mobile       → Expo 54 participant app (React Native 0.81)
 packages/api      → Express 4 API server (port 4000)
 packages/db       → Prisma schema + client singleton + audit middleware
@@ -83,11 +83,17 @@ packages/shared   → Zod schemas, TypeScript types, constants, theme
 
 ## Authentication & Authorization
 
-- **JWT flow**: 30-minute access token + 7-day refresh token.
-- **Auto-refresh**: Both web (`lib/api-client.ts`) and mobile (`lib/api.ts`) silently retry on 401 with refresh token.
-- **Token storage**: Web uses localStorage, mobile uses Expo Secure Store.
-- **Auth middleware**: `authenticate` verifies JWT → attaches `AuthUser` (userId, role, profileIds) → calls `runWithAuditUser()` for audit context.
+### JWT + Cookie-Based Auth
+- **Access token**: 30-minute JWT signed with `JWT_SECRET`. Payload: `{ userId, role, clinicianProfileId?, participantProfileId? }`.
+- **Refresh token**: 7-day cryptographic token (48 bytes base64url) stored in `RefreshToken` table with family tracking.
+- **Token rotation**: On refresh, old token is revoked and new one issued in the same family. Reuse of a revoked token → entire family revoked (breach detection).
+- **Cookie storage (web)**: Both tokens stored as `httpOnly` cookies. Access token at `path: /`, refresh token at `path: /api/auth` (tighter scope). `secure: true` in production, `sameSite: none` for cross-origin.
+- **Mobile storage**: Expo Secure Store for tokens, sent via `Authorization: Bearer` header.
+- **Auto-refresh**: Web (`lib/api-client.ts`) and mobile (`lib/api.ts`) silently retry on 401 by calling `/api/auth/refresh`. All web requests use `credentials: "include"` for cookie transport.
+- **Auth middleware**: `authenticate` reads cookie or Bearer header → verifies JWT → attaches `AuthUser` (userId, role, profileIds) → calls `runWithAuditUser()` for HIPAA audit context.
 - **Role-based access**: `requireRole("CLINICIAN")`, `requireRole("PARTICIPANT")`, `requireRole("ADMIN")`.
+- **Rate limiting**: Login 5/15min, register 3/hr, refresh 30/15min.
+- **Password hashing**: bcrypt with 12 salt rounds.
 
 ## Audit & HIPAA Compliance
 
@@ -303,11 +309,87 @@ Never use `z.any()` for structured data. Use `z.union([SchemaA, SchemaB, z.null(
 - Error handling: Catch at the route handler level. Services throw typed errors, route handlers convert to HTTP responses.
 - No barrel exports deeper than one level — `index.ts` re-exports fine at package root and one folder deep, don't chain them.
 
-## Deployment
+## Deployment & Infrastructure
 
-- **API (Railway)**: Docker multi-stage `Dockerfile.api` (node:20-slim), runs `prisma db push` on startup via `docker-entrypoint.sh`. Configured in `railway.toml` — health check at `/health`, 120s timeout, restart on failure (max 3).
-- **Web (Vercel)**: Next.js deployed via Vercel. Config in `apps/web/vercel.json`. Build runs `turbo run build --filter=@steady/web` which builds shared → db → web in order. Deploys from `dev` branch.
-- **PostgreSQL**: Docker Compose with PostgreSQL 16 for local dev (port 5432, db: `steady_adhd`). Railway PostgreSQL for dev/staging and production.
+### AWS Architecture (Primary)
+
+```
+                    ┌─────────────────────────────────────────────┐
+                    │              Route 53 DNS                    │
+                    │  steadymentalhealth.com → Amplify            │
+                    │  dev-api.steadymentalhealth.com → Dev EC2    │
+                    │  live-kit.steadymentalhealth.com → LK EC2   │
+                    └──────┬──────────────┬──────────────┬────────┘
+                           │              │              │
+              ┌────────────▼──┐  ┌────────▼──────┐  ┌──▼──────────┐
+              │  AWS Amplify   │  │  EC2 (Prod)   │  │  EC2 (LK)   │
+              │  Next.js 15   │  │  API :4000    │  │  LiveKit    │
+              │  SSR + Static │  │  PM2 managed  │  │  :7880/7881 │
+              │  CloudFront   │  │  Node 20      │  │  Caddy SSL  │
+              └───────────────┘  └───────┬───────┘  └─────────────┘
+                                         │
+                                ┌────────▼────────┐
+                                │  RDS PostgreSQL  │
+                                │  steady-db       │
+                                │  us-east-2       │
+                                └─────────────────┘
+```
+
+### Production Environment
+- **Web (Amplify)**: Next.js 15 SSR deployed via AWS Amplify Hosting. `amplify.yml` configures monorepo build. Standalone output with custom `.amplify-hosting` deploy manifest for WEB_COMPUTE. Auto-deploys from `dev` branch.
+- **API (EC2 — `18.190.203.20`)**: Express API on port 4000, managed by PM2. Node 20. Connects to RDS over SSL (`sslmode=no-verify`).
+- **Database (RDS)**: PostgreSQL on `steady-db.cx28s2yuw4sb.us-east-2.rds.amazonaws.com:5432`. Database name: `steady-db`.
+- **LiveKit (EC2 — `3.12.134.63`)**: LiveKit server on port 7880/7881, Caddy for SSL termination at `live-kit.steadymentalhealth.com`. UDP 50000-60000 for WebRTC media.
+
+### Dev Environment
+- **All-in-one EC2 (`3.151.218.205`)**: PostgreSQL + API + LiveKit on a single instance.
+  - PostgreSQL local on port 5432, database: `steady_adhd`, user: `steady`
+  - API on port 4000 via PM2
+  - LiveKit on port 7880 via systemd
+  - Seeded from production RDS data
+
+### Legacy (Migrating Off)
+- **Railway**: Previously hosted API + PostgreSQL. Database URLs in `.env` as `DATABASE_URL_DEV` and `DATABASE_URL_PROD` — being replaced by AWS.
+- **Vercel**: Previously hosted web frontend — replaced by AWS Amplify.
+
+### EC2 Deployment Process
+To deploy API changes to an EC2 instance:
+```bash
+ssh -i ~/.ssh/steady-key.pem ubuntu@<EC2_IP>
+cd ~/steady
+git pull origin dev
+npx prisma generate --schema=packages/db/prisma/schema.prisma
+npx turbo run build --filter=@steady/api
+pm2 restart steady-api
+```
+
+### Amplify Build Process
+Amplify auto-deploys on push to `dev`. The build:
+1. `npm ci` from monorepo root
+2. `prisma generate` for Prisma client
+3. Build `@steady/shared` → `@steady/db` → `next build`
+4. Post-build generates `.amplify-hosting/` with `deploy-manifest.json` for SSR compute
+5. Deploys to CloudFront + Lambda@Edge
+
+### Environment Variables (Production EC2)
+```
+NODE_ENV=production
+DATABASE_URL=postgresql://postgres:<pass>@steady-db.<id>.us-east-2.rds.amazonaws.com:5432/steady-db?sslmode=no-verify
+JWT_SECRET=<secret>
+REFRESH_SECRET=<secret>
+FIELD_ENCRYPTION_KEY=<32-byte-base64>
+ANTHROPIC_API_KEY=<key>
+CORS_ORIGINS=https://steadymentalhealth.com,https://www.steadymentalhealth.com,https://dily9t72o38yr.amplifyapp.com,https://dev.steadymentalhealth.com
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=devsecret
+LIVEKIT_URL=wss://live-kit.steadymentalhealth.com
+ADMIN_SYNC_SOURCE_EMAIL=kevin.barr@steady.com
+```
+
+### Environment Variables (Amplify)
+```
+NEXT_PUBLIC_API_URL=https://api.steadymentalhealth.com  # or EC2 IP:4000
+```
 
 ## Common Commands
 
@@ -320,5 +402,5 @@ npm run test             # Run tests in all packages
 npm run format           # Format with Prettier
 npm run db:generate      # Regenerate Prisma client after schema changes
 npm run db:push          # Push schema changes to dev database
-docker compose up -d     # Start PostgreSQL
+docker compose up -d     # Start local PostgreSQL + LiveKit (dev only)
 ```
