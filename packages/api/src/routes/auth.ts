@@ -273,6 +273,7 @@ router.post("/register", registerLimiter as any, validate(RegisterSchema), async
           firstName,
           lastName,
           role,
+          passwordHash,
           ...(role === "CLINICIAN"
             ? { clinicianProfile: { create: {} } }
             : { participantProfile: { create: {} } }),
