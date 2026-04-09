@@ -4,17 +4,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
-import { assertNoPhi, PhiDetectedError } from "../lib/phi-detector";
-
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN"));
 
 function handleAiError(err: unknown, res: Response, context: string): void {
-  if (err instanceof PhiDetectedError) {
-    res.status(422).json({ success: false, error: err.message });
-    return;
-  }
   logger.error(`AI ${context} error`, err);
   res.status(500).json({ success: false, error: `Failed to ${context}. Please try again.` });
 }
@@ -102,7 +96,6 @@ router.post("/style-content", async (req: Request, res: Response) => {
       return;
     }
 
-    await assertNoPhi(rawContent, "style-content");
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -143,7 +136,6 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
       return;
     }
 
-    await assertNoPhi(description, "generate-tracker");
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -229,7 +221,6 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
-    await assertNoPhi(rawInput, "generate-part");
 
     const schema = PART_SCHEMAS[partType];
     if (!schema) {
