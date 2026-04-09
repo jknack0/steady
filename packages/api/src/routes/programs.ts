@@ -4,8 +4,8 @@ import { prisma } from "@steady/db";
 import { CreateProgramSchema, UpdateProgramSchema, AssignProgramSchema, AppendModulesSchema, CreateProgramForClientSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
-import crypto from "crypto";
 import { assignProgram, appendModules, AssignmentError } from "../services/assignment";
+import { formatName } from "../lib/format";
 import { deepCopyModules, deepCopyTrackers } from "../lib/deep-copy";
 
 const router = Router();
@@ -159,7 +159,7 @@ router.get("/client-programs", async (req: Request, res: Response) => {
         description: p.description,
         status: p.status,
         moduleCount: p._count.modules,
-        clientName: client ? `${client.firstName} ${client.lastName}` : null,
+        clientName: client ? formatName(client.firstName, client.lastName) : null,
         enrollmentStatus: enrollment?.status ?? null,
       };
     });

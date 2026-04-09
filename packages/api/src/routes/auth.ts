@@ -7,6 +7,7 @@ import { RegisterSchema, LoginSchema, RegisterWithInviteSchema, ForgotPasswordSc
 import { validate } from "../middleware/validate";
 import { authenticate, isCognitoEnabled, type AuthUser } from "../middleware/auth";
 import { JWT_SECRET } from "../lib/env";
+import { ADMIN_EMAIL } from "../lib/constants";
 import {
   cognitoClient,
   userPoolId,
@@ -383,7 +384,7 @@ router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Re
       const hasCompletedSetup = await getSetupStatus(user);
 
       // Dev-only: sync kevin -> admin on admin login (fire-and-forget)
-      if (email === "admin@admin.com" && process.env.NODE_ENV !== "production") {
+      if (email === ADMIN_EMAIL && process.env.NODE_ENV !== "production") {
         import("../services/sync-admin").then(({ syncKevinToAdmin }) => {
           syncKevinToAdmin().catch((e) => logger.warn("Admin sync failed", e));
         }).catch(() => {});
@@ -439,7 +440,7 @@ router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Re
       const hasCompletedSetup = await getSetupStatus(user);
 
       // Dev-only: sync kevin -> admin on admin login (fire-and-forget)
-      if (email === "admin@admin.com" && process.env.NODE_ENV !== "production") {
+      if (email === ADMIN_EMAIL && process.env.NODE_ENV !== "production") {
         import("../services/sync-admin").then(({ syncKevinToAdmin }) => {
           syncKevinToAdmin().catch((e) => logger.warn("Admin sync failed", e));
         }).catch(() => {});

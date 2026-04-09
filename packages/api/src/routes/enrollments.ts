@@ -6,6 +6,7 @@ import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { getStreakData, cancelFutureInstances } from "../services/homework-instances";
 import { verifyProgramOwnership } from "../lib/ownership";
+import { toDateKey } from "../lib/date-utils";
 
 const router = Router({ mergeParams: true });
 
@@ -251,7 +252,7 @@ router.post("/:enrollmentId/parts/:partId/stop-recurrence", async (req: Request,
 
     // Update content and cancel instances atomically
     const content = part.content as Record<string, unknown>;
-    const today = new Date().toISOString().split("T")[0];
+    const today = toDateKey(new Date());
     content.recurrenceEndDate = today;
 
     await prisma.$transaction(async (tx) => {

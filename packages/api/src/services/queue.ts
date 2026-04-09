@@ -1,6 +1,7 @@
 import PgBoss from "pg-boss";
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { toDateKey } from "../lib/date-utils";
 import { markOverdueInvoices } from "./billing";
 import { generateAllSeriesAppointments } from "./recurring-series";
 import { processReminders } from "./appointment-reminders";
@@ -103,7 +104,7 @@ export async function getQueue(): Promise<PgBoss> {
             procedureCode: claim.serviceCode,
             modifiers: claim.modifiers.length > 0 ? claim.modifiers : undefined,
             chargeAmountCents: claim.servicePriceCents,
-            serviceDate: claim.dateOfService.toISOString().split("T")[0],
+            serviceDate: toDateKey(claim.dateOfService),
           }],
         },
       };

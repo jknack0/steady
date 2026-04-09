@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { formatName } from "../lib/format";
 
 interface PdfLineItem {
   description: string;
@@ -67,7 +68,7 @@ export function generateInvoicePdf(invoice: PdfInvoice): Buffer {
   doc.on("data", (chunk: Buffer) => chunks.push(chunk));
 
   const clientName =
-    `${invoice.participant.user.firstName} ${invoice.participant.user.lastName}`.trim();
+    formatName(invoice.participant.user.firstName, invoice.participant.user.lastName);
   const clientEmail = invoice.participant.user.email;
   const bp = invoice.clinician.billingProfile;
   const practiceName =
@@ -77,7 +78,7 @@ export function generateInvoicePdf(invoice: PdfInvoice): Buffer {
     : "";
   const practicePhone = bp?.practicePhone || "";
   const clinicianName =
-    `${invoice.clinician.user.firstName} ${invoice.clinician.user.lastName}`.trim();
+    formatName(invoice.clinician.user.firstName, invoice.clinician.user.lastName);
 
   // Header
   doc.fontSize(18).font("Helvetica-Bold").text(practiceName, 50, 50);

@@ -5,6 +5,10 @@ import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
 import { verifyFileOwnership } from "../lib/s3-ownership";
+
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+const anthropic = anthropicApiKey ? new Anthropic({ apiKey: anthropicApiKey }) : null;
+
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN"));
@@ -98,15 +102,12 @@ router.post("/style-content", async (req: Request, res: Response) => {
     }
 
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
       system: buildSystemPrompt(styleContext),
@@ -138,15 +139,12 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
     }
 
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
       system: `You are a clinical tracker designer for Steady, a healthcare app for ADHD treatment. Generate daily tracker configurations from clinician descriptions.
@@ -229,15 +227,12 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
       system: GENERATE_PART_SYSTEM_PROMPT,
@@ -344,8 +339,7 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
@@ -354,9 +348,7 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
     const pdfBuffer = await getFileBuffer(fileKey);
     const pdfBase64 = pdfBuffer.toString("base64");
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
       system: `You are a clinical content parser for a healthcare app called Steady. Your job is to analyze PDF worksheets and homework assignments used by clinicians (typically CBT, DBT, or other therapeutic exercises) and convert them into structured homework items.

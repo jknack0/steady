@@ -2,6 +2,8 @@ import { logger } from "../lib/logger";
 import { Expo, ExpoPushMessage } from "expo-server-sdk";
 import { prisma } from "@steady/db";
 import { getQueue } from "./queue";
+import { MS_PER_DAY } from "../lib/constants";
+import { startOfDayUTC, toDateKey } from "../lib/date-utils";
 import {
   getMorningCheckinCopy,
   getHomeworkCopy,
@@ -373,7 +375,7 @@ async function scheduleHomeworkRemindersForAll(): Promise<void> {
 
         // Check cadence: skip if not time to send
         if (cadence === "EVERY_OTHER_DAY") {
-          const dayOfYear = Math.floor(Date.now() / 86400000);
+          const dayOfYear = Math.floor(Date.now() / MS_PER_DAY);
           if (dayOfYear % 2 !== 0) continue;
         } else if (cadence === "MID_WEEK") {
           const day = new Date().getDay();
@@ -499,9 +501,8 @@ async function scheduleWeeklyReviews(): Promise<void> {
 // ── Daily Tracker Reminders ──────────────────────────
 
 async function scheduleTrackerRemindersForAll(): Promise<void> {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const dateKey = today.toISOString().split("T")[0];
+  const today = startOfDayUTC();
+  const dateKey = toDateKey(today);
 
   // Find all active trackers with their program enrollments
   const trackers = await prisma.dailyTracker.findMany({
@@ -598,14 +599,14 @@ async function scheduleTrackerRemindersForAll(): Promise<void> {
 // ── Helpers ──────────────────────────────────────────
 
 function todayKey(): string {
-  return new Date().toISOString().split("T")[0];
+  return toDateKey(new Date());
 }
 
 function weekKey(): string {
   const d = new Date();
   const yearStart = new Date(d.getFullYear(), 0, 1);
   const weekNum = Math.ceil(
-    ((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7
+    ((d.getTime() - yearStart.getTime()) / MS_PER_DAY + yearStart.getDay() + 1) / 7
   );
   return `${d.getFullYear()}-W${weekNum}`;
 }

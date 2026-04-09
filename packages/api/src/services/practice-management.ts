@@ -1,5 +1,6 @@
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { formatName } from "../lib/format";
 
 interface PracticeStatsResult {
   totals: {
@@ -113,7 +114,7 @@ export async function getPracticeStats(
     return {
       clinicianId: m.clinicianId,
       name:
-        `${m.clinician.user.firstName} ${m.clinician.user.lastName}`.trim(),
+        formatName(m.clinician.user.firstName, m.clinician.user.lastName),
       role: m.role,
       totalPrograms: clinPrograms.length,
       publishedPrograms: clinPrograms.filter((p) => p.status === "PUBLISHED")
@@ -239,10 +240,10 @@ export async function getPracticeParticipants(
   const data: PracticeParticipantRow[] = items.map((e) => ({
     participantId: e.participantId,
     name:
-      `${e.participant.user.firstName} ${e.participant.user.lastName}`.trim(),
+      formatName(e.participant.user.firstName, e.participant.user.lastName),
     email: e.participant.user.email,
     clinicianName:
-      `${e.program.clinician.user.firstName} ${e.program.clinician.user.lastName}`.trim(),
+      formatName(e.program.clinician.user.firstName, e.program.clinician.user.lastName),
     clinicianId: e.program.clinicianId,
     programTitle: e.program.title,
     enrollmentStatus: e.status,

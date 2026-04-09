@@ -8,6 +8,9 @@ import type {
   RtmClinicianTimeLog,
 } from "@prisma/client";
 import { NotFoundError, ConflictError } from "../lib/errors";
+import { formatName } from "../lib/format";
+import { MS_PER_DAY } from "../lib/constants";
+import { toDateKey } from "../lib/date-utils";
 
 export { NotFoundError, ConflictError };
 
@@ -180,7 +183,7 @@ export async function recalculateBillingPeriod(
   });
 
   const uniqueDates = new Set(
-    engagementEvents.map((e) => e.eventDate.toISOString().split("T")[0])
+    engagementEvents.map((e) => toDateKey(e.eventDate))
   );
   const engagementDays = uniqueDates.size;
 
@@ -435,7 +438,7 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       })
     : [];
   const lastEngagementMap = new Map(
-    lastEngagementEvents.map((e) => [e.userId, e.eventDate.toISOString().split("T")[0]])
+    lastEngagementEvents.map((e) => [e.userId, toDateKey(e.eventDate)])
   );
 
   let clientsBillable = 0;
@@ -461,9 +464,9 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       const now = new Date();
       const start = new Date(currentPeriod.periodStart);
       const end = new Date(currentPeriod.periodEnd);
-      const daysElapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 86400000));
-      const daysRemaining = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 86400000));
-      const totalDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86400000));
+      const daysElapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / MS_PER_DAY));
+      const daysRemaining = Math.max(0, Math.floor((end.getTime() - now.getTime()) / MS_PER_DAY));
+      const totalDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY));
       const periodHalfElapsed = daysElapsed > totalDays * 0.5;
 
       if (
@@ -489,14 +492,14 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       const now = new Date();
       const start = new Date(currentPeriod.periodStart);
       const end = new Date(currentPeriod.periodEnd);
-      const daysElapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 86400000));
-      const daysRemaining = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 86400000));
+      const daysElapsed = Math.max(0, Math.floor((now.getTime() - start.getTime()) / MS_PER_DAY));
+      const daysRemaining = Math.max(0, Math.floor((end.getTime() - now.getTime()) / MS_PER_DAY));
 
       return {
         rtmEnrollmentId: enrollment.id,
         clientId: enrollment.clientId,
         clientName:
-          `${enrollment.client.firstName} ${enrollment.client.lastName}`.trim(),
+          formatName(enrollment.client.firstName, enrollment.client.lastName),
         currentPeriod: {
           id: currentPeriod.id,
           periodStart: currentPeriod.periodStart,
@@ -519,7 +522,7 @@ export async function getRtmDashboard(clinicianId: string): Promise<{
       rtmEnrollmentId: enrollment.id,
       clientId: enrollment.clientId,
       clientName:
-        `${enrollment.client.firstName} ${enrollment.client.lastName}`.trim(),
+        formatName(enrollment.client.firstName, enrollment.client.lastName),
       currentPeriod: null,
       lastEngagementDate,
     };
@@ -608,7 +611,7 @@ export async function getRtmClientDetail(
       Array<{ type: string; timestamp: string }>
     >();
     for (const event of events) {
-      const dateKey = event.eventDate.toISOString().split("T")[0];
+      const dateKey = toDateKey(event.eventDate);
       if (!dateMap.has(dateKey)) {
         dateMap.set(dateKey, []);
       }

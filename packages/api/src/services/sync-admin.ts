@@ -1,5 +1,6 @@
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { ADMIN_EMAIL } from "../lib/constants";
 
 /**
  * Dev-only: Wipe admin@admin.com's data and replace with a fresh copy of kevin.barr@steady.com's.
@@ -11,7 +12,7 @@ export async function syncKevinToAdmin() {
   if (!sourceEmail) return;
   const kevinUser = await prisma.user.findFirst({ where: { email: sourceEmail } });
   const kevinProfile = await prisma.clinicianProfile.findFirst({ where: { userId: kevinUser?.id } });
-  const adminUser = await prisma.user.findFirst({ where: { email: "admin@admin.com" } });
+  const adminUser = await prisma.user.findFirst({ where: { email: ADMIN_EMAIL } });
   const adminProfile = await prisma.clinicianProfile.findFirst({ where: { userId: adminUser?.id } });
 
   if (!kevinProfile || !adminProfile) return;

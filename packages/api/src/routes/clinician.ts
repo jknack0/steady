@@ -1,8 +1,15 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
-import { z } from "zod";
-import { AssignHomeworkSchema, UpdateParticipantDemographicsSchema } from "@steady/shared";
+import {
+  AssignHomeworkSchema,
+  UpdateParticipantDemographicsSchema,
+  AddClientSchema,
+  PushTaskSchema,
+  UnlockModuleSchema,
+  ManageEnrollmentSchema,
+  BulkActionSchema,
+} from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
@@ -18,33 +25,7 @@ import {
   ConflictError,
 } from "../services/clinician";
 import { verifyEnrollmentOwnership } from "../lib/ownership";
-
-const AddClientSchema = z.object({
-  email: z.string().email().max(200),
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-});
-
-const PushTaskSchema = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().max(2000).optional().nullable(),
-  dueDate: z.string().max(100).optional().nullable(),
-});
-
-const UnlockModuleSchema = z.object({
-  moduleId: z.string().min(1).max(200),
-  enrollmentId: z.string().min(1).max(200),
-});
-
-const ManageEnrollmentSchema = z.object({
-  action: z.enum(["pause", "resume", "drop", "reset-progress"]),
-});
-
-const BulkActionSchema = z.object({
-  action: z.string().min(1).max(100),
-  participantIds: z.array(z.string().max(200)).min(1).max(50),
-  data: z.record(z.unknown()).optional(),
-});
+import { startOfDayUTC } from "../lib/date-utils";
 
 const router = Router();
 
@@ -209,8 +190,7 @@ router.post("/participants/:id/homework", validate(AssignHomeworkSchema), async 
       return;
     }
 
-    const due = dueDate ? new Date(dueDate) : new Date();
-    due.setUTCHours(0, 0, 0, 0);
+    const due = startOfDayUTC(dueDate ? new Date(dueDate) : new Date());
 
     const instance = await prisma.homeworkInstance.create({
       data: {

@@ -1,25 +1,14 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
-import { z } from "zod";
 import { prisma } from "@steady/db";
+import { CreatePracticeSchema, UpdatePracticeSchema, InviteToPracticeSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
   getPracticeStats,
   getPracticeParticipants,
 } from "../services/practice-management";
-
-const CreatePracticeSchema = z.object({
-  name: z.string().min(1).max(200),
-});
-
-const UpdatePracticeSchema = z.object({
-  name: z.string().min(1).max(200),
-});
-
-const InviteToPracticeSchema = z.object({
-  email: z.string().email().max(200),
-});
+import { formatName } from "../lib/format";
 
 const router = Router();
 
@@ -101,7 +90,7 @@ router.get("/", async (req: Request, res: Response) => {
         id: mem.id,
         clinicianId: mem.clinicianId,
         role: mem.role,
-        name: `${mem.clinician.user.firstName} ${mem.clinician.user.lastName}`.trim(),
+        name: formatName(mem.clinician.user.firstName, mem.clinician.user.lastName),
         email: mem.clinician.user.email,
         joinedAt: mem.joinedAt,
       })),
@@ -264,7 +253,7 @@ router.get("/:id/templates", async (req: Request, res: Response) => {
         description: t.description,
         cadence: t.cadence,
         moduleCount: t._count.modules,
-        createdBy: `${t.clinician.user.firstName} ${t.clinician.user.lastName}`.trim(),
+        createdBy: formatName(t.clinician.user.firstName, t.clinician.user.lastName),
         updatedAt: t.updatedAt,
       })),
     });
@@ -354,7 +343,7 @@ router.get("/:id/dashboard", async (req: Request, res: Response) => {
 
       return {
         clinicianId: m.clinicianId,
-        name: `${m.clinician.user.firstName} ${m.clinician.user.lastName}`.trim(),
+        name: formatName(m.clinician.user.firstName, m.clinician.user.lastName),
         role: m.role,
         totalPrograms,
         publishedPrograms,

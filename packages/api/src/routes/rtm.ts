@@ -1,6 +1,8 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
+import { formatName } from "../lib/format";
+import { toDateKey } from "../lib/date-utils";
 import {
   CreateRtmEnrollmentSchema,
   LogRtmTimeSchema,
@@ -18,9 +20,8 @@ import {
   getRtmDashboard,
   getRtmClientDetail,
   recalculateBillingPeriod,
-  NotFoundError,
-  ConflictError,
 } from "../services/rtm";
+import { handleServiceError } from "../lib/errors";
 import { generateSuperbillData } from "../services/superbill";
 
 const router = Router();
@@ -42,14 +43,7 @@ router.post(
       });
       res.status(201).json({ success: true, data: enrollment });
     } catch (err) {
-      if (err instanceof ConflictError) {
-        res.status(409).json({ success: false, error: err.message });
-        return;
-      }
-      logger.error("Create RTM enrollment error", err);
-      res
-        .status(500)
-        .json({ success: false, error: "Failed to create RTM enrollment" });
+      handleServiceError(res, err, "create RTM enrollment");
     }
   }
 );
@@ -112,18 +106,7 @@ router.post("/enrollments/:id/end", async (req: Request, res: Response) => {
     await endRtmEnrollment(req.params.id);
     res.json({ success: true });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).json({ success: false, error: err.message });
-      return;
-    }
-    if (err instanceof ConflictError) {
-      res.status(409).json({ success: false, error: err.message });
-      return;
-    }
-    logger.error("End RTM enrollment error", err);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to end RTM enrollment" });
+    handleServiceError(res, err, "end RTM enrollment");
   }
 });
 
@@ -160,7 +143,7 @@ router.get("/enrollments/:id/detail", async (req: Request, res: Response) => {
       data: {
         rtmEnrollmentId: detail.enrollment.id,
         clientId: detail.enrollment.clientId,
-        clientName: client ? `${client.firstName} ${client.lastName}`.trim() : "Unknown",
+        clientName: client ? formatName(client.firstName, client.lastName) : "Unknown",
         monitoringType: detail.enrollment.monitoringType,
         enrollmentStatus: detail.enrollment.status,
         enrolledAt: detail.enrollment.createdAt,
@@ -171,14 +154,7 @@ router.get("/enrollments/:id/detail", async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).json({ success: false, error: err.message });
-      return;
-    }
-    logger.error("Get RTM client detail error", err);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to get RTM client detail" });
+    handleServiceError(res, err, "get RTM client detail");
   }
 });
 
@@ -217,19 +193,12 @@ router.post(
       await logClinicianTime({
         billingPeriodId,
         clinicianId: req.user!.clinicianProfileId!,
-        activityDate: activityDate || new Date().toISOString().split("T")[0],
+        activityDate: activityDate || toDateKey(new Date()),
         ...rest,
       });
       res.status(201).json({ success: true });
     } catch (err) {
-      if (err instanceof NotFoundError) {
-        res.status(404).json({ success: false, error: err.message });
-        return;
-      }
-      logger.error("Log RTM time error", err);
-      res
-        .status(500)
-        .json({ success: false, error: "Failed to log RTM time" });
+      handleServiceError(res, err, "log RTM time");
     }
   }
 );
@@ -329,14 +298,7 @@ router.post(
       const updated = await recalculateBillingPeriod(req.params.id);
       res.json({ success: true, data: updated });
     } catch (err) {
-      if (err instanceof NotFoundError) {
-        res.status(404).json({ success: false, error: err.message });
-        return;
-      }
-      logger.error("Recalculate billing period error", err);
-      res
-        .status(500)
-        .json({ success: false, error: "Failed to recalculate billing period" });
+      handleServiceError(res, err, "recalculate billing period");
     }
   }
 );
@@ -350,14 +312,7 @@ router.get("/periods/:id/superbill", async (req: Request, res: Response) => {
     );
     res.json({ success: true, data });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).json({ success: false, error: err.message });
-      return;
-    }
-    logger.error("Generate superbill error", err);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to generate superbill" });
+    handleServiceError(res, err, "generate superbill");
   }
 });
 

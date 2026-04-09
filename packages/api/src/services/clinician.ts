@@ -1,6 +1,9 @@
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
 import { NotFoundError, ConflictError } from "../lib/errors";
+import { formatName } from "../lib/format";
+import { MS_PER_DAY } from "../lib/constants";
+import { startOfDayUTC, toDateKey } from "../lib/date-utils";
 
 export { NotFoundError, ConflictError };
 
@@ -68,8 +71,7 @@ interface DashboardContext {
 export async function getDashboardData(ctx: DashboardContext) {
   const { clinicianProfileId } = ctx;
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  const today = startOfDayUTC();
   const tomorrow = new Date(today);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const sevenDaysAgo = new Date(today);
@@ -245,14 +247,14 @@ export async function getDashboardData(ctx: DashboardContext) {
         if (val <= threshold) {
           const participant = entry.tracker.participant;
           const clientName = participant
-            ? `${participant.user.firstName} ${participant.user.lastName}`.trim()
+            ? formatName(participant.user.firstName, participant.user.lastName)
             : "Unknown";
           alerts.push({
             clientName,
             field: field.label,
             value: val,
             max,
-            date: entry.date.toISOString().split("T")[0],
+            date: toDateKey(entry.date),
           });
         }
       }
@@ -275,7 +277,7 @@ export async function getDashboardData(ctx: DashboardContext) {
       id: s.id,
       scheduledAt: s.scheduledAt,
       status: s.status,
-      clientName: `${s.enrollment.participant.user.firstName} ${s.enrollment.participant.user.lastName}`.trim(),
+      clientName: formatName(s.enrollment.participant.user.firstName, s.enrollment.participant.user.lastName),
       programTitle: s.enrollment.program.title,
       videoCallUrl: s.videoCallUrl,
     })),
@@ -284,7 +286,7 @@ export async function getDashboardData(ctx: DashboardContext) {
       return {
         id: h.id,
         title: h.title || h.part?.title || "Homework",
-        clientName: participant ? `${participant.user.firstName} ${participant.user.lastName}`.trim() : "Unknown",
+        clientName: participant ? formatName(participant.user.firstName, participant.user.lastName) : "Unknown",
         completedAt: h.completedAt,
         hasResponses: h.response != null && Object.keys(h.response as any).length > 0,
       };
@@ -294,7 +296,7 @@ export async function getDashboardData(ctx: DashboardContext) {
       return {
         id: h.id,
         title: h.title || h.part?.title || "Homework",
-        clientName: participant ? `${participant.user.firstName} ${participant.user.lastName}`.trim() : "Unknown",
+        clientName: participant ? formatName(participant.user.firstName, participant.user.lastName) : "Unknown",
         dueDate: h.dueDate,
       };
     }),
@@ -394,7 +396,7 @@ export async function getClinicianParticipants(
   // Build participant rows
   const participants: ParticipantRow[] = enrollmentPage.map((enrollment) => {
     const user = enrollment.participant.user;
-    const name = `${user.firstName} ${user.lastName}`.trim();
+    const name = formatName(user.firstName, user.lastName);
 
     // Current module
     const currentModuleProgress = enrollment.moduleProgress
@@ -457,7 +459,7 @@ export async function getClinicianParticipants(
     // Status indicator
     const now = new Date();
     const daysSinceActive = lastActive
-      ? (now.getTime() - lastActive.getTime()) / 86400000
+      ? (now.getTime() - lastActive.getTime()) / MS_PER_DAY
       : Infinity;
 
     let statusIndicator: "green" | "amber" | "red";
@@ -547,7 +549,7 @@ export async function getClinicianParticipants(
   });
 
   for (const cc of clinicianClients) {
-    const name = `${cc.client.firstName} ${cc.client.lastName}`.trim();
+    const name = formatName(cc.client.firstName, cc.client.lastName);
     participants.push({
       participantId: cc.client.id,
       participantProfileId: cc.client.participantProfile?.id || "",
@@ -1371,7 +1373,7 @@ export async function getClinicianClients(
 
   // Build client rows
   return clinicianClients.map((cc) => {
-    const name = `${cc.client.firstName} ${cc.client.lastName}`.trim();
+    const name = formatName(cc.client.firstName, cc.client.lastName);
     const participantProfileId = cc.client.participantProfile?.id;
     const hasEnrollment = participantProfileId ? enrolledProfileIds.has(participantProfileId) : false;
 

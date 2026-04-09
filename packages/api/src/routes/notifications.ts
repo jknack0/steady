@@ -1,24 +1,10 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
-import { z } from "zod";
 import { prisma } from "@steady/db";
+import { PushTokenSchema, UpdateNotificationPreferencesSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { recordDismissal, resetDismissals } from "../services/notifications";
-
-const PushTokenSchema = z.object({
-  pushToken: z.string().min(1).max(500),
-});
-
-const UpdateNotificationPreferencesSchema = z.object({
-  preferences: z.array(
-    z.object({
-      category: z.string().max(50),
-      enabled: z.boolean(),
-      preferredTime: z.string().max(20).optional().nullable(),
-    })
-  ).max(20),
-});
 
 const router = Router();
 

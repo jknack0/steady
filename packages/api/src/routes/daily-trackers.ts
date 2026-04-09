@@ -16,6 +16,8 @@ import {
   createTrackerFromTemplate,
 } from "../services/tracker-templates";
 import { verifyProgramOwnership } from "../lib/ownership";
+import { MS_PER_DAY } from "../lib/constants";
+import { startOfDayUTC, toDateKey } from "../lib/date-utils";
 
 const router = Router();
 
@@ -434,7 +436,7 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
     const end = endDate ? new Date(endDate as string) : new Date();
     const start = startDate
       ? new Date(startDate as string)
-      : new Date(end.getTime() - 30 * 86400000);
+      : new Date(end.getTime() - 30 * MS_PER_DAY);
 
     const [tracker, entries] = await Promise.all([
       prisma.dailyTracker.findUnique({
@@ -472,7 +474,7 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
         const value = responses[field.id];
         if (typeof value === "number") {
           fieldTrends[field.id].push({
-            date: entry.date.toISOString().split("T")[0],
+            date: toDateKey(entry.date),
             value,
           });
         }
@@ -502,7 +504,7 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
         const responses = entry.responses as Record<string, unknown>;
         const value = responses[field.id];
         if (Array.isArray(value)) {
-          const dateStr = entry.date.toISOString().split("T")[0];
+          const dateStr = toDateKey(entry.date);
           timeline.push({ date: dateStr, emotions: value as string[] });
 
           for (const emotionId of value as string[]) {
@@ -536,21 +538,20 @@ router.get("/:id/trends", async (req: Request, res: Response) => {
     }
 
     // Completion rate
-    const totalDays = Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1;
+    const totalDays = Math.ceil((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
     const completedDays = entries.length;
 
     // Current streak
     let streak = 0;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const today = startOfDayUTC();
     const sortedDates = entries
-      .map((e) => e.date.toISOString().split("T")[0])
+      .map((e) => toDateKey(e.date))
       .reverse();
 
     for (let i = 0; i < sortedDates.length; i++) {
       const expected = new Date(today);
       expected.setUTCDate(expected.getUTCDate() - i);
-      const expectedStr = expected.toISOString().split("T")[0];
+      const expectedStr = toDateKey(expected);
       if (sortedDates[i] === expectedStr) {
         streak++;
       } else {
