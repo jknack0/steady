@@ -63,15 +63,21 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     verifier
       .verify(token)
       .then(async (payload) => {
-        // Look up user by email (Cognito username is email)
-        const email = (payload.username || payload["email"] || "") as string;
-        if (!email) {
+        // Cognito access token has `sub` (UUID) as identity, not email
+        const cognitoSub = (payload.sub || payload.username || "") as string;
+        if (!cognitoSub) {
           res.status(401).json({ success: false, error: "Invalid token: missing user identity" });
           return;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: email.toLowerCase() },
+        // Look up user by cognitoId first, fall back to email
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { cognitoId: cognitoSub },
+              { email: cognitoSub.toLowerCase() },
+            ],
+          },
           include: {
             clinicianProfile: true,
             participantProfile: true,

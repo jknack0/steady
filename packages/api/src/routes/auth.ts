@@ -345,6 +345,22 @@ router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Re
         return;
       }
 
+      // Update cognitoId if not set (links Cognito sub to DB user)
+      if (!user.cognitoId && authResult.AccessToken) {
+        try {
+          const parts = authResult.AccessToken.split(".");
+          const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString());
+          if (payload.sub) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { cognitoId: payload.sub },
+            });
+          }
+        } catch {
+          // Non-critical — will retry on next login
+        }
+      }
+
       // Check setup status for clinicians
       let hasCompletedSetup = false;
       if (user.role === "CLINICIAN" && user.clinicianProfile?.id) {
