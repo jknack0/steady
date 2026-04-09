@@ -6,8 +6,14 @@ import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
 import { verifyFileOwnership } from "../lib/s3-ownership";
 
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const anthropic = anthropicApiKey ? new Anthropic({ apiKey: anthropicApiKey }) : null;
+let _anthropic: Anthropic | null = null;
+function getAnthropic(): Anthropic | null {
+  if (!_anthropic) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (apiKey) _anthropic = new Anthropic({ apiKey });
+  }
+  return _anthropic;
+}
 
 const router = Router();
 
@@ -102,6 +108,7 @@ router.post("/style-content", async (req: Request, res: Response) => {
     }
 
 
+    const anthropic = getAnthropic();
     if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
@@ -139,6 +146,7 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
     }
 
 
+    const anthropic = getAnthropic();
     if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
@@ -227,6 +235,7 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
+    const anthropic = getAnthropic();
     if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
@@ -339,6 +348,7 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
       return;
     }
 
+    const anthropic = getAnthropic();
     if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
