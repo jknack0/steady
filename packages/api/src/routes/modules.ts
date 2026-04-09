@@ -4,18 +4,12 @@ import { prisma } from "@steady/db";
 import { CreateModuleSchema, UpdateModuleSchema, ReorderModulesSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
+import { verifyProgramOwnership } from "../lib/ownership";
 
 const router = Router({ mergeParams: true });
 
 // All module routes require clinician role
 router.use(authenticate, requireRole("CLINICIAN"));
-
-// Helper: verify clinician owns the parent program
-async function verifyProgramOwnership(programId: string, clinicianProfileId: string) {
-  return prisma.program.findFirst({
-    where: { id: programId, clinicianId: clinicianProfileId },
-  });
-}
 
 // POST /api/programs/:programId/modules — Create a module
 router.post("/", validate(CreateModuleSchema), async (req: Request, res: Response) => {

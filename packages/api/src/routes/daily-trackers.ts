@@ -15,6 +15,7 @@ import {
   getTrackerTemplates,
   createTrackerFromTemplate,
 } from "../services/tracker-templates";
+import { verifyProgramOwnership } from "../lib/ownership";
 
 const router = Router();
 
@@ -32,13 +33,6 @@ async function verifyTrackerOwnership(trackerId: string, clinicianProfileId: str
 }
 
 router.use(authenticate, requireRole("CLINICIAN"));
-
-// Helper: verify clinician owns the program
-async function verifyProgramOwnership(programId: string, clinicianProfileId: string) {
-  return prisma.program.findFirst({
-    where: { id: programId, clinicianId: clinicianProfileId },
-  });
-}
 
 // GET /api/daily-trackers/templates — List preset templates
 router.get("/templates", (_req: Request, res: Response) => {

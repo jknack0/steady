@@ -14,7 +14,7 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, raw = false): Promise<T> {
   const doFetch = () =>
     fetch(`${API_BASE}${path}`, {
       ...options,
@@ -41,47 +41,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(json.error || `Request failed: ${res.status}`);
   }
 
-  return json.data;
-}
-
-/**
- * Like `request`, but returns the full JSON envelope instead of just `.data`.
- * Useful for paginated endpoints that return `{ success, data, cursor }`.
- */
-async function requestRaw<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const doFetch = () =>
-    fetch(`${API_BASE}${path}`, {
-      ...options,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
-
-  let res = await doFetch();
-
-  // If 401, try refreshing the token once
-  if (res.status === 401) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) {
-      res = await doFetch();
-    }
-  }
-
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json.error || `Request failed: ${res.status}`);
-  }
-
-  return json;
+  return raw ? json : json.data;
 }
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
   /** Returns full JSON envelope (e.g. { success, data, cursor }) for paginated endpoints. */
-  getRaw: <T>(path: string) => requestRaw<T>(path),
+  getRaw: <T>(path: string) => request<T>(path, undefined, true),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) =>

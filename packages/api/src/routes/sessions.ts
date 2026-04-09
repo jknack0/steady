@@ -13,6 +13,7 @@ import {
   completeSession,
   getSessionPrepData,
 } from "../services/sessions";
+import { verifyEnrollmentOwnership } from "../lib/ownership";
 
 const router = Router();
 
@@ -24,16 +25,6 @@ async function verifySessionOwnership(sessionId: string, clinicianProfileId: str
     where: {
       id: sessionId,
       enrollment: { program: { clinicianId: clinicianProfileId } },
-    },
-  });
-}
-
-// Verify an enrollment belongs to the clinician's programs
-async function verifyEnrollmentOwnership(enrollmentId: string, clinicianProfileId: string) {
-  return prisma.enrollment.findFirst({
-    where: {
-      id: enrollmentId,
-      program: { clinicianId: clinicianProfileId },
     },
   });
 }

@@ -7,22 +7,9 @@ import type {
   RtmBillingPeriod,
   RtmClinicianTimeLog,
 } from "@prisma/client";
+import { NotFoundError, ConflictError } from "../lib/errors";
 
-// ── Error Classes ─────────────────────────────────────
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
-
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
-}
+export { NotFoundError, ConflictError };
 
 // ── 1. Engagement Event Logging (fire-and-forget) ─────
 

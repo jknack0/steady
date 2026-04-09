@@ -2,15 +2,9 @@ import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
 import { PROVIDER_PRESETS } from "@steady/shared";
 import type { ClinicianConfig, ClientConfig } from "@prisma/client";
+import { NotFoundError } from "../lib/errors";
 
-// ── Error Classes ─────────────────────────────────────
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
+export { NotFoundError };
 
 // ── 1. Clinician Config ───────────────────────────────
 

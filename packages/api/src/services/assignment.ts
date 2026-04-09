@@ -1,5 +1,6 @@
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { deepCopyModules, deepCopyTrackers } from "../lib/deep-copy";
 
 interface AssignmentSelections {
   excludedModuleIds: string[];
@@ -107,63 +108,14 @@ export async function assignProgram(
       },
     });
 
-    // Clone modules (excluding excluded, preserving sortOrder — COND-4)
-    for (const mod of template.modules) {
-      if (excludedModules.has(mod.id)) continue;
-
-      const newModule = await tx.module.create({
-        data: {
-          programId: newProgram.id,
-          title: mod.title,
-          subtitle: mod.subtitle,
-          summary: mod.summary,
-          estimatedMinutes: mod.estimatedMinutes,
-          sortOrder: mod.sortOrder,
-          unlockRule: mod.unlockRule,
-          unlockDelayDays: mod.unlockDelayDays,
-        },
-      });
-
-      // Clone parts (excluding excluded — COND-4)
-      const includedParts = mod.parts.filter((p) => !excludedParts.has(p.id));
-      if (includedParts.length > 0) {
-        await tx.part.createMany({
-          data: includedParts.map((p) => ({
-            moduleId: newModule.id,
-            type: p.type,
-            title: p.title,
-            sortOrder: p.sortOrder,
-            isRequired: p.isRequired,
-            content: p.content as any,
-          })),
-        });
-      }
-    }
+    // Clone modules and parts (excluding excluded — COND-4)
+    await deepCopyModules(tx, template.modules, newProgram.id, {
+      excludedModuleIds: excludedModules,
+      excludedPartIds: excludedParts,
+    });
 
     // Clone daily trackers + fields
-    for (const tracker of template.dailyTrackers) {
-      const newTracker = await tx.dailyTracker.create({
-        data: {
-          programId: newProgram.id,
-          createdById: clinicianId,
-          name: tracker.name,
-          description: tracker.description,
-        },
-      });
-
-      if (tracker.fields.length > 0) {
-        await tx.dailyTrackerField.createMany({
-          data: tracker.fields.map((f) => ({
-            trackerId: newTracker.id,
-            label: f.label,
-            fieldType: f.fieldType,
-            sortOrder: f.sortOrder,
-            isRequired: f.isRequired,
-            options: f.options as any,
-          })),
-        });
-      }
-    }
+    await deepCopyTrackers(tx, template.dailyTrackers, newProgram.id, clinicianId);
 
     // Create enrollment
     const enrollment = await tx.enrollment.create({
@@ -247,64 +199,14 @@ export async function appendModules(
   let appendedCount = 0;
 
   await prisma.$transaction(async (tx) => {
-    for (const mod of template.modules) {
-      if (excludedModules.has(mod.id)) continue;
-
-      appendedCount++;
-      const newModule = await tx.module.create({
-        data: {
-          programId: clientProgramId,
-          title: mod.title,
-          subtitle: mod.subtitle,
-          summary: mod.summary,
-          estimatedMinutes: mod.estimatedMinutes,
-          sortOrder: maxSortOrder + appendedCount,
-          unlockRule: mod.unlockRule,
-          unlockDelayDays: mod.unlockDelayDays,
-        },
-      });
-
-      const includedParts = mod.parts.filter((p) => !excludedParts.has(p.id));
-      if (includedParts.length > 0) {
-        await tx.part.createMany({
-          data: includedParts.map((p) => ({
-            moduleId: newModule.id,
-            type: p.type,
-            title: p.title,
-            sortOrder: p.sortOrder,
-            isRequired: p.isRequired,
-            content: p.content as any,
-          })),
-        });
-      }
-    }
+    appendedCount = await deepCopyModules(tx, template.modules, clientProgramId, {
+      excludedModuleIds: excludedModules,
+      excludedPartIds: excludedParts,
+      sortOrderOffset: maxSortOrder,
+    });
 
     // Clone daily trackers — deduplicate by name
-    for (const tracker of template.dailyTrackers) {
-      if (existingTrackerNames.has(tracker.name)) continue;
-
-      const newTracker = await tx.dailyTracker.create({
-        data: {
-          programId: clientProgramId,
-          createdById: clinicianId,
-          name: tracker.name,
-          description: tracker.description,
-        },
-      });
-
-      if (tracker.fields.length > 0) {
-        await tx.dailyTrackerField.createMany({
-          data: tracker.fields.map((f) => ({
-            trackerId: newTracker.id,
-            label: f.label,
-            fieldType: f.fieldType,
-            sortOrder: f.sortOrder,
-            isRequired: f.isRequired,
-            options: f.options as any,
-          })),
-        });
-      }
-    }
+    await deepCopyTrackers(tx, template.dailyTrackers, clientProgramId, clinicianId, existingTrackerNames);
   });
 
   // Return updated program summary

@@ -13,22 +13,9 @@ import {
 import type { HomeworkItemType } from "@steady/shared";
 import { logRtmEngagement } from "./rtm";
 import { validateEmotionIds, VALID_EMOTION_IDS } from "@steady/shared";
+import { NotFoundError, ConflictError } from "../lib/errors";
 
-// ── Error types ──────────────────────────────────────
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
-
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
-}
+export { NotFoundError, ConflictError };
 
 export class ValidationError extends Error {
   details?: Array<{ path: string; message: string }>;

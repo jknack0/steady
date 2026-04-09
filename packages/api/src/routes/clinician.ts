@@ -17,6 +17,7 @@ import {
   addClient,
   ConflictError,
 } from "../services/clinician";
+import { verifyEnrollmentOwnership } from "../lib/ownership";
 
 const AddClientSchema = z.object({
   email: z.string().email().max(200),
@@ -53,13 +54,6 @@ router.use(authenticate, requireRole("CLINICIAN", "ADMIN"));
 async function verifyParticipantOwnership(participantUserId: string, clinicianProfileId: string) {
   return prisma.clinicianClient.findFirst({
     where: { clinicianId: clinicianProfileId, clientId: participantUserId },
-  });
-}
-
-// Verify an enrollment belongs to this clinician's programs
-async function verifyEnrollmentOwnership(enrollmentId: string, clinicianProfileId: string) {
-  return prisma.enrollment.findFirst({
-    where: { id: enrollmentId, program: { clinicianId: clinicianProfileId } },
   });
 }
 

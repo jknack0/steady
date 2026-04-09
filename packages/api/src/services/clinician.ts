@@ -1,20 +1,15 @@
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { NotFoundError, ConflictError } from "../lib/errors";
 
-// ── Error Classes ────────────────────────────────────
+export { NotFoundError, ConflictError };
 
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
-}
+// ── Helpers ──────────────────────────────────────────
 
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
+function getRtmBillingStatus(engagementDays: number): string {
+  if (engagementDays >= 16) return "billable";
+  if (engagementDays >= 12) return "approaching";
+  return "tracking";
 }
 
 // ── Interfaces ────────────────────────────────────────
@@ -523,7 +518,7 @@ export async function getClinicianParticipants(
         participant.rtm = {
           engagementDays: activePeriod.engagementDays,
           clinicianMinutes: activePeriod.clinicianMinutes,
-          status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+          status: getRtmBillingStatus(activePeriod.engagementDays),
         };
       }
     }
@@ -600,7 +595,7 @@ export async function getClinicianParticipants(
         participant.rtm = {
           engagementDays: activePeriod.engagementDays,
           clinicianMinutes: activePeriod.clinicianMinutes,
-          status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+          status: getRtmBillingStatus(activePeriod.engagementDays),
         };
       }
     }

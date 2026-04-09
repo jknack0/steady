@@ -5,17 +5,11 @@ import { CreateEnrollmentSchema, UpdateEnrollmentSchema, type HomeworkContent } 
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { getStreakData, cancelFutureInstances } from "../services/homework-instances";
+import { verifyProgramOwnership } from "../lib/ownership";
 
 const router = Router({ mergeParams: true });
 
 router.use(authenticate, requireRole("CLINICIAN"));
-
-// Helper: verify clinician owns the program
-async function verifyProgramOwnership(programId: string, clinicianProfileId: string) {
-  return prisma.program.findFirst({
-    where: { id: programId, clinicianId: clinicianProfileId },
-  });
-}
 
 // GET /api/programs/:programId/enrollments — List enrollments
 router.get("/", async (req: Request, res: Response) => {

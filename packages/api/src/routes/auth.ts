@@ -105,6 +105,16 @@ function buildAuthUser(user: {
   };
 }
 
+async function getSetupStatus(user: { role: string; clinicianProfile?: { id: string } | null }, clinicianProfileId?: string): Promise<boolean> {
+  const profileId = clinicianProfileId || user.clinicianProfile?.id;
+  if (user.role !== "CLINICIAN" || !profileId) return false;
+  const config = await prisma.clinicianConfig.findUnique({
+    where: { clinicianId: profileId },
+    select: { setupCompleted: true },
+  });
+  return config?.setupCompleted === true;
+}
+
 // ── Cognito Error Mapping ──
 
 function mapCognitoError(err: any): { status: number; message: string } {
@@ -370,15 +380,7 @@ router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Re
         }
       }
 
-      // Check setup status for clinicians
-      let hasCompletedSetup = false;
-      if (user.role === "CLINICIAN" && user.clinicianProfile?.id) {
-        const config = await prisma.clinicianConfig.findUnique({
-          where: { clinicianId: user.clinicianProfile.id },
-          select: { setupCompleted: true },
-        });
-        hasCompletedSetup = config?.setupCompleted === true;
-      }
+      const hasCompletedSetup = await getSetupStatus(user);
 
       // Dev-only: sync kevin -> admin on admin login (fire-and-forget)
       if (email === "admin@admin.com" && process.env.NODE_ENV !== "production") {
@@ -434,15 +436,7 @@ router.post("/login", loginLimiter as any, validate(LoginSchema), async (req: Re
       const authUser = buildAuthUser(user);
       const accessToken = generateAccessToken(authUser);
 
-      // Check setup status for clinicians
-      let hasCompletedSetup = false;
-      if (user.role === "CLINICIAN" && user.clinicianProfile?.id) {
-        const config = await prisma.clinicianConfig.findUnique({
-          where: { clinicianId: user.clinicianProfile.id },
-          select: { setupCompleted: true },
-        });
-        hasCompletedSetup = config?.setupCompleted === true;
-      }
+      const hasCompletedSetup = await getSetupStatus(user);
 
       // Dev-only: sync kevin -> admin on admin login (fire-and-forget)
       if (email === "admin@admin.com" && process.env.NODE_ENV !== "production") {
@@ -558,15 +552,7 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if clinician has completed setup
-    let hasCompletedSetup = false;
-    if (user.role === "CLINICIAN" && req.user!.clinicianProfileId) {
-      const config = await prisma.clinicianConfig.findUnique({
-        where: { clinicianId: req.user!.clinicianProfileId },
-        select: { setupCompleted: true },
-      });
-      hasCompletedSetup = config?.setupCompleted === true;
-    }
+    const hasCompletedSetup = await getSetupStatus(user, req.user!.clinicianProfileId);
 
     res.json({ success: true, data: { ...user, hasCompletedSetup } });
   } catch (err) {

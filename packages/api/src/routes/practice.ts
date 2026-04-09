@@ -25,6 +25,15 @@ const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN", "ADMIN"));
 
+async function requirePracticeMember(practiceId: string, clinicianProfileId: string, requiredRole?: string) {
+  const membership = await prisma.practiceMembership.findUnique({
+    where: { practiceId_clinicianId: { practiceId, clinicianId: clinicianProfileId } },
+  });
+  if (!membership) return null;
+  if (requiredRole && membership.role !== requiredRole) return null;
+  return membership;
+}
+
 // POST /api/practices — Create a practice
 router.post("/", validate(CreatePracticeSchema), async (req: Request, res: Response) => {
   try {
@@ -111,16 +120,8 @@ router.put("/:id", validate(UpdatePracticeSchema), async (req: Request, res: Res
     const clinicianProfileId = req.user!.clinicianProfileId!;
     const { name } = req.body;
 
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
-    if (!membership || membership.role !== "OWNER") {
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId, "OWNER");
+    if (!membership) {
       res.status(403).json({ success: false, error: "Only practice owners can update" });
       return;
     }
@@ -149,16 +150,8 @@ router.post("/:id/invite", validate(InviteToPracticeSchema), async (req: Request
     }
 
     // Verify requester is owner
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
-    if (!membership || membership.role !== "OWNER") {
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId, "OWNER");
+    if (!membership) {
       res.status(403).json({ success: false, error: "Only practice owners can invite" });
       return;
     }
@@ -209,16 +202,8 @@ router.delete("/:id/members/:memberId", async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
 
-    const myMembership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
-    if (!myMembership || myMembership.role !== "OWNER") {
+    const myMembership = await requirePracticeMember(req.params.id, clinicianProfileId, "OWNER");
+    if (!myMembership) {
       res.status(403).json({ success: false, error: "Only practice owners can remove members" });
       return;
     }
@@ -251,15 +236,7 @@ router.get("/:id/templates", async (req: Request, res: Response) => {
     const clinicianProfileId = req.user!.clinicianProfileId!;
 
     // Verify membership
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId);
     if (!membership) {
       res.status(403).json({ success: false, error: "Not a member of this practice" });
       return;
@@ -309,15 +286,7 @@ router.post("/:id/share-program", async (req: Request, res: Response) => {
     }
 
     // Verify membership
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId);
     if (!membership) {
       res.status(403).json({ success: false, error: "Not a member of this practice" });
       return;
@@ -353,16 +322,8 @@ router.get("/:id/dashboard", async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
 
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
-    if (!membership || membership.role !== "OWNER") {
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId, "OWNER");
+    if (!membership) {
       res.status(403).json({ success: false, error: "Only practice owners can view the dashboard" });
       return;
     }
@@ -424,15 +385,7 @@ router.get("/:id/stats", async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
 
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId);
     if (!membership) {
       res.status(404).json({ success: false, error: "Practice not found" });
       return;
@@ -456,15 +409,7 @@ router.get("/:id/participants", async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
 
-    const membership = await prisma.practiceMembership.findUnique({
-      where: {
-        practiceId_clinicianId: {
-          practiceId: req.params.id,
-          clinicianId: clinicianProfileId,
-        },
-      },
-    });
-
+    const membership = await requirePracticeMember(req.params.id, clinicianProfileId);
     if (!membership) {
       res.status(404).json({ success: false, error: "Practice not found" });
       return;
