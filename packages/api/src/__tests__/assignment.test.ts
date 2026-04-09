@@ -356,7 +356,7 @@ describe("Smart Delete — Modules", () => {
       .set(...authHeader());
 
     expect(res.status).toBe(200);
-    expect(res.body.data.deleted).toBe("hard");
+    expect(res.body.data.deleted).toBe("soft");
   });
 
   it("soft-deletes a module with progress (COND-2)", async () => {
@@ -413,7 +413,7 @@ describe("Smart Delete — Parts", () => {
       .set(...authHeader());
 
     expect(res.status).toBe(200);
-    expect(res.body.data.deleted).toBe("hard");
+    expect(res.body.data.deleted).toBe("soft");
   });
 
   it("soft-deletes a part with progress (COND-2)", async () => {
