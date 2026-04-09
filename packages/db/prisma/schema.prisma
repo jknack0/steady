@@ -680,6 +680,11 @@ model TelehealthSession {
   endedAt             DateTime?
   durationSeconds     Int?
   endedBy             String?
+  // Transcription pipeline
+  audioPath           String?                 // S3 key: recordings/{therapistId}/{sessionId}.wav
+  transcript          Json?                   // { text, segments[], speakerMap }
+  transcriptStatus    String                  @default("none") // none, pending, transcribing, completed, failed
+  transcribedAt       DateTime?
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 

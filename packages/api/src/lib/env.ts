@@ -20,3 +20,8 @@ export const COGNITO_REGION = process.env.COGNITO_REGION || "us-east-2";
 export const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || "devkey";
 export const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || "devsecret";
 export const LIVEKIT_URL = process.env.LIVEKIT_URL || "ws://localhost:7880";
+
+// Transcription pipeline — S3 bucket for audio recordings
+export const S3_BUCKET = process.env.AWS_S3_BUCKET_NAME || "";
+export const TRANSCRIPTION_QUEUE_URL = process.env.TRANSCRIPTION_QUEUE_URL || "";
+export const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "dev-internal-key";
