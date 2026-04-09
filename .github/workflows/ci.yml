@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -87,3 +87,48 @@ jobs:
       - run: npm install --ignore-scripts
       - run: npx prisma generate --schema=packages/db/prisma/schema.prisma
       - run: npx turbo run lint --filter=@steady/api --filter=@steady/web --filter=@steady/shared --filter=@steady/db
+
+  deploy-dev:
+    name: Deploy API (Dev)
+    needs: [typecheck, unit-tests, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Dev EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEV_EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"
+            cd ~/steady
+            git pull origin dev
+            npm install
+            npx prisma generate --schema=packages/db/prisma/schema.prisma
+            npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --accept-data-loss
+            npx turbo run build --filter=@steady/api
+            pm2 restart steady-api
+
+  deploy-prod:
+    name: Deploy API (Prod)
+    needs: [typecheck, unit-tests, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Prod EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/steady
+            git pull origin main
+            npm install
+            npx prisma generate --schema=packages/db/prisma/schema.prisma
+            npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --accept-data-loss
+            npx turbo run build --filter=@steady/api
+            pm2 restart steady-api
