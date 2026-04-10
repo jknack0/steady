@@ -266,6 +266,9 @@ model User {
   createdAppointments       Appointment[]         @relation("AppointmentCreatedBy")
   createdRecurringSeries    RecurringSeries[]     @relation("RecurringSeriesCreatedBy")
   streakRecords             StreakRecord[]
+  // Client Web Portal relations
+  portalInvitationsAsClient PortalInvitation[]    @relation("PortalInvitationClient")
+  acceptedPortalInvitations PortalInvitation[]    @relation("PortalInvitationAcceptedBy")
 
   @@map("users")
 }
@@ -291,6 +294,7 @@ model ClinicianProfile {
   clients           ClinicianClient[]
   appointments      Appointment[]
   invitations       PatientInvitation[]
+  portalInvitations PortalInvitation[]       @relation("PortalInvitationClinician")
   invoices          Invoice[]
   recurringSeries   RecurringSeries[]
   insuranceClaims   InsuranceClaim[]
@@ -1566,4 +1570,114 @@ model WaitlistEntry {
   createdAt DateTime @default(now())
 
   @@map("waitlist_entries")
+}
+
+// ── Client Web Portal Invitations (FR-1 through FR-12) ─────────────
+// Replaces legacy PatientInvitation. Token-based, email-bound, SHA-256
+// hashed at rest. See docs/sdlc/client-web-portal-mvp/04-architecture.md.
+
+enum PortalInvitationStatus {
+  PENDING
+  SENT
+  ACCEPTED
+  BOUNCED
+  COMPLAINED
+  SEND_FAILED
+  EXPIRED
+  REVOKED
+}
+
+model PortalInvitation {
+  id                 String                 @id @default(cuid())
+  clinicianId        String
+  clinician          ClinicianProfile       @relation("PortalInvitationClinician", fields: [clinicianId], references: [id])
+  clientId           String?
+  client             User?                  @relation("PortalInvitationClient", fields: [clientId], references: [id])
+  // Recipient contact — email is encrypted at rest via encryption-middleware.
+  // The *Hash field is a deterministic SHA-256 used for lookup + unique index.
+  recipientEmail     String
+  recipientEmailHash String
+  // Token is stored ONLY as a SHA-256 hash. Plaintext exists briefly in the
+  // worker and the email body. Nullable so we can burn on successful redeem.
+  tokenHash          String?                @unique
+  tokenBurnedAt      DateTime?
+  status             PortalInvitationStatus @default(PENDING)
+  existingUser       Boolean                @default(false)
+  firstName          String?
+  lastName           String?
+  expiresAt          DateTime
+  sendCount          Int                    @default(0)
+  lastSentAt         DateTime?
+  acceptedAt         DateTime?
+  acceptedByUserId   String?
+  acceptedByUser     User?                  @relation("PortalInvitationAcceptedBy", fields: [acceptedByUserId], references: [id])
+  revokedAt          DateTime?
+  bounceType         String?
+  bouncedAt          DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  deletedAt          DateTime?
+
+  @@index([clinicianId, status])
+  @@index([recipientEmailHash])
+  @@index([status, expiresAt])
+  @@map("portal_invitations")
+}
+
+// ── Email Suppression List ─────────────────────────────────────────
+// Tracks bounced / complained emails so we never re-send to them.
+// Priority-1 for DR recovery per COND-24.
+
+enum EmailSuppressionReason {
+  BOUNCE
+  COMPLAINT
+  MANUAL
+}
+
+model EmailSuppression {
+  id         String                 @id @default(cuid())
+  emailHash  String                 @unique
+  email      String // Encrypted at rest via encryption-middleware
+  reason     EmailSuppressionReason
+  bounceType String?
+  createdAt  DateTime               @default(now())
+  expiresAt  DateTime?
+  deletedAt  DateTime?
+
+  @@index([reason])
+  @@map("email_suppressions")
+}
+
+// ── DB-backed rate limiting (COND-3) ───────────────────────────────
+// CLAUDE.md forbids in-memory state. Simple sliding-window counters.
+
+model RateLimit {
+  id          String   @id @default(cuid())
+  bucket      String
+  identifier  String
+  count       Int      @default(0)
+  windowStart DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([bucket, identifier])
+  @@index([windowStart])
+  @@map("rate_limits")
+}
+
+// ── SES Circuit Breaker state (COND-23) ────────────────────────────
+
+model SesCircuitBreakerState {
+  id             String    @id @default("singleton")
+  isOpen         Boolean   @default(false)
+  openedAt       DateTime?
+  openReason     String?
+  // Rolling counters for the current window
+  totalSent      Int       @default(0)
+  totalBounced   Int       @default(0)
+  totalComplained Int      @default(0)
+  windowStart    DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("ses_circuit_breaker_state")
 }

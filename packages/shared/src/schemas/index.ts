@@ -28,3 +28,5 @@ export * from "./reminder";
 export * from "./insurance";
 export * from "./stripe";
 export * from "./telehealth";
+export * from "./portal-invitation";
+export * from "./participant-appointment";
