@@ -27,3 +27,28 @@ export const TRANSCRIPTION_QUEUE_URL = process.env.TRANSCRIPTION_QUEUE_URL || ""
 export const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "dev-internal-key";
 export const TRANSCRIPTION_WORKER_URL = process.env.TRANSCRIPTION_WORKER_URL || "";
 export const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:4000";
+
+// Client Web Portal (FR-1 through FR-12)
+export const PORTAL_BASE_URL =
+  process.env.PORTAL_BASE_URL || "http://localhost:3000/portal";
+export const PORTAL_INVITE_TTL_DAYS = parseInt(
+  process.env.PORTAL_INVITE_TTL_DAYS || "7",
+  10
+);
+
+// Amazon SES — transactional email for portal invitations
+// BAA-eligible; must be in production mode before GA per COND-2
+export const SES_REGION = process.env.SES_REGION || "us-east-2";
+export const SES_FROM_ADDRESS =
+  process.env.SES_FROM_ADDRESS || "no-reply@portal.steadymentalhealth.com";
+export const SES_CONFIGURATION_SET = process.env.SES_CONFIGURATION_SET || "";
+export const SES_BOUNCE_TOPIC_ARN = process.env.SES_BOUNCE_TOPIC_ARN || "";
+export const SES_COMPLAINT_TOPIC_ARN =
+  process.env.SES_COMPLAINT_TOPIC_ARN || "";
+
+// Dev/test flag — when true, SES sends are stubbed and recorded in-memory.
+// Required true in CI/test; false in staging/production.
+export const SES_MOCK_MODE =
+  process.env.SES_MOCK_MODE === "true" ||
+  process.env.NODE_ENV === "test" ||
+  !process.env.SES_FROM_ADDRESS;

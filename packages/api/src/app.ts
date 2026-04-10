@@ -52,6 +52,7 @@ import stripeWebhookRoutes from "./routes/stripe-webhooks";
 import stripePaymentRoutes from "./routes/stripe-payments";
 import telehealthRoutes from "./routes/telehealth";
 import { telehealthWebhookRouter } from "./routes/telehealth";
+import portalInvitationRoutes from "./routes/portal-invitations";
 
 const app = express();
 
@@ -455,7 +456,13 @@ app.use("/api/payers", payersRoutes);
 app.use("/api/diagnosis-codes", diagnosisCodesRoutes);
 app.use("/api/recurring-series", recurringSeriesRoutes);
 app.use("/api/appointments", appointmentReminderRoutes);
+// Participant portal endpoints — dual-mounted during transition.
+// The /api/participant prefix is the legacy mobile path; the new
+// /api/participant-portal prefix is what the new web portal calls.
+// Both serve the same router until mobile callers are migrated.
 app.use("/api/participant", participantPortalRoutes);
+app.use("/api/participant-portal", participantPortalRoutes);
+app.use("/api/portal-invitations", portalInvitationRoutes);
 app.use("/api/stripe", stripePaymentRoutes);
 app.use("/api/telehealth", telehealthRoutes);
 

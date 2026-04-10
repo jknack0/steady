@@ -759,4 +759,231 @@ router.post("/confirm-reset-password", forgotPasswordLimiter as any, validate(Co
   }
 });
 
+// ── Client Web Portal — Token-based invitation redemption ─────────
+// FR-3, AC-3.* — replaces /api/auth/register-with-invite
+
+import {
+  RedeemPortalInvitationSchema,
+  PortalInvitationStatusQuerySchema,
+} from "@steady/shared";
+import {
+  lookupPortalInvitationStatus,
+  redeemPortalInvitation,
+  InvitationExpiredError,
+  InvitationUsedError,
+  InvitationRevokedError,
+  InvitationBindingMismatchError,
+  InvitationNoLongerValidError,
+} from "../services/portal-invitations";
+import { checkRateLimit } from "../services/rate-limit";
+
+const portalRedeemLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: "Too many attempts. Please try again later.",
+  },
+  skip: () => isTest,
+});
+
+// GET /api/auth/portal-invite-status?t=<token>
+// Public, no auth. Returns invitation state without leaking info.
+router.get("/portal-invite-status", async (req: Request, res: Response) => {
+  try {
+    const parsed = PortalInvitationStatusQuerySchema.safeParse({
+      token: typeof req.query.t === "string" ? req.query.t : "",
+    });
+    if (!parsed.success) {
+      res.json({ success: true, data: { status: "INVALID" } });
+      return;
+    }
+    const status = await lookupPortalInvitationStatus(parsed.data.token);
+    res.json({ success: true, data: status });
+  } catch (err) {
+    logger.error("Portal invite status lookup error", err);
+    res.json({ success: true, data: { status: "INVALID" } });
+  }
+});
+
+// POST /api/auth/redeem-portal-invite
+// Public, rate-limited. Token-bound, email-verified, single-use.
+router.post(
+  "/redeem-portal-invite",
+  portalRedeemLimiter as any,
+  validate(RedeemPortalInvitationSchema),
+  async (req: Request, res: Response) => {
+    try {
+      // Additional DB-backed IP rate limit (COND-3, NFR-2.8)
+      const ip =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+        req.ip ||
+        "unknown";
+      const limit = await checkRateLimit({
+        bucket: "redeem-portal-invite",
+        identifier: ip,
+        limit: 10,
+        windowMs: 60 * 60 * 1000,
+      });
+      if (limit.exceeded) {
+        res.status(429).json({
+          success: false,
+          error: "Too many attempts. Please try again later.",
+        });
+        return;
+      }
+
+      const { token, email, firstName, lastName, password } = req.body;
+
+      let cognitoSub: string | null = null;
+
+      if (isCognitoEnabled()) {
+        // Try to create the Cognito user. On UsernameExistsException,
+        // treat as idempotent resume (AC-3.3).
+        try {
+          cognitoSub = await cognitoCreateUser(email, password);
+        } catch (err: any) {
+          if (err?.name === "UsernameExistsException") {
+            // Resume path — Cognito user already exists. Fetch the sub
+            // by logging in (which also returns tokens for us to set).
+            try {
+              const loginRes = await cognitoLogin(email, password);
+              const accessToken = loginRes.AuthenticationResult?.AccessToken;
+              if (accessToken) {
+                const parts = accessToken.split(".");
+                const payload = JSON.parse(
+                  Buffer.from(parts[1], "base64url").toString()
+                );
+                cognitoSub = payload.sub;
+              }
+            } catch (loginErr: any) {
+              const mapped = mapCognitoError(loginErr);
+              res
+                .status(mapped.status)
+                .json({ success: false, error: mapped.message });
+              return;
+            }
+          } else {
+            const mapped = mapCognitoError(err);
+            res
+              .status(mapped.status)
+              .json({ success: false, error: mapped.message });
+            return;
+          }
+        }
+      }
+
+      let result;
+      try {
+        result = await redeemPortalInvitation({
+          token,
+          email,
+          firstName,
+          lastName,
+          password,
+          cognitoId: cognitoSub,
+        });
+      } catch (err) {
+        // Clean up Cognito user on redemption failure (AC-3.*)
+        if (cognitoSub && isCognitoEnabled()) {
+          try {
+            const { AdminDeleteUserCommand } = await import("../lib/cognito");
+            await cognitoClient.send(
+              new AdminDeleteUserCommand({
+                UserPoolId: userPoolId,
+                Username: email,
+              })
+            );
+          } catch {
+            // best-effort
+          }
+        }
+        throw err;
+      }
+
+      // Get tokens from Cognito (real login)
+      let authResult;
+      if (isCognitoEnabled()) {
+        try {
+          const loginRes = await cognitoLogin(email, password);
+          authResult = loginRes.AuthenticationResult;
+        } catch (err: any) {
+          const mapped = mapCognitoError(err);
+          res
+            .status(mapped.status)
+            .json({ success: false, error: mapped.message });
+          return;
+        }
+        if (!authResult?.AccessToken || !authResult?.RefreshToken) {
+          res.status(500).json({ success: false, error: "Login failed" });
+          return;
+        }
+        setAuthCookies(res, authResult.AccessToken, authResult.RefreshToken);
+      } else {
+        // Legacy JWT fallback
+        const authUser: AuthUser = {
+          userId: result.user.id,
+          role: "PARTICIPANT",
+          participantProfileId: result.user.participantProfileId,
+        };
+        const accessToken = generateAccessToken(authUser);
+        setAuthCookies(res, accessToken, "legacy-no-refresh");
+        authResult = { AccessToken: accessToken, RefreshToken: "legacy-no-refresh" };
+      }
+
+      res.status(201).json({
+        success: true,
+        data: {
+          user: {
+            id: result.user.id,
+            email: result.user.email,
+            firstName: result.user.firstName,
+            lastName: result.user.lastName,
+            role: result.user.role,
+          },
+          accessToken: authResult.AccessToken,
+          refreshToken: authResult.RefreshToken,
+        },
+      });
+    } catch (err) {
+      if (err instanceof InvitationExpiredError) {
+        res
+          .status(409)
+          .json({ success: false, error: err.message, code: err.code });
+        return;
+      }
+      if (err instanceof InvitationUsedError) {
+        res
+          .status(409)
+          .json({ success: false, error: err.message, code: err.code });
+        return;
+      }
+      if (err instanceof InvitationRevokedError) {
+        res
+          .status(409)
+          .json({ success: false, error: err.message, code: err.code });
+        return;
+      }
+      if (err instanceof InvitationBindingMismatchError) {
+        res
+          .status(403)
+          .json({ success: false, error: err.message, code: err.code });
+        return;
+      }
+      if (err instanceof InvitationNoLongerValidError) {
+        res
+          .status(410)
+          .json({ success: false, error: err.message, code: err.code });
+        return;
+      }
+      logger.error("Redeem portal invite error", err);
+      res
+        .status(500)
+        .json({ success: false, error: "Failed to redeem invitation" });
+    }
+  }
+);
+
 export default router;
