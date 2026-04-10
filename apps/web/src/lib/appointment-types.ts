@@ -72,6 +72,8 @@ export interface AppointmentView {
   claimId?: string | null;
   /** Insurance claim status. Added for billing workflow. */
   claimStatus?: ClaimStatus | null;
+  /** True when a completed AI-generated summary exists on the telehealth session. */
+  hasSessionSummary?: boolean;
 }
 
 export interface AppointmentWithConflicts {
