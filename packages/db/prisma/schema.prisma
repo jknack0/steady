@@ -685,6 +685,10 @@ model TelehealthSession {
   transcript          Json?                   // { text, segments[], speakerMap }
   transcriptStatus    String                  @default("none") // none, pending, transcribing, completed, failed
   transcribedAt       DateTime?
+  // AI-generated clinical summary
+  summary             Json?                   // { overview, keyThemes, progressNotes, actionItems, concerns, mood }
+  summaryStatus       String                  @default("none") // none, pending, generating, completed, failed
+  summarizedAt        DateTime?
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 

@@ -250,6 +250,18 @@ export async function getQueue(): Promise<PgBoss> {
     }
   });
 
+  // Register session summary worker — calls Claude to generate clinical notes
+  await boss.work("summarize-transcript", async (job: any) => {
+    try {
+      const { sessionId } = job.data as { sessionId: string };
+      const { summarizeSession } = await import("./session-summary");
+      await summarizeSession(sessionId);
+    } catch (err) {
+      logger.error("Session summary worker failed", err);
+      throw err; // rethrow for pg-boss retry
+    }
+  });
+
   // Register transcription dispatch worker — local dev / non-SQS path
   // Calls the transcription worker container via HTTP
   await boss.work("transcribe-session", async (job: any) => {

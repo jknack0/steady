@@ -14,22 +14,24 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   # Redis — required by LiveKit Egress for coordination
+  # Mapped to host port 6380 since port 6379 is often already in use
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redisdata:/data
 
   # MinIO — S3-compatible object storage for dev
-  # Console: http://localhost:9001 (minioadmin / minioadmin)
+  # S3 API: http://localhost:9100 (mapped from container 9000)
+  # Console:  http://localhost:9101 (minioadmin / minioadmin)
   minio:
     image: minio/minio:latest
     restart: unless-stopped
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9100:9000"
+      - "9101:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin

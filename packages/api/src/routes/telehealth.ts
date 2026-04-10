@@ -99,6 +99,9 @@ router.get(
           transcribedAt: session.transcribedAt,
           durationSeconds: session.durationSeconds,
           transcript: session.transcript,
+          summary: session.summary,
+          summaryStatus: session.summaryStatus,
+          summarizedAt: session.summarizedAt,
         },
       });
     } catch (err) {

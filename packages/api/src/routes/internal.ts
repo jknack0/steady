@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "@steady/db";
 import { authenticateInternal } from "../middleware/internal-auth";
 import { logger } from "../lib/logger";
+import { queueSummarization } from "../services/session-summary";
 
 const router = Router();
 
@@ -51,6 +52,11 @@ router.post("/transcripts", async (req, res) => {
 
     // HIPAA: log only the ID and audio hash, never transcript content
     logger.info("Transcript stored", `sessionId=${sessionId} hash=${audioHash || "none"}`);
+
+    // Queue AI summarization (fire-and-forget)
+    queueSummarization(sessionId).catch((err) => {
+      logger.error("Failed to queue summarization", err);
+    });
 
     res.json({ success: true });
   } catch (err) {
