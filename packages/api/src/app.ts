@@ -7,6 +7,7 @@ import { prisma } from "@steady/db";
 import { APP_NAME } from "@steady/shared";
 import { errorHandler } from "./middleware/errorHandler";
 import authRoutes from "./routes/auth";
+import internalRoutes from "./routes/internal";
 import programRoutes from "./routes/programs";
 import moduleRoutes from "./routes/modules";
 import partRoutes from "./routes/parts";
@@ -409,6 +410,9 @@ app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to provision demo. Please try again." });
   }
 });
+
+// Internal service-to-service routes (authenticated via INTERNAL_API_KEY)
+app.use("/internal", internalRoutes);
 
 // API routes
 app.use("/api/auth", authRoutes);

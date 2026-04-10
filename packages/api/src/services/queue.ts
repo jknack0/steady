@@ -250,6 +250,61 @@ export async function getQueue(): Promise<PgBoss> {
     }
   });
 
+  // Register transcription dispatch worker — local dev / non-SQS path
+  // Calls the transcription worker container via HTTP
+  await boss.work("transcribe-session", async (job: any) => {
+    const { sessionId, therapistId, audioPath, bucket } = job.data as {
+      sessionId: string;
+      therapistId: string;
+      audioPath: string;
+      bucket: string;
+    };
+
+    const { TRANSCRIPTION_WORKER_URL, INTERNAL_API_KEY, API_BASE_URL } = await import("../lib/env");
+
+    if (!TRANSCRIPTION_WORKER_URL) {
+      logger.warn("TRANSCRIPTION_WORKER_URL not set — skipping transcription");
+      return;
+    }
+
+    try {
+      await prisma.telehealthSession.update({
+        where: { id: sessionId },
+        data: { transcriptStatus: "transcribing" },
+      });
+
+      const response = await fetch(`${TRANSCRIPTION_WORKER_URL}/transcribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${INTERNAL_API_KEY}`,
+        },
+        body: JSON.stringify({
+          sessionId,
+          therapistId,
+          audioPath,
+          bucket,
+          callbackUrl: `${API_BASE_URL}/internal/transcripts`,
+          callbackSecret: INTERNAL_API_KEY,
+        }),
+        signal: AbortSignal.timeout(600000), // 10 min timeout for long audio
+      });
+
+      if (!response.ok) {
+        throw new Error(`Transcription worker returned ${response.status}`);
+      }
+
+      logger.info(`Transcription dispatched sessionId=${sessionId}`);
+    } catch (err) {
+      await prisma.telehealthSession.update({
+        where: { id: sessionId },
+        data: { transcriptStatus: "failed" },
+      });
+      logger.error("Transcription dispatch failed", err);
+      throw err; // rethrow for pg-boss retry
+    }
+  });
+
   logger.info("PgBoss job queue started");
   return boss;
 }

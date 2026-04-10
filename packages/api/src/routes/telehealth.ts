@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import express from "express";
+import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { CreateTelehealthTokenSchema } from "@steady/shared";
@@ -34,6 +35,75 @@ router.post(
       }
       logger.error("Telehealth token generation error", err);
       res.status(500).json({ success: false, error: "Failed to generate video token" });
+    }
+  },
+);
+
+// GET /api/telehealth/:appointmentId/transcript
+// Returns the transcript for a completed session.
+router.get(
+  "/:appointmentId/transcript",
+  authenticate,
+  requireRole("CLINICIAN", "ADMIN"),
+  async (req: Request, res: Response) => {
+    try {
+      const { appointmentId } = req.params;
+      const clinicianProfileId = req.user!.clinicianProfileId;
+
+      if (!clinicianProfileId) {
+        res.status(403).json({ success: false, error: "Not authorized" });
+        return;
+      }
+
+      // Verify ownership
+      const appointment = await prisma.appointment.findFirst({
+        where: {
+          id: appointmentId,
+          deletedAt: null,
+        },
+        include: {
+          telehealthSession: true,
+        },
+      });
+
+      if (!appointment) {
+        res.status(404).json({ success: false, error: "Appointment not found" });
+        return;
+      }
+
+      // Allow same-practice clinicians
+      if (appointment.clinicianId !== clinicianProfileId) {
+        const sameClinic = await prisma.practiceMembership.findFirst({
+          where: {
+            practiceId: appointment.practiceId,
+            clinicianId: clinicianProfileId,
+          },
+        });
+        if (!sameClinic) {
+          res.status(403).json({ success: false, error: "Not authorized" });
+          return;
+        }
+      }
+
+      if (!appointment.telehealthSession) {
+        res.status(404).json({ success: false, error: "No telehealth session found" });
+        return;
+      }
+
+      const session = appointment.telehealthSession;
+
+      res.json({
+        success: true,
+        data: {
+          status: session.transcriptStatus,
+          transcribedAt: session.transcribedAt,
+          durationSeconds: session.durationSeconds,
+          transcript: session.transcript,
+        },
+      });
+    } catch (err) {
+      logger.error("Get transcript error", err);
+      res.status(500).json({ success: false, error: "Failed to fetch transcript" });
     }
   },
 );
