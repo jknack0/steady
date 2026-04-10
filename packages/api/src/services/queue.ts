@@ -5,6 +5,8 @@ import { toDateKey } from "../lib/date-utils";
 import { markOverdueInvoices } from "./billing";
 import { generateAllSeriesAppointments } from "./recurring-series";
 import { processReminders } from "./appointment-reminders";
+import { registerPortalInviteEmailWorker } from "../workers/portal-invite-email";
+import { cleanupStaleRateLimits } from "./rate-limit";
 
 let boss: PgBoss | null = null;
 
@@ -50,6 +52,20 @@ export async function getQueue(): Promise<PgBoss> {
       }
     } catch (err) {
       logger.error("Reminder processing cron failed", err);
+    }
+  });
+
+  // ── Client Web Portal workers ────────────────────────────────────
+  // Register the portal invite email worker (FR-2, AC-2.1, COND-23)
+  await registerPortalInviteEmailWorker(boss);
+
+  // Rate limit janitor — clears stale rows daily at 4 AM UTC (COND-3)
+  await boss.schedule("rate-limit-janitor", "0 4 * * *");
+  await boss.work("rate-limit-janitor", async () => {
+    try {
+      await cleanupStaleRateLimits();
+    } catch (err) {
+      logger.error("Rate limit janitor failed", err);
     }
   });
 
