@@ -18,8 +18,7 @@ redis:
   address: redis:6379
 
 # Webhook — API endpoint for session lifecycle events (including egress_ended)
-# Uncomment and set to your API host when ready
-# webhook:
-#   api_key: devkey
-#   urls:
-#     - http://host.docker.internal:4000/api/telehealth/webhooks
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:4000/api/telehealth/webhooks

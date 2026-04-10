@@ -681,7 +681,8 @@ model TelehealthSession {
   durationSeconds     Int?
   endedBy             String?
   // Transcription pipeline
-  audioPath           String?                 // S3 key: recordings/{therapistId}/{sessionId}.wav
+  egressId            String?                 // LiveKit egress ID while recording
+  audioPath           String?                 // S3 key: recordings/{therapistId}/{sessionId}.ogg
   transcript          Json?                   // { text, segments[], speakerMap }
   transcriptStatus    String                  @default("none") // none, pending, transcribing, completed, failed
   transcribedAt       DateTime?
@@ -692,9 +693,38 @@ model TelehealthSession {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 
+  consents            TelehealthConsent[]
+
   @@index([status])
   @@index([roomName])
   @@map("telehealth_sessions")
+}
+
+enum TelehealthConsentStatus {
+  PENDING
+  GRANTED
+  DECLINED
+  TIMEOUT
+  REVOKED
+}
+
+model TelehealthConsent {
+  id                  String                  @id @default(cuid())
+  telehealthSessionId String
+  session             TelehealthSession       @relation(fields: [telehealthSessionId], references: [id])
+  clinicianUserId     String                  // Who requested it
+  participantUserId   String                  // Who it was requested from
+  status              TelehealthConsentStatus @default(PENDING)
+  requestedAt         DateTime                @default(now())
+  respondedAt         DateTime?
+  revokedAt           DateTime?
+  ipAddress           String?                 // Patient's IP at time of response
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  @@index([telehealthSessionId])
+  @@index([status])
+  @@map("telehealth_consents")
 }
 
 model Location {

@@ -155,6 +155,7 @@ export function TelehealthSession({
           roomName={roomName}
           role={role}
           participantName={participantName}
+          appointmentId={appointmentId}
           onSessionEnd={handleSessionEnd}
         />
       </div>

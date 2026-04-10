@@ -5,6 +5,12 @@ import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { CreateTelehealthTokenSchema } from "@steady/shared";
 import { generateToken, handleWebhookEvent, TelehealthError } from "../services/telehealth";
+import {
+  requestRecordingConsent,
+  respondToConsent,
+  stopRecording,
+  getRecordingState,
+} from "../services/recording-control";
 import { logger } from "../lib/logger";
 
 // ── Main router (registered after express.json()) ──────
@@ -35,6 +41,97 @@ router.post(
       }
       logger.error("Telehealth token generation error", err);
       res.status(500).json({ success: false, error: "Failed to generate video token" });
+    }
+  },
+);
+
+// GET /api/telehealth/:appointmentId/recording/state
+// Returns current recording state (used for polling by both participants)
+router.get(
+  "/:appointmentId/recording/state",
+  authenticate,
+  requireRole("CLINICIAN", "PARTICIPANT", "ADMIN"),
+  async (req: Request, res: Response) => {
+    try {
+      const { appointmentId } = req.params;
+      const state = await getRecordingState(appointmentId);
+      res.json({ success: true, data: state });
+    } catch (err) {
+      logger.error("Get recording state error", err);
+      res.status(500).json({ success: false, error: "Failed to get state" });
+    }
+  },
+);
+
+// POST /api/telehealth/:appointmentId/recording/request-consent
+// Clinician initiates a consent request — creates PENDING consent + broadcasts
+router.post(
+  "/:appointmentId/recording/request-consent",
+  authenticate,
+  requireRole("CLINICIAN", "ADMIN"),
+  async (req: Request, res: Response) => {
+    try {
+      const { appointmentId } = req.params;
+      const userId = req.user!.userId;
+      const result = await requestRecordingConsent(appointmentId, userId);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Request failed";
+      logger.error("Request consent error", err);
+      res.status(400).json({ success: false, error: msg });
+    }
+  },
+);
+
+// POST /api/telehealth/:appointmentId/recording/consent
+// Patient responds to a consent request
+router.post(
+  "/:appointmentId/recording/consent",
+  authenticate,
+  requireRole("PARTICIPANT", "ADMIN"),
+  async (req: Request, res: Response) => {
+    try {
+      const { consentId, granted } = req.body;
+      const userId = req.user!.userId;
+
+      if (typeof consentId !== "string" || typeof granted !== "boolean") {
+        res.status(400).json({ success: false, error: "Invalid request" });
+        return;
+      }
+
+      // Capture IP for audit
+      const ipAddress =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+        req.socket.remoteAddress ||
+        undefined;
+
+      const result = await respondToConsent(consentId, userId, granted, ipAddress);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Request failed";
+      logger.error("Respond to consent error", err);
+      res.status(400).json({ success: false, error: msg });
+    }
+  },
+);
+
+// POST /api/telehealth/:appointmentId/recording/stop
+// Stop an active recording (clinician-initiated or patient revoke)
+router.post(
+  "/:appointmentId/recording/stop",
+  authenticate,
+  requireRole("CLINICIAN", "PARTICIPANT", "ADMIN"),
+  async (req: Request, res: Response) => {
+    try {
+      const { appointmentId } = req.params;
+      const userId = req.user!.userId;
+      const isRevoke = req.user!.role === "PARTICIPANT";
+      await stopRecording(appointmentId, userId, isRevoke);
+      res.json({ success: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Request failed";
+      logger.error("Stop recording error", err);
+      res.status(400).json({ success: false, error: msg });
     }
   },
 );
