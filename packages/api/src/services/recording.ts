@@ -243,6 +243,16 @@ export async function onSessionEnd(
       perSpeaker: [],
     };
 
+  // Drop any stale `pending` slots from prior recording attempts. If a
+  // previous attempt left slots behind (e.g. egress failed mid-way, or an
+  // old session was restarted), those slots would permanently block the
+  // `allDone` check in the merge step because they'd never transition
+  // to "completed". We keep any slot that's already completed (historical
+  // record) and the current incoming slot.
+  existing.perSpeaker = existing.perSpeaker.filter(
+    (s) => s.status === "completed",
+  );
+
   // Append this track if not already present (webhook retries are idempotent)
   const alreadyPresent = existing.perSpeaker.some(
     (s) => s.audioPath === audioPath,

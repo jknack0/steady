@@ -31,7 +31,30 @@ interface Props {
   initialError?: string;
 }
 
-export default function PortalCalendarClient({
+export default function PortalCalendarClient(props: Props) {
+  // Defer the full render until after client mount. The inner component
+  // uses `new Date()` for initial state and `Intl.DateTimeFormat()` for
+  // timezone resolution, both of which produce different output on the
+  // server (UTC / server timezone) than on the client (browser timezone)
+  // and cause React hydration errors (#418).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <h1 className="text-2xl font-semibold text-stone-800 mb-6">Your schedule</h1>
+        <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center text-stone-500">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+  return <PortalCalendarClientInner {...props} />;
+}
+
+function PortalCalendarClientInner({
   initialAppointments,
   initialError,
 }: Props) {

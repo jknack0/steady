@@ -71,7 +71,28 @@ const devLog = (...args: unknown[]) => {
   }
 };
 
-export default function TelehealthParticipantView({
+export default function TelehealthParticipantView(props: Props) {
+  // Skip SSR entirely for this component. The telehealth view is fully
+  // interactive (LiveKit connection, getUserMedia, consent modal) and
+  // doesn't benefit from server-rendering. Rendering null on the server
+  // and deferring the mount until the client takes over eliminates any
+  // hydration mismatch (React error #418) caused by differences between
+  // server- and client-side time/intl formatting or LiveKit internals.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-stone-900 flex items-center justify-center text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-300" />
+      </div>
+    );
+  }
+  return <TelehealthParticipantViewInner {...props} />;
+}
+
+function TelehealthParticipantViewInner({
   appointmentId,
   livekitToken,
   livekitUrl,
