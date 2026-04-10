@@ -62,9 +62,16 @@ router.post(
         return;
       }
       logger.error("Create portal invitation error", err);
-      res
-        .status(500)
-        .json({ success: false, error: "Failed to create invitation" });
+      // In non-production, surface the underlying error message to speed
+      // up local debugging. In production, keep the generic message.
+      const isDev = process.env.NODE_ENV !== "production";
+      res.status(500).json({
+        success: false,
+        error: "Failed to create invitation",
+        ...(isDev && err instanceof Error
+          ? { devError: err.message }
+          : {}),
+      });
     }
   }
 );

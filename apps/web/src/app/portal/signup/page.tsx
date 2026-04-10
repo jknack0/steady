@@ -12,6 +12,7 @@ interface InviteStatusResponse {
   existingUser?: boolean;
   firstName?: string | null;
   lastName?: string | null;
+  email?: string;
 }
 
 export default async function PortalSignupPage({
@@ -82,6 +83,7 @@ export default async function PortalSignupPage({
       token={token}
       defaultFirstName={lookup.data?.firstName ?? ""}
       defaultLastName={lookup.data?.lastName ?? ""}
+      defaultEmail={lookup.data?.email ?? ""}
     />
   );
 }

@@ -58,8 +58,10 @@ function TelehealthPageContent({ appointmentId }: { appointmentId: string }) {
     return null;
   }
 
-  const role: "therapist" | "patient" =
-    user.role === "CLINICIAN" || user.role === "ADMIN" ? "therapist" : "patient";
+  // NOTE: Initial role hint only — the actual role is determined by the backend
+  // via isHost in the token response (based on appointment's clinicianId).
+  // This prop is used only for the PRE_JOIN screen.
+  const role: "therapist" | "patient" = "therapist";
 
   const displayName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "User";
 

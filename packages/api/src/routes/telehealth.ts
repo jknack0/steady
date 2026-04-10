@@ -84,11 +84,11 @@ router.post(
 );
 
 // POST /api/telehealth/:appointmentId/recording/consent
-// Patient responds to a consent request
+// Patient (or same-practice clinician in test mode) responds to a consent request
 router.post(
   "/:appointmentId/recording/consent",
   authenticate,
-  requireRole("PARTICIPANT", "ADMIN"),
+  requireRole("PARTICIPANT", "CLINICIAN", "ADMIN"),
   async (req: Request, res: Response) => {
     try {
       const { consentId, granted } = req.body;
@@ -219,7 +219,12 @@ export const telehealthWebhookRouter = Router();
 
 telehealthWebhookRouter.post(
   "/",
-  express.raw({ type: "application/json" }),
+  // LiveKit sends Content-Type: "application/webhook+json" (NOT
+  // "application/json"), so a strict type match misses the request and
+  // the body gets parsed as JSON elsewhere, corrupting the bytes the
+  // SHA-256 signature was computed over. Match any content type here —
+  // this router ONLY handles the webhook endpoint, so it's safe.
+  express.raw({ type: () => true }),
   async (req: Request, res: Response) => {
     try {
       // LiveKit sends the auth token in the Authorization header

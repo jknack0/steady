@@ -1,0 +1,36 @@
+# CPU-only override for local dev on machines without an NVIDIA GPU.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d
+#
+# Or once — to swap in the CPU worker for this session:
+#   docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d --force-recreate transcription-worker
+#
+# This overrides the transcription-worker service to:
+#   - use the CPU Dockerfile (no CUDA base image)
+#   - run faster-whisper with device=cpu + compute_type=int8
+#   - drop the `deploy.resources` GPU reservation
+#   - default to the `small` model because `large-v3` is impractical on CPU
+
+services:
+  transcription-worker:
+    build:
+      context: ./infra/transcription-worker
+      dockerfile: Dockerfile.cpu
+    environment:
+      WHISPER_MODEL: small
+      WHISPER_DEVICE: cpu
+      WHISPER_COMPUTE_TYPE: int8
+      INTERNAL_API_KEY: dev-internal-key
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: steady-dev
+      S3_REGION: us-east-2
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    # Override the GPU reservation from the base compose file.
+    # Lists in compose are replaced (not merged), so setting devices
+    # to an empty list wipes the nvidia driver reservation.
+    deploy:
+      resources:
+        reservations:
+          devices: []

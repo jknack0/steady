@@ -1,4 +1,7 @@
-import "dotenv/config";
+// ⚠️ MUST be the first import — loads .env before anything else
+// evaluates process.env at module scope. See bootstrap-env.ts.
+import "./lib/bootstrap-env";
+
 import { APP_NAME } from "@steady/shared";
 import app from "./app";
 import { registerNotificationWorkers } from "./services/notifications";

@@ -223,6 +223,19 @@ export async function createPortalInvitation(
     logger.warn("Failed to enqueue portal invite email job", `invitationId=${invitation.id}`);
   }
 
+  // ── Local dev helper ───────────────────────────────────────────
+  // In non-production, log the signup URL so you can bypass real email
+  // delivery and paste the link directly into the browser. The token
+  // plaintext only exists at this moment — we do NOT persist it.
+  // Guarded on NODE_ENV so this never fires in staging/production.
+  if (process.env.NODE_ENV !== "production") {
+    const signupUrl = `${PORTAL_BASE_URL}/signup?t=${plaintextToken}`;
+    // eslint-disable-next-line no-console
+    console.log(
+      `\n🔗 [DEV] Portal invite signup URL:\n   ${signupUrl}\n   invitationId=${invitation.id}\n`
+    );
+  }
+
   return { invitation, plaintextToken };
 }
 
@@ -315,6 +328,23 @@ export async function lookupPortalInvitationStatus(
   existingUser?: boolean;
   firstName?: string | null;
   lastName?: string | null;
+  /** The bound email, returned for pre-fill on the signup form.
+   *
+   *  COMPLIANCE NOTE: Returning the email here means anyone who holds
+   *  the token URL can read the recipient's email via this public
+   *  endpoint. This WEAKENS the FR-3 email-binding check: an attacker
+   *  with a leaked token no longer needs to know the email — the form
+   *  pre-fills it. The server still runs the binding check on redeem,
+   *  but the check becomes decorative rather than load-bearing.
+   *
+   *  This trade-off was chosen in favor of UX — clients don't have to
+   *  re-type the email they just received the invitation to. Rate
+   *  limiting on /portal-invite-status + token TTL + single-use burn
+   *  are the remaining defenses against leaked tokens.
+   *
+   *  If the threat model changes, gate this behind
+   *  `NODE_ENV !== "production"` to restore the binding check. */
+  email?: string;
 }> {
   const tokenHash = hashToken(plaintextToken);
   const invitation = await prisma.portalInvitation.findUnique({
@@ -338,6 +368,7 @@ export async function lookupPortalInvitationStatus(
     existingUser: invitation.existingUser,
     firstName: invitation.firstName,
     lastName: invitation.lastName,
+    email: invitation.recipientEmail,
   };
 }
 
@@ -352,6 +383,10 @@ export interface RedeemParams {
   // Cognito sub of an already-created user (for idempotent resume).
   // When null, the caller creates the Cognito user after our re-check.
   cognitoId?: string | null;
+  // bcrypt-hashed password. Used in legacy (non-Cognito) mode so the
+  // user can log in later via /api/auth/login. In Cognito mode this
+  // is omitted because Cognito stores the password itself.
+  passwordHash?: string | null;
 }
 
 export interface RedeemResult {
@@ -455,6 +490,7 @@ export async function redeemPortalInvitation(
           firstName: params.firstName,
           lastName: params.lastName,
           ...(params.cognitoId ? { cognitoId: params.cognitoId } : {}),
+          ...(params.passwordHash ? { passwordHash: params.passwordHash } : {}),
         },
         include: { participantProfile: true },
       });
@@ -468,6 +504,7 @@ export async function redeemPortalInvitation(
           lastName: params.lastName,
           role: "PARTICIPANT",
           ...(params.cognitoId ? { cognitoId: params.cognitoId } : {}),
+          ...(params.passwordHash ? { passwordHash: params.passwordHash } : {}),
           participantProfile: { create: {} },
         },
         include: { participantProfile: true },
@@ -582,6 +619,13 @@ export async function resendPortalInvitation(
     logger.warn("Failed to enqueue resend job", `invitationId=${updated.id}`);
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.log(
+      `\n🔗 [DEV] Portal invite RESENT — signup URL:\n   ${PORTAL_BASE_URL}/signup?t=${plaintextToken}\n   invitationId=${updated.id}\n`
+    );
+  }
+
   return updated;
 }
 
@@ -635,6 +679,13 @@ export async function renewPortalInvitation(
     });
   } catch (err) {
     logger.warn("Failed to enqueue renew job", `invitationId=${updated.id}`);
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.log(
+      `\n🔗 [DEV] Portal invite RENEWED — signup URL:\n   ${PORTAL_BASE_URL}/signup?t=${plaintextToken}\n   invitationId=${updated.id}\n`
+    );
   }
 
   return updated;

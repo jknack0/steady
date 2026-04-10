@@ -875,6 +875,15 @@ router.post(
         }
       }
 
+      // In legacy (non-Cognito) mode, hash the password with bcrypt so
+      // the user can log in later via /api/auth/login. Cognito stores
+      // the password itself, so we skip this when Cognito is enabled.
+      let passwordHashForDb: string | null = null;
+      if (!isCognitoEnabled()) {
+        const bcrypt = await import("bcryptjs");
+        passwordHashForDb = await bcrypt.hash(password, 12);
+      }
+
       let result;
       try {
         result = await redeemPortalInvitation({
@@ -884,6 +893,7 @@ router.post(
           lastName,
           password,
           cognitoId: cognitoSub,
+          passwordHash: passwordHashForDb,
         });
       } catch (err) {
         // Clean up Cognito user on redemption failure (AC-3.*)

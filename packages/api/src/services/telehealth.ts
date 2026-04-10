@@ -10,6 +10,7 @@ interface TokenResult {
   token: string;
   url: string;
   roomName: string;
+  isHost: boolean; // True if the current user is the appointment's clinician
 }
 
 export class TelehealthError extends Error {
@@ -130,6 +131,7 @@ export async function generateToken(
     token,
     url: LIVEKIT_URL,
     roomName,
+    isHost: userId === clinicianUserId,
   };
 }
 
@@ -296,17 +298,15 @@ async function handleEgressEnded(event: any): Promise<void> {
   const egressId = event.egressInfo?.egressId as string | undefined;
   if (!egressId) return;
 
-  // Find the session that started this egress
-  // The egress file result contains the S3 path
-  const fileResults = event.egressInfo?.fileResults as any[];
-  const audioPath = fileResults?.[0]?.filename as string | undefined;
-
-  if (!audioPath) {
+  // Find the session that started this egress. The egress file result
+  // contains the S3 path. TrackEgress produces one file per webhook;
+  // we iterate just in case a future change produces multiple.
+  const fileResults = event.egressInfo?.fileResults as Array<{ filename?: string }>;
+  if (!fileResults || fileResults.length === 0) {
     logger.warn("Egress ended but no file result", `egressId=${egressId}`);
     return;
   }
 
-  // Look up session by room name from the egress event
   const roomName = event.egressInfo?.roomName as string | undefined;
   if (!roomName) return;
 
@@ -316,10 +316,29 @@ async function handleEgressEnded(event: any): Promise<void> {
   });
   if (!session) return;
 
-  // Update database with audio path and queue transcription via SQS
-  await onSessionEnd(session.id, audioPath, session.appointment.clinicianId);
+  for (const result of fileResults) {
+    const audioPath = result.filename;
+    if (!audioPath) continue;
 
-  logger.info("Egress completed — audio saved and transcription queued", `room=${roomName}`);
+    // Parse participant identity from the filepath pattern:
+    //   recordings/{clinicianId}/{sessionId}/{identity}-{trackSid}.ogg
+    // onSessionEnd also infers this if we pass undefined, but parsing
+    // here centralizes the logic.
+    const filename = audioPath.split("/").pop() ?? "";
+    const participantIdentity = filename.replace(/\.ogg$/, "").split("-")[0];
+
+    await onSessionEnd(
+      session.id,
+      audioPath,
+      session.appointment.clinicianId,
+      participantIdentity,
+    );
+
+    logger.info(
+      "Egress completed — audio saved and transcription queued",
+      `room=${roomName} identity=${participantIdentity}`,
+    );
+  }
 }
 
 function parseMetadata(raw: string | undefined): Record<string, unknown> | null {

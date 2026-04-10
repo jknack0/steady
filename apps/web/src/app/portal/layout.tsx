@@ -58,13 +58,14 @@ export default async function PortalLayout({
 }) {
   const headerList = await headers();
   // Next.js doesn't expose the rewritten path directly via the standard
-  // headers() API; we use x-pathname which the middleware can set, or
-  // fall back to x-invoke-path. In development this works via header
-  // forwarding; in production verify Amplify forwards correctly.
-  const pathname =
-    headerList.get("x-pathname") ||
-    headerList.get("next-url") ||
-    "/portal/calendar";
+  // headers() API. `apps/web/src/middleware.ts` sets `x-pathname` on the
+  // forwarded request headers so this layout can read it.
+  //
+  // IMPORTANT: if the header is ever missing (misconfigured middleware,
+  // direct render during hot reload, etc.), we MUST NOT default to a
+  // protected path like /portal/calendar — that would infinite-loop the
+  // unauth redirect. Default to the login path instead, which is public.
+  const pathname = headerList.get("x-pathname") || "/portal/login";
 
   // Public routes pass through without auth check
   if (isPublicPath(pathname)) {

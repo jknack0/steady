@@ -22,26 +22,37 @@ export function middleware(request: NextRequest) {
     host.startsWith("portal.") ||
     request.nextUrl.searchParams.get(PORTAL_DEV_QUERY) === "1";
 
-  if (!isPortalHost) {
-    return NextResponse.next();
+  // Propagate the current pathname as a request header so server
+  // components (notably the portal root layout's cross-role guard) can
+  // see which route is being rendered. Next.js does NOT expose the
+  // rewritten path to server components via `headers()` otherwise.
+  // The header must be set on the DOWNSTREAM request, not the response.
+  const forwardHeaders = new Headers(request.headers);
+
+  if (!isPortalHost && !request.nextUrl.pathname.startsWith("/portal")) {
+    forwardHeaders.set("x-pathname", request.nextUrl.pathname);
+    return NextResponse.next({ request: { headers: forwardHeaders } });
   }
 
   const url = request.nextUrl.clone();
 
-  // If the client requests `/`, route them to `/portal` for layout dispatch
+  // If the client requests `/` on the portal host, route to /portal/calendar
   if (url.pathname === "/" || url.pathname === "") {
     url.pathname = "/portal/calendar";
-    return NextResponse.rewrite(url);
+    forwardHeaders.set("x-pathname", url.pathname);
+    return NextResponse.rewrite(url, { request: { headers: forwardHeaders } });
   }
 
-  // Already prefixed (already in the portal route group) → pass through
-  if (url.pathname.startsWith("/portal/")) {
-    return NextResponse.next();
+  // Already prefixed (either hit directly in dev, or already rewritten)
+  if (url.pathname.startsWith("/portal/") || url.pathname === "/portal") {
+    forwardHeaders.set("x-pathname", url.pathname);
+    return NextResponse.next({ request: { headers: forwardHeaders } });
   }
 
-  // Otherwise, prepend /portal so the request lands in the (portal) route group
+  // Portal host with a bare path → prepend /portal so the route group resolves
   url.pathname = `/portal${url.pathname}`;
-  return NextResponse.rewrite(url);
+  forwardHeaders.set("x-pathname", url.pathname);
+  return NextResponse.rewrite(url, { request: { headers: forwardHeaders } });
 }
 
 export const config = {

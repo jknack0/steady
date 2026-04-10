@@ -49,6 +49,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { InviteStatusBadge } from "@/components/invite-status-badge";
 import { InvitePatientModal } from "@/components/invite-patient-modal";
+import { InviteToPortalModal } from "@/components/portal/InviteToPortalModal";
 
 const HOMEWORK_BADGE: Record<string, string> = {
   COMPLETE: "bg-green-100 text-green-800 border-green-200",
@@ -151,6 +152,7 @@ export default function ParticipantsPage() {
   const [confirmAction, setConfirmAction] = useState<BulkActionType | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [portalInviteOpen, setPortalInviteOpen] = useState(false);
 
   const { data, isLoading } = useClinicianParticipants({
     search: search || undefined,
@@ -300,10 +302,20 @@ export default function ParticipantsPage() {
         title="Clients"
         subtitle={subtitleParts.length > 0 ? subtitleParts.join(", ") : undefined}
         actions={
-          <Button onClick={() => setInviteModalOpen(true)} className="gap-1.5">
-            <UserPlus className="h-4 w-4" />
-            Invite Patient
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setInviteModalOpen(true)}
+              className="gap-1.5"
+            >
+              <UserPlus className="h-4 w-4" />
+              Invite Patient
+            </Button>
+            <Button onClick={() => setPortalInviteOpen(true)} className="gap-1.5">
+              <UserPlus className="h-4 w-4" />
+              Invite to portal
+            </Button>
+          </div>
         }
       />
 
@@ -620,6 +632,12 @@ export default function ParticipantsPage() {
         onSuccess={() => {
           // Queries are invalidated by the hook
         }}
+      />
+
+      {/* Invite to portal modal — FR-1 / Flow 16 */}
+      <InviteToPortalModal
+        open={portalInviteOpen}
+        onOpenChange={setPortalInviteOpen}
       />
     </div>
   );

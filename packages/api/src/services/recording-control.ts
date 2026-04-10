@@ -47,12 +47,12 @@ async function broadcastToRoom(roomName: string, message: object): Promise<void>
 }
 
 /**
- * Clinician requests consent to start recording.
- * Creates a PENDING consent record and notifies the patient via data channel.
+ * Host (whoever scheduled the session) requests consent to start recording.
+ * Creates a PENDING consent record and notifies other participants via data channel.
  */
 export async function requestRecordingConsent(
   appointmentId: string,
-  clinicianUserId: string,
+  hostUserId: string,
 ): Promise<{ consentId: string; roomName: string }> {
   const session = await prisma.telehealthSession.findUnique({
     where: { appointmentId },
@@ -69,31 +69,58 @@ export async function requestRecordingConsent(
     throw new Error("Telehealth session not found");
   }
 
-  if (session.status !== "ACTIVE") {
-    throw new Error("Session is not active");
+  if (session.status === "ENDED") {
+    throw new Error("Session has ended");
   }
 
   if (session.egressId) {
     throw new Error("Recording already active");
   }
 
-  // Check for an existing pending/granted consent
+  // Check for an existing pending/granted consent. Auto-clean stale ones:
+  // - PENDING that's older than the consent window (timeout handler missed it)
+  // - GRANTED but the session has no egressId (previous egress start failed)
+  // Both cases mean the prior attempt didn't produce an active recording,
+  // so it's safe to mark them REVOKED and let the clinician retry.
   const existing = await prisma.telehealthConsent.findFirst({
     where: {
       telehealthSessionId: session.id,
       status: { in: ["PENDING", "GRANTED"] },
     },
+    orderBy: { requestedAt: "desc" },
   });
   if (existing) {
-    throw new Error("Consent request already in progress");
+    const isStalePending =
+      existing.status === "PENDING" &&
+      existing.requestedAt.getTime() + CONSENT_TIMEOUT_MS < Date.now();
+    const isOrphanedGranted =
+      existing.status === "GRANTED" && !session.egressId;
+
+    if (isStalePending || isOrphanedGranted) {
+      await prisma.telehealthConsent.update({
+        where: { id: existing.id },
+        data: {
+          status: "REVOKED",
+          revokedAt: new Date(),
+        },
+      });
+      logger.info(
+        "Auto-cleaned stale consent",
+        `consentId=${existing.id} prevStatus=${existing.status}`
+      );
+    } else {
+      throw new Error("Consent request already in progress");
+    }
   }
 
+  // Pre-assign the appointment's participant, but the actual responder
+  // will be recorded when they respond (may differ for clinician-to-clinician)
   const participantUserId = session.appointment.participant.user.id;
 
   const consent = await prisma.telehealthConsent.create({
     data: {
       telehealthSessionId: session.id,
-      clinicianUserId,
+      clinicianUserId: hostUserId,
       participantUserId,
       status: "PENDING",
     },
@@ -139,7 +166,7 @@ export async function requestRecordingConsent(
  */
 export async function respondToConsent(
   consentId: string,
-  participantUserId: string,
+  respondingUserId: string,
   granted: boolean,
   ipAddress?: string,
 ): Promise<{ status: string; recordingStarted: boolean }> {
@@ -158,13 +185,21 @@ export async function respondToConsent(
     throw new Error("Consent request not found");
   }
 
-  if (consent.participantUserId !== participantUserId) {
-    throw new Error("Not authorized to respond to this consent request");
+  // The host (whoever requested consent) cannot respond to their own request
+  if (consent.clinicianUserId === respondingUserId) {
+    throw new Error("Cannot respond to your own consent request");
   }
 
   if (consent.status !== "PENDING") {
     throw new Error(`Consent request is already ${consent.status}`);
   }
+
+  // Record who actually responded (may differ from the pre-assigned participantUserId
+  // in clinician-to-clinician scenarios)
+  await prisma.telehealthConsent.update({
+    where: { id: consentId },
+    data: { participantUserId: respondingUserId },
+  });
 
   const newStatus = granted ? "GRANTED" : "DECLINED";
 
@@ -193,12 +228,28 @@ export async function respondToConsent(
         data: { egressId },
       });
       recordingStarted = true;
+      await broadcastToRoom(consent.session.roomName, {
+        type: "recording:started",
+        consentId,
+      });
+    } else {
+      // Egress start failed — roll consent back to DECLINED and notify
+      // the room so the UIs don't show a false "Recording" indicator.
+      // Real cause is logged by startRecording() — check API logs for
+      // "Failed to start recording" or "S3_BUCKET not configured".
+      await prisma.telehealthConsent.update({
+        where: { id: consentId },
+        data: { status: "DECLINED" },
+      });
+      await broadcastToRoom(consent.session.roomName, {
+        type: "recording:consent:declined",
+        consentId,
+      });
+      logger.error(
+        "Recording egress failed to start — consent marked as declined",
+        new Error(`sessionId=${consent.session.id}`)
+      );
     }
-
-    await broadcastToRoom(consent.session.roomName, {
-      type: "recording:started",
-      consentId,
-    });
   } else {
     await broadcastToRoom(consent.session.roomName, {
       type: "recording:consent:declined",
@@ -232,13 +283,30 @@ export async function stopRecording(
     throw new Error("No active recording");
   }
 
-  try {
-    const client = getEgressClient();
-    await client.stopEgress(session.egressId);
-    logger.info("Egress stopped", `sessionId=${session.id}`);
-  } catch (err) {
-    logger.error("Failed to stop egress", err);
+  // session.egressId may be a single egress ID or a comma-separated
+  // list (one per participant) when recorded via startParticipantEgress.
+  const egressIds = session.egressId.split(",").map((s) => s.trim()).filter(Boolean);
+  const client = getEgressClient();
+  for (const egressId of egressIds) {
+    try {
+      await client.stopEgress(egressId);
+      logger.info("Egress stopped", `sessionId=${session.id} egressId=${egressId}`);
+    } catch (err) {
+      // Non-fatal — an already-ended egress will throw Precondition Failed,
+      // which we swallow so the revoke flow still completes for the others.
+      logger.error("Failed to stop egress", err);
+    }
   }
+
+  // Clear egressId on the session row so getRecordingState returns
+  // isRecording=false immediately. Without this, the UI stays showing
+  // "Recording" even though every egress has been stopped — the
+  // egress_ended webhook fires per file AFTER the audio is uploaded
+  // (seconds later), and it doesn't actually clear the field either.
+  await prisma.telehealthSession.update({
+    where: { id: session.id },
+    data: { egressId: null },
+  });
 
   // If this is a revoke, mark the consent as REVOKED
   if (isRevoke) {

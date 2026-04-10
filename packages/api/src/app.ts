@@ -53,6 +53,7 @@ import stripePaymentRoutes from "./routes/stripe-payments";
 import telehealthRoutes from "./routes/telehealth";
 import { telehealthWebhookRouter } from "./routes/telehealth";
 import portalInvitationRoutes from "./routes/portal-invitations";
+import sesWebhookRoutes from "./routes/ses-webhooks";
 
 const app = express();
 
@@ -463,6 +464,8 @@ app.use("/api/appointments", appointmentReminderRoutes);
 app.use("/api/participant", participantPortalRoutes);
 app.use("/api/participant-portal", participantPortalRoutes);
 app.use("/api/portal-invitations", portalInvitationRoutes);
+// SES/SNS webhooks — auth via SNS signature verification, not internal key
+app.use("/api/internal", sesWebhookRoutes);
 app.use("/api/stripe", stripePaymentRoutes);
 app.use("/api/telehealth", telehealthRoutes);
 

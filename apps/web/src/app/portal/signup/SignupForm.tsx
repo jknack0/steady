@@ -8,12 +8,15 @@ interface SignupFormProps {
   token: string;
   defaultFirstName: string;
   defaultLastName: string;
+  /** Bound email from the invitation, pre-filled on form render. */
+  defaultEmail?: string;
 }
 
 export default function SignupForm({
   token,
   defaultFirstName,
   defaultLastName,
+  defaultEmail = "",
 }: SignupFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -112,6 +115,7 @@ export default function SignupForm({
               name="email"
               type="email"
               required
+              defaultValue={defaultEmail}
               autoComplete="email"
               className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
               disabled={pending}

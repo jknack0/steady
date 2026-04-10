@@ -27,6 +27,13 @@ export const TRANSCRIPTION_QUEUE_URL = process.env.TRANSCRIPTION_QUEUE_URL || ""
 export const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "dev-internal-key";
 export const TRANSCRIPTION_WORKER_URL = process.env.TRANSCRIPTION_WORKER_URL || "";
 export const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:4000";
+// URL the transcription worker uses to POST back to us. Differs from
+// API_BASE_URL in local dev because the worker runs inside Docker
+// while the API runs on the host — `localhost` inside the container
+// is the container itself, not the host. Defaults to API_BASE_URL in
+// prod (both run on the same machine or behind the same DNS).
+export const TRANSCRIPTION_CALLBACK_BASE_URL =
+  process.env.TRANSCRIPTION_CALLBACK_BASE_URL || API_BASE_URL;
 
 // Client Web Portal (FR-1 through FR-12)
 export const PORTAL_BASE_URL =

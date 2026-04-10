@@ -41,9 +41,14 @@ export function TelehealthSession({
   const [serverUrl, setServerUrl] = useState<string>("");
   const [roomName, setRoomName] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isHost, setIsHost] = useState<boolean>(false);
   const sessionTimer = useSessionTimer();
 
   const tokenMutation = useTelehealthToken();
+
+  // Effective role — backend determines via isHost (based on appointment's clinicianId).
+  // Falls back to the prop if isHost hasn't loaded yet.
+  const effectiveRole: "therapist" | "patient" = isHost ? "therapist" : "patient";
 
   const handleJoin = useCallback(async () => {
     setPhase("CONNECTING");
@@ -54,9 +59,10 @@ export function TelehealthSession({
       setToken(result.token);
       setServerUrl(result.url);
       setRoomName(result.roomName);
+      setIsHost(result.isHost ?? false);
 
-      // Clinicians go straight to the call; patients may go to waiting room
-      if (role === "patient") {
+      // Host goes straight to call; guests may go to waiting room
+      if (!result.isHost) {
         setPhase("WAITING");
       } else {
         setPhase("IN_CALL");
@@ -153,7 +159,7 @@ export function TelehealthSession({
           token={token}
           url={serverUrl}
           roomName={roomName}
-          role={role}
+          role={effectiveRole}
           participantName={participantName}
           appointmentId={appointmentId}
           onSessionEnd={handleSessionEnd}

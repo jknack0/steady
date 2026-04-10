@@ -100,6 +100,10 @@ services:
       - "8000:8000"
     volumes:
       - whisper-models:/root/.cache/huggingface
+    # Allow the worker to reach the host-running API for callback POSTs.
+    # `host-gateway` is a magic Docker value that maps to the host's IP.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       WHISPER_MODEL: large-v3
       WHISPER_DEVICE: cuda

@@ -15,6 +15,7 @@ export default function PortalLoginPage() {
 
   const signedOut = params.get("signedOut") === "1";
   const idle = params.get("idle") === "1";
+  const passwordReset = params.get("passwordReset") === "1";
   const redirect = params.get("redirect") || "/portal/calendar";
 
   function handleSubmit(formData: FormData) {
@@ -55,6 +56,15 @@ export default function PortalLoginPage() {
             data-testid="portal-idle-flash"
           >
             You&apos;ve been signed out due to inactivity.
+          </div>
+        )}
+        {passwordReset && (
+          <div
+            className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm"
+            role="status"
+            data-testid="portal-password-reset-flash"
+          >
+            Password reset. Please sign in.
           </div>
         )}
         {error && (

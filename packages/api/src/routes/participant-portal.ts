@@ -163,7 +163,9 @@ router.get("/appointments", async (req: Request, res: Response) => {
     const toDate = new Date(to);
     const take = Math.min(limit ?? 100, 100);
 
-    // COND-5: explicit select — minimum necessary
+    // COND-5: explicit select — minimum necessary.
+    // NOTE: Prisma model uses startAt/endAt; the view schema exposes
+    // them as startTime/endTime.
     const items = await prisma.appointment.findMany({
       where: {
         participantId: participantProfileId,
@@ -177,12 +179,12 @@ router.get("/appointments", async (req: Request, res: Response) => {
             "LATE_CANCELED",
           ],
         },
-        startTime: { gte: fromDate, lte: toDate },
+        startAt: { gte: fromDate, lte: toDate },
       },
       select: {
         id: true,
-        startTime: true,
-        endTime: true,
+        startAt: true,
+        endAt: true,
         status: true,
         appointmentType: true,
         cancelReason: true,
@@ -194,7 +196,7 @@ router.get("/appointments", async (req: Request, res: Response) => {
         },
         location: { select: { name: true, type: true } },
       },
-      orderBy: [{ startTime: "asc" }, { id: "asc" }],
+      orderBy: [{ startAt: "asc" }, { id: "asc" }],
       take: take + 1,
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
@@ -202,8 +204,8 @@ router.get("/appointments", async (req: Request, res: Response) => {
     const hasMore = items.length > take;
     const data = (hasMore ? items.slice(0, take) : items).map((apt) => ({
       id: apt.id,
-      startTime: apt.startTime.toISOString(),
-      endTime: apt.endTime.toISOString(),
+      startTime: apt.startAt.toISOString(),
+      endTime: apt.endAt.toISOString(),
       status: apt.status,
       appointmentType: apt.appointmentType ?? null,
       cancelReason: apt.cancelReason ?? null,
@@ -216,8 +218,8 @@ router.get("/appointments", async (req: Request, res: Response) => {
         ? { name: apt.location.name ?? null, type: apt.location.type ?? null }
         : null,
       isJoinable: isAppointmentJoinable({
-        startTime: apt.startTime,
-        endTime: apt.endTime,
+        startTime: apt.startAt,
+        endTime: apt.endAt,
         status: apt.status,
       }),
     }));
