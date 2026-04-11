@@ -1,0 +1,131 @@
+# Monorepo Split — Tracking Doc
+
+**Status:** Phase 0 in progress
+**Goal:** Split `jknack0/steady` monorepo into 5 repos under a single workspace CLI.
+
+## The 5 target repos
+
+| Repo | Content | Dependencies |
+|---|---|---|
+| `steady-api` | Express API + pg-boss + Prisma (db folded in) + Bedrock client | `@steady/shared` via git URL |
+| `steady-web` | Next.js 15 clinician dashboard | `@steady/shared` via git URL |
+| `steady-mobile` | Expo 54 participant app | **None** (4 shared imports inlined) |
+| `steady-shared` | Zod schemas + TS types + constants + theme | None |
+| `steady-workspace` | CLI that clones, installs, links, and runs all of the above | None — tool only |
+
+## Locked decisions
+
+| # | Decision | Choice | Why |
+|---|---|---|---|
+| 1 | Repo count | 5 total (4 code + 1 workspace CLI) | 4 code repos is the target separation; workspace CLI gives a monorepo-like dev loop |
+| 2 | Registry | **None — git URL deps** | No publishing ceremony, no auth tokens, no monthly fee. `package.json` pins consumer dependencies directly at `git+ssh://github.com/jknack0/steady-shared.git#vX.Y.Z`, lockfile pins exact SHA |
+| 3 | Mobile shared handling | **Inline the 4 imports** | Mobile only imports 4 things from shared (theme, emotion constants, session review types). Inlining eliminates mobile from every future schema-bump coordination |
+| 4 | Git history | **Preserve via `git-filter-repo`** | Each new repo keeps its own subset of history, blame, and commit dates |
+| 5 | Deploy cutover | **Dual-run ~1 week** | Old and new deploys live in parallel before cutover; verify parity before flipping traffic |
+| 6 | Old monorepo | **Archive, don't delete** | Read-only reference post-split; source of truth for "what happened before" |
+| 7 | Workspace CLI | **Yes, 5th repo** | `steady init` / `dev` / `link` / `shared bump` — gives back the monorepo dev-loop ergonomics |
+
+## The workspace CLI surface
+
+```bash
+# One-time setup
+git clone git@github.com:jknack0/steady-workspace.git
+cd steady-workspace
+npx steady init
+# → clones 4 code repos as siblings, runs npm install, npm links shared
+
+# Day-to-day
+steady dev                    # starts api + web + mobile
+steady dev api web            # subset
+steady status                 # git status across all 4
+steady update                 # git pull + reinstall + relink
+steady doctor                 # preflight: node version, ports, aws creds, db
+steady link / unlink          # manage npm link for @steady/shared local edits
+steady shared bump patch      # bump shared, tag, push, auto-PR consumers
+```
+
+## Phase plan
+
+| Phase | Name | Output | Status |
+|---|---|---|---|
+| **0** | Prep in current monorepo | Phantom deps removed, `.nvmrc` files, tracking doc, CI freeze | **in progress** |
+| **1** | Create `steady-shared` repo | `git filter-repo --path packages/shared/`, push, tag `v0.1.0` | pending |
+| **1.5** | Create `steady-workspace` repo | CLI with `init`/`dev`/`status`/`update`/`link`/`doctor`/`shared bump` | pending |
+| **2** | Create `steady-api` repo | `git filter-repo --path packages/api/ --path packages/db/`, internalize db as `src/db/`, 123 import rewrites, git-URL shared dep, OIDC role trust-policy update | pending |
+| **3** | Create `steady-web` repo | `git filter-repo --path apps/web/`, git-URL shared dep, Amplify repo repoint | pending |
+| **4** | Create `steady-mobile` repo | `git filter-repo --path apps/mobile/`, inline 4 shared imports, verify Metro starts clean | pending |
+| **5** | Dual-run cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify | pending |
+| **6** | Archive + memory update | Rename `jknack0/steady` → `steady-legacy`, mark read-only, update auto-memory files | pending |
+
+## Phase 0 — what's being done (this PR)
+
+1. ✅ Delete phantom `@steady/db` dep from `apps/web/package.json` (0 real imports, was dead weight)
+2. ✅ Add `.nvmrc` at root and in each workspace (`22` everywhere — API hard-requires Node 22 per `expo-server-sdk` ESM constraint; consistency > fragmentation)
+3. ✅ Create this tracking doc
+4. ⏳ Freeze CI on `dev` branch for new features during split (communication, not code)
+
+Phase 0 is **fully reversible** and introduces zero risk. It lands on `dev` as a normal commit.
+
+## Auth seams to set up in later phases
+
+### GitHub Actions CI (Phase 2+)
+Consumer repos (`steady-api`, `steady-web`) will have GitHub Actions that run `npm ci`, which clones `steady-shared` via git URL. The default `GITHUB_TOKEN` can't access sibling private repos, so each consumer needs **one** of:
+
+- **SSH deploy key** on `steady-shared` (read-only) added to the consumer's Actions secrets as `SSH_PRIVATE_KEY`. Simplest, per-repo. One-time setup.
+- **PAT (fine-grained)** with read access to `steady-shared`, stored as `NPM_GITHUB_TOKEN` in consumer secrets.
+- **GitHub App** installed on the org with read access to private repos — cleanest long-term.
+
+Recommendation: **SSH deploy key** for initial setup, revisit GitHub App if we add more consumers.
+
+### Production EC2 (Phase 2+)
+`prod-api` and `dev-api` run `npm ci` on deploy, which clones `steady-shared`. Need a deploy key on each EC2 box's `~/.ssh/id_ed25519` with the corresponding pub key registered on `steady-shared`. One-time per EC2.
+
+### OIDC role trust policy (Phase 2+)
+The existing `SteadyGitHubOIDCRole` currently allows only `repo:jknack0/steady:*` via the `sub` claim. Needs to be widened to allow the new repo names:
+
+```json
+"token.actions.githubusercontent.com:sub": [
+  "repo:jknack0/steady-api:ref:refs/heads/main",
+  "repo:jknack0/steady-web:ref:refs/heads/main",
+  "repo:jknack0/steady-mobile:ref:refs/heads/main"
+]
+```
+
+Or use `StringLike` with `repo:jknack0/steady-*:*` to cover all variants at once.
+
+## Risks and mitigations
+
+| Risk | Mitigation |
+|---|---|
+| Schema drift between web and api after a shared bump | `steady shared bump` CLI command automates the 3-step flow; CI check in consumers fails if they reference a removed schema field |
+| CI breaks on day 1 because OIDC trust policy doesn't include new repo names | Phase 0 task: update trust policy proactively before Phase 2 |
+| Developer edits `@steady/shared` locally but forgets to `npm link`, sees no effect | `steady doctor` checks for linked deps and warns; `npm run dev` can preflight-warn if shared is unlinked |
+| Metro EACCES still happens post-split (not a monorepo issue after all) | Phase 4 validates this explicitly. If it reproduces, root cause was Windows/WSL install mixing, solved by always running `npm install` from the same shell per-repo |
+| Missed `@steady/db` imports during internalization | Codemod + CI typecheck gate; 123 imports is finite and greppable |
+| Hotfix to shared during an incident now requires 3 merges | `steady shared bump` collapses it; emergency path is direct git push to shared + consumer bumps in parallel |
+
+## What we keep from the current monorepo
+
+- Prisma schema and migrations (move into `steady-api/src/db/`)
+- Test fixtures and the `railway_test_db/` local test DB setup (move into `steady-api/`)
+- All HIPAA compliance setup (audit middleware, encryption middleware, logger — move into `steady-api/`)
+- AWS infra: EC2 boxes, RDS, Amplify, Bedrock, ALB, WAF — unchanged, just point at new repos for deploys
+- GitHub OIDC federation for CI deploys — reused, trust policy widened
+- Memory files in `~/.claude/projects/c--Dev-steady/memory/` — updated in Phase 6 to point at new repo paths
+
+## What we explicitly do NOT do
+
+- Publish `@steady/shared` to any registry (npm.js, GitHub Packages, Verdaccio)
+- Use Changesets or semver version bumping as the source of truth — git tags are the version
+- Split `@steady/db` into its own repo — it folds into `steady-api` as an internal folder
+- Force mobile to depend on `@steady/shared` — the 4 imports are inlined into mobile
+- Migrate to pnpm or any other package manager — stays npm to minimize change surface
+
+## Freeze during split
+
+While Phases 1–5 are in progress, avoid:
+- Adding new `@steady/shared` imports from mobile (would break the inline strategy)
+- Restructuring `packages/db/` (it's about to move into `steady-api/src/db/`)
+- Large schema changes (harder to coordinate mid-split)
+
+Existing feature work on isolated files is fine.
