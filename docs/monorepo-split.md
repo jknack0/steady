@@ -52,14 +52,30 @@ steady shared bump patch      # bump shared, tag, push, auto-PR consumers
 
 | Phase | Name | Output | Status |
 |---|---|---|---|
-| **0** | Prep in current monorepo | Phantom deps removed, `.nvmrc` files, tracking doc, CI freeze | **in progress** |
-| **1** | Create `steady-shared` repo | `git filter-repo --path packages/shared/`, push, tag `v0.1.0` | pending |
-| **1.5** | Create `steady-workspace` repo | CLI with `init`/`dev`/`status`/`update`/`link`/`doctor`/`shared bump` | pending |
-| **2** | Create `steady-api` repo | `git filter-repo --path packages/api/ --path packages/db/`, internalize db as `src/db/`, 123 import rewrites, git-URL shared dep, OIDC role trust-policy update | pending |
+| **0** | Prep in current monorepo | Phantom deps removed, `.nvmrc` files, tracking doc, CI freeze | ✅ done (`aa5c0ef`) |
+| **1** | Create `steady-shared` repo | `git filter-repo --path packages/shared/`, push, tag `v0.1.0` | ✅ done (`Steady-Mental-Health/steady-shared@v0.1.0`, 80+1 commits, 494 tests pass) |
+| **1.5** | Create `steady-workspace` repo (MVP scope) | CLI with `init`/`status`/`link`/`unlink`/`dev`; `doctor`/`update`/`shared bump` deferred to 1.5b | ✅ done (`Steady-Mental-Health/steady-workspace@v0.1.0`, link fix at `968367a`) |
+| **2** | Create `steady-api` repo | `git filter-repo --path packages/api/ --path packages/db/` with path-renames; db folded into `src/db/`; 135 `@steady/db` references rewritten; git-URL shared dep; `bootstrap-env.ts` + `field-encryption.test.ts` path fixes | ✅ done (`Steady-Mental-Health/steady-api@v0.1.0`, 191+1 commits, **1055/1055 tests pass**, CI deferred to post-cutover) |
 | **3** | Create `steady-web` repo | `git filter-repo --path apps/web/`, git-URL shared dep, Amplify repo repoint | pending |
 | **4** | Create `steady-mobile` repo | `git filter-repo --path apps/mobile/`, inline 4 shared imports, verify Metro starts clean | pending |
-| **5** | Dual-run cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify | pending |
+| **5** | Dual-run cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify. **Also replay dev-only fixes** (see below) onto `steady-api/main` | pending |
 | **6** | Archive + memory update | Mark `jknack0/steady` read-only (GitHub archive setting), update auto-memory files to point at `Steady-Mental-Health/*` | pending |
+
+### Dev-only fixes not yet in steady-api
+
+Phase 2 extracted from the monorepo's `main` branch. The following fixes live on `jknack0/steady/dev` but **not** on `main`, so they're **not in `steady-api@v0.1.0`** and must be replayed before Phase 5 cutover:
+
+- `1581284` — fix(api): register `send-portal-invite-email` queue in pg-boss
+- `6cb6406` — fix(portal-invitations+config): clinician-as-client invite guard + config route loosening for invited-but-not-enrolled clients
+- `c177ac9` — fix(session-summary): atomic claim to dedupe `summarize-transcript` jobs (prevents duplicate Sonnet calls)
+
+Two options:
+
+**Option A — merge `dev` → `main` in the monorepo, re-run Phase 2, force-push `steady-api/main`.** Preserves the original commits' history/SHA provenance but requires a force-push to a live remote. Cleaner audit trail.
+
+**Option B — cherry-pick the 3 commits onto `steady-api/main` as fresh commits.** Non-destructive, simpler, but the commits get new SHAs (original commit refs from PRs/issues/memory files become stale).
+
+**Recommendation:** Option A, as part of Phase 5 when we're already going to re-extract for the final cutover snapshot.
 
 ## Phase 0 — what's being done (this PR)
 
