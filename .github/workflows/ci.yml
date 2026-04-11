@@ -93,12 +93,15 @@ jobs:
     needs: [typecheck, unit-tests, integration-tests, lint]
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (via GitHub OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::847041281129:role/SteadyGitHubActions
+          role-session-name: gh-actions-deploy-dev-${{ github.run_id }}
           aws-region: us-east-2
       - name: Deploy to Dev EC2 via SSM
         run: |
@@ -114,12 +117,15 @@ jobs:
     needs: [typecheck, unit-tests, integration-tests, lint]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (via GitHub OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::847041281129:role/SteadyGitHubActions
+          role-session-name: gh-actions-deploy-prod-${{ github.run_id }}
           aws-region: us-east-2
       - name: Deploy to Prod EC2 via SSM
         run: |
