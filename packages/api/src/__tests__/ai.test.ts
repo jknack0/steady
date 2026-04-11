@@ -3,15 +3,15 @@ import request from "supertest";
 import app from "../app";
 import { authHeader, participantAuthHeader } from "./helpers";
 
-// ── Mock Anthropic SDK ──────────────────────────────────
+// ── Mock Anthropic Bedrock SDK ──────────────────────────
 
 const mockCreate = vi.fn();
 
-vi.mock("@anthropic-ai/sdk", () => {
-  const MockAnthropic = function (this: any) {
+vi.mock("@anthropic-ai/bedrock-sdk", () => {
+  const MockAnthropicBedrock = function (this: any) {
     this.messages = { create: mockCreate };
   };
-  return { default: MockAnthropic };
+  return { AnthropicBedrock: MockAnthropicBedrock };
 });
 
 // ── Mock S3 (for parse-homework-pdf) ────────────────────
@@ -22,8 +22,9 @@ vi.mock("../services/s3", () => ({
   generatePresignedDownloadUrl: vi.fn(),
 }));
 
-// Ensure ANTHROPIC_API_KEY is set for tests
-process.env.ANTHROPIC_API_KEY = "test-key";
+// AWS region for Bedrock client instantiation in tests (mock bypasses
+// real credentials but the client constructor may read the env var).
+process.env.AWS_REGION = "us-east-2";
 
 beforeEach(() => {
   mockCreate.mockReset();
