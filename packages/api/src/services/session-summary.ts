@@ -111,23 +111,54 @@ export async function generateSummary(transcript: Transcript): Promise<SessionSu
 /**
  * Queue a summarization job for a session that has a completed transcript.
  * Non-blocking: triggers the pg-boss worker to process asynchronously.
+ *
+ * Idempotent by design: the multi-track merge path can call this multiple
+ * times for the same session (once per `allDone=true` transition as tracks
+ * get re-transcribed). Without a guard that means 3+ duplicate Sonnet
+ * calls and 3+ duplicate DB writes for a single session.
+ *
+ * The guard is an atomic `updateMany` that only flips `"none"` or
+ * `"failed"` to `"pending"`. Any other status (pending/generating/
+ * completed) means a job is already in flight or done, and we skip.
+ * Concurrent callers race on the same WHERE clause — exactly one wins
+ * the update and proceeds to enqueue; all others see `count === 0` and
+ * return.
  */
 export async function queueSummarization(sessionId: string): Promise<void> {
-  const { getQueue } = await import("./queue");
-  const boss = await getQueue();
-
-  await boss.send("summarize-transcript", { sessionId }, {
-    retryLimit: 2,
-    retryDelay: 30,
-    expireInMinutes: 15,
-  });
-
-  await prisma.telehealthSession.update({
-    where: { id: sessionId },
+  // Atomic claim: only fresh ("none") or previously-failed sessions can be queued.
+  const claim = await prisma.telehealthSession.updateMany({
+    where: {
+      id: sessionId,
+      summaryStatus: { in: ["none", "failed"] },
+    },
     data: { summaryStatus: "pending" },
   });
 
-  logger.info("Summarization queued", `sessionId=${sessionId}`);
+  if (claim.count === 0) {
+    logger.info(
+      "Summarization skipped — already pending/generating/completed",
+      `sessionId=${sessionId}`,
+    );
+    return;
+  }
+
+  try {
+    const { getQueue } = await import("./queue");
+    const boss = await getQueue();
+    await boss.send("summarize-transcript", { sessionId }, {
+      retryLimit: 2,
+      retryDelay: 30,
+      expireInMinutes: 15,
+    });
+    logger.info("Summarization queued", `sessionId=${sessionId}`);
+  } catch (err) {
+    // Roll back so a retry can re-acquire the claim.
+    await prisma.telehealthSession.update({
+      where: { id: sessionId },
+      data: { summaryStatus: "failed" },
+    });
+    throw err;
+  }
 }
 
 /**
