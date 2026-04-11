@@ -1,22 +1,15 @@
 /**
  * Session Summary Service
  *
- * Uses Claude to generate clinical notes from a session transcript.
- * Output: structured JSON with overview, key themes, action items, etc.
+ * Uses Claude (via AWS Bedrock) to generate clinical notes from a session
+ * transcript. Output: structured JSON with overview, key themes, action
+ * items, etc. Uses the clinical-tier model (Sonnet) since these notes
+ * drive therapist documentation.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
-
-let _anthropic: Anthropic | null = null;
-function getAnthropic(): Anthropic | null {
-  if (!_anthropic) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (apiKey) _anthropic = new Anthropic({ apiKey });
-  }
-  return _anthropic;
-}
+import { getBedrockClient, MODELS } from "../lib/bedrock";
 
 interface TranscriptSegment {
   start: number;
@@ -70,18 +63,15 @@ Return ONLY valid JSON matching this exact schema:
 Do NOT include markdown code fences or any text outside the JSON.`;
 
 /**
- * Generate a clinical summary from a transcript using Claude.
+ * Generate a clinical summary from a transcript using Claude (via Bedrock).
  */
 export async function generateSummary(transcript: Transcript): Promise<SessionSummary> {
-  const anthropic = getAnthropic();
-  if (!anthropic) {
-    throw new Error("ANTHROPIC_API_KEY not configured");
-  }
+  const anthropic = getBedrockClient();
 
   const transcriptText = transcript.text || transcript.segments.map((s) => s.text).join(" ");
 
   const message = await anthropic.messages.create({
-    model: "claude-sonnet-4-5-20250929",
+    model: MODELS.clinical,
     max_tokens: 2000,
     system: SYSTEM_PROMPT,
     messages: [

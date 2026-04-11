@@ -1,19 +1,10 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
-import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
 import { verifyFileOwnership } from "../lib/s3-ownership";
-
-let _anthropic: Anthropic | null = null;
-function getAnthropic(): Anthropic | null {
-  if (!_anthropic) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (apiKey) _anthropic = new Anthropic({ apiKey });
-  }
-  return _anthropic;
-}
+import { getBedrockClient, MODELS } from "../lib/bedrock";
 
 const router = Router();
 
@@ -108,14 +99,10 @@ router.post("/style-content", async (req: Request, res: Response) => {
     }
 
 
-    const anthropic = getAnthropic();
-    if (!anthropic) {
-      res.status(500).json({ success: false, error: "AI service not configured" });
-      return;
-    }
+    const anthropic = getBedrockClient();
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: MODELS.styling,
       max_tokens: 4096,
       system: buildSystemPrompt(styleContext),
       messages: [
@@ -146,14 +133,10 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
     }
 
 
-    const anthropic = getAnthropic();
-    if (!anthropic) {
-      res.status(500).json({ success: false, error: "AI service not configured" });
-      return;
-    }
+    const anthropic = getBedrockClient();
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: MODELS.tracker,
       max_tokens: 4096,
       system: `You are a clinical tracker designer for Steady, a healthcare app for ADHD treatment. Generate daily tracker configurations from clinician descriptions.
 
@@ -235,14 +218,10 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
-    const anthropic = getAnthropic();
-    if (!anthropic) {
-      res.status(500).json({ success: false, error: "AI service not configured" });
-      return;
-    }
+    const anthropic = getBedrockClient();
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: MODELS.part,
       max_tokens: 8192,
       system: GENERATE_PART_SYSTEM_PROMPT,
       messages: [
@@ -348,18 +327,14 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
       return;
     }
 
-    const anthropic = getAnthropic();
-    if (!anthropic) {
-      res.status(500).json({ success: false, error: "AI service not configured" });
-      return;
-    }
+    const anthropic = getBedrockClient();
 
     // Download PDF from S3
     const pdfBuffer = await getFileBuffer(fileKey);
     const pdfBase64 = pdfBuffer.toString("base64");
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: MODELS.pdf,
       max_tokens: 8192,
       system: `You are a clinical content parser for a healthcare app called Steady. Your job is to analyze PDF worksheets and homework assignments used by clinicians (typically CBT, DBT, or other therapeutic exercises) and convert them into structured homework items.
 
