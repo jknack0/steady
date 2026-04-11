@@ -74,6 +74,55 @@ describe("Config Routes", () => {
     });
   });
 
+  describe("GET /api/config/clients/:clientId", () => {
+    it("returns config when an enrollment exists (legacy path)", async () => {
+      mockPrisma.enrollment.findFirst.mockResolvedValue({ id: "enrollment-1" });
+      mockPrisma.clinicianClient.findUnique.mockResolvedValue(null);
+      mockPrisma.clientConfig.findUnique.mockResolvedValue({
+        id: "cc-1",
+        clientId: "client-user-id",
+        clinicianId: "test-clinician-profile-id",
+        enabledModules: [],
+      });
+
+      const res = await request(app)
+        .get("/api/config/clients/client-user-id")
+        .set(...authHeader());
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.id).toBe("cc-1");
+    });
+
+    it("returns config when only a clinician_clients link exists (invited-but-not-enrolled)", async () => {
+      // No enrollment yet — but the clinician has an INVITED link to this user.
+      mockPrisma.enrollment.findFirst.mockResolvedValue(null);
+      mockPrisma.clinicianClient.findUnique.mockResolvedValue({ id: "cc-link-1" });
+      mockPrisma.clientConfig.findUnique.mockResolvedValue(null);
+
+      const res = await request(app)
+        .get("/api/config/clients/invited-user-id")
+        .set(...authHeader());
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      // A freshly-invited client has no config row yet — null is fine.
+      expect(res.body.data).toBeNull();
+    });
+
+    it("returns 404 when neither enrollment nor clinician_clients link exists", async () => {
+      mockPrisma.enrollment.findFirst.mockResolvedValue(null);
+      mockPrisma.clinicianClient.findUnique.mockResolvedValue(null);
+
+      const res = await request(app)
+        .get("/api/config/clients/unrelated-user-id")
+        .set(...authHeader());
+
+      expect(res.status).toBe(404);
+      expect(res.body.error).toMatch(/not found/i);
+    });
+  });
+
   describe("PATCH /api/config/clients/:clientId/overview-layout", () => {
     it("saves client overview layout", async () => {
       mockPrisma.enrollment.findFirst.mockResolvedValue({ id: "enrollment-1" });

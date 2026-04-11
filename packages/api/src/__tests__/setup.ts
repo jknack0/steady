@@ -260,6 +260,20 @@ vi.mock("@steady/db", () => {
       upsert: vi.fn(),
       count: vi.fn(),
     },
+    portalInvitation: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
+    },
+    emailSuppression: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     refreshToken: {
       create: vi.fn(),
       findUnique: vi.fn(),
