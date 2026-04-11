@@ -56,10 +56,20 @@ steady shared bump patch      # bump shared, tag, push, auto-PR consumers
 | **1** | Create `steady-shared` repo | `git filter-repo --path packages/shared/`, push, tag `v0.1.0` | ✅ done (`Steady-Mental-Health/steady-shared@v0.1.0`, 80+1 commits, 494 tests pass) |
 | **1.5** | Create `steady-workspace` repo (MVP scope) | CLI with `init`/`status`/`link`/`unlink`/`dev`; `doctor`/`update`/`shared bump` deferred to 1.5b | ✅ done (`Steady-Mental-Health/steady-workspace@v0.1.0`, link fix at `968367a`) |
 | **2** | Create `steady-api` repo | `git filter-repo --path packages/api/ --path packages/db/` with path-renames; db folded into `src/db/`; 135 `@steady/db` references rewritten; git-URL shared dep; `bootstrap-env.ts` + `field-encryption.test.ts` path fixes | ✅ done (`Steady-Mental-Health/steady-api@v0.1.0`, 191+1 commits, **1055/1055 tests pass**, CI deferred to post-cutover) |
-| **3** | Create `steady-web` repo | `git filter-repo --path apps/web/`, git-URL shared dep, Amplify repo repoint | pending |
+| **3** | Create `steady-web` repo | `git filter-repo --subdirectory-filter apps/web`; remove phantom `@steady/db` dep; remove `@steady/db` from `next.config.js` `transpilePackages`; rewrite `amplify.yml` for single-repo build (no cross-workspace dance); git-URL shared dep | ✅ done (`Steady-Mental-Health/steady-web@v0.1.0`, 255+1 commits, **next build green**, 58/60 vitest — 2 pre-existing flaky tests unrelated to extraction) |
 | **4** | Create `steady-mobile` repo | `git filter-repo --path apps/mobile/`, inline 4 shared imports, verify Metro starts clean | pending |
 | **5** | Dual-run cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify. **Also replay dev-only fixes** (see below) onto `steady-api/main` | pending |
 | **6** | Archive + memory update | Mark `jknack0/steady` read-only (GitHub archive setting), update auto-memory files to point at `Steady-Mental-Health/*` | pending |
+
+### Known follow-ups
+
+**steady-web pre-existing test flakiness** (not blocking)
+- `src/__tests__/use-autosave.test.ts > sets status to saving immediately on save call` — timing assertion fails: expected `"saving"`, received `"pending"`. React 19 state scheduling issue.
+- `src/__tests__/appointments/ClientSearchSelect.test.tsx > debounces and searches after 2+ chars` — crashes deep in react-dom 19 `updateFunctionComponent` during debounce timer fire. Likely React 19 + testing-library 16 interaction.
+- Both fail consistently in the extracted repo AND in the monorepo state (verified with a fresh clean install). These are **pre-existing bugs** that need investigation, not a regression from the split.
+
+**steady-web `tsconfig.tsbuildinfo` committed by accident** (cosmetic)
+- TypeScript incremental build cache leaked into the v0.1.0 commit because `.gitignore` didn't cover `*.tsbuildinfo`. Harmless (~KB cache file) but should be cleaned up in a follow-up commit on `steady-web/main` plus an `.gitignore` update.
 
 ### Dev-only fixes not yet in steady-api
 
