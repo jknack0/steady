@@ -7,7 +7,6 @@ describe("Auth Routes (integration)", () => {
 
   afterAll(async () => {
     for (const id of createdUserIds) {
-      await testPrisma.refreshToken.deleteMany({ where: { userId: id } });
       await testPrisma.clinicianProfile.deleteMany({ where: { userId: id } });
       await testPrisma.participantProfile.deleteMany({ where: { userId: id } });
       await testPrisma.user.delete({ where: { id } }).catch(() => {});
@@ -128,12 +127,9 @@ describe("Auth Routes (integration)", () => {
 
     const res = await request(app).post("/api/auth/refresh").send({ refreshToken });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.accessToken).toBeDefined();
-    expect(res.body.data.refreshToken).toBeDefined();
-    // New refresh token should differ
-    expect(res.body.data.refreshToken).not.toBe(refreshToken);
+    // Without Cognito configured, legacy refresh returns 401
+    // (RefreshToken table removed — Cognito handles token rotation)
+    expect(res.status).toBe(401);
   });
 
   it("POST /api/auth/refresh — 401 on reused token", async () => {

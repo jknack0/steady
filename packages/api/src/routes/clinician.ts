@@ -1,11 +1,19 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
-import { z } from "zod";
-import { AssignHomeworkSchema, UpdateParticipantDemographicsSchema } from "@steady/shared";
+import {
+  AssignHomeworkSchema,
+  UpdateParticipantDemographicsSchema,
+  AddClientSchema,
+  PushTaskSchema,
+  UnlockModuleSchema,
+  ManageEnrollmentSchema,
+  BulkActionSchema,
+} from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
+  getDashboardData,
   getClinicianParticipants,
   getClinicianClients,
   getParticipantDetail,
@@ -16,12 +24,8 @@ import {
   addClient,
   ConflictError,
 } from "../services/clinician";
-
-const AddClientSchema = z.object({
-  email: z.string().email().max(200),
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-});
+import { verifyEnrollmentOwnership } from "../lib/ownership";
+import { startOfDayUTC } from "../lib/date-utils";
 
 const router = Router();
 
@@ -34,251 +38,14 @@ async function verifyParticipantOwnership(participantUserId: string, clinicianPr
   });
 }
 
-// Verify an enrollment belongs to this clinician's programs
-async function verifyEnrollmentOwnership(enrollmentId: string, clinicianProfileId: string) {
-  return prisma.enrollment.findFirst({
-    where: { id: enrollmentId, program: { clinicianId: clinicianProfileId } },
-  });
-}
-
 // GET /api/clinician/dashboard — Dashboard summary data
 router.get("/dashboard", async (req: Request, res: Response) => {
   try {
-    const clinicianProfileId = req.user!.clinicianProfileId!;
-    const userId = req.user!.userId;
-
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
-
-    // All programs for this clinician
-    const programs = await prisma.program.findMany({
-      where: { clinicianId: clinicianProfileId },
-      select: { id: true, title: true, status: true },
+    const data = await getDashboardData({
+      clinicianProfileId: req.user!.clinicianProfileId!,
+      userId: req.user!.userId,
     });
-    const programIds = programs.map((p) => p.id);
-
-    // Active enrollments
-    const enrollments = await prisma.enrollment.findMany({
-      where: { programId: { in: programIds }, status: "ACTIVE" },
-      include: {
-        participant: {
-          include: {
-            user: { select: { id: true, firstName: true, lastName: true, email: true } },
-          },
-        },
-        program: { select: { title: true } },
-      },
-    });
-
-    // Today's sessions
-    const todaySessions = await prisma.session.findMany({
-      where: {
-        enrollment: { programId: { in: programIds } },
-        scheduledAt: { gte: today, lt: tomorrow },
-      },
-      include: {
-        enrollment: {
-          include: {
-            participant: {
-              include: { user: { select: { firstName: true, lastName: true } } },
-            },
-            program: { select: { title: true } },
-          },
-        },
-      },
-      orderBy: { scheduledAt: "asc" },
-    });
-
-    // Recent homework submissions (completed in last 7 days)
-    const enrollmentIds = enrollments.map((e) => e.id);
-    const participantProfileIds = enrollments.map((e) => e.participantId);
-
-    const recentHomework = await prisma.homeworkInstance.findMany({
-      where: {
-        OR: [
-          { enrollmentId: { in: enrollmentIds } },
-          { participantId: { in: participantProfileIds } },
-        ],
-        status: "COMPLETED",
-        completedAt: { gte: sevenDaysAgo },
-      },
-      include: {
-        part: { select: { title: true } },
-        enrollment: {
-          include: {
-            participant: {
-              include: { user: { select: { firstName: true, lastName: true } } },
-            },
-          },
-        },
-        participant: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-      },
-      orderBy: { completedAt: "desc" },
-      take: 10,
-    });
-
-    // Homework needing attention (pending past due)
-    const overdueHomework = await prisma.homeworkInstance.findMany({
-      where: {
-        OR: [
-          { enrollmentId: { in: enrollmentIds } },
-          { participantId: { in: participantProfileIds } },
-        ],
-        status: "PENDING",
-        dueDate: { lt: today },
-      },
-      include: {
-        part: { select: { title: true } },
-        enrollment: {
-          include: {
-            participant: {
-              include: { user: { select: { firstName: true, lastName: true } } },
-            },
-          },
-        },
-        participant: {
-          include: { user: { select: { firstName: true, lastName: true } } },
-        },
-      },
-      orderBy: { dueDate: "asc" },
-      take: 20,
-    });
-
-    // Check-in alerts: tracker entries from last 3 days with low scale values
-    const threeDaysAgo = new Date(today);
-    threeDaysAgo.setUTCDate(threeDaysAgo.getUTCDate() - 3);
-
-    const trackers = await prisma.dailyTracker.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          { programId: { in: programIds } },
-          { enrollmentId: { in: enrollmentIds } },
-          { participantId: { in: participantProfileIds } },
-        ],
-      },
-      include: {
-        fields: { where: { fieldType: "SCALE" }, select: { id: true, label: true, options: true } },
-      },
-    });
-
-    const trackerIds = trackers.map((t) => t.id);
-    const recentEntries = trackerIds.length > 0 ? await prisma.dailyTrackerEntry.findMany({
-      where: {
-        trackerId: { in: trackerIds },
-        date: { gte: threeDaysAgo },
-      },
-      include: {
-        tracker: {
-          include: {
-            participant: {
-              include: { user: { select: { firstName: true, lastName: true } } },
-            },
-          },
-        },
-      },
-      orderBy: { date: "desc" },
-    }) : [];
-
-    // Find low scores (below 4 on a 1-10 scale)
-    const alerts: Array<{ clientName: string; field: string; value: number; max: number; date: string }> = [];
-    for (const entry of recentEntries) {
-      const responses = entry.responses as Record<string, unknown>;
-      const tracker = trackers.find((t) => t.id === entry.trackerId);
-      if (!tracker) continue;
-      for (const field of tracker.fields) {
-        const val = responses[field.id];
-        if (typeof val === "number") {
-          const opts = field.options as any;
-          const max = opts?.max ?? 10;
-          const threshold = max * 0.3; // below 30% of max
-          if (val <= threshold) {
-            const participant = entry.tracker.participant;
-            const clientName = participant
-              ? `${participant.user.firstName} ${participant.user.lastName}`.trim()
-              : "Unknown";
-            alerts.push({
-              clientName,
-              field: field.label,
-              value: val,
-              max,
-              date: entry.date.toISOString().split("T")[0],
-            });
-          }
-        }
-      }
-    }
-
-    // Quick stats
-    const totalClients = enrollments.length;
-    const publishedPrograms = programs.filter((p) => p.status === "PUBLISHED").length;
-
-    const weekHomeworkTotal = await prisma.homeworkInstance.count({
-      where: {
-        OR: [
-          { enrollmentId: { in: enrollmentIds } },
-          { participantId: { in: participantProfileIds } },
-        ],
-        dueDate: { gte: sevenDaysAgo },
-      },
-    });
-    const weekHomeworkCompleted = await prisma.homeworkInstance.count({
-      where: {
-        OR: [
-          { enrollmentId: { in: enrollmentIds } },
-          { participantId: { in: participantProfileIds } },
-        ],
-        dueDate: { gte: sevenDaysAgo },
-        status: "COMPLETED",
-      },
-    });
-
-    res.json({
-      success: true,
-      data: {
-        stats: {
-          totalClients,
-          publishedPrograms,
-          todaySessionCount: todaySessions.length,
-          weekHomeworkRate: weekHomeworkTotal > 0 ? Math.round((weekHomeworkCompleted / weekHomeworkTotal) * 100) : 0,
-          overdueCount: overdueHomework.length,
-        },
-        todaySessions: todaySessions.map((s) => ({
-          id: s.id,
-          scheduledAt: s.scheduledAt,
-          status: s.status,
-          clientName: `${s.enrollment.participant.user.firstName} ${s.enrollment.participant.user.lastName}`.trim(),
-          programTitle: s.enrollment.program.title,
-          videoCallUrl: s.videoCallUrl,
-        })),
-        recentHomework: recentHomework.map((h) => {
-          const participant = h.participant || h.enrollment?.participant;
-          return {
-            id: h.id,
-            title: h.title || h.part?.title || "Homework",
-            clientName: participant ? `${participant.user.firstName} ${participant.user.lastName}`.trim() : "Unknown",
-            completedAt: h.completedAt,
-            hasResponses: h.response != null && Object.keys(h.response as any).length > 0,
-          };
-        }),
-        overdueHomework: overdueHomework.map((h) => {
-          const participant = h.participant || h.enrollment?.participant;
-          return {
-            id: h.id,
-            title: h.title || h.part?.title || "Homework",
-            clientName: participant ? `${participant.user.firstName} ${participant.user.lastName}`.trim() : "Unknown",
-            dueDate: h.dueDate,
-          };
-        }),
-        alerts: alerts.slice(0, 10),
-      },
-    });
+    res.json({ success: true, data });
   } catch (err) {
     logger.error("Dashboard error", err);
     res.status(500).json({ success: false, error: "Failed to load dashboard" });
@@ -392,6 +159,7 @@ router.get("/participants/:id/homework", async (req: Request, res: Response) => 
           { enrollmentId: { in: enrollmentIds } },
           { participantId: participantProfileId },
         ],
+        deletedAt: null,
       },
       include: {
         part: {
@@ -422,8 +190,7 @@ router.post("/participants/:id/homework", validate(AssignHomeworkSchema), async 
       return;
     }
 
-    const due = dueDate ? new Date(dueDate) : new Date();
-    due.setUTCHours(0, 0, 0, 0);
+    const due = startOfDayUTC(dueDate ? new Date(dueDate) : new Date());
 
     const instance = await prisma.homeworkInstance.create({
       data: {
@@ -485,7 +252,7 @@ router.put("/participants/:id/demographics", validate(UpdateParticipantDemograph
 });
 
 // POST /api/clinician/participants/:id/push-task — Push a task to participant
-router.post("/participants/:id/push-task", async (req: Request, res: Response) => {
+router.post("/participants/:id/push-task", validate(PushTaskSchema), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const owned = await verifyParticipantOwnership(id, req.user!.clinicianProfileId!);
@@ -510,7 +277,7 @@ router.post("/participants/:id/push-task", async (req: Request, res: Response) =
 });
 
 // POST /api/clinician/participants/:id/unlock-module — Unlock next module
-router.post("/participants/:id/unlock-module", async (req: Request, res: Response) => {
+router.post("/participants/:id/unlock-module", validate(UnlockModuleSchema), async (req: Request, res: Response) => {
   try {
     const owned = await verifyParticipantOwnership(req.params.id, req.user!.clinicianProfileId!);
     if (!owned) {
@@ -540,7 +307,7 @@ router.post("/participants/:id/unlock-module", async (req: Request, res: Respons
 });
 
 // PUT /api/clinician/participants/:id/enrollment/:enrollmentId — Manage enrollment (pause, drop, reset)
-router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, res: Response) => {
+router.put("/participants/:id/enrollment/:enrollmentId", validate(ManageEnrollmentSchema), async (req: Request, res: Response) => {
   try {
     const { enrollmentId } = req.params;
 
@@ -574,7 +341,7 @@ router.put("/participants/:id/enrollment/:enrollmentId", async (req: Request, re
 // ── Bulk Actions ────────────────────────────────────────
 
 // POST /api/clinician/participants/bulk — Bulk action on multiple participants
-router.post("/participants/bulk", async (req: Request, res: Response) => {
+router.post("/participants/bulk", validate(BulkActionSchema), async (req: Request, res: Response) => {
   try {
     const clinicianProfileId = req.user!.clinicianProfileId!;
     const { action, participantIds, data: actionData } = req.body;

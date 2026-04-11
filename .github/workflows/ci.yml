@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -87,3 +87,51 @@ jobs:
       - run: npm install --ignore-scripts
       - run: npx prisma generate --schema=packages/db/prisma/schema.prisma
       - run: npx turbo run lint --filter=@steady/api --filter=@steady/web --filter=@steady/shared --filter=@steady/db
+
+  deploy-dev:
+    name: Deploy API (Dev)
+    needs: [typecheck, unit-tests, integration-tests, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (via GitHub OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::847041281129:role/SteadyGitHubActions
+          role-session-name: gh-actions-deploy-dev-${{ github.run_id }}
+          aws-region: us-east-2
+      - name: Deploy to Dev EC2 via SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.DEV_EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["sudo -u ubuntu bash -c '\''export NVM_DIR=/home/ubuntu/.nvm && . $NVM_DIR/nvm.sh && cd /home/ubuntu/steady && git pull origin dev && npm install && npx prisma generate --schema=packages/db/prisma/schema.prisma && npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --accept-data-loss && npx turbo run build --filter=@steady/api && pm2 restart steady-api'\''"]' \
+            --timeout-seconds 300 \
+            --output text
+
+  deploy-prod:
+    name: Deploy API (Prod)
+    needs: [typecheck, unit-tests, integration-tests, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (via GitHub OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::847041281129:role/SteadyGitHubActions
+          role-session-name: gh-actions-deploy-prod-${{ github.run_id }}
+          aws-region: us-east-2
+      - name: Deploy to Prod EC2 via SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.PROD_EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["sudo -u ubuntu bash -c '\''cd /home/ubuntu/steady && git pull origin main && npm install && npx prisma generate --schema=packages/db/prisma/schema.prisma && npx prisma db push --schema=packages/db/prisma/schema.prisma --skip-generate --accept-data-loss && npx turbo run build --filter=@steady/api && pm2 restart steady-api'\''"]' \
+            --timeout-seconds 300 \
+            --output text

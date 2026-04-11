@@ -7,7 +7,8 @@ export interface TelehealthTokenResponse {
   token: string;
   url: string;
   roomName: string;
-  telehealthSessionId: string;
+  telehealthSessionId?: string;
+  isHost: boolean;
 }
 
 export function useTelehealthToken() {

@@ -134,7 +134,7 @@ describe("POST /api/participant/calendar", () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("Title is required");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 for empty title", async () => {
@@ -158,7 +158,7 @@ describe("POST /api/participant/calendar", () => {
       .send({ title: "Event" });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe("startTime and endTime are required");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 for invalid date format", async () => {
@@ -376,6 +376,7 @@ describe("PATCH /api/participant/calendar/:id", () => {
       where: {
         id: "event-1",
         participantId: "test-participant-profile-id",
+        deletedAt: null,
       },
     });
   });
@@ -393,7 +394,7 @@ describe("PATCH /api/participant/calendar/:id", () => {
 describe("DELETE /api/participant/calendar/:id", () => {
   it("deletes an event", async () => {
     db.calendarEvent.findFirst.mockResolvedValue(mockEvent() as any);
-    db.calendarEvent.delete.mockResolvedValue(mockEvent() as any);
+    db.calendarEvent.update.mockResolvedValue(mockEvent() as any);
 
     const res = await request(app)
       .delete("/api/participant/calendar/event-1")
@@ -401,8 +402,9 @@ describe("DELETE /api/participant/calendar/:id", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(db.calendarEvent.delete).toHaveBeenCalledWith({
+    expect(db.calendarEvent.update).toHaveBeenCalledWith({
       where: { id: "event-1" },
+      data: { deletedAt: expect.any(Date) },
     });
   });
 

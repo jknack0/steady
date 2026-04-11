@@ -4,18 +4,12 @@ import { prisma } from "@steady/db";
 import { CreateModuleSchema, UpdateModuleSchema, ReorderModulesSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
+import { verifyProgramOwnership } from "../lib/ownership";
 
 const router = Router({ mergeParams: true });
 
 // All module routes require clinician role
 router.use(authenticate, requireRole("CLINICIAN"));
-
-// Helper: verify clinician owns the parent program
-async function verifyProgramOwnership(programId: string, clinicianProfileId: string) {
-  return prisma.program.findFirst({
-    where: { id: programId, clinicianId: clinicianProfileId },
-  });
-}
 
 // POST /api/programs/:programId/modules — Create a module
 router.post("/", validate(CreateModuleSchema), async (req: Request, res: Response) => {
@@ -172,25 +166,11 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if any enrollment has progress on this module (COND-2)
-    const progressCount = await prisma.moduleProgress.count({
-      where: {
-        moduleId: req.params.id,
-        status: { not: "LOCKED" },
-      },
-    });
-
-    const deleteType = progressCount > 0 ? "soft" : "hard";
-
     await prisma.$transaction(async (tx) => {
-      if (deleteType === "soft") {
-        await tx.module.update({
-          where: { id: req.params.id },
-          data: { deletedAt: new Date() },
-        });
-      } else {
-        await tx.module.delete({ where: { id: req.params.id } });
-      }
+      await tx.module.update({
+        where: { id: req.params.id },
+        data: { deletedAt: new Date() },
+      });
 
       // Re-number remaining active modules
       const remaining = await tx.module.findMany({
@@ -209,7 +189,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       }
     }, { timeout: 15000 });
 
-    res.json({ success: true, data: { deleted: deleteType } });
+    res.json({ success: true, data: { deleted: "soft" } });
   } catch (err) {
     logger.error("Delete module error", err);
     res.status(500).json({ success: false, error: "Failed to delete module" });

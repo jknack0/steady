@@ -1,7 +1,9 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
+import { PushTokenSchema, UpdateNotificationPreferencesSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import { recordDismissal, resetDismissals } from "../services/notifications";
 
 const router = Router();
@@ -9,7 +11,7 @@ const router = Router();
 router.use(authenticate);
 
 // POST /api/notifications/push-token — Register/update push token
-router.post("/push-token", async (req: Request, res: Response) => {
+router.post("/push-token", validate(PushTokenSchema), async (req: Request, res: Response) => {
   try {
     const { pushToken } = req.body;
 
@@ -79,7 +81,7 @@ router.get("/preferences", async (req: Request, res: Response) => {
 });
 
 // PUT /api/notifications/preferences — Update notification preferences
-router.put("/preferences", async (req: Request, res: Response) => {
+router.put("/preferences", validate(UpdateNotificationPreferencesSchema), async (req: Request, res: Response) => {
   try {
     const { preferences } = req.body;
 

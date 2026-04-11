@@ -1,7 +1,9 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { prisma } from "@steady/db";
+import { CreateCalendarEventSchema, UpdateCalendarEventSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import { queueNotification } from "../services/notifications";
 
 const router = Router();
@@ -30,6 +32,7 @@ router.get("/", async (req: Request, res: Response) => {
     const events = await prisma.calendarEvent.findMany({
       where: {
         participantId,
+        deletedAt: null,
         startTime: { gte: startDate },
         endTime: { lte: endDate },
       },
@@ -50,7 +53,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // POST /api/participant/calendar — Create a calendar event
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", validate(CreateCalendarEventSchema), async (req: Request, res: Response) => {
   try {
     const participantId = req.user!.participantProfileId!;
     const { title, startTime, endTime, eventType, color, taskId } = req.body;
@@ -88,6 +91,8 @@ router.post("/", async (req: Request, res: Response) => {
       }
     }
 
+    const validColor = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
+
     const event = await prisma.calendarEvent.create({
       data: {
         participantId,
@@ -95,7 +100,7 @@ router.post("/", async (req: Request, res: Response) => {
         startTime: start,
         endTime: end,
         eventType: eventType || "TIME_BLOCK",
-        color: color || null,
+        color: validColor,
         taskId: taskId || null,
       },
       include: {
@@ -124,12 +129,12 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // PATCH /api/participant/calendar/:id — Update a calendar event
-router.patch("/:id", async (req: Request, res: Response) => {
+router.patch("/:id", validate(UpdateCalendarEventSchema), async (req: Request, res: Response) => {
   try {
     const participantId = req.user!.participantProfileId!;
 
     const existing = await prisma.calendarEvent.findFirst({
-      where: { id: req.params.id, participantId },
+      where: { id: req.params.id, participantId, deletedAt: null },
     });
 
     if (!existing) {
@@ -144,7 +149,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
     if (startTime !== undefined) data.startTime = new Date(startTime);
     if (endTime !== undefined) data.endTime = new Date(endTime);
     if (eventType !== undefined) data.eventType = eventType;
-    if (color !== undefined) data.color = color;
+    if (color !== undefined) data.color = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
     if (taskId !== undefined) data.taskId = taskId;
 
     const event = await prisma.calendarEvent.update({
@@ -168,7 +173,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
     const participantId = req.user!.participantProfileId!;
 
     const existing = await prisma.calendarEvent.findFirst({
-      where: { id: req.params.id, participantId },
+      where: { id: req.params.id, participantId, deletedAt: null },
     });
 
     if (!existing) {
@@ -176,8 +181,9 @@ router.delete("/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.calendarEvent.delete({
+    await prisma.calendarEvent.update({
       where: { id: req.params.id },
+      data: { deletedAt: new Date() },
     });
 
     res.json({ success: true });

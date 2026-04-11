@@ -6,6 +6,8 @@ import {
   scheduleTaskReminder,
 } from "./notifications";
 import { logClinicianTime } from "./rtm";
+import { formatName } from "../lib/format";
+import { toDateKey } from "../lib/date-utils";
 
 // ── Types ────────────────────────────────────────────
 
@@ -104,6 +106,7 @@ export async function listClinicianSessions(
   const programIds = programs.map((p) => p.id);
 
   const where: any = {
+    deletedAt: null,
     enrollment: { programId: { in: programIds } },
   };
   if (status) where.status = status;
@@ -146,7 +149,7 @@ export async function listClinicianSessions(
       clinicianNotes: s.clinicianNotes,
       participantSummary: s.participantSummary,
       participantId: s.enrollment.participant.user.id,
-      participantName: `${s.enrollment.participant.user.firstName} ${s.enrollment.participant.user.lastName}`.trim(),
+      participantName: formatName(s.enrollment.participant.user.firstName, s.enrollment.participant.user.lastName),
       participantEmail: s.enrollment.participant.user.email,
       programId: s.enrollment.program.id,
       programTitle: s.enrollment.program.title,
@@ -200,7 +203,7 @@ export async function getUpcomingSession(participantProfileId: string) {
     videoCallUrl: session.videoCallUrl,
     programTitle: session.enrollment.program.title,
     clinicianName: clinician
-      ? `${clinician.user.firstName} ${clinician.user.lastName}`.trim()
+      ? formatName(clinician.user.firstName, clinician.user.lastName)
       : null,
   };
 }
@@ -621,7 +624,7 @@ export async function getSessionPrepData(sessionId: string) {
           const value = responses[field.id];
           if (typeof value === "number") {
             fieldTrends[field.id].push({
-              date: entry.date.toISOString().split("T")[0],
+              date: toDateKey(entry.date),
               value,
             });
           }
@@ -639,7 +642,7 @@ export async function getSessionPrepData(sessionId: string) {
         })),
         fieldTrends,
         recentEntries: entries.slice(0, 3).map((e) => ({
-          date: e.date.toISOString().split("T")[0],
+          date: toDateKey(e.date),
           responses: e.responses,
         })),
         entryCount: entries.length,
@@ -655,7 +658,7 @@ export async function getSessionPrepData(sessionId: string) {
     },
     participant: {
       id: userId,
-      name: `${session.enrollment.participant.user.firstName} ${session.enrollment.participant.user.lastName}`.trim(),
+      name: formatName(session.enrollment.participant.user.firstName, session.enrollment.participant.user.lastName),
     },
     program: { title: enrollment.program.title },
     currentModuleId,

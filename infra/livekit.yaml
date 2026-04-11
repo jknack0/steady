@@ -12,3 +12,13 @@ logging:
 room:
   max_participants: 2
   empty_timeout: 300
+
+# Redis — required for egress coordination
+redis:
+  address: redis:6379
+
+# Webhook — API endpoint for session lifecycle events (including egress_ended)
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:4000/api/telehealth/webhooks

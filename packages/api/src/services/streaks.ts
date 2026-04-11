@@ -1,5 +1,6 @@
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { toDateKey } from "../lib/date-utils";
 
 type StreakCategory = "JOURNAL" | "CHECKIN" | "HOMEWORK";
 
@@ -11,7 +12,7 @@ interface StreakResult {
 }
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+  return toDateKey(d);
 }
 
 function addDays(dateStr: string, days: number): string {

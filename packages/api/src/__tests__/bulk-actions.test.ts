@@ -51,7 +51,7 @@ describe("POST /api/clinician/participants/bulk — validation", () => {
       .set(...authHeader())
       .send({ action: "push-task", participantIds: [] });
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("required");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 400 for missing action", async () => {
@@ -69,7 +69,7 @@ describe("POST /api/clinician/participants/bulk — validation", () => {
       .set(...authHeader())
       .send({ action: "push-task", participantIds: ids, data: { title: "Test" } });
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("50");
+    expect(res.body.error).toBe("Validation failed");
   });
 });
 

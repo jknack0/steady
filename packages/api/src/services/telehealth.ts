@@ -2,6 +2,7 @@ import { AccessToken, WebhookReceiver } from "livekit-server-sdk";
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
 import { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } from "../lib/env";
+import { startRecording, onSessionEnd } from "./recording";
 
 // ── Types ────────────────────────────────────────────
 
@@ -9,6 +10,7 @@ interface TokenResult {
   token: string;
   url: string;
   roomName: string;
+  isHost: boolean; // True if the current user is the appointment's clinician
 }
 
 export class TelehealthError extends Error {
@@ -129,6 +131,7 @@ export async function generateToken(
     token,
     url: LIVEKIT_URL,
     roomName,
+    isHost: userId === clinicianUserId,
   };
 }
 
@@ -160,6 +163,9 @@ export async function handleWebhookEvent(
       break;
     case "room_finished":
       await handleRoomFinished(event);
+      break;
+    case "egress_ended":
+      await handleEgressEnded(event);
       break;
     default:
       logger.info("Unhandled LiveKit webhook event", eventType);
@@ -209,9 +215,26 @@ async function handleParticipantJoined(event: any): Promise<void> {
     updates.participantJoinedAt = now;
   }
 
-  // Transition to ACTIVE when either participant joins
+  // Transition to ACTIVE when both participants have joined — start recording
   if (session.status === "WAITING") {
-    updates.status = "ACTIVE";
+    const clinicianPresent = !!session.clinicianJoinedAt || role === "CLINICIAN";
+    const participantPresent = !!session.participantJoinedAt || role === "PARTICIPANT";
+
+    if (clinicianPresent && participantPresent) {
+      updates.status = "ACTIVE";
+
+      // Start audio recording via LiveKit Egress
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: session.appointmentId },
+        select: { clinicianId: true },
+      });
+      if (appointment) {
+        const egressId = await startRecording(roomName, session.id, appointment.clinicianId);
+        if (egressId) {
+          logger.info("Audio recording initiated", `room=${roomName}`);
+        }
+      }
+    }
   }
 
   if (Object.keys(updates).length > 0) {
@@ -268,6 +291,54 @@ async function handleRoomFinished(event: any): Promise<void> {
     "Telehealth room finished",
     `room=${roomName} durationSeconds=${durationSeconds}`,
   );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- LiveKit webhook event type
+async function handleEgressEnded(event: any): Promise<void> {
+  const egressId = event.egressInfo?.egressId as string | undefined;
+  if (!egressId) return;
+
+  // Find the session that started this egress. The egress file result
+  // contains the S3 path. TrackEgress produces one file per webhook;
+  // we iterate just in case a future change produces multiple.
+  const fileResults = event.egressInfo?.fileResults as Array<{ filename?: string }>;
+  if (!fileResults || fileResults.length === 0) {
+    logger.warn("Egress ended but no file result", `egressId=${egressId}`);
+    return;
+  }
+
+  const roomName = event.egressInfo?.roomName as string | undefined;
+  if (!roomName) return;
+
+  const session = await prisma.telehealthSession.findUnique({
+    where: { roomName },
+    include: { appointment: { select: { clinicianId: true } } },
+  });
+  if (!session) return;
+
+  for (const result of fileResults) {
+    const audioPath = result.filename;
+    if (!audioPath) continue;
+
+    // Parse participant identity from the filepath pattern:
+    //   recordings/{clinicianId}/{sessionId}/{identity}-{trackSid}.ogg
+    // onSessionEnd also infers this if we pass undefined, but parsing
+    // here centralizes the logic.
+    const filename = audioPath.split("/").pop() ?? "";
+    const participantIdentity = filename.replace(/\.ogg$/, "").split("-")[0];
+
+    await onSessionEnd(
+      session.id,
+      audioPath,
+      session.appointment.clinicianId,
+      participantIdentity,
+    );
+
+    logger.info(
+      "Egress completed — audio saved and transcription queued",
+      `room=${roomName} identity=${participantIdentity}`,
+    );
+  }
 }
 
 function parseMetadata(raw: string | undefined): Record<string, unknown> | null {

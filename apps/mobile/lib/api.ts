@@ -129,6 +129,18 @@ export const api = {
     });
   },
 
+  forgotPassword: (email: string) =>
+    apiFetch("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    apiFetch("/api/auth/confirm-reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, code, newPassword }),
+    }),
+
   // Participant endpoints
   getEnrollments: () => apiFetch("/api/participant/enrollments"),
 

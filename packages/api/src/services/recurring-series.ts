@@ -313,14 +313,16 @@ export async function updateSeries(
 
   let regenerated = 0;
   if (schedulingChanged) {
-    // Delete future SCHEDULED appointments
+    // Soft-delete future SCHEDULED appointments
     const now = new Date();
-    await prisma.appointment.deleteMany({
+    await prisma.appointment.updateMany({
       where: {
         recurringSeriesId: id,
         status: "SCHEDULED" as any,
         startAt: { gt: now },
+        deletedAt: null,
       },
+      data: { deletedAt: new Date() },
     });
 
     // Regenerate
@@ -399,13 +401,15 @@ export async function deleteSeries(
 
   const now = new Date();
 
-  // Delete future SCHEDULED linked appointments
-  await prisma.appointment.deleteMany({
+  // Soft-delete future SCHEDULED linked appointments
+  await prisma.appointment.updateMany({
     where: {
       recurringSeriesId: id,
       status: "SCHEDULED" as any,
       startAt: { gt: now },
+      deletedAt: null,
     },
+    data: { deletedAt: new Date() },
   });
 
   // Hard-delete the series (SetNull will handle remaining appointment FKs)

@@ -31,6 +31,7 @@ import { isTerminal } from "./status-colors";
 import { formatInClinicianTz } from "@/lib/tz";
 import { useRouter } from "next/navigation";
 import { PostSessionBillingPrompt } from "./PostSessionBillingPrompt";
+import { TelehealthSessionSummary } from "./TelehealthSessionSummary";
 import { ClaimStatusBadge } from "@/components/claims/ClaimStatusBadge";
 import { useParticipantInsurance } from "@/hooks/use-participant-insurance";
 import { Video } from "lucide-react";
@@ -518,6 +519,11 @@ export function AppointmentModal({
             </div>
           )}
         </DialogBody>
+
+        {/* AI session summary from telehealth recording */}
+        {mode === "edit" && existing && (
+          <TelehealthSessionSummary appointmentId={existing.id} />
+        )}
 
         {/* Claim status display for appointments with claims */}
         {mode === "edit" && existing?.claimId && existing?.claimStatus && (

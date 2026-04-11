@@ -17,6 +17,7 @@ import { ConnectionState, Track } from "livekit-client";
 import "@livekit/components-styles";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { RecordingControls } from "./RecordingControls";
 import { useSessionTimer } from "@/hooks/use-session-timer";
 import {
   Mic,
@@ -38,6 +39,7 @@ interface VideoCallProps {
   roomName: string;
   role: string;
   participantName: string;
+  appointmentId: string;
   onSessionEnd: () => void;
 }
 
@@ -47,6 +49,7 @@ export function VideoCall({
   roomName,
   role,
   participantName,
+  appointmentId,
   onSessionEnd,
 }: VideoCallProps) {
   return (
@@ -62,6 +65,7 @@ export function VideoCall({
       <VideoCallInner
         role={role}
         participantName={participantName}
+        appointmentId={appointmentId}
         onSessionEnd={onSessionEnd}
       />
     </LiveKitRoom>
@@ -73,12 +77,14 @@ export function VideoCall({
 interface VideoCallInnerProps {
   role: string;
   participantName: string;
+  appointmentId: string;
   onSessionEnd: () => void;
 }
 
 function VideoCallInner({
   role,
   participantName,
+  appointmentId,
   onSessionEnd,
 }: VideoCallInnerProps) {
   const room = useRoomContext();
@@ -246,6 +252,12 @@ function VideoCallInner({
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Recording controls — clinician gets a button, both see indicator */}
+          <RecordingControls
+            appointmentId={appointmentId}
+            role={role === "therapist" ? "therapist" : "patient"}
+          />
+
           {/* Connection indicator */}
           <div className={`flex items-center gap-1.5 text-xs ${connectionQualityColor}`}>
             {isConnected ? (

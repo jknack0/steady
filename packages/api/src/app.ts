@@ -3,11 +3,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
 import { APP_NAME } from "@steady/shared";
 import { errorHandler } from "./middleware/errorHandler";
 import authRoutes from "./routes/auth";
+import internalRoutes from "./routes/internal";
 import programRoutes from "./routes/programs";
 import moduleRoutes from "./routes/modules";
 import partRoutes from "./routes/parts";
@@ -52,6 +52,8 @@ import stripeWebhookRoutes from "./routes/stripe-webhooks";
 import stripePaymentRoutes from "./routes/stripe-payments";
 import telehealthRoutes from "./routes/telehealth";
 import { telehealthWebhookRouter } from "./routes/telehealth";
+import portalInvitationRoutes from "./routes/portal-invitations";
+import sesWebhookRoutes from "./routes/ses-webhooks";
 
 const app = express();
 
@@ -67,6 +69,9 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim())
   : true; // permissive in dev/test only
 app.use(cors({ origin: allowedOrigins, credentials: true }));
+if (!process.env.CORS_ORIGINS && process.env.NODE_ENV !== "test") {
+  console.warn("[WARN] CORS_ORIGINS not set — CORS is permissive. Set CORS_ORIGINS in production.");
+}
 app.use(cookieParser() as any);
 
 // Webhook routes — MUST be before express.json() for raw body signature verification
@@ -130,8 +135,9 @@ app.post("/api/waitlist", waitlistLimiter as any, async (req, res) => {
 });
 
 // Demo provisioning — create account, clone admin's data, log in
-const DEMO_SOURCE_EMAIL = "admin@admin.com";
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production";
+import { ADMIN_EMAIL } from "./lib/constants";
+const DEMO_SOURCE_EMAIL = ADMIN_EMAIL;
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? "" : "dev-secret-change-in-production");
 const REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
 const demoCookieOptions: CookieOptions = {
@@ -178,14 +184,12 @@ app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
 
     if (!user) {
       isNewAccount = true;
-      const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10);
 
       user = await prisma.user.create({
         data: {
           email,
           firstName,
           lastName,
-          passwordHash,
           role: "CLINICIAN",
           clinicianProfile: { create: {} },
         },
@@ -325,22 +329,64 @@ app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
       }
     }
 
-    // Issue tokens
-    const authPayload = {
-      userId: user.id,
-      role: "CLINICIAN" as const,
-      clinicianProfileId: user.clinicianProfile!.id,
-    };
-    const accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
-    const refreshToken = crypto.randomBytes(48).toString("base64url");
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshToken,
+    // Issue tokens — use Cognito if configured, else fall back to legacy JWT
+    let accessToken: string;
+    let refreshToken = "demo-no-refresh";
+
+    const cognitoPoolId = process.env.COGNITO_USER_POOL_ID;
+    const cognitoClientIdVal = process.env.COGNITO_CLIENT_ID;
+
+    if (cognitoPoolId && cognitoClientIdVal) {
+      // Cognito path: create user in Cognito if new, then authenticate
+      const { cognitoClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminInitiateAuthCommand } = await import("./lib/cognito");
+      const tempPassword = crypto.randomUUID();
+
+      if (isNewAccount) {
+        try {
+          await cognitoClient.send(
+            new AdminCreateUserCommand({
+              UserPoolId: cognitoPoolId,
+              Username: email,
+              UserAttributes: [
+                { Name: "email", Value: email },
+                { Name: "email_verified", Value: "true" },
+              ],
+              MessageAction: "SUPPRESS",
+            })
+          );
+          await cognitoClient.send(
+            new AdminSetUserPasswordCommand({
+              UserPoolId: cognitoPoolId,
+              Username: email,
+              Password: tempPassword,
+              Permanent: true,
+            })
+          );
+        } catch (cognitoErr: any) {
+          // If user already exists in Cognito, continue
+          if (cognitoErr?.name !== "UsernameExistsException") {
+            throw cognitoErr;
+          }
+        }
+      }
+
+      // Authenticate to get tokens (for existing Cognito users, we need their actual password)
+      // For demo provisioning, use legacy JWT as fallback
+      const authPayload = {
         userId: user.id,
-        familyId: crypto.randomUUID(),
-        expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
-      },
-    });
+        role: "CLINICIAN" as const,
+        clinicianProfileId: user.clinicianProfile!.id,
+      };
+      accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
+    } else {
+      // Legacy JWT path
+      const authPayload = {
+        userId: user.id,
+        role: "CLINICIAN" as const,
+        clinicianProfileId: user.clinicianProfile!.id,
+      };
+      accessToken = jwt.sign(authPayload, JWT_SECRET, { expiresIn: "30m" });
+    }
 
     // Set cookies
     res.cookie("access_token", accessToken, { ...demoCookieOptions, maxAge: 30 * 60 * 1000 });
@@ -366,6 +412,9 @@ app.post("/api/demo/provision", demoLimiter as any, async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to provision demo. Please try again." });
   }
 });
+
+// Internal service-to-service routes (authenticated via INTERNAL_API_KEY)
+app.use("/internal", internalRoutes);
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -408,7 +457,15 @@ app.use("/api/payers", payersRoutes);
 app.use("/api/diagnosis-codes", diagnosisCodesRoutes);
 app.use("/api/recurring-series", recurringSeriesRoutes);
 app.use("/api/appointments", appointmentReminderRoutes);
+// Participant portal endpoints — dual-mounted during transition.
+// The /api/participant prefix is the legacy mobile path; the new
+// /api/participant-portal prefix is what the new web portal calls.
+// Both serve the same router until mobile callers are migrated.
 app.use("/api/participant", participantPortalRoutes);
+app.use("/api/participant-portal", participantPortalRoutes);
+app.use("/api/portal-invitations", portalInvitationRoutes);
+// SES/SNS webhooks — auth via SNS signature verification, not internal key
+app.use("/api/internal", sesWebhookRoutes);
 app.use("/api/stripe", stripePaymentRoutes);
 app.use("/api/telehealth", telehealthRoutes);
 

@@ -287,7 +287,7 @@ describe("DELETE /api/programs/:programId/modules/:moduleId/parts/:id", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.deleted).toBe("hard");
+    expect(res.body.data.deleted).toBe("soft");
   });
 
   it("returns 404 if part not found", async () => {

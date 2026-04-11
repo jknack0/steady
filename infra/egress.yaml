@@ -1,0 +1,20 @@
+# LiveKit Egress worker config
+api_key: devkey
+api_secret: devsecret
+ws_url: ws://livekit:7880
+
+# Redis for coordination with LiveKit server
+redis:
+  address: redis:6379
+
+# Health check
+health_port: 7989
+
+# Log level
+log_level: info
+
+# Local worker — no cloud CPU rental
+insecure: true
+
+# S3 is configured per-request by the API when starting an egress,
+# so no global S3 config needed here.

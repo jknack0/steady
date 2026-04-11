@@ -1,22 +1,18 @@
 import { prisma } from "@steady/db";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { logger } from "../lib/logger";
+import { NotFoundError, ConflictError } from "../lib/errors";
+import { formatName } from "../lib/format";
+import { MS_PER_DAY } from "../lib/constants";
+import { startOfDayUTC, toDateKey } from "../lib/date-utils";
 
-// ── Error Classes ────────────────────────────────────
+export { NotFoundError, ConflictError };
 
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
-}
+// ── Helpers ──────────────────────────────────────────
 
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
+function getRtmBillingStatus(engagementDays: number): string {
+  if (engagementDays >= 16) return "billable";
+  if (engagementDays >= 12) return "approaching";
+  return "tracking";
 }
 
 // ── Interfaces ────────────────────────────────────────
@@ -63,6 +59,249 @@ interface BulkActionResult {
   participantId: string;
   success: boolean;
   error?: string;
+}
+
+// ── getDashboardData ────────────────────────────────
+
+interface DashboardContext {
+  clinicianProfileId: string;
+  userId: string;
+}
+
+export async function getDashboardData(ctx: DashboardContext) {
+  const { clinicianProfileId } = ctx;
+
+  const today = startOfDayUTC();
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+  const threeDaysAgo = new Date(today);
+  threeDaysAgo.setUTCDate(threeDaysAgo.getUTCDate() - 3);
+
+  // Phase 1: Fetch all programs for this clinician
+  const programs = await prisma.program.findMany({
+    where: { clinicianId: clinicianProfileId },
+    select: { id: true, title: true, status: true },
+    take: 200,
+  });
+  const programIds = programs.map((p) => p.id);
+
+  // Phase 2: Queries that depend only on programIds — run in parallel
+  const [enrollments, todaySessions] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { programId: { in: programIds }, status: "ACTIVE" },
+      include: {
+        participant: {
+          include: {
+            user: { select: { id: true, firstName: true, lastName: true, email: true } },
+          },
+        },
+        program: { select: { title: true } },
+      },
+      take: 200,
+    }),
+    prisma.session.findMany({
+      where: {
+        enrollment: { programId: { in: programIds } },
+        scheduledAt: { gte: today, lt: tomorrow },
+      },
+      include: {
+        enrollment: {
+          include: {
+            participant: {
+              include: { user: { select: { firstName: true, lastName: true } } },
+            },
+            program: { select: { title: true } },
+          },
+        },
+      },
+      orderBy: { scheduledAt: "asc" },
+      take: 100,
+    }),
+  ]);
+
+  const enrollmentIds = enrollments.map((e) => e.id);
+  const participantProfileIds = enrollments.map((e) => e.participantId);
+
+  const homeworkOrFilter = [
+    { enrollmentId: { in: enrollmentIds } },
+    { participantId: { in: participantProfileIds } },
+  ];
+
+  // Phase 3: Queries that depend on enrollmentIds/participantProfileIds — run in parallel
+  const [
+    recentHomework,
+    overdueHomework,
+    weekHomeworkTotal,
+    weekHomeworkCompleted,
+    trackers,
+  ] = await Promise.all([
+    prisma.homeworkInstance.findMany({
+      where: {
+        OR: homeworkOrFilter,
+        deletedAt: null,
+        status: "COMPLETED",
+        completedAt: { gte: sevenDaysAgo },
+      },
+      include: {
+        part: { select: { title: true } },
+        enrollment: {
+          include: {
+            participant: {
+              include: { user: { select: { firstName: true, lastName: true } } },
+            },
+          },
+        },
+        participant: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+      },
+      orderBy: { completedAt: "desc" },
+      take: 10,
+    }),
+    prisma.homeworkInstance.findMany({
+      where: {
+        OR: homeworkOrFilter,
+        deletedAt: null,
+        status: "PENDING",
+        dueDate: { lt: today },
+      },
+      include: {
+        part: { select: { title: true } },
+        enrollment: {
+          include: {
+            participant: {
+              include: { user: { select: { firstName: true, lastName: true } } },
+            },
+          },
+        },
+        participant: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+      },
+      orderBy: { dueDate: "asc" },
+      take: 20,
+    }),
+    prisma.homeworkInstance.count({
+      where: {
+        OR: homeworkOrFilter,
+        dueDate: { gte: sevenDaysAgo },
+      },
+    }),
+    prisma.homeworkInstance.count({
+      where: {
+        OR: homeworkOrFilter,
+        dueDate: { gte: sevenDaysAgo },
+        status: "COMPLETED",
+      },
+    }),
+    prisma.dailyTracker.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { programId: { in: programIds } },
+          { enrollmentId: { in: enrollmentIds } },
+          { participantId: { in: participantProfileIds } },
+        ],
+      },
+      include: {
+        fields: { where: { fieldType: "SCALE" }, select: { id: true, label: true, options: true } },
+      },
+      take: 200,
+    }),
+  ]);
+
+  // Phase 4: Tracker entries (depends on trackers)
+  const trackerIds = trackers.map((t) => t.id);
+  const recentEntries = trackerIds.length > 0 ? await prisma.dailyTrackerEntry.findMany({
+    where: {
+      trackerId: { in: trackerIds },
+      date: { gte: threeDaysAgo },
+    },
+    include: {
+      tracker: {
+        include: {
+          participant: {
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
+        },
+      },
+    },
+    orderBy: { date: "desc" },
+    take: 200,
+  }) : [];
+
+  // Phase 5: Pure computation — build alerts from tracker entries
+  const alerts: Array<{ clientName: string; field: string; value: number; max: number; date: string }> = [];
+  for (const entry of recentEntries) {
+    const responses = entry.responses as Record<string, unknown>;
+    const tracker = trackers.find((t) => t.id === entry.trackerId);
+    if (!tracker) continue;
+    for (const field of tracker.fields) {
+      const val = responses[field.id];
+      if (typeof val === "number") {
+        const opts = field.options as any;
+        const max = opts?.max ?? 10;
+        const threshold = max * 0.3; // below 30% of max
+        if (val <= threshold) {
+          const participant = entry.tracker.participant;
+          const clientName = participant
+            ? formatName(participant.user.firstName, participant.user.lastName)
+            : "Unknown";
+          alerts.push({
+            clientName,
+            field: field.label,
+            value: val,
+            max,
+            date: toDateKey(entry.date),
+          });
+        }
+      }
+    }
+  }
+
+  // Build response
+  const totalClients = enrollments.length;
+  const publishedPrograms = programs.filter((p) => p.status === "PUBLISHED").length;
+
+  return {
+    stats: {
+      totalClients,
+      publishedPrograms,
+      todaySessionCount: todaySessions.length,
+      weekHomeworkRate: weekHomeworkTotal > 0 ? Math.round((weekHomeworkCompleted / weekHomeworkTotal) * 100) : 0,
+      overdueCount: overdueHomework.length,
+    },
+    todaySessions: todaySessions.map((s) => ({
+      id: s.id,
+      scheduledAt: s.scheduledAt,
+      status: s.status,
+      clientName: formatName(s.enrollment.participant.user.firstName, s.enrollment.participant.user.lastName),
+      programTitle: s.enrollment.program.title,
+      videoCallUrl: s.videoCallUrl,
+    })),
+    recentHomework: recentHomework.map((h) => {
+      const participant = h.participant || h.enrollment?.participant;
+      return {
+        id: h.id,
+        title: h.title || h.part?.title || "Homework",
+        clientName: participant ? formatName(participant.user.firstName, participant.user.lastName) : "Unknown",
+        completedAt: h.completedAt,
+        hasResponses: h.response != null && Object.keys(h.response as any).length > 0,
+      };
+    }),
+    overdueHomework: overdueHomework.map((h) => {
+      const participant = h.participant || h.enrollment?.participant;
+      return {
+        id: h.id,
+        title: h.title || h.part?.title || "Homework",
+        clientName: participant ? formatName(participant.user.firstName, participant.user.lastName) : "Unknown",
+        dueDate: h.dueDate,
+      };
+    }),
+    alerts: alerts.slice(0, 10),
+  };
 }
 
 // ── getClinicianParticipants ─────────────────────────
@@ -157,7 +396,7 @@ export async function getClinicianParticipants(
   // Build participant rows
   const participants: ParticipantRow[] = enrollmentPage.map((enrollment) => {
     const user = enrollment.participant.user;
-    const name = `${user.firstName} ${user.lastName}`.trim();
+    const name = formatName(user.firstName, user.lastName);
 
     // Current module
     const currentModuleProgress = enrollment.moduleProgress
@@ -220,7 +459,7 @@ export async function getClinicianParticipants(
     // Status indicator
     const now = new Date();
     const daysSinceActive = lastActive
-      ? (now.getTime() - lastActive.getTime()) / 86400000
+      ? (now.getTime() - lastActive.getTime()) / MS_PER_DAY
       : Infinity;
 
     let statusIndicator: "green" | "amber" | "red";
@@ -281,7 +520,7 @@ export async function getClinicianParticipants(
         participant.rtm = {
           engagementDays: activePeriod.engagementDays,
           clinicianMinutes: activePeriod.clinicianMinutes,
-          status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+          status: getRtmBillingStatus(activePeriod.engagementDays),
         };
       }
     }
@@ -310,7 +549,7 @@ export async function getClinicianParticipants(
   });
 
   for (const cc of clinicianClients) {
-    const name = `${cc.client.firstName} ${cc.client.lastName}`.trim();
+    const name = formatName(cc.client.firstName, cc.client.lastName);
     participants.push({
       participantId: cc.client.id,
       participantProfileId: cc.client.participantProfile?.id || "",
@@ -358,7 +597,7 @@ export async function getClinicianParticipants(
         participant.rtm = {
           engagementDays: activePeriod.engagementDays,
           clinicianMinutes: activePeriod.clinicianMinutes,
-          status: activePeriod.engagementDays >= 16 ? "billable" : activePeriod.engagementDays >= 12 ? "approaching" : "tracking",
+          status: getRtmBillingStatus(activePeriod.engagementDays),
         };
       }
     }
@@ -944,12 +1183,10 @@ export async function addClient(
   }
 
   if (!user) {
-    // Create a placeholder participant account
-    const tempPassword = await bcrypt.hash(crypto.randomUUID(), 10);
+    // Create a placeholder participant account (no password — Cognito handles auth)
     user = await prisma.user.create({
       data: {
         email: email.toLowerCase().trim(),
-        passwordHash: tempPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         role: "PARTICIPANT",
@@ -1136,7 +1373,7 @@ export async function getClinicianClients(
 
   // Build client rows
   return clinicianClients.map((cc) => {
-    const name = `${cc.client.firstName} ${cc.client.lastName}`.trim();
+    const name = formatName(cc.client.firstName, cc.client.lastName);
     const participantProfileId = cc.client.participantProfile?.id;
     const hasEnrollment = participantProfileId ? enrolledProfileIds.has(participantProfileId) : false;
 

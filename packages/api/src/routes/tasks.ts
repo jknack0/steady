@@ -15,7 +15,7 @@ router.get("/", async (req: Request, res: Response) => {
     const participantId = req.user!.participantProfileId!;
     const take = Math.min(parseInt(limit as string) || 50, 100);
 
-    const where: any = { participantId };
+    const where: any = { participantId, deletedAt: null };
     if (status && status !== "ALL") {
       where.status = status;
     } else {

@@ -453,7 +453,7 @@ describe("POST /api/practices/:id/invite (additional paths)", () => {
       .send({});
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("Email");
+    expect(res.body.error).toBe("Validation failed");
   });
 
   it("returns 404 when invited email is not a clinician", async () => {

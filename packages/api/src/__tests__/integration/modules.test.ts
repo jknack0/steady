@@ -152,8 +152,9 @@ describe("Modules Routes (integration)", () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
 
-    // Verify deleted
+    // Verify soft-deleted
     const module = await testPrisma.module.findUnique({ where: { id: moduleId } });
-    expect(module).toBeNull();
+    expect(module).not.toBeNull();
+    expect(module!.deletedAt).not.toBeNull();
   });
 });

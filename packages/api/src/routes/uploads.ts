@@ -2,6 +2,7 @@ import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth";
 import { generateUploadUrl, generateDownloadUrl } from "../services/s3";
+import { verifyFileOwnership } from "../lib/s3-ownership";
 
 const router = Router();
 
@@ -92,6 +93,13 @@ router.get("/presign-download", async (req: Request, res: Response) => {
 
     // Basic path validation — only allow downloads from uploads/ prefix
     if (!key.startsWith("uploads/")) {
+      res.status(403).json({ success: false, error: "Access denied" });
+      return;
+    }
+
+    // Verify the authenticated user owns or has clinical access to this file
+    const hasAccess = await verifyFileOwnership(key, req.user!);
+    if (!hasAccess) {
       res.status(403).json({ success: false, error: "Access denied" });
       return;
     }

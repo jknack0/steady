@@ -145,7 +145,7 @@ describe("GET /api/uploads/presign-download", () => {
 
   it("works for participant role", async () => {
     const res = await request(app)
-      .get("/api/uploads/presign-download?key=uploads/some/file.pdf")
+      .get("/api/uploads/presign-download?key=uploads/test-user-id/context/file.pdf")
       .set(...participantAuthHeader());
 
     expect(res.status).toBe(200);

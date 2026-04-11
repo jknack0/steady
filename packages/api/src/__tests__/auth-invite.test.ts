@@ -70,9 +70,6 @@ describe("POST /api/auth/register-with-invite", () => {
       return fn(tx);
     });
 
-    // Refresh token creation
-    db.refreshToken.create.mockResolvedValue({} as any);
-
     const res = await request(app)
       .post("/api/auth/register-with-invite")
       .send(validPayload);

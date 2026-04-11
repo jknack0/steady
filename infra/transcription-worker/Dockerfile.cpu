@@ -1,0 +1,24 @@
+# CPU-only variant — used in local dev on machines without an NVIDIA GPU.
+# Production (infra/transcription-worker/Dockerfile) still uses CUDA for GPU inference.
+FROM python:3.11-slim-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# faster-whisper on CPU needs libgomp + ffmpeg (for audio decoding)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY main.py .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

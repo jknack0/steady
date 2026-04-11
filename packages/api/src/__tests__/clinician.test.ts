@@ -492,7 +492,7 @@ describe("POST /api/clinician/participants/:id/unlock-module", () => {
       .send({ enrollmentId: "enroll-1" }); // missing moduleId
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("required");
+    expect(res.body.error).toContain("Validation failed");
   });
 
   it("returns 400 when both fields are missing", async () => {
@@ -545,7 +545,7 @@ describe("POST /api/clinician/participants/bulk", () => {
       .send({});
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain("required");
+    expect(res.body.error).toContain("Validation failed");
   });
 
   it("returns 400 when participantIds is empty", async () => {

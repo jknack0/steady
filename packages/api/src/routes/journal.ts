@@ -17,7 +17,7 @@ router.get("/", async (req: Request, res: Response) => {
     const { start, end, cursor, limit = "30" } = req.query;
     const take = Math.min(parseInt(limit as string) || 30, 100);
 
-    const where: any = { participantId };
+    const where: any = { participantId, deletedAt: null };
 
     if (start || end) {
       where.entryDate = {};

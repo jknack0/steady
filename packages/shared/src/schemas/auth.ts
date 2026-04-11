@@ -17,6 +17,18 @@ export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export const ConfirmResetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  code: z.string().min(1, "Verification code is required").max(20),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 export type RegisterInput = z.input<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+export type ConfirmResetPasswordInput = z.infer<typeof ConfirmResetPasswordSchema>;

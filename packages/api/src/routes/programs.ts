@@ -4,8 +4,9 @@ import { prisma } from "@steady/db";
 import { CreateProgramSchema, UpdateProgramSchema, AssignProgramSchema, AppendModulesSchema, CreateProgramForClientSchema } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
-import crypto from "crypto";
 import { assignProgram, appendModules, AssignmentError } from "../services/assignment";
+import { formatName } from "../lib/format";
+import { deepCopyModules, deepCopyTrackers } from "../lib/deep-copy";
 
 const router = Router();
 
@@ -42,6 +43,7 @@ router.get("/templates", async (req: Request, res: Response) => {
       where: {
         isTemplate: true,
         status: { not: "ARCHIVED" },
+        deletedAt: null,
         ...(systemProfile ? { clinicianId: systemProfile.id } : { clinicianId: "none" }),
       },
       include: {
@@ -79,6 +81,7 @@ router.get("/", async (req: Request, res: Response) => {
       where: {
         clinicianId: req.user!.clinicianProfileId!,
         status: { not: "ARCHIVED" },
+        deletedAt: null,
         NOT: {
           isTemplate: false,
           templateSourceId: { not: null },
@@ -123,6 +126,7 @@ router.get("/client-programs", async (req: Request, res: Response) => {
         isTemplate: false,
         templateSourceId: { not: null },
         status: { not: "ARCHIVED" },
+        deletedAt: null,
       },
       include: {
         _count: {
@@ -155,7 +159,7 @@ router.get("/client-programs", async (req: Request, res: Response) => {
         description: p.description,
         status: p.status,
         moduleCount: p._count.modules,
-        clientName: client ? `${client.firstName} ${client.lastName}` : null,
+        clientName: client ? formatName(client.firstName, client.lastName) : null,
         enrollmentStatus: enrollment?.status ?? null,
       };
     });
@@ -502,57 +506,8 @@ router.post("/:id/promote", async (req: Request, res: Response) => {
         },
       });
 
-      for (const mod of source.modules) {
-        const newModule = await tx.module.create({
-          data: {
-            programId: newProgram.id,
-            title: mod.title,
-            subtitle: mod.subtitle,
-            summary: mod.summary,
-            estimatedMinutes: mod.estimatedMinutes,
-            sortOrder: mod.sortOrder,
-            unlockRule: mod.unlockRule,
-            unlockDelayDays: mod.unlockDelayDays,
-          },
-        });
-
-        if (mod.parts.length > 0) {
-          await tx.part.createMany({
-            data: mod.parts.map((p) => ({
-              moduleId: newModule.id,
-              type: p.type,
-              title: p.title,
-              sortOrder: p.sortOrder,
-              isRequired: p.isRequired,
-              content: p.content as any,
-            })),
-          });
-        }
-      }
-
-      for (const tracker of source.dailyTrackers) {
-        const newTracker = await tx.dailyTracker.create({
-          data: {
-            programId: newProgram.id,
-            createdById: req.user!.clinicianProfileId!,
-            name: tracker.name,
-            description: tracker.description,
-          },
-        });
-
-        if (tracker.fields.length > 0) {
-          await tx.dailyTrackerField.createMany({
-            data: tracker.fields.map((f) => ({
-              trackerId: newTracker.id,
-              label: f.label,
-              fieldType: f.fieldType,
-              sortOrder: f.sortOrder,
-              isRequired: f.isRequired,
-              options: f.options as any,
-            })),
-          });
-        }
-      }
+      await deepCopyModules(tx, source.modules, newProgram.id);
+      await deepCopyTrackers(tx, source.dailyTrackers, newProgram.id, req.user!.clinicianProfileId!);
 
       return newProgram;
     });
@@ -623,58 +578,8 @@ router.post("/:id/clone", async (req: Request, res: Response) => {
         },
       });
 
-      for (const mod of source.modules) {
-        const newModule = await tx.module.create({
-          data: {
-            programId: newProgram.id,
-            title: mod.title,
-            subtitle: mod.subtitle,
-            summary: mod.summary,
-            estimatedMinutes: mod.estimatedMinutes,
-            sortOrder: mod.sortOrder,
-            unlockRule: mod.unlockRule,
-            unlockDelayDays: mod.unlockDelayDays,
-          },
-        });
-
-        if (mod.parts.length > 0) {
-          await tx.part.createMany({
-            data: mod.parts.map((p) => ({
-              moduleId: newModule.id,
-              type: p.type,
-              title: p.title,
-              sortOrder: p.sortOrder,
-              isRequired: p.isRequired,
-              content: p.content as any,
-            })),
-          });
-        }
-      }
-
-      // Clone daily trackers and their fields
-      for (const tracker of source.dailyTrackers) {
-        const newTracker = await tx.dailyTracker.create({
-          data: {
-            programId: newProgram.id,
-            createdById: req.user!.clinicianProfileId!,
-            name: tracker.name,
-            description: tracker.description,
-          },
-        });
-
-        if (tracker.fields.length > 0) {
-          await tx.dailyTrackerField.createMany({
-            data: tracker.fields.map((f) => ({
-              trackerId: newTracker.id,
-              label: f.label,
-              fieldType: f.fieldType,
-              sortOrder: f.sortOrder,
-              isRequired: f.isRequired,
-              options: f.options as any,
-            })),
-          });
-        }
-      }
+      await deepCopyModules(tx, source.modules, newProgram.id);
+      await deepCopyTrackers(tx, source.dailyTrackers, newProgram.id, req.user!.clinicianProfileId!);
 
       return newProgram;
     });

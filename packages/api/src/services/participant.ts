@@ -13,31 +13,10 @@ import {
 import type { HomeworkItemType } from "@steady/shared";
 import { logRtmEngagement } from "./rtm";
 import { validateEmotionIds, VALID_EMOTION_IDS } from "@steady/shared";
+import { NotFoundError, ConflictError, ValidationError } from "../lib/errors";
+import { startOfDayUTC, toDateKey } from "../lib/date-utils";
 
-// ── Error types ──────────────────────────────────────
-
-export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
-}
-
-export class ConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConflictError";
-  }
-}
-
-export class ValidationError extends Error {
-  details?: Array<{ path: string; message: string }>;
-  constructor(message: string, details?: Array<{ path: string; message: string }>) {
-    super(message);
-    this.name = "ValidationError";
-    this.details = details;
-  }
-}
+export { NotFoundError, ConflictError, ValidationError };
 
 // ── 1. Accept Enrollment ─────────────────────────────
 
@@ -325,8 +304,7 @@ export async function getHomeworkInstances(
   participantProfileId: string,
   filters: { date?: string; enrollmentId?: string }
 ) {
-  const targetDate = filters.date ? new Date(filters.date) : new Date();
-  targetDate.setUTCHours(0, 0, 0, 0);
+  const targetDate = startOfDayUTC(filters.date ? new Date(filters.date) : new Date());
 
   const enrollmentFilter: Record<string, unknown> = {
     participantId: participantProfileId,
@@ -349,6 +327,7 @@ export async function getHomeworkInstances(
         { enrollmentId: { in: enrollmentIds }, dueDate: targetDate },
         { participantId: participantProfileId, dueDate: targetDate },
       ],
+      deletedAt: null,
     },
     include: {
       part: {
@@ -499,9 +478,8 @@ export async function completeHomeworkInstance(
   }
 
   // Allow completion of past instances up to 48h back
-  const cutoff = new Date();
+  const cutoff = startOfDayUTC();
   cutoff.setUTCDate(cutoff.getUTCDate() - 2);
-  cutoff.setUTCHours(0, 0, 0, 0);
 
   if (instance.dueDate < cutoff) {
     throw new ValidationError("Cannot complete instances older than 48 hours");
@@ -584,8 +562,7 @@ export async function getAssignedTrackers(
   });
 
   // Check today's completion status for each tracker
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  const today = startOfDayUTC();
 
   const todayEntries = await prisma.dailyTrackerEntry.findMany({
     where: {
@@ -668,8 +645,7 @@ export async function submitTrackerEntry(
     }
   }
 
-  const entryDate = new Date(date);
-  entryDate.setUTCHours(0, 0, 0, 0);
+  const entryDate = startOfDayUTC(new Date(date));
 
   const entry = await prisma.dailyTrackerEntry.upsert({
     where: {
@@ -715,14 +691,13 @@ export async function getTrackerStreak(
   });
 
   let streak = 0;
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  const today = startOfDayUTC();
 
   for (let i = 0; i < entries.length; i++) {
     const expected = new Date(today);
     expected.setUTCDate(expected.getUTCDate() - i);
-    const expectedStr = expected.toISOString().split("T")[0];
-    const entryStr = entries[i].date.toISOString().split("T")[0];
+    const expectedStr = toDateKey(expected);
+    const entryStr = toDateKey(entries[i].date);
 
     if (entryStr === expectedStr) {
       streak++;

@@ -7,7 +7,7 @@ async function recalculateInvoice(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
 ): Promise<void> {
   const payments = await tx.payment.findMany({
-    where: { invoiceId },
+    where: { invoiceId, deletedAt: null },
     select: { amountCents: true },
   });
   const paidCents = payments.reduce((sum, p) => sum + p.amountCents, 0);
@@ -91,7 +91,7 @@ export async function listPayments(
   }
 
   const data = await prisma.payment.findMany({
-    where: { invoiceId },
+    where: { invoiceId, deletedAt: null },
     orderBy: { receivedAt: "desc" },
     take: 200,
   });
@@ -121,7 +121,7 @@ export async function deletePayment(
   if (!payment) return { error: "not_found" };
 
   await prisma.$transaction(async (tx) => {
-    await tx.payment.delete({ where: { id: paymentId } });
+    await tx.payment.update({ where: { id: paymentId }, data: { deletedAt: new Date() } });
     await recalculateInvoice(invoiceId, tx);
   });
 

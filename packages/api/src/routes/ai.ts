@@ -4,17 +4,22 @@ import Anthropic from "@anthropic-ai/sdk";
 import { authenticate, requireRole } from "../middleware/auth";
 import { theme } from "@steady/shared";
 import { getFileBuffer } from "../services/s3";
-import { assertNoPhi, PhiDetectedError } from "../lib/phi-detector";
+import { verifyFileOwnership } from "../lib/s3-ownership";
+
+let _anthropic: Anthropic | null = null;
+function getAnthropic(): Anthropic | null {
+  if (!_anthropic) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (apiKey) _anthropic = new Anthropic({ apiKey });
+  }
+  return _anthropic;
+}
 
 const router = Router();
 
 router.use(authenticate, requireRole("CLINICIAN"));
 
 function handleAiError(err: unknown, res: Response, context: string): void {
-  if (err instanceof PhiDetectedError) {
-    res.status(422).json({ success: false, error: err.message });
-    return;
-  }
   logger.error(`AI ${context} error`, err);
   res.status(500).json({ success: false, error: `Failed to ${context}. Please try again.` });
 }
@@ -102,17 +107,14 @@ router.post("/style-content", async (req: Request, res: Response) => {
       return;
     }
 
-    await assertNoPhi(rawContent, "style-content");
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    const anthropic = getAnthropic();
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
       system: buildSystemPrompt(styleContext),
@@ -143,17 +145,14 @@ router.post("/generate-tracker", async (req: Request, res: Response) => {
       return;
     }
 
-    await assertNoPhi(description, "generate-tracker");
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    const anthropic = getAnthropic();
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
       system: `You are a clinical tracker designer for Steady, a healthcare app for ADHD treatment. Generate daily tracker configurations from clinician descriptions.
@@ -229,7 +228,6 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
-    await assertNoPhi(rawInput, "generate-part");
 
     const schema = PART_SCHEMAS[partType];
     if (!schema) {
@@ -237,15 +235,13 @@ router.post("/generate-part", async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    const anthropic = getAnthropic();
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
       system: GENERATE_PART_SYSTEM_PROMPT,
@@ -345,8 +341,15 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    // Verify the authenticated user owns or has clinical access to this file
+    const hasAccess = await verifyFileOwnership(fileKey, req.user!);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, error: "Access denied" });
+      return;
+    }
+
+    const anthropic = getAnthropic();
+    if (!anthropic) {
       res.status(500).json({ success: false, error: "AI service not configured" });
       return;
     }
@@ -355,9 +358,7 @@ router.post("/parse-homework-pdf", async (req: Request, res: Response) => {
     const pdfBuffer = await getFileBuffer(fileKey);
     const pdfBase64 = pdfBuffer.toString("base64");
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
+    const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,
       system: `You are a clinical content parser for a healthcare app called Steady. Your job is to analyze PDF worksheets and homework assignments used by clinicians (typically CBT, DBT, or other therapeutic exercises) and convert them into structured homework items.

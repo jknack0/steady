@@ -4,6 +4,7 @@ import { prisma } from "@steady/db";
 import { authenticate, requireRole } from "../middleware/auth";
 import { getStreakData } from "../services/homework-instances";
 import { SubmitTrackerEntrySchema } from "@steady/shared";
+import { startOfDayUTC } from "../lib/date-utils";
 import {
   acceptEnrollment,
   getProgramWithProgress,
@@ -15,10 +16,8 @@ import {
   getAssignedTrackers,
   submitTrackerEntry,
   getTrackerStreak,
-  NotFoundError,
-  ConflictError,
-  ValidationError,
 } from "../services/participant";
+import { handleServiceError } from "../lib/errors";
 import { logRtmEngagement } from "../services/rtm";
 
 const router = Router();
@@ -26,23 +25,7 @@ const router = Router();
 router.use(authenticate, requireRole("PARTICIPANT"));
 
 // ── Helper ───────────────────────────────────────────
-
-function handleServiceError(res: Response, err: unknown, fallbackMsg: string) {
-  if (err instanceof NotFoundError) {
-    res.status(404).json({ success: false, error: err.message });
-  } else if (err instanceof ConflictError) {
-    res.status(409).json({ success: false, error: err.message });
-  } else if (err instanceof ValidationError) {
-    if (err.details) {
-      res.status(400).json({ success: false, error: err.message, details: err.details });
-    } else {
-      res.status(400).json({ success: false, error: err.message });
-    }
-  } else {
-    logger.error(fallbackMsg, err);
-    res.status(500).json({ success: false, error: fallbackMsg });
-  }
-}
+// Uses shared handleServiceError from ../lib/errors
 
 // GET /api/participant/enrollments — List my enrollments
 router.get("/enrollments", async (req: Request, res: Response) => {
@@ -217,8 +200,7 @@ router.get("/daily-trackers", async (req: Request, res: Response) => {
 // GET /api/participant/daily-trackers/:id/today — Get today's entry
 router.get("/daily-trackers/:id/today", async (req: Request, res: Response) => {
   try {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const today = startOfDayUTC();
 
     const entry = await prisma.dailyTrackerEntry.findUnique({
       where: {

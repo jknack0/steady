@@ -375,7 +375,7 @@ describe("GET /api/daily-trackers", () => {
     expect(res.body.data).toHaveLength(2);
     expect(db.dailyTracker.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { programId: "program-1" },
+        where: { programId: "program-1", deletedAt: null },
       })
     );
   });
@@ -653,7 +653,7 @@ describe("DELETE /api/daily-trackers/:id", () => {
 
   it("deletes an existing tracker", async () => {
     db.dailyTracker.findUnique.mockResolvedValue(mockTracker() as any);
-    db.dailyTracker.delete.mockResolvedValue(mockTracker() as any);
+    db.dailyTracker.update.mockResolvedValue(mockTracker() as any);
 
     const res = await request(app)
       .delete("/api/daily-trackers/tracker-1")
@@ -661,8 +661,8 @@ describe("DELETE /api/daily-trackers/:id", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(db.dailyTracker.delete).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "tracker-1" } })
+    expect(db.dailyTracker.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "tracker-1" }, data: { deletedAt: expect.any(Date) } })
     );
   });
 

@@ -9,6 +9,8 @@ import type {
   ParticipantStats,
   StreakResponse,
 } from "@steady/shared";
+import { MS_PER_DAY } from "../lib/constants";
+import { toDateKey } from "../lib/date-utils";
 
 interface DateRange {
   start: Date;
@@ -34,7 +36,7 @@ function getWeekStart(date: Date): string {
   const d = new Date(date);
   const day = d.getDay();
   d.setDate(d.getDate() - day);
-  return d.toISOString().split("T")[0];
+  return toDateKey(d);
 }
 
 export async function getTaskCompletionRate(
@@ -135,7 +137,7 @@ export async function getJournalingConsistency(
   });
 
   // Total possible days in range
-  const msPerDay = 86400000;
+  const msPerDay = MS_PER_DAY;
   const totalDays = Math.max(
     1,
     Math.ceil((range.end.getTime() - range.start.getTime()) / msPerDay)
@@ -147,11 +149,11 @@ export async function getJournalingConsistency(
   let streak = 0;
   if (entries.length > 0) {
     const entryDates = new Set(
-      entries.map((e) => new Date(e.entryDate).toISOString().split("T")[0])
+      entries.map((e) => toDateKey(new Date(e.entryDate)))
     );
     const today = new Date();
     for (let d = new Date(today); d >= range.start; d.setDate(d.getDate() - 1)) {
-      const dateStr = d.toISOString().split("T")[0];
+      const dateStr = toDateKey(d);
       if (entryDates.has(dateStr)) {
         streak++;
       } else {
@@ -162,7 +164,7 @@ export async function getJournalingConsistency(
 
   // Calendar heatmap data
   const calendar = entries.map((e) => ({
-    date: new Date(e.entryDate).toISOString().split("T")[0],
+    date: toDateKey(new Date(e.entryDate)),
     hasEntry: true,
     regulationScore: e.regulationScore,
   }));
@@ -232,7 +234,7 @@ export async function getRegulationTrend(
   });
 
   const points = entries.map((e) => ({
-    date: new Date(e.entryDate).toISOString().split("T")[0],
+    date: toDateKey(new Date(e.entryDate)),
     score: e.regulationScore!,
   }));
 
@@ -257,7 +259,7 @@ export async function getSystemCheckinAdherence(
     },
   });
 
-  const msPerDay = 86400000;
+  const msPerDay = MS_PER_DAY;
   const totalDays = Math.max(
     1,
     Math.ceil((range.end.getTime() - range.start.getTime()) / msPerDay)
@@ -265,7 +267,7 @@ export async function getSystemCheckinAdherence(
 
   // Each day the participant used the system (created a time block) counts
   const uniqueDays = new Set(
-    events.map((e) => new Date(e.startTime).toISOString().split("T")[0])
+    events.map((e) => toDateKey(new Date(e.startTime)))
   );
 
   const totalExpected = totalDays;
@@ -335,7 +337,7 @@ export async function getParticipantStats(
         category: s.category as StreakResponse["category"],
         currentStreak: s.currentStreak,
         longestStreak: s.longestStreak,
-        lastActiveDate: s.lastActiveDate ? s.lastActiveDate.toISOString().split("T")[0] : null,
+        lastActiveDate: s.lastActiveDate ? toDateKey(s.lastActiveDate) : null,
       }));
     }
   } catch {

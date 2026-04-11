@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppointmentView } from "@/lib/appointment-types";
 import { STATUS_THEME } from "./status-colors";
@@ -62,6 +63,12 @@ export function AppointmentCard({ appointment, timezone, onClick, hasConflict, c
           <span className="text-yellow-700" title="Overlaps another appointment" aria-label="conflict">
             ⚠
           </span>
+        )}
+        {appointment.hasSessionSummary && (
+          <Sparkles
+            className="h-3 w-3 text-teal-600 ml-auto shrink-0"
+            aria-label="AI session summary available"
+          />
         )}
       </div>
       <div className="truncate font-semibold">{client}</div>

@@ -17,8 +17,21 @@ const ENCRYPTED_FIELDS: Record<string, string[]> = {
     "policyHolderDob",
     "policyHolderGender",
   ],
+  ParticipantProfile: [
+    "dateOfBirth",
+    "gender",
+    "addressStreet",
+    "addressCity",
+    "addressState",
+    "addressZip",
+  ],
   Practice: ["stediApiKeyEncrypted", "stripeApiKeyEncrypted", "stripeWebhookSecretEncrypted"],
 };
+
+/**
+ * Fields that are DateTime in the Prisma schema and need Date conversion after decryption.
+ */
+const DATE_ENCRYPTED_FIELDS = new Set(["dateOfBirth"]);
 
 /** Prisma actions that write data and need encryption on input. */
 const WRITE_ACTIONS = new Set(["create", "update", "upsert", "createMany", "updateMany"]);
@@ -32,22 +45,29 @@ const READ_ACTIONS = new Set([
 
 /**
  * Encrypt sensitive fields in a data object (mutates in place).
+ * Handles both string and Date values (Dates are converted to ISO strings before encryption).
  */
 function encryptFields(data: Record<string, any>, fields: string[]): void {
   for (const field of fields) {
-    if (data[field] != null && typeof data[field] === "string") {
-      data[field] = encryptField(data[field]);
+    if (data[field] != null) {
+      if (typeof data[field] === "string") {
+        data[field] = encryptField(data[field]);
+      } else if (data[field] instanceof Date) {
+        data[field] = encryptField(data[field].toISOString());
+      }
     }
   }
 }
 
 /**
  * Decrypt sensitive fields on a single record (mutates in place).
+ * DateTime fields are converted back to Date objects after decryption.
  */
 function decryptRecord(record: Record<string, any>, fields: string[]): void {
   for (const field of fields) {
     if (record[field] != null && typeof record[field] === "string") {
-      record[field] = decryptField(record[field]);
+      const decrypted = decryptField(record[field]);
+      record[field] = DATE_ENCRYPTED_FIELDS.has(field) ? new Date(decrypted) : decrypted;
     }
   }
 }

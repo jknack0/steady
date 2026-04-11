@@ -1,22 +1,16 @@
 import { logger } from "../lib/logger";
 import { Router, Request, Response } from "express";
-import bcrypt from "bcryptjs";
 import { prisma } from "@steady/db";
 import { CreateEnrollmentSchema, UpdateEnrollmentSchema, type HomeworkContent } from "@steady/shared";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import { getStreakData, cancelFutureInstances } from "../services/homework-instances";
+import { verifyProgramOwnership } from "../lib/ownership";
+import { toDateKey } from "../lib/date-utils";
 
 const router = Router({ mergeParams: true });
 
 router.use(authenticate, requireRole("CLINICIAN"));
-
-// Helper: verify clinician owns the program
-async function verifyProgramOwnership(programId: string, clinicianProfileId: string) {
-  return prisma.program.findFirst({
-    where: { id: programId, clinicianId: clinicianProfileId },
-  });
-}
 
 // GET /api/programs/:programId/enrollments — List enrollments
 router.get("/", async (req: Request, res: Response) => {
@@ -31,7 +25,7 @@ router.get("/", async (req: Request, res: Response) => {
     const take = Math.min(parseInt(limit as string) || 50, 100);
 
     const enrollments = await prisma.enrollment.findMany({
-      where: { programId: req.params.programId },
+      where: { programId: req.params.programId, deletedAt: null },
       include: {
         participant: {
           include: {
@@ -92,12 +86,10 @@ router.post("/", validate(CreateEnrollmentSchema), async (req: Request, res: Res
     }
 
     if (!user) {
-      // Create a placeholder participant account
-      const tempPassword = await bcrypt.hash(Math.random().toString(36), 10);
+      // Create a placeholder participant account (no password — Cognito handles auth)
       user = await prisma.user.create({
         data: {
           email: participantEmail,
-          passwordHash: tempPassword,
           firstName: firstName || "Participant",
           lastName: lastName || "",
           role: "PARTICIPANT",
@@ -260,7 +252,7 @@ router.post("/:enrollmentId/parts/:partId/stop-recurrence", async (req: Request,
 
     // Update content and cancel instances atomically
     const content = part.content as Record<string, unknown>;
-    const today = new Date().toISOString().split("T")[0];
+    const today = toDateKey(new Date());
     content.recurrenceEndDate = today;
 
     await prisma.$transaction(async (tx) => {
@@ -270,13 +262,15 @@ router.post("/:enrollmentId/parts/:partId/stop-recurrence", async (req: Request,
       });
 
       // Cancel future PENDING instances for this enrollment
-      await tx.homeworkInstance.deleteMany({
+      await tx.homeworkInstance.updateMany({
         where: {
           partId: part.id,
           enrollmentId: req.params.enrollmentId,
           status: "PENDING",
           dueDate: { gte: new Date() },
+          deletedAt: null,
         },
+        data: { deletedAt: new Date() },
       });
     });
 

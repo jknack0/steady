@@ -15,6 +15,7 @@ import { OverviewTab } from "@/components/participant-detail/OverviewTab";
 import { HomeworkTab } from "@/components/participant-detail/HomeworkTab";
 import { TrackersTab } from "@/components/participant-detail/TrackersTab";
 import { InsuranceTab } from "@/components/participant-detail/InsuranceTab";
+import { ClientPortalAccessPanel } from "@/components/portal/ClientPortalAccessPanel";
 
 type Tab = "overview" | "homework" | "trackers" | "insurance";
 
@@ -59,6 +60,15 @@ export default function ParticipantDetailPage() {
       </nav>
 
       <PageHeader title={name} subtitle={participant.email} />
+
+      {/* Portal access — FR-1 / FR-10 */}
+      <div className="mb-6">
+        <ClientPortalAccessPanel
+          clientFirstName={participant.firstName ?? ""}
+          clientLastName={participant.lastName ?? ""}
+          clientEmail={participant.email ?? ""}
+        />
+      </div>
 
       {/* Tabs */}
       <Tabs

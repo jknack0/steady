@@ -44,6 +44,7 @@ const APPOINTMENT_INCLUDE = {
   clinician: { include: { user: true } },
   invoiceLineItems: { select: { invoiceId: true }, take: 1 },
   insuranceClaim: { select: { id: true, status: true } },
+  telehealthSession: { select: { summaryStatus: true } },
 } as const;
 
 // TODO(sprint-20): participant search + "Add new client" flow is deferred — it needs
@@ -472,6 +473,9 @@ export function toClinicianView(a: any): any {
   const claimId = a.insuranceClaim?.id ?? null;
   const claimStatus = a.insuranceClaim?.status ?? null;
 
+  // Indicator for AI-generated session summary (shown on the calendar card)
+  const hasSessionSummary = a.telehealthSession?.summaryStatus === "completed";
+
   return {
     id: a.id,
     practiceId: a.practiceId,
@@ -511,6 +515,7 @@ export function toClinicianView(a: any): any {
     invoiceId,
     claimId,
     claimStatus,
+    hasSessionSummary,
   };
 }
 

@@ -2,6 +2,8 @@ import { logger } from "../lib/logger";
 import { prisma } from "@steady/db";
 import { CPT_CODES } from "@steady/shared";
 import { NotFoundError } from "./rtm";
+import { formatName } from "../lib/format";
+import { toDateKey } from "../lib/date-utils";
 
 export interface SuperbillData {
   // Provider info
@@ -102,9 +104,9 @@ export async function generateSuperbillData(
   const enrollment = period.rtmEnrollment;
   const eligibleCodes = (period.eligibleCodes as string[]) || [];
   const isTelehealth = billingProfile.placeOfServiceCode === "02";
-  const periodEndStr = period.periodEnd.toISOString().split("T")[0];
+  const periodEndStr = toDateKey(period.periodEnd);
   const interactiveDateStr = period.interactiveCommunicationDate
-    ? period.interactiveCommunicationDate.toISOString().split("T")[0]
+    ? toDateKey(period.interactiveCommunicationDate)
     : null;
 
   // 4. Build line items from eligible codes
@@ -161,7 +163,7 @@ export async function generateSuperbillData(
       placeOfService: billingProfile.placeOfServiceCode,
     },
     client: {
-      name: `${client.firstName} ${client.lastName}`.trim(),
+      name: formatName(client.firstName, client.lastName),
     },
     insurance: {
       payerName: enrollment.payerName,
@@ -169,7 +171,7 @@ export async function generateSuperbillData(
       groupNumber: enrollment.groupNumber,
     },
     period: {
-      startDate: period.periodStart.toISOString().split("T")[0],
+      startDate: toDateKey(period.periodStart),
       endDate: periodEndStr,
       engagementDays: period.engagementDays,
       clinicianMinutes: period.clinicianMinutes,

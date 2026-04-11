@@ -1,9 +1,12 @@
 import PgBoss from "pg-boss";
 import { prisma } from "@steady/db";
 import { logger } from "../lib/logger";
+import { toDateKey } from "../lib/date-utils";
 import { markOverdueInvoices } from "./billing";
 import { generateAllSeriesAppointments } from "./recurring-series";
 import { processReminders } from "./appointment-reminders";
+import { registerPortalInviteEmailWorker } from "../workers/portal-invite-email";
+import { cleanupStaleRateLimits } from "./rate-limit";
 
 let boss: PgBoss | null = null;
 
@@ -18,7 +21,18 @@ export async function getQueue(): Promise<PgBoss> {
   boss = new PgBoss(databaseUrl);
   await boss.start();
 
+  // pg-boss 10+ requires explicit createQueue before schedule/work.
+  // Older versions auto-created queues. This call is idempotent.
+  async function ensureQueue(name: string): Promise<void> {
+    try {
+      await (boss as PgBoss).createQueue(name);
+    } catch {
+      // already exists — ignore
+    }
+  }
+
   // Register overdue invoice cron job — runs daily at 6:00 AM UTC
+  await ensureQueue("invoice-overdue-check");
   await boss.schedule("invoice-overdue-check", "0 6 * * *");
   await boss.work("invoice-overdue-check", async () => {
     try {
@@ -30,6 +44,7 @@ export async function getQueue(): Promise<PgBoss> {
   });
 
   // Register recurring series generation cron job — runs daily at 1:00 AM UTC
+  await ensureQueue("recurring-series-generate");
   await boss.schedule("recurring-series-generate", "0 1 * * *");
   await boss.work("recurring-series-generate", async () => {
     try {
@@ -40,6 +55,7 @@ export async function getQueue(): Promise<PgBoss> {
   });
 
   // Register appointment reminder processing cron — runs every 5 minutes
+  await ensureQueue("process-appointment-reminders");
   await boss.schedule("process-appointment-reminders", "*/5 * * * *");
   await boss.work("process-appointment-reminders", async () => {
     try {
@@ -52,7 +68,23 @@ export async function getQueue(): Promise<PgBoss> {
     }
   });
 
+  // ── Client Web Portal workers ────────────────────────────────────
+  // Register the portal invite email worker (FR-2, AC-2.1, COND-23)
+  await registerPortalInviteEmailWorker(boss);
+
+  // Rate limit janitor — clears stale rows daily at 4 AM UTC (COND-3)
+  await ensureQueue("rate-limit-janitor");
+  await boss.schedule("rate-limit-janitor", "0 4 * * *");
+  await boss.work("rate-limit-janitor", async () => {
+    try {
+      await cleanupStaleRateLimits();
+    } catch (err) {
+      logger.error("Rate limit janitor failed", err);
+    }
+  });
+
   // Register claim submission worker
+  await ensureQueue("stedi-claim-submit");
   await boss.work("stedi-claim-submit", async (job: any) => {
     try {
       const { claimId } = job.data as { claimId: string };
@@ -103,7 +135,7 @@ export async function getQueue(): Promise<PgBoss> {
             procedureCode: claim.serviceCode,
             modifiers: claim.modifiers.length > 0 ? claim.modifiers : undefined,
             chargeAmountCents: claim.servicePriceCents,
-            serviceDate: claim.dateOfService.toISOString().split("T")[0],
+            serviceDate: toDateKey(claim.dateOfService),
           }],
         },
       };
@@ -153,6 +185,7 @@ export async function getQueue(): Promise<PgBoss> {
   });
 
   // Register claim status polling cron — every 2 hours
+  await ensureQueue("stedi-status-poll");
   await boss.schedule("stedi-status-poll", "0 */2 * * *");
   await boss.work("stedi-status-poll", async () => {
     try {
@@ -211,6 +244,7 @@ export async function getQueue(): Promise<PgBoss> {
   });
 
   // Register Stripe webhook processing worker
+  await ensureQueue("stripe-webhook-process");
   await boss.work("stripe-webhook-process", async (job: any) => {
     try {
       const { eventType, eventData, practiceId } = job.data as {
@@ -238,6 +272,7 @@ export async function getQueue(): Promise<PgBoss> {
   });
 
   // Register balance-due check worker (triggered after insurance payment)
+  await ensureQueue("stripe-balance-due-check");
   await boss.work("stripe-balance-due-check", async (job: any) => {
     try {
       const { invoiceId } = job.data as { invoiceId: string };
@@ -246,6 +281,101 @@ export async function getQueue(): Promise<PgBoss> {
     } catch (err) {
       logger.error("Balance-due check failed", err);
       throw err;
+    }
+  });
+
+  // Register session summary worker — calls Claude to generate clinical notes
+  await ensureQueue("summarize-transcript");
+  // pg-boss v10 passes an array of jobs to the worker callback, not a
+  // single job. Iterate so each summary job is processed.
+  await boss.work("summarize-transcript", async (jobs: any) => {
+    const jobArray = Array.isArray(jobs) ? jobs : [jobs];
+    for (const job of jobArray) {
+      try {
+        const { sessionId } = job.data as { sessionId: string };
+        const { summarizeSession } = await import("./session-summary");
+        await summarizeSession(sessionId);
+      } catch (err) {
+        logger.error("Session summary worker failed", err);
+        throw err; // rethrow for pg-boss retry
+      }
+    }
+  });
+
+  // Register transcription dispatch worker — local dev / non-SQS path
+  // Calls the transcription worker container via HTTP
+  await ensureQueue("transcribe-session");
+  // pg-boss v10 passes an array of jobs to the worker callback, not a
+  // single job. Iterate so each transcription job is dispatched.
+  await boss.work("transcribe-session", async (jobs: any) => {
+    const jobArray = Array.isArray(jobs) ? jobs : [jobs];
+    for (const job of jobArray) {
+      const { sessionId, therapistId, audioPath, bucket } = job.data as {
+        sessionId: string;
+        therapistId: string;
+        audioPath: string;
+        bucket: string;
+        participantIdentity?: string;
+      };
+
+      const {
+        TRANSCRIPTION_WORKER_URL,
+        INTERNAL_API_KEY,
+        TRANSCRIPTION_CALLBACK_BASE_URL,
+      } = await import("../lib/env");
+
+      if (!TRANSCRIPTION_WORKER_URL) {
+        logger.warn("TRANSCRIPTION_WORKER_URL not set — skipping transcription");
+        continue;
+      }
+
+      try {
+        await prisma.telehealthSession.update({
+          where: { id: sessionId },
+          data: { transcriptStatus: "transcribing" },
+        });
+
+        // Encode the audioPath into the callback URL so the internal
+        // handler knows which perSpeaker slot to update when the result
+        // comes back. The Python worker posts verbatim to callbackUrl —
+        // query strings survive unchanged. Use the callback-specific
+        // base URL so the worker (running in Docker) can reach the
+        // API (running on the host) via host.docker.internal in dev.
+        const callbackUrl =
+          `${TRANSCRIPTION_CALLBACK_BASE_URL}/internal/transcripts?audioPath=${encodeURIComponent(audioPath)}`;
+
+        const response = await fetch(`${TRANSCRIPTION_WORKER_URL}/transcribe`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${INTERNAL_API_KEY}`,
+          },
+          body: JSON.stringify({
+            sessionId,
+            therapistId,
+            audioPath,
+            bucket,
+            callbackUrl,
+            callbackSecret: INTERNAL_API_KEY,
+          }),
+          signal: AbortSignal.timeout(600000), // 10 min timeout for long audio
+        });
+
+        if (!response.ok) {
+          throw new Error(`Transcription worker returned ${response.status}`);
+        }
+
+        logger.info(
+          `Transcription dispatched sessionId=${sessionId} audioPath=${audioPath}`,
+        );
+      } catch (err) {
+        await prisma.telehealthSession.update({
+          where: { id: sessionId },
+          data: { transcriptStatus: "failed" },
+        });
+        logger.error("Transcription dispatch failed", err);
+        throw err; // rethrow for pg-boss retry
+      }
     }
   });
 
