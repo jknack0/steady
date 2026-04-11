@@ -58,7 +58,9 @@ steady shared bump patch      # bump shared, tag, push, auto-PR consumers
 | **2** | Create `steady-api` repo | `git filter-repo --path packages/api/ --path packages/db/` with path-renames; db folded into `src/db/`; 135 `@steady/db` references rewritten; git-URL shared dep; `bootstrap-env.ts` + `field-encryption.test.ts` path fixes | ✅ done (`Steady-Mental-Health/steady-api@v0.1.0`, 191+1 commits, **1055/1055 tests pass**, CI deferred to post-cutover) |
 | **3** | Create `steady-web` repo | `git filter-repo --subdirectory-filter apps/web`; remove phantom `@steady/db` dep; remove `@steady/db` from `next.config.js` `transpilePackages`; rewrite `amplify.yml` for single-repo build (no cross-workspace dance); git-URL shared dep | ✅ done (`Steady-Mental-Health/steady-web@v0.1.0`, 255+1 commits, **next build green**, 58/60 vitest — 2 pre-existing flaky tests unrelated to extraction) |
 | **4** | Create `steady-mobile` repo | `git filter-repo --subdirectory-filter apps/mobile`; inline 4 `@steady/shared` symbols (theme, feelings-wheel data+helpers, review types) into `lib/shared-copy/`; type-only review mirror (no zod); rewrite 4 import sites; add `@expo/vector-icons` as explicit dep (was workspace-hoisted); rewrite `vercel.json` for standalone; add `.npmrc` with `legacy-peer-deps=true` for Expo ecosystem | ✅ done (`Steady-Mental-Health/steady-mobile@v0.1.0`, 78+1 commits, **typecheck 0 errors, Metro starts clean on `Waiting on http://localhost:8081`** — no EACCES, mobile has zero cross-repo deps) |
-| **5** | Dual-run cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify. **Also replay dev-only fixes** (see below) onto `steady-api/main` | pending |
+| **5a** | Replay dev-only fixes onto steady-api/main | `git format-patch` → `sed` path rewrite → `git am` → codemod fix for new test files | ✅ done (`steady-api@v0.2.0`, **1069/1069 tests pass** — parity with monorepo dev) |
+| **5b** | Infrastructure repoint | Amplify source repoint, EC2 deploy-key setup, OIDC trust policy update for `Steady-Mental-Health/*` | pending |
+| **5c** | Dual-run + cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify | pending |
 | **6** | Archive + memory update | Mark `jknack0/steady` read-only (GitHub archive setting), update auto-memory files to point at `Steady-Mental-Health/*` | pending |
 
 ### Known follow-ups
@@ -71,21 +73,38 @@ steady shared bump patch      # bump shared, tag, push, auto-PR consumers
 **steady-web `tsconfig.tsbuildinfo` committed by accident** (cosmetic)
 - TypeScript incremental build cache leaked into the v0.1.0 commit because `.gitignore` didn't cover `*.tsbuildinfo`. Harmless (~KB cache file) but should be cleaned up in a follow-up commit on `steady-web/main` plus an `.gitignore` update.
 
-### Dev-only fixes not yet in steady-api
+### Dev-only fixes replayed onto steady-api (Phase 5a)
 
-Phase 2 extracted from the monorepo's `main` branch. The following fixes live on `jknack0/steady/dev` but **not** on `main`, so they're **not in `steady-api@v0.1.0`** and must be replayed before Phase 5 cutover:
+Phase 2 extracted from the monorepo's `main` branch. The following three fixes lived on `jknack0/steady/dev` but NOT on `main`, so they were missing from `steady-api@v0.1.0`:
 
 - `1581284` — fix(api): register `send-portal-invite-email` queue in pg-boss
 - `6cb6406` — fix(portal-invitations+config): clinician-as-client invite guard + config route loosening for invited-but-not-enrolled clients
 - `c177ac9` — fix(session-summary): atomic claim to dedupe `summarize-transcript` jobs (prevents duplicate Sonnet calls)
 
-Two options:
+**Phase 5a replay approach: Option B (cherry-pick via `git format-patch` → `git am`).** Chose this over Option A (merge dev→main + re-extract + force-push) because Option A would wipe out the Phase 2 standalone-prep commit (`7c3136b`) and require redoing all of the README, .gitignore, bootstrap-env.ts fix, field-encryption.test.ts fix, and package.json work. Option B is non-destructive and only needed one additional commit to cover a codemod coverage gap.
 
-**Option A — merge `dev` → `main` in the monorepo, re-run Phase 2, force-push `steady-api/main`.** Preserves the original commits' history/SHA provenance but requires a force-push to a live remote. Cleaner audit trail.
+**How it ran:**
 
-**Option B — cherry-pick the 3 commits onto `steady-api/main` as fresh commits.** Non-destructive, simpler, but the commits get new SHAs (original commit refs from PRs/issues/memory files become stale).
+1. `git format-patch --stdout 1581284~1..c177ac9` in the monorepo, producing an mbox of all 3 commits as patches
+2. Rewrote paths in the mbox with `sed` targeting only diff header lines (`diff --git`, `---`, `+++`): `packages/api/src/` → `src/`
+3. Fresh clone of `Steady-Mental-Health/steady-api`, then `git am` the mbox — all 3 patches applied cleanly with zero conflicts
+4. Ran the full test suite: 2 test files failed to **load** (not failing assertions) — the two new test files created by the cherry-pick (`portal-invitations.test.ts`, `session-summary.test.ts`) still had `import { prisma } from "@steady/db"` at the top. Phase 2's codemod ran BEFORE these files existed in this repo's history, so they never got processed.
+5. Applied the same Phase 2 codemod logic to just those two files (`@steady/db` → `../db`), committed as a 4th commit `d4c89b5` with a commit message explaining the codemod coverage gap.
+6. Full test suite: **58/58 test files pass, 1069/1069 tests pass** — exact parity with dev.
+7. Pushed `main` + tagged `v0.2.0` to mark the dev-replay checkpoint.
 
-**Recommendation:** Option A, as part of Phase 5 when we're already going to re-extract for the final cutover snapshot.
+**Result:** `steady-api@v0.2.0` is now feature-equivalent to `jknack0/steady/dev` for all code inside `packages/api/`. The commits on `steady-api/main` are:
+
+```
+d4c89b5 fix(tests): rewrite @steady/db imports in cherry-picked test files
+ccceaf6 fix(session-summary): dedupe queueSummarization via atomic claim
+e542170 fix(portal-invitations+config): guard clinician-as-client invites, serve config for invited clients
+e1c83a6 fix(api): register send-portal-invite-email queue in pg-boss
+7c3136b chore: prepare @steady/api for standalone use
+54c2e71 Merge branch 'dev' into main   (extracted monorepo history)
+```
+
+New SHAs (e1c83a6, e542170, ccceaf6) are expected — `git am` rebuilds commits on a different parent. Original SHAs in the monorepo (`1581284`, `6cb6406`, `c177ac9`) remain unchanged on `jknack0/steady/dev` for historical reference.
 
 ## Phase 0 — what's being done (this PR)
 
