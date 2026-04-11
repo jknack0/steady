@@ -127,6 +127,33 @@ Or use `StringLike` with `repo:Steady-Mental-Health/steady-*:*` to cover all var
 - Force mobile to depend on `@steady/shared` — the 4 imports are inlined into mobile
 - Migrate to pnpm or any other package manager — stays npm to minimize change surface
 
+## Local directory layout
+
+After the split, everything Steady lives in two top-level folders:
+
+```
+c:/Dev/
+├── steady/                       ← monorepo, archived after Phase 5
+└── steady-workspace/
+    ├── .git/                     ← workspace repo's own git
+    ├── bin/steady                ← CLI entrypoint
+    ├── src/                      ← CLI source
+    ├── manifest.json             ← declares repos/, services, links
+    ├── package.json              ← workspace CLI package
+    ├── .gitignore                ← contains "repos/"
+    ├── .code-workspace           ← VS Code multi-root config
+    ├── README.md
+    └── repos/                    ← populated by `steady init`
+        ├── steady-shared/
+        ├── steady-api/
+        ├── steady-web/
+        └── steady-mobile/
+```
+
+Workspace tooling lives at the workspace root. Cloned consumer repos live under `repos/` and are git-ignored from the workspace's own history. `steady init` runs `git clone` for each manifest entry into `repos/<name>/`, then `npm install` in each, then wires `npm link` for `@steady/shared` consumers.
+
+During the split itself, Phase 1 runs `git filter-repo` in a scratch temp directory and pushes directly to the new remote — `steady-workspace/` doesn't exist yet, so nothing lands in `repos/` until Phase 1.5 creates the workspace and its `steady init` command runs.
+
 ## Freeze during split
 
 While Phases 1–5 are in progress, avoid:
