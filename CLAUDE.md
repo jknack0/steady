@@ -378,7 +378,8 @@ DATABASE_URL=postgresql://postgres:<pass>@steady-db.<id>.us-east-2.rds.amazonaws
 JWT_SECRET=<secret>
 REFRESH_SECRET=<secret>
 FIELD_ENCRYPTION_KEY=<32-byte-base64>
-ANTHROPIC_API_KEY=<key>
+# Claude/AI calls go through AWS Bedrock via the ec2-s3 IAM instance role
+# (BedrockInvokeClaude inline policy). No API key env var is used.
 CORS_ORIGINS=https://steadymentalhealth.com,https://www.steadymentalhealth.com,https://dily9t72o38yr.amplifyapp.com,https://dev.steadymentalhealth.com
 LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=devsecret

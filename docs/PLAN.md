@@ -75,8 +75,8 @@ New part type where clinicians input raw content (notes, instructions, etc.) and
 7. Mobile renderer
 
 ## Dependencies
-- Need `@anthropic-ai/sdk` installed in `packages/api`
-- Need `ANTHROPIC_API_KEY` env var set on the API server
+- `@anthropic-ai/bedrock-sdk` installed in `packages/api`
+- AWS credentials with `bedrock:InvokeModel` permission (IAM instance role in prod/dev, `~/.aws/credentials` or `AWS_*` env vars locally)
 
 ## What the Mobile Parser Already Supports
 The existing HTML parser in `part-renderers.tsx` handles: `<p>`, `<h1>`-`<h6>`, `<ul>`, `<ol>`, `<li>`, `<blockquote>`, `<br>`, `<hr>`, `<strong>`, `<b>`, `<em>`, `<i>`, `<a>`. Claude's system prompt will be constrained to only emit these tags so the output renders perfectly without any parser changes.

@@ -378,7 +378,9 @@ npm run dev
 # packages/api/.env
 DATABASE_URL=postgresql://postgres:password@localhost:5432/steady_adhd
 JWT_SECRET=your-secret-here
-ANTHROPIC_API_KEY=sk-ant-...  # Required for Styled Content AI
+# AI features use AWS Bedrock — provide AWS creds via AWS_ACCESS_KEY_ID /
+# AWS_SECRET_ACCESS_KEY, or configure ~/.aws/credentials. The IAM
+# principal must have bedrock:InvokeModel on Claude Haiku + Sonnet.
 
 # apps/web/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:4000
