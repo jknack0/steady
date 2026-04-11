@@ -1,7 +1,11 @@
 # Monorepo Split — Tracking Doc
 
 **Status:** Phase 0 in progress
-**Goal:** Split `jknack0/steady` monorepo into 5 repos under a single workspace CLI.
+**Goal:** Split `jknack0/steady` monorepo into 5 repos under the `Steady-Mental-Health` GitHub organization, fronted by a workspace CLI.
+
+**GitHub homes:**
+- Old monorepo (becoming archive): `jknack0/steady`
+- New code + tooling repos: `Steady-Mental-Health/steady-{api,web,mobile,shared,workspace}`
 
 ## The 5 target repos
 
@@ -18,7 +22,7 @@
 | # | Decision | Choice | Why |
 |---|---|---|---|
 | 1 | Repo count | 5 total (4 code + 1 workspace CLI) | 4 code repos is the target separation; workspace CLI gives a monorepo-like dev loop |
-| 2 | Registry | **None — git URL deps** | No publishing ceremony, no auth tokens, no monthly fee. `package.json` pins consumer dependencies directly at `git+ssh://github.com/jknack0/steady-shared.git#vX.Y.Z`, lockfile pins exact SHA |
+| 2 | Registry | **None — git URL deps** | No publishing ceremony, no auth tokens, no monthly fee. `package.json` pins consumer dependencies directly at `git+ssh://git@github.com/Steady-Mental-Health/steady-shared.git#vX.Y.Z`, lockfile pins exact SHA |
 | 3 | Mobile shared handling | **Inline the 4 imports** | Mobile only imports 4 things from shared (theme, emotion constants, session review types). Inlining eliminates mobile from every future schema-bump coordination |
 | 4 | Git history | **Preserve via `git-filter-repo`** | Each new repo keeps its own subset of history, blame, and commit dates |
 | 5 | Deploy cutover | **Dual-run ~1 week** | Old and new deploys live in parallel before cutover; verify parity before flipping traffic |
@@ -29,7 +33,7 @@
 
 ```bash
 # One-time setup
-git clone git@github.com:jknack0/steady-workspace.git
+git clone git@github.com:Steady-Mental-Health/steady-workspace.git
 cd steady-workspace
 npx steady init
 # → clones 4 code repos as siblings, runs npm install, npm links shared
@@ -55,7 +59,7 @@ steady shared bump patch      # bump shared, tag, push, auto-PR consumers
 | **3** | Create `steady-web` repo | `git filter-repo --path apps/web/`, git-URL shared dep, Amplify repo repoint | pending |
 | **4** | Create `steady-mobile` repo | `git filter-repo --path apps/mobile/`, inline 4 shared imports, verify Metro starts clean | pending |
 | **5** | Dual-run cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify | pending |
-| **6** | Archive + memory update | Rename `jknack0/steady` → `steady-legacy`, mark read-only, update auto-memory files | pending |
+| **6** | Archive + memory update | Mark `jknack0/steady` read-only (GitHub archive setting), update auto-memory files to point at `Steady-Mental-Health/*` | pending |
 
 ## Phase 0 — what's being done (this PR)
 
@@ -81,17 +85,19 @@ Recommendation: **SSH deploy key** for initial setup, revisit GitHub App if we a
 `prod-api` and `dev-api` run `npm ci` on deploy, which clones `steady-shared`. Need a deploy key on each EC2 box's `~/.ssh/id_ed25519` with the corresponding pub key registered on `steady-shared`. One-time per EC2.
 
 ### OIDC role trust policy (Phase 2+)
-The existing `SteadyGitHubOIDCRole` currently allows only `repo:jknack0/steady:*` via the `sub` claim. Needs to be widened to allow the new repo names:
+The existing `SteadyGitHubOIDCRole` currently allows only `repo:jknack0/steady:*` via the `sub` claim. Needs to be widened to allow the new repo names under the `Steady-Mental-Health` org:
 
 ```json
 "token.actions.githubusercontent.com:sub": [
-  "repo:jknack0/steady-api:ref:refs/heads/main",
-  "repo:jknack0/steady-web:ref:refs/heads/main",
-  "repo:jknack0/steady-mobile:ref:refs/heads/main"
+  "repo:Steady-Mental-Health/steady-api:ref:refs/heads/main",
+  "repo:Steady-Mental-Health/steady-web:ref:refs/heads/main",
+  "repo:Steady-Mental-Health/steady-mobile:ref:refs/heads/main"
 ]
 ```
 
-Or use `StringLike` with `repo:jknack0/steady-*:*` to cover all variants at once.
+Or use `StringLike` with `repo:Steady-Mental-Health/steady-*:*` to cover all variants at once.
+
+**Note:** moving the deploy identity from `jknack0/steady` to `Steady-Mental-Health/steady-*` changes the `sub` claim entirely — the old `jknack0/steady` entry can be removed from the trust policy once dual-run cutover completes in Phase 5.
 
 ## Risks and mitigations
 
