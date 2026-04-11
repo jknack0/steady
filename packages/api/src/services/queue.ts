@@ -70,6 +70,7 @@ export async function getQueue(): Promise<PgBoss> {
 
   // ── Client Web Portal workers ────────────────────────────────────
   // Register the portal invite email worker (FR-2, AC-2.1, COND-23)
+  await ensureQueue("send-portal-invite-email");
   await registerPortalInviteEmailWorker(boss);
 
   // Rate limit janitor — clears stale rows daily at 4 AM UTC (COND-3)
