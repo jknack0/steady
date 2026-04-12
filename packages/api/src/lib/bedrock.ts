@@ -2,8 +2,8 @@
  * AWS Bedrock client for Anthropic Claude.
  *
  * Uses @anthropic-ai/bedrock-sdk which mirrors the @anthropic-ai/sdk API
- * but authenticates via AWS IAM (EC2 instance role, env vars, or
- * ~/.aws/credentials) instead of an ANTHROPIC_API_KEY.
+ * but authenticates via AWS IAM — EC2 instance role in prod/dev,
+ * env vars or ~/.aws/credentials locally.
  *
  * Model selection is tiered:
  *  - Haiku 4.5 for fast/cheap structured tasks (formatting, JSON gen)

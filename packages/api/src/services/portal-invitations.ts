@@ -150,6 +150,19 @@ export async function createPortalInvitation(
     select: { id: true, role: true },
   });
 
+  // Reject invites whose email belongs to a CLINICIAN/ADMIN account.
+  // ClinicianClient.clientId FKs to users.id but a clinician can never be
+  // a participant — the client detail page has no ParticipantProfile to
+  // render and blows up downstream. Catch it at the invite boundary.
+  if (
+    existingUser &&
+    (existingUser.role === "CLINICIAN" || existingUser.role === "ADMIN")
+  ) {
+    throw new ConflictError(
+      "This email belongs to a clinician or admin account and cannot be invited as a client."
+    );
+  }
+
   const plaintextToken = generatePortalToken();
   const tokenHash = hashToken(plaintextToken);
   const expiresAt = new Date(

@@ -183,16 +183,27 @@ router.get("/clients/:clientId", async (req: Request, res: Response) => {
     const clinicianId = req.user!.clinicianProfileId!;
     const { clientId } = req.params;
 
-    // Verify clinician has a relationship with this client
-    const enrollment = await prisma.enrollment.findFirst({
-      where: {
-        participant: { userId: clientId },
-        program: { clinicianId },
-      },
-      select: { id: true },
-    });
+    // Verify the clinician has a relationship with this client. A client
+    // counts as "related" if EITHER (a) they're enrolled in one of the
+    // clinician's programs, OR (b) a ClinicianClient link exists (e.g. a
+    // freshly-invited client who hasn't signed up/enrolled yet).
+    const [enrollment, link] = await Promise.all([
+      prisma.enrollment.findFirst({
+        where: {
+          participant: { userId: clientId },
+          program: { clinicianId },
+        },
+        select: { id: true },
+      }),
+      prisma.clinicianClient.findUnique({
+        where: {
+          clinicianId_clientId: { clinicianId, clientId },
+        },
+        select: { id: true },
+      }),
+    ]);
 
-    if (!enrollment) {
+    if (!enrollment && !link) {
       res
         .status(404)
         .json({ success: false, error: "Client not found" });
