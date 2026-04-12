@@ -59,8 +59,8 @@ steady shared bump patch      # bump shared, tag, push, auto-PR consumers
 | **3** | Create `steady-web` repo | `git filter-repo --subdirectory-filter apps/web`; remove phantom `@steady/db` dep; remove `@steady/db` from `next.config.js` `transpilePackages`; rewrite `amplify.yml` for single-repo build (no cross-workspace dance); git-URL shared dep | ✅ done (`Steady-Mental-Health/steady-web@v0.1.0`, 255+1 commits, **next build green**, 58/60 vitest — 2 pre-existing flaky tests unrelated to extraction) |
 | **4** | Create `steady-mobile` repo | `git filter-repo --subdirectory-filter apps/mobile`; inline 4 `@steady/shared` symbols (theme, feelings-wheel data+helpers, review types) into `lib/shared-copy/`; type-only review mirror (no zod); rewrite 4 import sites; add `@expo/vector-icons` as explicit dep (was workspace-hoisted); rewrite `vercel.json` for standalone; add `.npmrc` with `legacy-peer-deps=true` for Expo ecosystem | ✅ done (`Steady-Mental-Health/steady-mobile@v0.1.0`, 78+1 commits, **typecheck 0 errors, Metro starts clean on `Waiting on http://localhost:8081`** — no EACCES, mobile has zero cross-repo deps) |
 | **5a** | Replay dev-only fixes onto steady-api/main | `git format-patch` → `sed` path rewrite → `git am` → codemod fix for new test files | ✅ done (`steady-api@v0.2.0`, **1069/1069 tests pass** — parity with monorepo dev) |
-| **5b** | Infrastructure repoint | Amplify source repoint, EC2 deploy-key setup, OIDC trust policy update for `Steady-Mental-Health/*` | pending |
-| **5c** | Dual-run + cutover | Old + new deploys parallel ~1 week, then flip DNS/Amplify, verify | pending |
+| **5b** | Infrastructure repoint | Amplify source, EC2 api deploys, OIDC trust policy | ✅ done (3 sub-parts, see below) |
+| **5c** | Dual-run + monorepo archive | Leave old monorepo repo as archive, no rollback path | pending |
 | **6** | Archive + memory update | Mark `jknack0/steady` read-only (GitHub archive setting), update auto-memory files to point at `Steady-Mental-Health/*` | pending |
 
 ### Known follow-ups
@@ -92,6 +92,31 @@ Phase 2 extracted from the monorepo's `main` branch. The following three fixes l
 5. Applied the same Phase 2 codemod logic to just those two files (`@steady/db` → `../db`), committed as a 4th commit `d4c89b5` with a commit message explaining the codemod coverage gap.
 6. Full test suite: **58/58 test files pass, 1069/1069 tests pass** — exact parity with dev.
 7. Pushed `main` + tagged `v0.2.0` to mark the dev-replay checkpoint.
+
+### Phase 5b sub-parts
+
+**5b-amplify:** Repoint `steady` Amplify app from `jknack0/steady` → `Steady-Mental-Health/steady-web`.
+- Generated a classic GitHub PAT with `repo`+`admin:repo_hook` scopes, stored in local `.env` as `AMPLIFY_STEADY_WEB`, passed to `aws amplify update-app --access-token` via subshell (never echoed to stdout).
+- Hit `Deploy keys are disabled for this repository` — fixed by enabling deploy keys on the repo in GitHub settings.
+- Hit `Permission denied (publickey)` when `npm install` tried to clone `steady-shared` via `git+ssh://` — fixed by switching `@steady/shared` to `git+https://` and adding a `~/.netrc` write in `amplify.yml` preBuild using `GITHUB_TOKEN` env var (same PAT).
+- Hit `Can't find required-server-files.json in build output directory` — 6 failed builds chasing this with `amplify-post-build.sh` fixes, dot-glob workarounds, and lockfile force-refreshes. **Real root cause: the custom `.amplify-hosting/` artifact was a monorepo-era workaround we didn't need.** Replaced with `artifacts.baseDirectory: .next` and let Amplify's built-in Next.js SSR auto-detect handle the rest. Dropped `amplify-post-build.sh` entirely.
+- Collateral: bumped `steady-shared` to `v0.1.1` to add `@types/node` as an explicit devDep (fixes a TS2688 in fresh-install environments like Amplify). Bumped `steady-web` git URL pin to `v0.1.1`.
+- Final state: `steadymentalhealth.com` + `main.dily9t72o38yr.amplifyapp.com` both serve HTTP 200 from `Steady-Mental-Health/steady-web/main` with `x-nextjs-cache: HIT`.
+
+**5b-ec2-api:** Repoint `dev-api` and `prod-api` EC2 deploys from `jknack0/steady` monorepo → `Steady-Mental-Health/steady-api`.
+- Dev-api: cloned new repo to `~/steady-api/`, copied `.env`, `npm install` + `db:generate` + build all clean, `pm2 delete steady-api && pm2 start dist/index.js --name steady-api --cwd ~/steady-api`, `pm2 save`, health check via `https://dev-api.steadymentalhealth.com/health` returns `{"status":"ok","database":"connected"}`. Runs Node 22.22.2 via nvm.
+- Prod-api: same sequence, plus handled two quirks: (1) prod-api uses **system Node** at `/usr/bin/node` (no nvm, unlike dev-api) — updated deploy script to not source `~/.nvm/nvm.sh`; (2) prod-api had TWO `.env` files (root + `packages/api/`) where the old bootstrap loaded both; verified the root `.env` is the canonical source and the only thing in the package-local was a stale `ANTHROPIC_API_KEY`, so just copied root. Also had to clean a stale host key in local `known_hosts` from a prior EC2 re-provision.
+- Auth on EC2: both machines got a `~/.netrc` with `x-access-token:<classic PAT>` so `git` HTTPS operations work for both the primary repo clone AND the `@steady/shared` git URL dep fetched during `npm install`.
+- Old `~/steady/` monorepo clones are left in place on both boxes as a rollback safety net; can be removed in Phase 6.
+
+**5b-oidc:** Widened `SteadyGitHubActions` IAM role's trust policy `token.actions.githubusercontent.com:sub` condition from the single `"repo:jknack0/steady:*"` string to a list:
+```json
+[
+  "repo:jknack0/steady:*",
+  "repo:Steady-Mental-Health/steady-*:*"
+]
+```
+The wildcard covers all current and future `steady-*` repos in the new org. The `jknack0/steady:*` entry stays during dual-run and can be removed in Phase 6 once the archive lands.
 
 **Result:** `steady-api@v0.2.0` is now feature-equivalent to `jknack0/steady/dev` for all code inside `packages/api/`. The commits on `steady-api/main` are:
 
